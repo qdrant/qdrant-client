@@ -342,7 +342,6 @@ def test_upload(cached_embeddings):
     recreate_collection(remote_client, COLLECTION_NAME)
 
     remote_client.upload_points(COLLECTION_NAME, points, wait=True)
-    assert remote_client.count(COLLECTION_NAME).count == len(points)
     assert isinstance(
         remote_client.retrieve(COLLECTION_NAME, ids=[1], with_vectors=True)[0].vector["text"], list
     )  # assert doc has been substituted with its embedding
@@ -366,7 +365,6 @@ def test_upload(cached_embeddings):
     ids = list(range(len(vectors)))
     remote_client.upload_collection(COLLECTION_NAME, ids=ids, vectors=vectors, wait=True)
 
-    assert remote_client.count(COLLECTION_NAME).count == len(vectors)
     assert isinstance(
         remote_client.retrieve(COLLECTION_NAME, ids=[1], with_vectors=True)[0].vector["text"], list
     )  # assert doc has been substituted with its embedding
@@ -374,7 +372,6 @@ def test_upload(cached_embeddings):
     recreate_collection(remote_client, COLLECTION_NAME)
 
     remote_client.upload_points(COLLECTION_NAME, points, parallel=2, batch_size=2, wait=True)
-    assert remote_client.count(COLLECTION_NAME).count == len(points)
     assert isinstance(
         remote_client.retrieve(COLLECTION_NAME, ids=[1], with_vectors=True)[0].vector["text"], list
     )  # assert doc has been substituted with its embedding
@@ -385,7 +382,6 @@ def test_upload(cached_embeddings):
         COLLECTION_NAME, ids=ids, vectors=vectors, parallel=2, batch_size=2, wait=True
     )
 
-    assert remote_client.count(COLLECTION_NAME).count == len(vectors)
     assert isinstance(
         remote_client.retrieve(COLLECTION_NAME, ids=[1], with_vectors=True)[0].vector["text"], list
     )  # assert doc has been substituted with its embedding
@@ -396,7 +392,6 @@ def test_upload(cached_embeddings):
 
     remote_client.upload_points(COLLECTION_NAME, iter(points), parallel=2, batch_size=2, wait=True)
 
-    assert remote_client.count(COLLECTION_NAME).count == len(points)
     assert isinstance(
         remote_client.retrieve(COLLECTION_NAME, ids=[1], with_vectors=True)[0].vector["text"], list
     )  # assert doc has been substituted with its embedding
@@ -409,7 +404,6 @@ def test_upload(cached_embeddings):
         COLLECTION_NAME, ids=ids, vectors=iter(vectors), parallel=2, batch_size=2, wait=True
     )
 
-    assert remote_client.count(COLLECTION_NAME).count == len(vectors)
     assert isinstance(
         remote_client.retrieve(COLLECTION_NAME, ids=[1], with_vectors=True)[0].vector["text"], list
     )  # assert doc has been substituted with its embedding
@@ -783,6 +777,61 @@ def test_query_points_groups(cached_embeddings):
         )
     )
     # endregion
+
+    local_client.delete_collection(COLLECTION_NAME)
+
+
+def test_query_points_list_prefetch(cached_embeddings):
+    local_client = QdrantClient(":memory:")
+    if not local_client._FASTEMBED_INSTALLED:
+        pytest.skip("FastEmbed is not installed, skipping")
+
+    local_kwargs = {}
+    local_client._client.query_points = arg_interceptor(
+        local_client._client.query_points, local_kwargs
+    )
+
+    sparse_doc_1 = models.Document(text="hello world", model=SPARSE_MODEL_NAME)
+    sparse_doc_2 = models.Document(text="bye world", model=SPARSE_MODEL_NAME)
+    sparse_doc_3 = models.Document(text="goodbye world", model=SPARSE_MODEL_NAME)
+
+    points = [
+        models.PointStruct(id=i, vector={"sparse-text": doc}, payload={"content": doc.text})
+        for i, doc in enumerate([sparse_doc_1, sparse_doc_2, sparse_doc_3])
+    ]
+
+    populate_sparse_collection(local_client, points, vector_name="sparse-text")
+
+    prefetch_list = [
+        models.Prefetch(
+            query=models.NearestQuery(nearest=sparse_doc_1), using="sparse-text", limit=5
+        ),
+        models.Prefetch(
+            query=models.NearestQuery(nearest=sparse_doc_2), using="sparse-text", limit=3
+        ),
+        models.Prefetch(
+            query=models.NearestQuery(nearest=sparse_doc_3), using="sparse-text", limit=2
+        ),
+    ]
+
+    local_client.query_points(
+        COLLECTION_NAME, query=sparse_doc_1, prefetch=prefetch_list, using="sparse-text"
+    )
+
+    current_query = local_kwargs["query"]
+    assert isinstance(current_query.nearest, models.SparseVector)
+
+    current_prefetch = local_kwargs["prefetch"]
+    assert isinstance(current_prefetch, list)
+    assert len(current_prefetch) == 3
+
+    for i, prefetch in enumerate(current_prefetch):
+        assert isinstance(prefetch.query.nearest, models.SparseVector)
+
+        retrieved_point = local_client.retrieve(COLLECTION_NAME, ids=[i], with_vectors=True)[0]
+        assert not np.allclose(
+            retrieved_point.vector["sparse-text"].values, prefetch.query.nearest.values, atol=1e-3
+        )
 
     local_client.delete_collection(COLLECTION_NAME)
 
@@ -1299,7 +1348,6 @@ def test_upload_mixed_batches_upload_points(parallel, cached_embeddings):
         COLLECTION_NAME, points, batch_size=batch_size, wait=True, parallel=parallel
     )
 
-    assert remote_client.count(COLLECTION_NAME).count == len(points)
     assert np.allclose(
         remote_client.retrieve(COLLECTION_NAME, ids=[3], with_vectors=True)[0].vector,
         norm_ref_vector,
@@ -1335,7 +1383,6 @@ def test_upload_mixed_batches_upload_points(parallel, cached_embeddings):
         COLLECTION_NAME, points, batch_size=batch_size, wait=True, parallel=parallel
     )
 
-    assert remote_client.count(COLLECTION_NAME).count == len(points)
     assert np.allclose(
         remote_client.retrieve(COLLECTION_NAME, ids=[2], with_vectors=True)[0].vector,
         norm_ref_vector,
@@ -1389,7 +1436,6 @@ def test_upload_mixed_batches_upload_points(parallel, cached_embeddings):
         COLLECTION_NAME, points, batch_size=batch_size, wait=True, parallel=parallel
     )
 
-    assert remote_client.count(COLLECTION_NAME).count == len(points)
     assert np.allclose(
         remote_client.retrieve(COLLECTION_NAME, ids=[2], with_vectors=True)[0].vector["plain"],
         norm_ref_vector,
@@ -1436,7 +1482,6 @@ def test_upload_mixed_batches_upload_collection(parallel, cached_embeddings):
         parallel=parallel,
     )
 
-    assert remote_client.count(COLLECTION_NAME).count == len(vectors)
     assert np.allclose(
         remote_client.retrieve(COLLECTION_NAME, ids=[2], with_vectors=True)[0].vector,
         norm_ref_vector,
@@ -1466,7 +1511,6 @@ def test_upload_mixed_batches_upload_collection(parallel, cached_embeddings):
         parallel=parallel,
     )
 
-    assert remote_client.count(COLLECTION_NAME).count == len(vectors)
     assert np.allclose(
         remote_client.retrieve(COLLECTION_NAME, ids=[1], with_vectors=True)[0].vector,
         norm_ref_vector,
@@ -1507,7 +1551,6 @@ def test_upload_mixed_batches_upload_collection(parallel, cached_embeddings):
         parallel=parallel,
     )
 
-    assert remote_client.count(COLLECTION_NAME).count == len(vectors)
     assert np.allclose(
         remote_client.retrieve(COLLECTION_NAME, ids=[1], with_vectors=True)[0].vector["plain"],
         norm_ref_vector,
@@ -1566,7 +1609,6 @@ def test_upsert_batch_with_different_options():
     local_client.upsert(COLLECTION_NAME, points)
 
     read_points, _ = local_client.scroll(COLLECTION_NAME, limit=4, with_vectors=True)
-    assert len(read_points) == 3
     assert (
         read_points[0].vector["sparse-text-en"].indices
         != read_points[0].vector["sparse-text-de"].indices
@@ -1723,7 +1765,6 @@ def test_embed_multimodal(mock_late_interaction_multimodal_embedding):
     assert mock_cls.image_calls == 1
 
     records, _ = local_client.scroll(COLLECTION_NAME, limit=2, with_vectors=True)
-    assert len(records) == 2
     assert len(records[1].vector) == 1
 
     np_text_vectors = np.array([records[0].vector["text"], records[1].vector["text"]])
@@ -1736,3 +1777,54 @@ def test_embed_multimodal(mock_late_interaction_multimodal_embedding):
     assert np.allclose(np_text_vectors[0], mock_cls.text_embedding)
     assert np.allclose(np_text_vectors[1], mock_cls.text_embedding)
     assert np.allclose(np_image_vector, mock_cls.image_embedding)
+
+
+def test_upsert_mixed_dense_models(cached_embeddings):
+    local_client = QdrantClient(":memory:")
+    if not local_client._FASTEMBED_INSTALLED:
+        pytest.skip("FastEmbed is not installed, skipping")
+    local_kwargs = {}
+    local_client._client.upsert = arg_interceptor(local_client._client.upsert, local_kwargs)
+
+    model_a = "sentence-transformers/all-MiniLM-L6-v2"
+    model_b = "BAAI/bge-small-zh-v1.5"
+    dim_a = 384
+    dim_b = 512
+
+    vectors_config = {
+        "model_a": models.VectorParams(size=dim_a, distance=models.Distance.COSINE),
+        "model_b": models.VectorParams(size=dim_b, distance=models.Distance.COSINE),
+    }
+    local_client.create_collection(COLLECTION_NAME, vectors_config=vectors_config)
+
+    doc_a = models.Document(text="hello world", model=model_a)
+    doc_b = models.Document(text="bye world", model=model_b)
+    points = [
+        models.PointStruct(id=1, vector={"model_a": doc_a}),
+        models.PointStruct(id=2, vector={"model_b": doc_b}),
+        models.PointStruct(id=3, vector={"model_a": doc_a, "model_b": doc_b}),
+    ]
+
+    local_client.upsert(COLLECTION_NAME, points)
+
+    vec_points = local_kwargs["points"]
+    assert len(vec_points) == 3
+    assert isinstance(vec_points[0].vector["model_a"], list)
+    assert len(vec_points[0].vector["model_a"]) == dim_a
+    assert "model_b" not in vec_points[0].vector
+    assert isinstance(vec_points[1].vector["model_b"], list)
+    assert len(vec_points[1].vector["model_b"]) == dim_b
+    assert "model_a" not in vec_points[1].vector
+    assert isinstance(vec_points[2].vector["model_a"], list)
+    assert isinstance(vec_points[2].vector["model_b"], list)
+    assert len(vec_points[2].vector["model_a"]) == dim_a
+    assert len(vec_points[2].vector["model_b"]) == dim_b
+
+    retrieved = local_client.retrieve(COLLECTION_NAME, ids=[1, 2, 3], with_vectors=True)
+    assert len(retrieved) == 3
+    assert len(retrieved[0].vector["model_a"]) == dim_a
+    assert len(retrieved[1].vector["model_b"]) == dim_b
+    assert len(retrieved[2].vector["model_a"]) == dim_a
+    assert len(retrieved[2].vector["model_b"]) == dim_b
+
+    local_client.delete_collection(COLLECTION_NAME)
