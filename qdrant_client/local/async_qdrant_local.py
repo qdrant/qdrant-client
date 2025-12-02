@@ -17,7 +17,7 @@ import shutil
 import uuid
 from copy import deepcopy
 from io import TextIOWrapper
-from typing import Any, Generator, Iterable, Mapping, Sequence, get_args, Union
+from typing import Any, Generator, Iterable, Mapping, Sequence, get_args
 from uuid import uuid4
 import numpy as np
 import portalocker
@@ -165,13 +165,11 @@ class AsyncQdrantLocal(AsyncQdrantBase):
     def search(
         self,
         collection_name: str,
-        query_vector: Union[
-            types.NumpyArray,
-            Sequence[float],
-            tuple[str, list[float]],
-            types.NamedVector,
-            types.NamedSparseVector,
-        ],
+        query_vector: types.NumpyArray
+        | Sequence[float]
+        | tuple[str, list[float]]
+        | types.NamedVector
+        | types.NamedSparseVector,
         query_filter: types.Filter | None = None,
         search_params: types.SearchParams | None = None,
         limit: int = 10,
@@ -406,18 +404,16 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         self,
         collection_name: str,
         group_by: str,
-        query: Union[
-            types.PointId,
-            list[float],
-            list[list[float]],
-            types.SparseVector,
-            types.Query,
-            types.NumpyArray,
-            types.Document,
-            types.Image,
-            types.InferenceObject,
-            None,
-        ] = None,
+        query: types.PointId
+        | list[float]
+        | list[list[float]]
+        | types.SparseVector
+        | types.Query
+        | types.NumpyArray
+        | types.Document
+        | types.Image
+        | types.InferenceObject
+        | None = None,
         using: str | None = None,
         prefetch: types.Prefetch | list[types.Prefetch] | None = None,
         query_filter: types.Filter | None = None,

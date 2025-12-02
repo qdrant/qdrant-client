@@ -7,7 +7,6 @@ from typing import (
     Callable,
     Sequence,
     get_args,
-    Union,
 )
 from copy import deepcopy
 import warnings
@@ -1083,20 +1082,17 @@ class LocalCollection:
 
     def search_groups(
         self,
-        query_vector: (
-            Sequence[float]
-            | list[list[float]]
-            | tuple[
-                str,
-                Union[models.Vector, RecoQuery, SparseRecoQuery, MultiRecoQuery, types.NumpyArray],
-            ]
-            | types.NamedVector
-            | types.NamedSparseVector
-            | RecoQuery
-            | SparseRecoQuery
-            | MultiRecoQuery
-            | types.NumpyArray
-        ),
+        query_vector: Sequence[float]
+        | list[list[float]]
+        | tuple[
+            str, models.Vector | RecoQuery | SparseRecoQuery | MultiRecoQuery | types.NumpyArray
+        ]
+        | types.NamedVector
+        | types.NamedSparseVector
+        | RecoQuery
+        | SparseRecoQuery
+        | MultiRecoQuery
+        | types.NumpyArray,
         group_by: str,
         query_filter: models.Filter | None = None,
         limit: int = 10,
