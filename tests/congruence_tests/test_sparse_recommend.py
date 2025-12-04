@@ -47,7 +47,7 @@ class TestSimpleRecommendation:
             query=models.RecommendQuery(recommend=models.RecommendInput(positive=[10, 19])),
             with_payload=True,
             limit=10,
-            using="sparse-image",
+            using="sparse-text",
         ).points
 
     @classmethod
@@ -59,7 +59,7 @@ class TestSimpleRecommendation:
             ),
             with_payload=True,
             limit=10,
-            using="sparse-image",
+            using="sparse-text",
         ).points
 
     @classmethod
@@ -106,7 +106,7 @@ class TestSimpleRecommendation:
         ).points
 
     @classmethod
-    def best_score_recommend_euclid(cls, client: QdrantBase) -> list[models.ScoredPoint]:
+    def best_score_recommend_pos_neg(cls, client: QdrantBase) -> list[models.ScoredPoint]:
         return client.query_points(
             collection_name=COLLECTION_NAME,
             query=models.RecommendQuery(
@@ -118,7 +118,7 @@ class TestSimpleRecommendation:
             ),
             with_payload=True,
             limit=10,
-            using="sparse-code",
+            using="sparse-image",
         ).points
 
     @classmethod
@@ -136,22 +136,6 @@ class TestSimpleRecommendation:
         ).points
 
     @classmethod
-    def only_negatives_best_score_recommend_euclid(
-        cls, client: QdrantBase
-    ) -> list[models.ScoredPoint]:
-        return client.query_points(
-            collection_name=COLLECTION_NAME,
-            query=models.RecommendQuery(
-                recommend=models.RecommendInput(
-                    positive=None, negative=[10, 12], strategy=models.RecommendStrategy.BEST_SCORE
-                )
-            ),
-            with_payload=True,
-            limit=10,
-            using="sparse-code",
-        ).points
-
-    @classmethod
     def sum_scores_recommend(cls, client: QdrantBase) -> list[models.ScoredPoint]:
         return client.query_points(
             collection_name=COLLECTION_NAME,
@@ -166,7 +150,7 @@ class TestSimpleRecommendation:
         ).points
 
     @classmethod
-    def sum_scores_recommend_euclid(cls, client: QdrantBase) -> list[models.ScoredPoint]:
+    def sum_scores_recommend_pos_neg(cls, client: QdrantBase) -> list[models.ScoredPoint]:
         return client.query_points(
             collection_name=COLLECTION_NAME,
             query=models.RecommendQuery(
@@ -178,7 +162,7 @@ class TestSimpleRecommendation:
             ),
             with_payload=True,
             limit=10,
-            using="sparse-code",
+            using="sparse-image",
         ).points
 
     @classmethod
@@ -193,22 +177,6 @@ class TestSimpleRecommendation:
             with_payload=True,
             limit=10,
             using="sparse-image",
-        ).points
-
-    @classmethod
-    def only_negatives_sum_scores_recommend_euclid(
-        cls, client: QdrantBase
-    ) -> list[models.ScoredPoint]:
-        return client.query_points(
-            collection_name=COLLECTION_NAME,
-            query=models.RecommendQuery(
-                recommend=models.RecommendInput(
-                    positive=None, negative=[10, 12], strategy=models.RecommendStrategy.SUM_SCORES
-                )
-            ),
-            with_payload=True,
-            limit=10,
-            using="sparse-code",
         ).points
 
     @classmethod
@@ -286,7 +254,6 @@ class TestSimpleRecommendation:
 
 def test_simple_recommend() -> None:
     fixture_points = generate_sparse_fixtures()
-
     secondary_collection_points = generate_sparse_fixtures(100)
 
     searcher = TestSimpleRecommendation()
@@ -320,35 +287,26 @@ def test_simple_recommend() -> None:
         vectors_config={},
         sparse_vectors_config=sparse_vectors_config,
     )
-
     compare_client_results(local_client, remote_client, searcher.simple_recommend_image)
     compare_client_results(local_client, remote_client, searcher.many_recommend)
     compare_client_results(local_client, remote_client, searcher.simple_recommend_negative)
     compare_client_results(local_client, remote_client, searcher.recommend_from_another_collection)
     compare_client_results(local_client, remote_client, searcher.best_score_recommend)
-    compare_client_results(local_client, remote_client, searcher.best_score_recommend_euclid)
+    compare_client_results(local_client, remote_client, searcher.best_score_recommend_pos_neg)
     compare_client_results(
         local_client, remote_client, searcher.only_negatives_best_score_recommend
     )
-    compare_client_results(
-        local_client, remote_client, searcher.only_negatives_best_score_recommend_euclid
-    )
     compare_client_results(local_client, remote_client, searcher.sum_scores_recommend)
-    compare_client_results(local_client, remote_client, searcher.sum_scores_recommend_euclid)
+    compare_client_results(local_client, remote_client, searcher.sum_scores_recommend_pos_neg)
     compare_client_results(
         local_client, remote_client, searcher.only_negatives_sum_scores_recommend
     )
-    compare_client_results(
-        local_client, remote_client, searcher.only_negatives_sum_scores_recommend_euclid
-    )
-
     compare_client_results(local_client, remote_client, searcher.avg_vector_recommend)
     compare_client_results(local_client, remote_client, searcher.recommend_from_raw_vectors)
     compare_client_results(
         local_client, remote_client, searcher.recommend_from_raw_vectors_and_ids
     )
     compare_client_results(local_client, remote_client, searcher.recommend_batch)
-
     for _ in range(10):
         query_filter = one_random_filter_please()
         try:

@@ -103,7 +103,7 @@ def test_client_init():
         assert isinstance(client._client, QdrantLocal)
         assert client._client.location == tmpdir + "/test.db"
 
-    client = QdrantClient()
+    client = QdrantClient(check_compatibility=False)
     assert isinstance(client._client, QdrantRemote)
     assert client._client.rest_uri == "http://localhost:6333"
 
@@ -113,22 +113,22 @@ def test_client_init():
     client = QdrantClient(check_compatibility=False)
     assert isinstance(client._client, QdrantRemote)
 
-    client = QdrantClient(prefer_grpc=True)
+    client = QdrantClient(prefer_grpc=True, check_compatibility=False)
     assert isinstance(client._client, QdrantRemote)
 
-    client = QdrantClient(https=True)
+    client = QdrantClient(https=True, check_compatibility=False)
     assert isinstance(client._client, QdrantRemote)
     assert client._client.rest_uri == "https://localhost:6333"
 
-    client = QdrantClient(https=True, port=7333)
+    client = QdrantClient(https=True, port=7333, check_compatibility=False)
     assert isinstance(client._client, QdrantRemote)
     assert client._client.rest_uri == "https://localhost:7333"
 
-    client = QdrantClient(host="hidden_port_addr.com", prefix="custom")
+    client = QdrantClient(host="hidden_port_addr.com", prefix="custom", check_compatibility=False)
     assert isinstance(client._client, QdrantRemote)
     assert client._client.rest_uri == "http://hidden_port_addr.com:6333/custom"
 
-    client = QdrantClient(host="hidden_port_addr.com", port=None)
+    client = QdrantClient(host="hidden_port_addr.com", port=None, check_compatibility=False)
     assert isinstance(client._client, QdrantRemote)
     assert client._client.rest_uri == "http://hidden_port_addr.com"
 
@@ -136,73 +136,80 @@ def test_client_init():
         host="hidden_port_addr.com",
         port=None,
         prefix="custom",
+        check_compatibility=False,
     )
     assert isinstance(client._client, QdrantRemote)
     assert client._client.rest_uri == "http://hidden_port_addr.com/custom"
 
-    client = QdrantClient("http://hidden_port_addr.com", port=None)
+    client = QdrantClient("http://hidden_port_addr.com", port=None, check_compatibility=False)
     assert isinstance(client._client, QdrantRemote)
     assert client._client.rest_uri == "http://hidden_port_addr.com"
 
     # url takes precedence over port, which has default value for a backward compatibility
-    client = QdrantClient(url="http://localhost:6333", port=7333)
+    client = QdrantClient(url="http://localhost:6333", port=7333, check_compatibility=False)
     assert isinstance(client._client, QdrantRemote)
     assert client._client.rest_uri == "http://localhost:6333"
 
-    client = QdrantClient(url="http://localhost:6333", prefix="custom")
+    client = QdrantClient(url="http://localhost:6333", prefix="custom", check_compatibility=False)
     assert isinstance(client._client, QdrantRemote)
     assert client._client.rest_uri == "http://localhost:6333/custom"
 
     for prefix in ("api/v1", "/api/v1"):
-        client = QdrantClient(url="http://localhost:6333", prefix=prefix)
+        client = QdrantClient(
+            url="http://localhost:6333", prefix=prefix, check_compatibility=False
+        )
         assert (
             isinstance(client._client, QdrantRemote)
             and client._client.rest_uri == "http://localhost:6333/api/v1"
         )
 
-        client = QdrantClient(host="localhost", prefix=prefix)
+        client = QdrantClient(host="localhost", prefix=prefix, check_compatibility=False)
         assert (
             isinstance(client._client, QdrantRemote)
             and client._client.rest_uri == "http://localhost:6333/api/v1"
         )
 
     for prefix in ("api/v1/", "/api/v1/"):
-        client = QdrantClient(url="http://localhost:6333", prefix=prefix)
+        client = QdrantClient(
+            url="http://localhost:6333", prefix=prefix, check_compatibility=False
+        )
         assert (
             isinstance(client._client, QdrantRemote)
             and client._client.rest_uri == "http://localhost:6333/api/v1/"
         )
 
-        client = QdrantClient(host="localhost", prefix=prefix)
+        client = QdrantClient(host="localhost", prefix=prefix, check_compatibility=False)
         assert (
             isinstance(client._client, QdrantRemote)
             and client._client.rest_uri == "http://localhost:6333/api/v1/"
         )
 
-    client = QdrantClient(url="http://localhost:6333/custom")
+    client = QdrantClient(url="http://localhost:6333/custom", check_compatibility=False)
     assert isinstance(client._client, QdrantRemote)
     assert client._client.rest_uri == "http://localhost:6333/custom"
     assert client._client._prefix == "/custom"
 
-    client = QdrantClient("my-domain.com")
+    client = QdrantClient("my-domain.com", check_compatibility=False)
     assert isinstance(client._client, QdrantRemote)
     assert client._client.rest_uri == "http://my-domain.com:6333"
 
-    client = QdrantClient("my-domain.com:80")
+    client = QdrantClient("my-domain.com:80", check_compatibility=False)
     assert isinstance(client._client, QdrantRemote)
     assert client._client.rest_uri == "http://my-domain.com:80"
 
     with pytest.raises(ValueError):
-        QdrantClient(url="http://localhost:6333", host="localhost")
+        QdrantClient(url="http://localhost:6333", host="localhost", check_compatibility=False)
 
     with pytest.raises(ValueError):
-        QdrantClient(url="http://localhost:6333/origin", prefix="custom")
+        QdrantClient(
+            url="http://localhost:6333/origin", prefix="custom", check_compatibility=False
+        )
 
-    client = QdrantClient("127.0.0.1:6333")
+    client = QdrantClient("127.0.0.1:6333", check_compatibility=False)
     assert isinstance(client._client, QdrantRemote)
     assert client._client.rest_uri == "http://127.0.0.1:6333"
 
-    client = QdrantClient("localhost:6333")
+    client = QdrantClient("localhost:6333", check_compatibility=False)
     assert isinstance(client._client, QdrantRemote)
     assert client._client.rest_uri == "http://localhost:6333"
 
@@ -225,7 +232,10 @@ def test_client_init():
             QdrantClient(**params)
 
     client = QdrantClient(
-        url="http://localhost:6333", prefix="custom", metadata={"some-rest-meta": "some-value"}
+        url="http://localhost:6333",
+        prefix="custom",
+        metadata={"some-rest-meta": "some-value"},
+        check_compatibility=False,
     )
     assert client.init_options["url"] == "http://localhost:6333"
     assert client.init_options["prefix"] == "custom"
