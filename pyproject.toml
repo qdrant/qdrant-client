@@ -16,10 +16,11 @@ keywords = ["vector", "search", "neural", "matching", "client"]
 python = ">=3.10"
 httpx = { version = ">=0.20.0", extras = ["http2"] }
 numpy = [
-    { version = ">=2.1.0", python = ">=3.13" },
-    { version = ">=1.21,<2.1.0", python = "<3.10" },
-    { version = ">=1.21", python = ">=3.10,<3.12" },
+    { version = ">=1.21,<2.3.0", python = ">=3.10,<3.11" },
+    { version = ">=1.21", python = ">=3.11,<3.12" },
     { version = ">=1.26", python = ">=3.12,<3.13" },
+    { version = ">=2.1.0", python = ">=3.13,<3.14" },
+    { version = ">=2.3.0", python = ">=3.14" },
 ]
 pydantic = ">=1.10.8,!=2.0.*,!=2.1.*,!=2.2.0"  # can't use poetry ">=1.10.8,<2.0 || >=2.2.1" since pip is complaining
 grpcio = { version = ">=1.41.0", allow-prereleases = true }
