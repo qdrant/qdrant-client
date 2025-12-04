@@ -20,7 +20,6 @@ from tests.congruence_tests.test_common import (
     text_vector_size,
     sparse_text_vector_size,
     sparse_image_vector_size,
-    sparse_code_vector_size,
     generate_sparse_fixtures,
     sparse_vectors_config,
     generate_multivector_fixtures,
@@ -59,9 +58,6 @@ class TestSimpleSearcher:
         )
         self.sparse_vector_query_image = generate_random_sparse_vector(
             sparse_image_vector_size, density=0.2
-        )
-        self.sparse_vector_query_code = generate_random_sparse_vector(
-            sparse_code_vector_size, density=0.1
         )
 
         # multivector query vectors
@@ -1661,6 +1657,31 @@ def test_query_group():
     init_client(local_client, secondary_collection_points, SECONDARY_COLLECTION_NAME)
     init_client(http_client, secondary_collection_points, SECONDARY_COLLECTION_NAME)
 
+    http_client.create_payload_index(
+        COLLECTION_NAME, field_name="id", field_schema=models.PayloadSchemaType.INTEGER
+    )
+    http_client.create_payload_index(
+        COLLECTION_NAME, field_name="rand_digit", field_schema=models.PayloadSchemaType.INTEGER
+    )
+    http_client.create_payload_index(
+        COLLECTION_NAME, field_name="two_words", field_schema=models.PayloadSchemaType.KEYWORD
+    )
+    http_client.create_payload_index(
+        COLLECTION_NAME,
+        field_name="city.name",
+        field_schema=models.PayloadSchemaType.KEYWORD,
+    )
+    http_client.create_payload_index(
+        COLLECTION_NAME,
+        field_name="maybe",
+        field_schema=models.PayloadSchemaType.KEYWORD,
+    )
+    http_client.create_payload_index(
+        COLLECTION_NAME,
+        field_name="maybe_null",
+        field_schema=models.PayloadSchemaType.KEYWORD,
+    )
+
     searcher.group_size = 5
     searcher.limit = 3
     for key in group_by_keys():
@@ -1687,6 +1708,7 @@ def test_query_group():
         )
 
     searcher.group_by = "city.name"
+
     for i in range(100):
         query_filter = one_random_filter_please()
         try:
