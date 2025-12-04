@@ -1,4 +1,4 @@
-from typing import Tuple, Callable, Any
+from typing import Callable, Any
 
 from grpc import RpcError
 import numpy as np
@@ -920,7 +920,7 @@ def group_by_keys():
     return ["maybe", "rand_digit", "two_words", "city.name", "maybe_null", "id"]
 
 
-def init_clients(fixture_points, **kwargs) -> Tuple[QdrantClient, QdrantClient, QdrantClient]:
+def init_clients(fixture_points, **kwargs) -> tuple[QdrantClient, QdrantClient, QdrantClient]:
     local_client = init_local()
     http_client = init_remote()
     grpc_client = init_remote(prefer_grpc=True)

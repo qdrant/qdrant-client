@@ -9,7 +9,7 @@ def read_version() -> tuple[int | None, int | None, int | None, bool]:
     """Read Qdrant's version from env and parse it into a tuple
 
     Returns:
-        Tuple[Optional[int], Optional[int], Optional[int], bool] - A tuple of (major, minor, patch, dev), where `dev` is a boolean indicating
+        tuple[int | None, int | None, int | None, bool] - A tuple of (major, minor, patch, dev), where `dev` is a boolean indicating
         if it's a development version. If the version is not set or is "dev", returns (None, None, None, True)
     """
     version_str = os.getenv("QDRANT_VERSION")

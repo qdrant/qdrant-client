@@ -1,6 +1,3 @@
-from typing import Optional
-
-
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.http.models import models
 
@@ -82,7 +79,7 @@ class TestSimpleRecommendation:
 
     @classmethod
     def recommend_from_another_collection(
-        cls, client: QdrantBase, positive_point_id: Optional[int] = None
+        cls, client: QdrantBase, positive_point_id: int | None = None
     ) -> list[models.ScoredPoint]:
         return client.query_points(
             collection_name=COLLECTION_NAME,
