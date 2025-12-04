@@ -21,7 +21,6 @@ code_vector_size = 80
 # sparse vectors sizes
 sparse_text_vector_size = 100
 sparse_image_vector_size = 1_000
-sparse_code_vector_size = 10_000
 
 # number of vectors to generate
 NUM_VECTORS = 1000
@@ -44,7 +43,6 @@ dense_vectors_config = {
 sparse_vectors_config = {
     "sparse-text": models.SparseVectorParams(),
     "sparse-image": models.SparseVectorParams(),
-    "sparse-code": models.SparseVectorParams(),
 }
 
 dense_vectors_sizes = {
@@ -56,7 +54,6 @@ dense_vectors_sizes = {
 sparse_vectors_sizes = {
     "sparse-text": sparse_text_vector_size,
     "sparse-image": sparse_image_vector_size,
-    "sparse-code": sparse_code_vector_size,
 }
 
 multivectors_sizes = {
