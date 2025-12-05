@@ -1,5 +1,4 @@
 import warnings
-from typing import Optional
 
 SEEN_MESSAGES = set()
 
@@ -11,7 +10,7 @@ def show_warning(message: str, category: type[Warning] = UserWarning, stacklevel
 def show_warning_once(
     message: str,
     category: type[Warning] = UserWarning,
-    idx: Optional[str] = None,
+    idx: str | None = None,
     stacklevel: int = 1,
 ) -> None:
     """

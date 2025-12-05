@@ -5,9 +5,7 @@ from typing import (
     Callable,
     Iterable,
     Mapping,
-    Optional,
     Sequence,
-    Union,
 )
 
 import numpy as np
@@ -83,26 +81,24 @@ class QdrantClient(QdrantFastembedMixin):
 
     def __init__(
         self,
-        location: Optional[str] = None,
-        url: Optional[str] = None,
-        port: Optional[int] = 6333,
+        location: str | None = None,
+        url: str | None = None,
+        port: int | None = 6333,
         grpc_port: int = 6334,
         prefer_grpc: bool = False,
-        https: Optional[bool] = None,
-        api_key: Optional[str] = None,
-        prefix: Optional[str] = None,
-        timeout: Optional[int] = None,
-        host: Optional[str] = None,
-        path: Optional[str] = None,
+        https: bool | None = None,
+        api_key: str | None = None,
+        prefix: str | None = None,
+        timeout: int | None = None,
+        host: str | None = None,
+        path: str | None = None,
         force_disable_check_same_thread: bool = False,
-        grpc_options: Optional[dict[str, Any]] = None,
-        auth_token_provider: Optional[
-            Union[Callable[[], str], Callable[[], Awaitable[str]]]
-        ] = None,
+        grpc_options: dict[str, Any] | None = None,
+        auth_token_provider: Callable[[], str] | Callable[[], Awaitable[str]] | None = None,
         cloud_inference: bool = False,
-        local_inference_batch_size: Optional[int] = None,
+        local_inference_batch_size: int | None = None,
         check_compatibility: bool = True,
-        pool_size: Optional[int] = None,
+        pool_size: int | None = None,
         **kwargs: Any,
     ):
         # Saving the init options to facilitate building AsyncQdrantClient from QdrantClient and vice versa.
@@ -172,7 +168,7 @@ class QdrantClient(QdrantFastembedMixin):
     def __del__(self) -> None:
         self.close()
 
-    def close(self, grpc_grace: Optional[float] = None, **kwargs: Any) -> None:
+    def close(self, grpc_grace: float | None = None, **kwargs: Any) -> None:
         """Closes the connection to Qdrant
 
         Args:
@@ -230,8 +226,8 @@ class QdrantClient(QdrantFastembedMixin):
         self,
         collection_name: str,
         requests: Sequence[types.QueryRequest],
-        consistency: Optional[types.ReadConsistency] = None,
-        timeout: Optional[int] = None,
+        consistency: types.ReadConsistency | None = None,
+        timeout: int | None = None,
         **kwargs: Any,
     ) -> list[types.QueryResponse]:
         """Perform any search, recommend, discovery, context search operations in batch, and mitigate network overhead
@@ -273,31 +269,29 @@ class QdrantClient(QdrantFastembedMixin):
     def query_points(
         self,
         collection_name: str,
-        query: Union[
-            types.PointId,
-            list[float],
-            list[list[float]],
-            types.SparseVector,
-            types.Query,
-            types.NumpyArray,
-            types.Document,
-            types.Image,
-            types.InferenceObject,
-            None,
-        ] = None,
-        using: Optional[str] = None,
-        prefetch: Union[types.Prefetch, list[types.Prefetch], None] = None,
-        query_filter: Optional[types.Filter] = None,
-        search_params: Optional[types.SearchParams] = None,
+        query: types.PointId
+        | list[float]
+        | list[list[float]]
+        | types.SparseVector
+        | types.Query
+        | types.NumpyArray
+        | types.Document
+        | types.Image
+        | types.InferenceObject
+        | None = None,
+        using: str | None = None,
+        prefetch: types.Prefetch | list[types.Prefetch] | None = None,
+        query_filter: types.Filter | None = None,
+        search_params: types.SearchParams | None = None,
         limit: int = 10,
-        offset: Optional[int] = None,
-        with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
-        with_vectors: Union[bool, Sequence[str]] = False,
-        score_threshold: Optional[float] = None,
-        lookup_from: Optional[types.LookupLocation] = None,
-        consistency: Optional[types.ReadConsistency] = None,
-        shard_key_selector: Optional[types.ShardKeySelector] = None,
-        timeout: Optional[int] = None,
+        offset: int | None = None,
+        with_payload: bool | Sequence[str] | types.PayloadSelector = True,
+        with_vectors: bool | Sequence[str] = False,
+        score_threshold: float | None = None,
+        lookup_from: types.LookupLocation | None = None,
+        consistency: types.ReadConsistency | None = None,
+        shard_key_selector: types.ShardKeySelector | None = None,
+        timeout: int | None = None,
         **kwargs: Any,
     ) -> types.QueryResponse:
         """Universal endpoint to run any available operation, such as search, recommendation, discovery, context search.
@@ -449,32 +443,30 @@ class QdrantClient(QdrantFastembedMixin):
         self,
         collection_name: str,
         group_by: str,
-        query: Union[
-            types.PointId,
-            list[float],
-            list[list[float]],
-            types.SparseVector,
-            types.Query,
-            types.NumpyArray,
-            types.Document,
-            types.Image,
-            types.InferenceObject,
-            None,
-        ] = None,
-        using: Optional[str] = None,
-        prefetch: Union[types.Prefetch, list[types.Prefetch], None] = None,
-        query_filter: Optional[types.Filter] = None,
-        search_params: Optional[types.SearchParams] = None,
+        query: types.PointId
+        | list[float]
+        | list[list[float]]
+        | types.SparseVector
+        | types.Query
+        | types.NumpyArray
+        | types.Document
+        | types.Image
+        | types.InferenceObject
+        | None = None,
+        using: str | None = None,
+        prefetch: types.Prefetch | list[types.Prefetch] | None = None,
+        query_filter: types.Filter | None = None,
+        search_params: types.SearchParams | None = None,
         limit: int = 10,
         group_size: int = 3,
-        with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
-        with_vectors: Union[bool, Sequence[str]] = False,
-        score_threshold: Optional[float] = None,
-        with_lookup: Optional[types.WithLookupInterface] = None,
-        lookup_from: Optional[types.LookupLocation] = None,
-        consistency: Optional[types.ReadConsistency] = None,
-        shard_key_selector: Optional[types.ShardKeySelector] = None,
-        timeout: Optional[int] = None,
+        with_payload: bool | Sequence[str] | types.PayloadSelector = True,
+        with_vectors: bool | Sequence[str] = False,
+        score_threshold: float | None = None,
+        with_lookup: types.WithLookupInterface | None = None,
+        lookup_from: types.LookupLocation | None = None,
+        consistency: types.ReadConsistency | None = None,
+        shard_key_selector: types.ShardKeySelector | None = None,
+        timeout: int | None = None,
         **kwargs: Any,
     ) -> types.GroupsResult:
         """Universal endpoint to group on any available operation, such as search, recommendation, discovery, context search.
@@ -616,13 +608,13 @@ class QdrantClient(QdrantFastembedMixin):
     def search_matrix_pairs(
         self,
         collection_name: str,
-        query_filter: Optional[types.Filter] = None,
+        query_filter: types.Filter | None = None,
         limit: int = 3,
         sample: int = 10,
-        using: Optional[str] = None,
-        consistency: Optional[types.ReadConsistency] = None,
-        timeout: Optional[int] = None,
-        shard_key_selector: Optional[types.ShardKeySelector] = None,
+        using: str | None = None,
+        consistency: types.ReadConsistency | None = None,
+        timeout: int | None = None,
+        shard_key_selector: types.ShardKeySelector | None = None,
         **kwargs: Any,
     ) -> types.SearchMatrixPairsResponse:
         """
@@ -664,13 +656,13 @@ class QdrantClient(QdrantFastembedMixin):
     def search_matrix_offsets(
         self,
         collection_name: str,
-        query_filter: Optional[types.Filter] = None,
+        query_filter: types.Filter | None = None,
         limit: int = 3,
         sample: int = 10,
-        using: Optional[str] = None,
-        consistency: Optional[types.ReadConsistency] = None,
-        timeout: Optional[int] = None,
-        shard_key_selector: Optional[types.ShardKeySelector] = None,
+        using: str | None = None,
+        consistency: types.ReadConsistency | None = None,
+        timeout: int | None = None,
+        shard_key_selector: types.ShardKeySelector | None = None,
         **kwargs: Any,
     ) -> types.SearchMatrixOffsetsResponse:
         """
@@ -712,17 +704,17 @@ class QdrantClient(QdrantFastembedMixin):
     def scroll(
         self,
         collection_name: str,
-        scroll_filter: Optional[types.Filter] = None,
+        scroll_filter: types.Filter | None = None,
         limit: int = 10,
-        order_by: Optional[types.OrderBy] = None,
-        offset: Optional[types.PointId] = None,
-        with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
-        with_vectors: Union[bool, Sequence[str]] = False,
-        consistency: Optional[types.ReadConsistency] = None,
-        shard_key_selector: Optional[types.ShardKeySelector] = None,
-        timeout: Optional[int] = None,
+        order_by: types.OrderBy | None = None,
+        offset: types.PointId | None = None,
+        with_payload: bool | Sequence[str] | types.PayloadSelector = True,
+        with_vectors: bool | Sequence[str] = False,
+        consistency: types.ReadConsistency | None = None,
+        shard_key_selector: types.ShardKeySelector | None = None,
+        timeout: int | None = None,
         **kwargs: Any,
-    ) -> tuple[list[types.Record], Optional[types.PointId]]:
+    ) -> tuple[list[types.Record], types.PointId | None]:
         """Scroll over all (matching) points in the collection.
 
         This method provides a way to iterate over all stored points with some optional filtering condition.
@@ -782,10 +774,10 @@ class QdrantClient(QdrantFastembedMixin):
     def count(
         self,
         collection_name: str,
-        count_filter: Optional[types.Filter] = None,
+        count_filter: types.Filter | None = None,
         exact: bool = True,
-        shard_key_selector: Optional[types.ShardKeySelector] = None,
-        timeout: Optional[int] = None,
+        shard_key_selector: types.ShardKeySelector | None = None,
+        timeout: int | None = None,
         **kwargs: Any,
     ) -> types.CountResult:
         """Count points in the collection.
@@ -824,12 +816,12 @@ class QdrantClient(QdrantFastembedMixin):
         self,
         collection_name: str,
         key: str,
-        facet_filter: Optional[types.Filter] = None,
+        facet_filter: types.Filter | None = None,
         limit: int = 10,
         exact: bool = False,
-        consistency: Optional[types.ReadConsistency] = None,
-        timeout: Optional[int] = None,
-        shard_key_selector: Optional[types.ShardKeySelector] = None,
+        consistency: types.ReadConsistency | None = None,
+        timeout: int | None = None,
+        shard_key_selector: types.ShardKeySelector | None = None,
         **kwargs: Any,
     ) -> types.FacetResponse:
         """Facet counts for the collection. For a specific payload key, returns unique values along with their counts.
@@ -876,9 +868,9 @@ class QdrantClient(QdrantFastembedMixin):
         collection_name: str,
         points: types.Points,
         wait: bool = True,
-        ordering: Optional[types.WriteOrdering] = None,
-        shard_key_selector: Optional[types.ShardKeySelector] = None,
-        update_filter: Optional[types.Filter] = None,
+        ordering: types.WriteOrdering | None = None,
+        shard_key_selector: types.ShardKeySelector | None = None,
+        update_filter: types.Filter | None = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
         """
@@ -957,9 +949,9 @@ class QdrantClient(QdrantFastembedMixin):
         collection_name: str,
         points: Sequence[types.PointVectors],
         wait: bool = True,
-        ordering: Optional[types.WriteOrdering] = None,
-        shard_key_selector: Optional[types.ShardKeySelector] = None,
-        update_filter: Optional[types.Filter] = None,
+        ordering: types.WriteOrdering | None = None,
+        shard_key_selector: types.ShardKeySelector | None = None,
+        update_filter: types.Filter | None = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
         """Update specified vectors in the collection. Keeps payload and unspecified vectors unchanged.
@@ -1018,8 +1010,8 @@ class QdrantClient(QdrantFastembedMixin):
         vectors: Sequence[str],
         points: types.PointsSelector,
         wait: bool = True,
-        ordering: Optional[types.WriteOrdering] = None,
-        shard_key_selector: Optional[types.ShardKeySelector] = None,
+        ordering: types.WriteOrdering | None = None,
+        shard_key_selector: types.ShardKeySelector | None = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
         """Delete specified vector from the collection. Does not affect payload.
@@ -1066,11 +1058,11 @@ class QdrantClient(QdrantFastembedMixin):
         self,
         collection_name: str,
         ids: Sequence[types.PointId],
-        with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
-        with_vectors: Union[bool, Sequence[str]] = False,
-        consistency: Optional[types.ReadConsistency] = None,
-        shard_key_selector: Optional[types.ShardKeySelector] = None,
-        timeout: Optional[int] = None,
+        with_payload: bool | Sequence[str] | types.PayloadSelector = True,
+        with_vectors: bool | Sequence[str] = False,
+        consistency: types.ReadConsistency | None = None,
+        shard_key_selector: types.ShardKeySelector | None = None,
+        timeout: int | None = None,
         **kwargs: Any,
     ) -> list[types.Record]:
         """Retrieve stored points by IDs
@@ -1125,8 +1117,8 @@ class QdrantClient(QdrantFastembedMixin):
         collection_name: str,
         points_selector: types.PointsSelector,
         wait: bool = True,
-        ordering: Optional[types.WriteOrdering] = None,
-        shard_key_selector: Optional[types.ShardKeySelector] = None,
+        ordering: types.WriteOrdering | None = None,
+        shard_key_selector: types.ShardKeySelector | None = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
         """Deletes selected points from collection
@@ -1172,10 +1164,10 @@ class QdrantClient(QdrantFastembedMixin):
         collection_name: str,
         payload: types.Payload,
         points: types.PointsSelector,
-        key: Optional[str] = None,
+        key: str | None = None,
         wait: bool = True,
-        ordering: Optional[types.WriteOrdering] = None,
-        shard_key_selector: Optional[types.ShardKeySelector] = None,
+        ordering: types.WriteOrdering | None = None,
+        shard_key_selector: types.ShardKeySelector | None = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
         """
@@ -1269,8 +1261,8 @@ class QdrantClient(QdrantFastembedMixin):
         payload: types.Payload,
         points: types.PointsSelector,
         wait: bool = True,
-        ordering: Optional[types.WriteOrdering] = None,
-        shard_key_selector: Optional[types.ShardKeySelector] = None,
+        ordering: types.WriteOrdering | None = None,
+        shard_key_selector: types.ShardKeySelector | None = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
         """Overwrites payload of the specified points
@@ -1336,8 +1328,8 @@ class QdrantClient(QdrantFastembedMixin):
         keys: Sequence[str],
         points: types.PointsSelector,
         wait: bool = True,
-        ordering: Optional[types.WriteOrdering] = None,
-        shard_key_selector: Optional[types.ShardKeySelector] = None,
+        ordering: types.WriteOrdering | None = None,
+        shard_key_selector: types.ShardKeySelector | None = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
         """Remove values from point's payload
@@ -1384,8 +1376,8 @@ class QdrantClient(QdrantFastembedMixin):
         collection_name: str,
         points_selector: types.PointsSelector,
         wait: bool = True,
-        ordering: Optional[types.WriteOrdering] = None,
-        shard_key_selector: Optional[types.ShardKeySelector] = None,
+        ordering: types.WriteOrdering | None = None,
+        shard_key_selector: types.ShardKeySelector | None = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
         """Delete all payload for selected points
@@ -1428,7 +1420,7 @@ class QdrantClient(QdrantFastembedMixin):
         collection_name: str,
         update_operations: Sequence[types.UpdateOperation],
         wait: bool = True,
-        ordering: Optional[types.WriteOrdering] = None,
+        ordering: types.WriteOrdering | None = None,
         **kwargs: Any,
     ) -> list[types.UpdateResult]:
         """Batch update points in the collection.
@@ -1468,7 +1460,7 @@ class QdrantClient(QdrantFastembedMixin):
     def update_collection_aliases(
         self,
         change_aliases_operations: Sequence[types.AliasOperations],
-        timeout: Optional[int] = None,
+        timeout: int | None = None,
         **kwargs: Any,
     ) -> bool:
         """Operation for performing changes of collection aliases.
@@ -1556,15 +1548,15 @@ class QdrantClient(QdrantFastembedMixin):
     def update_collection(
         self,
         collection_name: str,
-        optimizers_config: Optional[types.OptimizersConfigDiff] = None,
-        collection_params: Optional[types.CollectionParamsDiff] = None,
-        vectors_config: Optional[types.VectorsConfigDiff] = None,
-        hnsw_config: Optional[types.HnswConfigDiff] = None,
-        quantization_config: Optional[types.QuantizationConfigDiff] = None,
-        timeout: Optional[int] = None,
-        sparse_vectors_config: Optional[Mapping[str, types.SparseVectorParams]] = None,
-        strict_mode_config: Optional[types.StrictModeConfig] = None,
-        metadata: Optional[types.Payload] = None,
+        optimizers_config: types.OptimizersConfigDiff | None = None,
+        collection_params: types.CollectionParamsDiff | None = None,
+        vectors_config: types.VectorsConfigDiff | None = None,
+        hnsw_config: types.HnswConfigDiff | None = None,
+        quantization_config: types.QuantizationConfigDiff | None = None,
+        timeout: int | None = None,
+        sparse_vectors_config: Mapping[str, types.SparseVectorParams] | None = None,
+        strict_mode_config: types.StrictModeConfig | None = None,
+        metadata: types.Payload | None = None,
         **kwargs: Any,
     ) -> bool:
         """Update parameters of the collection
@@ -1610,7 +1602,7 @@ class QdrantClient(QdrantFastembedMixin):
         )
 
     def delete_collection(
-        self, collection_name: str, timeout: Optional[int] = None, **kwargs: Any
+        self, collection_name: str, timeout: int | None = None, **kwargs: Any
     ) -> bool:
         """Removes collection and all it's data
 
@@ -1632,22 +1624,20 @@ class QdrantClient(QdrantFastembedMixin):
     def create_collection(
         self,
         collection_name: str,
-        vectors_config: Optional[
-            Union[types.VectorParams, Mapping[str, types.VectorParams]]
-        ] = None,
-        sparse_vectors_config: Optional[Mapping[str, types.SparseVectorParams]] = None,
-        shard_number: Optional[int] = None,
-        sharding_method: Optional[types.ShardingMethod] = None,
-        replication_factor: Optional[int] = None,
-        write_consistency_factor: Optional[int] = None,
-        on_disk_payload: Optional[bool] = None,
-        hnsw_config: Optional[types.HnswConfigDiff] = None,
-        optimizers_config: Optional[types.OptimizersConfigDiff] = None,
-        wal_config: Optional[types.WalConfigDiff] = None,
-        quantization_config: Optional[types.QuantizationConfig] = None,
-        timeout: Optional[int] = None,
-        strict_mode_config: Optional[types.StrictModeConfig] = None,
-        metadata: Optional[types.Payload] = None,
+        vectors_config: types.VectorParams | Mapping[str, types.VectorParams] | None = None,
+        sparse_vectors_config: Mapping[str, types.SparseVectorParams] | None = None,
+        shard_number: int | None = None,
+        sharding_method: types.ShardingMethod | None = None,
+        replication_factor: int | None = None,
+        write_consistency_factor: int | None = None,
+        on_disk_payload: bool | None = None,
+        hnsw_config: types.HnswConfigDiff | None = None,
+        optimizers_config: types.OptimizersConfigDiff | None = None,
+        wal_config: types.WalConfigDiff | None = None,
+        quantization_config: types.QuantizationConfig | None = None,
+        timeout: int | None = None,
+        strict_mode_config: types.StrictModeConfig | None = None,
+        metadata: types.Payload | None = None,
         **kwargs: Any,
     ) -> bool:
         """Create empty collection with given parameters
@@ -1724,20 +1714,20 @@ class QdrantClient(QdrantFastembedMixin):
     def recreate_collection(
         self,
         collection_name: str,
-        vectors_config: Union[types.VectorParams, Mapping[str, types.VectorParams]],
-        sparse_vectors_config: Optional[Mapping[str, types.SparseVectorParams]] = None,
-        shard_number: Optional[int] = None,
-        sharding_method: Optional[types.ShardingMethod] = None,
-        replication_factor: Optional[int] = None,
-        write_consistency_factor: Optional[int] = None,
-        on_disk_payload: Optional[bool] = None,
-        hnsw_config: Optional[types.HnswConfigDiff] = None,
-        optimizers_config: Optional[types.OptimizersConfigDiff] = None,
-        wal_config: Optional[types.WalConfigDiff] = None,
-        quantization_config: Optional[types.QuantizationConfig] = None,
-        timeout: Optional[int] = None,
-        strict_mode_config: Optional[types.StrictModeConfig] = None,
-        metadata: Optional[types.Payload] = None,
+        vectors_config: types.VectorParams | Mapping[str, types.VectorParams] | None = None,
+        sparse_vectors_config: Mapping[str, types.SparseVectorParams] | None = None,
+        shard_number: int | None = None,
+        sharding_method: types.ShardingMethod | None = None,
+        replication_factor: int | None = None,
+        write_consistency_factor: int | None = None,
+        on_disk_payload: bool | None = None,
+        hnsw_config: types.HnswConfigDiff | None = None,
+        optimizers_config: types.OptimizersConfigDiff | None = None,
+        wal_config: types.WalConfigDiff | None = None,
+        quantization_config: types.QuantizationConfig | None = None,
+        timeout: int | None = None,
+        strict_mode_config: types.StrictModeConfig | None = None,
+        metadata: types.Payload | None = None,
         **kwargs: Any,
     ) -> bool:
         """Delete and create empty collection with given parameters
@@ -1822,11 +1812,11 @@ class QdrantClient(QdrantFastembedMixin):
         points: Iterable[types.PointStruct],
         batch_size: int = 64,
         parallel: int = 1,
-        method: Optional[str] = None,
+        method: str | None = None,
         max_retries: int = 3,
         wait: bool = False,
-        shard_key_selector: Optional[types.ShardKeySelector] = None,
-        update_filter: Optional[types.Filter] = None,
+        shard_key_selector: types.ShardKeySelector | None = None,
+        update_filter: types.Filter | None = None,
         **kwargs: Any,
     ) -> None:
         """Upload points to the collection
@@ -1889,20 +1879,16 @@ class QdrantClient(QdrantFastembedMixin):
     def upload_collection(
         self,
         collection_name: str,
-        vectors: Union[
-            Iterable[types.VectorStruct],
-            dict[str, types.NumpyArray],
-            types.NumpyArray,
-        ],
-        payload: Optional[Iterable[dict[Any, Any]]] = None,
-        ids: Optional[Iterable[types.PointId]] = None,
+        vectors: Iterable[types.VectorStruct] | dict[str, types.NumpyArray] | types.NumpyArray,
+        payload: Iterable[dict[Any, Any]] | None = None,
+        ids: Iterable[types.PointId] | None = None,
         batch_size: int = 64,
         parallel: int = 1,
-        method: Optional[str] = None,
+        method: str | None = None,
         max_retries: int = 3,
         wait: bool = False,
-        shard_key_selector: Optional[types.ShardKeySelector] = None,
-        update_filter: Optional[types.Filter] = None,
+        shard_key_selector: types.ShardKeySelector | None = None,
+        update_filter: types.Filter | None = None,
         **kwargs: Any,
     ) -> None:
         """Upload vectors and payload to the collection.
@@ -1971,10 +1957,10 @@ class QdrantClient(QdrantFastembedMixin):
         self,
         collection_name: str,
         field_name: str,
-        field_schema: Optional[types.PayloadSchemaType] = None,
-        field_type: Optional[types.PayloadSchemaType] = None,
+        field_schema: types.PayloadSchemaType | None = None,
+        field_type: types.PayloadSchemaType | None = None,
         wait: bool = True,
-        ordering: Optional[types.WriteOrdering] = None,
+        ordering: types.WriteOrdering | None = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
         """Creates index for a given payload field.
@@ -2015,7 +2001,7 @@ class QdrantClient(QdrantFastembedMixin):
         collection_name: str,
         field_name: str,
         wait: bool = True,
-        ordering: Optional[types.WriteOrdering] = None,
+        ordering: types.WriteOrdering | None = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
         """Removes index for a given payload field.
@@ -2063,7 +2049,7 @@ class QdrantClient(QdrantFastembedMixin):
 
     def create_snapshot(
         self, collection_name: str, wait: bool = True, **kwargs: Any
-    ) -> Optional[types.SnapshotDescription]:
+    ) -> types.SnapshotDescription | None:
         """Create snapshot for a given collection.
 
         Args:
@@ -2082,7 +2068,7 @@ class QdrantClient(QdrantFastembedMixin):
 
     def delete_snapshot(
         self, collection_name: str, snapshot_name: str, wait: bool = True, **kwargs: Any
-    ) -> Optional[bool]:
+    ) -> bool | None:
         """Delete snapshot for a given collection.
 
         Args:
@@ -2117,7 +2103,7 @@ class QdrantClient(QdrantFastembedMixin):
 
     def create_full_snapshot(
         self, wait: bool = True, **kwargs: Any
-    ) -> Optional[types.SnapshotDescription]:
+    ) -> types.SnapshotDescription | None:
         """Create snapshot for a whole storage.
 
         Args:
@@ -2135,7 +2121,7 @@ class QdrantClient(QdrantFastembedMixin):
 
     def delete_full_snapshot(
         self, snapshot_name: str, wait: bool = True, **kwargs: Any
-    ) -> Optional[bool]:
+    ) -> bool | None:
         """Delete snapshot for a whole storage.
 
         Args:
@@ -2156,12 +2142,12 @@ class QdrantClient(QdrantFastembedMixin):
         self,
         collection_name: str,
         location: str,
-        api_key: Optional[str] = None,
-        checksum: Optional[str] = None,
-        priority: Optional[types.SnapshotPriority] = None,
+        api_key: str | None = None,
+        checksum: str | None = None,
+        priority: types.SnapshotPriority | None = None,
         wait: bool = True,
         **kwargs: Any,
-    ) -> Optional[bool]:
+    ) -> bool | None:
         """Recover collection from snapshot.
 
         Args:
@@ -2223,7 +2209,7 @@ class QdrantClient(QdrantFastembedMixin):
 
     def create_shard_snapshot(
         self, collection_name: str, shard_id: int, wait: bool = True, **kwargs: Any
-    ) -> Optional[types.SnapshotDescription]:
+    ) -> types.SnapshotDescription | None:
         """Create snapshot for a given shard.
 
         Args:
@@ -2253,7 +2239,7 @@ class QdrantClient(QdrantFastembedMixin):
         snapshot_name: str,
         wait: bool = True,
         **kwargs: Any,
-    ) -> Optional[bool]:
+    ) -> bool | None:
         """Delete snapshot for a given shard.
 
         Args:
@@ -2284,12 +2270,12 @@ class QdrantClient(QdrantFastembedMixin):
         collection_name: str,
         shard_id: int,
         location: str,
-        api_key: Optional[str] = None,
-        checksum: Optional[str] = None,
-        priority: Optional[types.SnapshotPriority] = None,
+        api_key: str | None = None,
+        checksum: str | None = None,
+        priority: types.SnapshotPriority | None = None,
         wait: bool = True,
         **kwargs: Any,
-    ) -> Optional[bool]:
+    ) -> bool | None:
         """Recover shard from snapshot.
 
         Args:
@@ -2331,7 +2317,7 @@ class QdrantClient(QdrantFastembedMixin):
     def migrate(
         self,
         dest_client: QdrantBase,
-        collection_names: Optional[list[str]] = None,
+        collection_names: list[str] | None = None,
         batch_size: int = 100,
         recreate_on_collision: bool = False,
     ) -> None:
@@ -2356,9 +2342,9 @@ class QdrantClient(QdrantFastembedMixin):
         self,
         collection_name: str,
         shard_key: types.ShardKey,
-        shards_number: Optional[int] = None,
-        replication_factor: Optional[int] = None,
-        placement: Optional[list[int]] = None,
+        shards_number: int | None = None,
+        replication_factor: int | None = None,
+        placement: list[int] | None = None,
         **kwargs: Any,
     ) -> bool:
         """Create shard key for collection.
@@ -2420,7 +2406,7 @@ class QdrantClient(QdrantFastembedMixin):
         self,
         collection_name: str,
         cluster_operation: types.ClusterOperations,
-        timeout: Optional[int] = None,
+        timeout: int | None = None,
         **kwargs: Any,
     ) -> bool:
         """Updates the cluster configuration for a specified collection.
@@ -2471,8 +2457,8 @@ class QdrantClient(QdrantFastembedMixin):
     def remove_peer(
         self,
         peer_id: int,
-        force: Optional[bool] = None,
-        timeout: Optional[int] = None,
+        force: bool | None = None,
+        timeout: int | None = None,
         **kwargs: Any,
     ) -> bool:
         """Attempts to remove the node from the cluster. This endpoint returns an error if the node (peer) has

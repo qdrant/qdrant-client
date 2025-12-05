@@ -14,18 +14,7 @@ import logging
 import math
 import platform
 from multiprocessing import get_all_start_methods
-from typing import (
-    Any,
-    Awaitable,
-    Callable,
-    Iterable,
-    Mapping,
-    Optional,
-    Sequence,
-    Type,
-    Union,
-    get_args,
-)
+from typing import Any, Awaitable, Callable, Iterable, Mapping, Sequence, Type, get_args
 import httpx
 from grpc import Compression
 from urllib3.util import Url, parse_url
@@ -57,21 +46,19 @@ class AsyncQdrantRemote(AsyncQdrantBase):
 
     def __init__(
         self,
-        url: Optional[str] = None,
-        port: Optional[int] = 6333,
+        url: str | None = None,
+        port: int | None = 6333,
         grpc_port: int = 6334,
         prefer_grpc: bool = False,
-        https: Optional[bool] = None,
-        api_key: Optional[str] = None,
-        prefix: Optional[str] = None,
-        timeout: Optional[int] = None,
-        host: Optional[str] = None,
-        grpc_options: Optional[dict[str, Any]] = None,
-        auth_token_provider: Optional[
-            Union[Callable[[], str], Callable[[], Awaitable[str]]]
-        ] = None,
+        https: bool | None = None,
+        api_key: str | None = None,
+        prefix: str | None = None,
+        timeout: int | None = None,
+        host: str | None = None,
+        grpc_options: dict[str, Any] | None = None,
+        auth_token_provider: Callable[[], str] | Callable[[], Awaitable[str]] | None = None,
         check_compatibility: bool = True,
-        pool_size: Optional[int] = None,
+        pool_size: int | None = None,
         **kwargs: Any,
     ):
         super().__init__(**kwargs)
@@ -80,7 +67,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         self._grpc_options = grpc_options or {}
         self._https = https if https is not None else api_key is not None
         self._scheme = "https" if self._https else "http"
-        self._pool_size: Optional[int] = None
+        self._pool_size: int | None = None
         if pool_size is not None:
             pool_size = max(1, pool_size)
             self._pool_size = pool_size
@@ -143,7 +130,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         user_agent = f"python-client/{client_version} python/{python_version}"
         self._rest_headers["User-Agent"] = user_agent
         self._grpc_options["grpc.primary_user_agent"] = user_agent
-        grpc_compression: Optional[Compression] = kwargs.pop("grpc_compression", None)
+        grpc_compression: Compression | None = kwargs.pop("grpc_compression", None)
         if grpc_compression is not None and (not isinstance(grpc_compression, Compression)):
             raise TypeError(
                 f"Expected 'grpc_compression' to be of type grpc.Compression or None, but got {type(grpc_compression)}"
@@ -177,10 +164,10 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             host=self.rest_uri, **self._rest_args
         )
         self._grpc_channel_pool: list[grpc.Channel] = []
-        self._grpc_points_client_pool: Optional[list[grpc.PointsStub]] = None
-        self._grpc_collections_client_pool: Optional[list[grpc.CollectionsStub]] = None
-        self._grpc_snapshots_client_pool: Optional[list[grpc.SnapshotsStub]] = None
-        self._grpc_root_client_pool: Optional[list[grpc.QdrantStub]] = None
+        self._grpc_points_client_pool: list[grpc.PointsStub] | None = None
+        self._grpc_collections_client_pool: list[grpc.CollectionsStub] | None = None
+        self._grpc_snapshots_client_pool: list[grpc.SnapshotsStub] | None = None
+        self._grpc_root_client_pool: list[grpc.QdrantStub] | None = None
         self._grpc_client_next_index: int = 0
         self._closed: bool = False
         self.server_version = None
@@ -211,7 +198,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
     def closed(self) -> bool:
         return self._closed
 
-    async def close(self, grpc_grace: Optional[float] = None, **kwargs: Any) -> None:
+    async def close(self, grpc_grace: float | None = None, **kwargs: Any) -> None:
         if hasattr(self, "_grpc_channel_pool") and len(self._grpc_channel_pool) > 0:
             for channel in self._grpc_channel_pool:
                 try:
@@ -235,7 +222,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         self._closed = True
 
     @staticmethod
-    def _parse_url(url: str) -> tuple[Optional[str], str, Optional[int], Optional[str]]:
+    def _parse_url(url: str) -> tuple[str | None, str, int | None, str | None]:
         parse_result: Url = parse_url(url)
         (scheme, host, port, prefix) = (
             parse_result.scheme,
@@ -377,31 +364,29 @@ class AsyncQdrantRemote(AsyncQdrantBase):
     async def query_points(
         self,
         collection_name: str,
-        query: Union[
-            types.PointId,
-            list[float],
-            list[list[float]],
-            types.SparseVector,
-            types.Query,
-            types.NumpyArray,
-            types.Document,
-            types.Image,
-            types.InferenceObject,
-            None,
-        ] = None,
-        using: Optional[str] = None,
-        prefetch: Union[types.Prefetch, list[types.Prefetch], None] = None,
-        query_filter: Optional[types.Filter] = None,
-        search_params: Optional[types.SearchParams] = None,
+        query: types.PointId
+        | list[float]
+        | list[list[float]]
+        | types.SparseVector
+        | types.Query
+        | types.NumpyArray
+        | types.Document
+        | types.Image
+        | types.InferenceObject
+        | None = None,
+        using: str | None = None,
+        prefetch: types.Prefetch | list[types.Prefetch] | None = None,
+        query_filter: types.Filter | None = None,
+        search_params: types.SearchParams | None = None,
         limit: int = 10,
-        offset: Optional[int] = None,
-        with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
-        with_vectors: Union[bool, Sequence[str]] = False,
-        score_threshold: Optional[float] = None,
-        lookup_from: Optional[types.LookupLocation] = None,
-        consistency: Optional[types.ReadConsistency] = None,
-        shard_key_selector: Optional[types.ShardKeySelector] = None,
-        timeout: Optional[int] = None,
+        offset: int | None = None,
+        with_payload: bool | Sequence[str] | types.PayloadSelector = True,
+        with_vectors: bool | Sequence[str] = False,
+        score_threshold: float | None = None,
+        lookup_from: types.LookupLocation | None = None,
+        consistency: types.ReadConsistency | None = None,
+        shard_key_selector: types.ShardKeySelector | None = None,
+        timeout: int | None = None,
         **kwargs: Any,
     ) -> types.QueryResponse:
         if self._prefer_grpc:
@@ -479,7 +464,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 timeout=timeout,
                 query_request=query_request,
             )
-            result: Optional[models.QueryResponse] = query_result.result
+            result: models.QueryResponse | None = query_result.result
             assert result is not None, "Search returned None"
             return result
 
@@ -487,8 +472,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         self,
         collection_name: str,
         requests: Sequence[types.QueryRequest],
-        consistency: Optional[types.ReadConsistency] = None,
-        timeout: Optional[int] = None,
+        consistency: types.ReadConsistency | None = None,
+        timeout: int | None = None,
         **kwargs: Any,
     ) -> list[types.QueryResponse]:
         if self._prefer_grpc:
@@ -516,7 +501,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 for r in grpc_res.result
             ]
         else:
-            http_res: Optional[list[models.QueryResponse]] = (
+            http_res: list[models.QueryResponse] | None = (
                 await self.http.search_api.query_batch_points(
                     collection_name=collection_name,
                     consistency=consistency,
@@ -531,32 +516,30 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         self,
         collection_name: str,
         group_by: str,
-        query: Union[
-            types.PointId,
-            list[float],
-            list[list[float]],
-            types.SparseVector,
-            types.Query,
-            types.NumpyArray,
-            types.Document,
-            types.Image,
-            types.InferenceObject,
-            None,
-        ] = None,
-        using: Optional[str] = None,
-        prefetch: Union[types.Prefetch, list[types.Prefetch], None] = None,
-        query_filter: Optional[types.Filter] = None,
-        search_params: Optional[types.SearchParams] = None,
+        query: types.PointId
+        | list[float]
+        | list[list[float]]
+        | types.SparseVector
+        | types.Query
+        | types.NumpyArray
+        | types.Document
+        | types.Image
+        | types.InferenceObject
+        | None = None,
+        using: str | None = None,
+        prefetch: types.Prefetch | list[types.Prefetch] | None = None,
+        query_filter: types.Filter | None = None,
+        search_params: types.SearchParams | None = None,
         limit: int = 10,
         group_size: int = 3,
-        with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
-        with_vectors: Union[bool, Sequence[str]] = False,
-        score_threshold: Optional[float] = None,
-        with_lookup: Optional[types.WithLookupInterface] = None,
-        lookup_from: Optional[types.LookupLocation] = None,
-        consistency: Optional[types.ReadConsistency] = None,
-        shard_key_selector: Optional[types.ShardKeySelector] = None,
-        timeout: Optional[int] = None,
+        with_payload: bool | Sequence[str] | types.PayloadSelector = True,
+        with_vectors: bool | Sequence[str] = False,
+        score_threshold: float | None = None,
+        with_lookup: types.WithLookupInterface | None = None,
+        lookup_from: types.LookupLocation | None = None,
+        consistency: types.ReadConsistency | None = None,
+        shard_key_selector: types.ShardKeySelector | None = None,
+        timeout: int | None = None,
         **kwargs: Any,
     ) -> types.GroupsResult:
         if self._prefer_grpc:
@@ -649,13 +632,13 @@ class AsyncQdrantRemote(AsyncQdrantBase):
     async def search_matrix_pairs(
         self,
         collection_name: str,
-        query_filter: Optional[types.Filter] = None,
+        query_filter: types.Filter | None = None,
         limit: int = 3,
         sample: int = 10,
-        using: Optional[str] = None,
-        consistency: Optional[types.ReadConsistency] = None,
-        shard_key_selector: Optional[types.ShardKeySelector] = None,
-        timeout: Optional[int] = None,
+        using: str | None = None,
+        consistency: types.ReadConsistency | None = None,
+        shard_key_selector: types.ShardKeySelector | None = None,
+        timeout: int | None = None,
         **kwargs: Any,
     ) -> types.SearchMatrixPairsResponse:
         if self._prefer_grpc:
@@ -701,13 +684,13 @@ class AsyncQdrantRemote(AsyncQdrantBase):
     async def search_matrix_offsets(
         self,
         collection_name: str,
-        query_filter: Optional[types.Filter] = None,
+        query_filter: types.Filter | None = None,
         limit: int = 3,
         sample: int = 10,
-        using: Optional[str] = None,
-        consistency: Optional[types.ReadConsistency] = None,
-        shard_key_selector: Optional[types.ShardKeySelector] = None,
-        timeout: Optional[int] = None,
+        using: str | None = None,
+        consistency: types.ReadConsistency | None = None,
+        shard_key_selector: types.ShardKeySelector | None = None,
+        timeout: int | None = None,
         **kwargs: Any,
     ) -> types.SearchMatrixOffsetsResponse:
         if self._prefer_grpc:
@@ -753,17 +736,17 @@ class AsyncQdrantRemote(AsyncQdrantBase):
     async def scroll(
         self,
         collection_name: str,
-        scroll_filter: Optional[types.Filter] = None,
+        scroll_filter: types.Filter | None = None,
         limit: int = 10,
-        order_by: Optional[types.OrderBy] = None,
-        offset: Optional[types.PointId] = None,
-        with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
-        with_vectors: Union[bool, Sequence[str]] = False,
-        consistency: Optional[types.ReadConsistency] = None,
-        shard_key_selector: Optional[types.ShardKeySelector] = None,
-        timeout: Optional[int] = None,
+        order_by: types.OrderBy | None = None,
+        offset: types.PointId | None = None,
+        with_payload: bool | Sequence[str] | types.PayloadSelector = True,
+        with_vectors: bool | Sequence[str] = False,
+        consistency: types.ReadConsistency | None = None,
+        shard_key_selector: types.ShardKeySelector | None = None,
+        timeout: int | None = None,
         **kwargs: Any,
-    ) -> tuple[list[types.Record], Optional[types.PointId]]:
+    ) -> tuple[list[types.Record], types.PointId | None]:
         if self._prefer_grpc:
             if isinstance(offset, get_args_subscribed(models.ExtendedPointId)):
                 offset = RestToGrpc.convert_extended_point_id(offset)
@@ -809,7 +792,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 order_by = GrpcToRest.convert_order_by(order_by)
             if isinstance(with_payload, grpc.WithPayloadSelector):
                 with_payload = GrpcToRest.convert_with_payload_selector(with_payload)
-            scroll_result: Optional[models.ScrollResult] = (
+            scroll_result: models.ScrollResult | None = (
                 await self.openapi_client.points_api.scroll_points(
                     collection_name=collection_name,
                     consistency=consistency,
@@ -831,11 +814,11 @@ class AsyncQdrantRemote(AsyncQdrantBase):
     async def count(
         self,
         collection_name: str,
-        count_filter: Optional[types.Filter] = None,
+        count_filter: types.Filter | None = None,
         exact: bool = True,
-        shard_key_selector: Optional[types.ShardKeySelector] = None,
-        timeout: Optional[int] = None,
-        consistency: Optional[types.ReadConsistency] = None,
+        shard_key_selector: types.ShardKeySelector | None = None,
+        timeout: int | None = None,
+        consistency: types.ReadConsistency | None = None,
         **kwargs: Any,
     ) -> types.CountResult:
         if self._prefer_grpc:
@@ -878,12 +861,12 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         self,
         collection_name: str,
         key: str,
-        facet_filter: Optional[types.Filter] = None,
+        facet_filter: types.Filter | None = None,
         limit: int = 10,
         exact: bool = False,
-        timeout: Optional[int] = None,
-        consistency: Optional[types.ReadConsistency] = None,
-        shard_key_selector: Optional[types.ShardKeySelector] = None,
+        timeout: int | None = None,
+        consistency: types.ReadConsistency | None = None,
+        shard_key_selector: types.ShardKeySelector | None = None,
         **kwargs: Any,
     ) -> types.FacetResponse:
         if self._prefer_grpc:
@@ -933,9 +916,9 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         collection_name: str,
         points: types.Points,
         wait: bool = True,
-        ordering: Optional[types.WriteOrdering] = None,
-        shard_key_selector: Optional[types.ShardKeySelector] = None,
-        update_filter: Optional[types.Filter] = None,
+        ordering: types.WriteOrdering | None = None,
+        shard_key_selector: types.ShardKeySelector | None = None,
+        update_filter: types.Filter | None = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
         if self._prefer_grpc:
@@ -1014,9 +997,9 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         collection_name: str,
         points: Sequence[types.PointVectors],
         wait: bool = True,
-        ordering: Optional[types.WriteOrdering] = None,
-        shard_key_selector: Optional[types.ShardKeySelector] = None,
-        update_filter: Optional[types.Filter] = None,
+        ordering: types.WriteOrdering | None = None,
+        shard_key_selector: types.ShardKeySelector | None = None,
+        update_filter: types.Filter | None = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
         if self._prefer_grpc:
@@ -1062,8 +1045,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         vectors: Sequence[str],
         points: types.PointsSelector,
         wait: bool = True,
-        ordering: Optional[types.WriteOrdering] = None,
-        shard_key_selector: Optional[types.ShardKeySelector] = None,
+        ordering: types.WriteOrdering | None = None,
+        shard_key_selector: types.ShardKeySelector | None = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
         if self._prefer_grpc:
@@ -1109,11 +1092,11 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         self,
         collection_name: str,
         ids: Sequence[types.PointId],
-        with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
-        with_vectors: Union[bool, Sequence[str]] = False,
-        consistency: Optional[types.ReadConsistency] = None,
-        shard_key_selector: Optional[types.ShardKeySelector] = None,
-        timeout: Optional[int] = None,
+        with_payload: bool | Sequence[str] | types.PayloadSelector = True,
+        with_vectors: bool | Sequence[str] = False,
+        consistency: types.ReadConsistency | None = None,
+        shard_key_selector: types.ShardKeySelector | None = None,
+        timeout: int | None = None,
         **kwargs: Any,
     ) -> list[types.Record]:
         if self._prefer_grpc:
@@ -1172,7 +1155,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
     @classmethod
     def _try_argument_to_grpc_selector(
         cls, points: types.PointsSelector
-    ) -> tuple[grpc.PointsSelector, Optional[grpc.ShardKeySelector]]:
+    ) -> tuple[grpc.PointsSelector, grpc.ShardKeySelector | None]:
         shard_key_selector = None
         if isinstance(points, list):
             points_selector = grpc.PointsSelector(
@@ -1203,7 +1186,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
 
     @classmethod
     def _try_argument_to_rest_selector(
-        cls, points: types.PointsSelector, shard_key_selector: Optional[types.ShardKeySelector]
+        cls, points: types.PointsSelector, shard_key_selector: types.ShardKeySelector | None
     ) -> models.PointsSelector:
         if isinstance(points, list):
             _points = [
@@ -1248,7 +1231,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
     @classmethod
     def _try_argument_to_rest_points_and_filter(
         cls, points: types.PointsSelector
-    ) -> tuple[Optional[list[models.ExtendedPointId]], Optional[models.Filter]]:
+    ) -> tuple[list[models.ExtendedPointId] | None, models.Filter | None]:
         _points = None
         _filter = None
         if isinstance(points, list):
@@ -1279,8 +1262,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         collection_name: str,
         points_selector: types.PointsSelector,
         wait: bool = True,
-        ordering: Optional[types.WriteOrdering] = None,
-        shard_key_selector: Optional[types.ShardKeySelector] = None,
+        ordering: types.WriteOrdering | None = None,
+        shard_key_selector: types.ShardKeySelector | None = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
         if self._prefer_grpc:
@@ -1310,7 +1293,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             points_selector = self._try_argument_to_rest_selector(
                 points_selector, shard_key_selector
             )
-            result: Optional[types.UpdateResult] = (
+            result: types.UpdateResult | None = (
                 await self.openapi_client.points_api.delete_points(
                     collection_name=collection_name,
                     wait=wait,
@@ -1326,10 +1309,10 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         collection_name: str,
         payload: types.Payload,
         points: types.PointsSelector,
-        key: Optional[str] = None,
+        key: str | None = None,
         wait: bool = True,
-        ordering: Optional[types.WriteOrdering] = None,
-        shard_key_selector: Optional[types.ShardKeySelector] = None,
+        ordering: types.WriteOrdering | None = None,
+        shard_key_selector: types.ShardKeySelector | None = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
         if self._prefer_grpc:
@@ -1357,7 +1340,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             )
         else:
             (_points, _filter) = self._try_argument_to_rest_points_and_filter(points)
-            result: Optional[types.UpdateResult] = (
+            result: types.UpdateResult | None = (
                 await self.openapi_client.points_api.set_payload(
                     collection_name=collection_name,
                     wait=wait,
@@ -1380,8 +1363,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         payload: types.Payload,
         points: types.PointsSelector,
         wait: bool = True,
-        ordering: Optional[types.WriteOrdering] = None,
-        shard_key_selector: Optional[types.ShardKeySelector] = None,
+        ordering: types.WriteOrdering | None = None,
+        shard_key_selector: types.ShardKeySelector | None = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
         if self._prefer_grpc:
@@ -1408,7 +1391,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             )
         else:
             (_points, _filter) = self._try_argument_to_rest_points_and_filter(points)
-            result: Optional[types.UpdateResult] = (
+            result: types.UpdateResult | None = (
                 await self.openapi_client.points_api.overwrite_payload(
                     collection_name=collection_name,
                     wait=wait,
@@ -1430,8 +1413,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         keys: Sequence[str],
         points: types.PointsSelector,
         wait: bool = True,
-        ordering: Optional[types.WriteOrdering] = None,
-        shard_key_selector: Optional[types.ShardKeySelector] = None,
+        ordering: types.WriteOrdering | None = None,
+        shard_key_selector: types.ShardKeySelector | None = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
         if self._prefer_grpc:
@@ -1458,7 +1441,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             )
         else:
             (_points, _filter) = self._try_argument_to_rest_points_and_filter(points)
-            result: Optional[types.UpdateResult] = (
+            result: types.UpdateResult | None = (
                 await self.openapi_client.points_api.delete_payload(
                     collection_name=collection_name,
                     wait=wait,
@@ -1476,8 +1459,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         collection_name: str,
         points_selector: types.PointsSelector,
         wait: bool = True,
-        ordering: Optional[types.WriteOrdering] = None,
-        shard_key_selector: Optional[types.ShardKeySelector] = None,
+        ordering: types.WriteOrdering | None = None,
+        shard_key_selector: types.ShardKeySelector | None = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
         if self._prefer_grpc:
@@ -1507,7 +1490,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             points_selector = self._try_argument_to_rest_selector(
                 points_selector, shard_key_selector
             )
-            result: Optional[types.UpdateResult] = (
+            result: types.UpdateResult | None = (
                 await self.openapi_client.points_api.clear_payload(
                     collection_name=collection_name,
                     wait=wait,
@@ -1523,7 +1506,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         collection_name: str,
         update_operations: Sequence[types.UpdateOperation],
         wait: bool = True,
-        ordering: Optional[types.WriteOrdering] = None,
+        ordering: types.WriteOrdering | None = None,
         **kwargs: Any,
     ) -> list[types.UpdateResult]:
         if self._prefer_grpc:
@@ -1547,7 +1530,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 ).result
             ]
         else:
-            result: Optional[list[types.UpdateResult]] = (
+            result: list[types.UpdateResult] | None = (
                 await self.openapi_client.points_api.batch_update(
                     collection_name=collection_name,
                     wait=wait,
@@ -1561,7 +1544,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
     async def update_collection_aliases(
         self,
         change_aliases_operations: Sequence[types.AliasOperations],
-        timeout: Optional[int] = None,
+        timeout: int | None = None,
         **kwargs: Any,
     ) -> bool:
         if self._prefer_grpc:
@@ -1583,7 +1566,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             else operation
             for operation in change_aliases_operations
         ]
-        result: Optional[bool] = (
+        result: bool | None = (
             await self.http.aliases_api.update_aliases(
                 timeout=timeout,
                 change_aliases_operation=models.ChangeAliasesOperation(
@@ -1609,7 +1592,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                     GrpcToRest.convert_alias_description(description) for description in response
                 ]
             )
-        result: Optional[types.CollectionsAliasesResponse] = (
+        result: types.CollectionsAliasesResponse | None = (
             await self.http.aliases_api.get_collection_aliases(collection_name=collection_name)
         ).result
         assert result is not None, "Get collection aliases returned None"
@@ -1627,7 +1610,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                     GrpcToRest.convert_alias_description(description) for description in response
                 ]
             )
-        result: Optional[types.CollectionsAliasesResponse] = (
+        result: types.CollectionsAliasesResponse | None = (
             await self.http.aliases_api.get_collections_aliases()
         ).result
         assert result is not None, "Get aliases returned None"
@@ -1646,7 +1629,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                     for description in response
                 ]
             )
-        result: Optional[types.CollectionsResponse] = (
+        result: types.CollectionsResponse | None = (
             await self.http.collections_api.get_collections()
         ).result
         assert result is not None, "Get collections returned None"
@@ -1662,7 +1645,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                     )
                 ).result
             )
-        result: Optional[types.CollectionInfo] = (
+        result: types.CollectionInfo | None = (
             await self.http.collections_api.get_collection(collection_name=collection_name)
         ).result
         assert result is not None, "Get collection returned None"
@@ -1676,7 +1659,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                     timeout=self._timeout,
                 )
             ).result.exists
-        result: Optional[models.CollectionExistence] = (
+        result: models.CollectionExistence | None = (
             await self.http.collections_api.collection_exists(collection_name=collection_name)
         ).result
         assert result is not None, "Collection exists returned None"
@@ -1685,15 +1668,15 @@ class AsyncQdrantRemote(AsyncQdrantBase):
     async def update_collection(
         self,
         collection_name: str,
-        optimizers_config: Optional[types.OptimizersConfigDiff] = None,
-        collection_params: Optional[types.CollectionParamsDiff] = None,
-        vectors_config: Optional[types.VectorsConfigDiff] = None,
-        hnsw_config: Optional[types.HnswConfigDiff] = None,
-        quantization_config: Optional[types.QuantizationConfigDiff] = None,
-        timeout: Optional[int] = None,
-        sparse_vectors_config: Optional[Mapping[str, types.SparseVectorParams]] = None,
-        strict_mode_config: Optional[types.StrictModeConfig] = None,
-        metadata: Optional[types.Payload] = None,
+        optimizers_config: types.OptimizersConfigDiff | None = None,
+        collection_params: types.CollectionParamsDiff | None = None,
+        vectors_config: types.VectorsConfigDiff | None = None,
+        hnsw_config: types.HnswConfigDiff | None = None,
+        quantization_config: types.QuantizationConfigDiff | None = None,
+        timeout: int | None = None,
+        sparse_vectors_config: Mapping[str, types.SparseVectorParams] | None = None,
+        strict_mode_config: types.StrictModeConfig | None = None,
+        metadata: types.Payload | None = None,
         **kwargs: Any,
     ) -> bool:
         if self._prefer_grpc:
@@ -1744,7 +1727,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             hnsw_config = GrpcToRest.convert_hnsw_config_diff(hnsw_config)
         if isinstance(quantization_config, grpc.QuantizationConfigDiff):
             quantization_config = GrpcToRest.convert_quantization_config_diff(quantization_config)
-        result: Optional[bool] = (
+        result: bool | None = (
             await self.http.collections_api.update_collection(
                 collection_name,
                 update_collection=models.UpdateCollection(
@@ -1764,7 +1747,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         return result
 
     async def delete_collection(
-        self, collection_name: str, timeout: Optional[int] = None, **kwargs: Any
+        self, collection_name: str, timeout: int | None = None, **kwargs: Any
     ) -> bool:
         if self._prefer_grpc:
             return (
@@ -1773,7 +1756,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                     timeout=timeout if timeout is not None else self._timeout,
                 )
             ).result
-        result: Optional[bool] = (
+        result: bool | None = (
             await self.http.collections_api.delete_collection(collection_name, timeout=timeout)
         ).result
         assert result is not None, "Delete collection returned None"
@@ -1782,22 +1765,20 @@ class AsyncQdrantRemote(AsyncQdrantBase):
     async def create_collection(
         self,
         collection_name: str,
-        vectors_config: Optional[
-            Union[types.VectorParams, Mapping[str, types.VectorParams]]
-        ] = None,
-        shard_number: Optional[int] = None,
-        replication_factor: Optional[int] = None,
-        write_consistency_factor: Optional[int] = None,
-        on_disk_payload: Optional[bool] = None,
-        hnsw_config: Optional[types.HnswConfigDiff] = None,
-        optimizers_config: Optional[types.OptimizersConfigDiff] = None,
-        wal_config: Optional[types.WalConfigDiff] = None,
-        quantization_config: Optional[types.QuantizationConfig] = None,
-        timeout: Optional[int] = None,
-        sparse_vectors_config: Optional[Mapping[str, types.SparseVectorParams]] = None,
-        sharding_method: Optional[types.ShardingMethod] = None,
-        strict_mode_config: Optional[types.StrictModeConfig] = None,
-        metadata: Optional[types.Payload] = None,
+        vectors_config: types.VectorParams | Mapping[str, types.VectorParams] | None = None,
+        shard_number: int | None = None,
+        replication_factor: int | None = None,
+        write_consistency_factor: int | None = None,
+        on_disk_payload: bool | None = None,
+        hnsw_config: types.HnswConfigDiff | None = None,
+        optimizers_config: types.OptimizersConfigDiff | None = None,
+        wal_config: types.WalConfigDiff | None = None,
+        quantization_config: types.QuantizationConfig | None = None,
+        timeout: int | None = None,
+        sparse_vectors_config: Mapping[str, types.SparseVectorParams] | None = None,
+        sharding_method: types.ShardingMethod | None = None,
+        strict_mode_config: types.StrictModeConfig | None = None,
+        metadata: types.Payload | None = None,
         **kwargs: Any,
     ) -> bool:
         if self._prefer_grpc:
@@ -1864,7 +1845,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             strict_mode_config=strict_mode_config,
             metadata=metadata,
         )
-        result: Optional[bool] = (
+        result: bool | None = (
             await self.http.collections_api.create_collection(
                 collection_name=collection_name,
                 create_collection=create_collection_request,
@@ -1877,20 +1858,20 @@ class AsyncQdrantRemote(AsyncQdrantBase):
     async def recreate_collection(
         self,
         collection_name: str,
-        vectors_config: Union[types.VectorParams, Mapping[str, types.VectorParams]],
-        shard_number: Optional[int] = None,
-        replication_factor: Optional[int] = None,
-        write_consistency_factor: Optional[int] = None,
-        on_disk_payload: Optional[bool] = None,
-        hnsw_config: Optional[types.HnswConfigDiff] = None,
-        optimizers_config: Optional[types.OptimizersConfigDiff] = None,
-        wal_config: Optional[types.WalConfigDiff] = None,
-        quantization_config: Optional[types.QuantizationConfig] = None,
-        timeout: Optional[int] = None,
-        sparse_vectors_config: Optional[Mapping[str, types.SparseVectorParams]] = None,
-        sharding_method: Optional[types.ShardingMethod] = None,
-        strict_mode_config: Optional[types.StrictModeConfig] = None,
-        metadata: Optional[types.Payload] = None,
+        vectors_config: types.VectorParams | Mapping[str, types.VectorParams] | None = None,
+        shard_number: int | None = None,
+        replication_factor: int | None = None,
+        write_consistency_factor: int | None = None,
+        on_disk_payload: bool | None = None,
+        hnsw_config: types.HnswConfigDiff | None = None,
+        optimizers_config: types.OptimizersConfigDiff | None = None,
+        wal_config: types.WalConfigDiff | None = None,
+        quantization_config: types.QuantizationConfig | None = None,
+        timeout: int | None = None,
+        sparse_vectors_config: Mapping[str, types.SparseVectorParams] | None = None,
+        sharding_method: types.ShardingMethod | None = None,
+        strict_mode_config: types.StrictModeConfig | None = None,
+        metadata: types.Payload | None = None,
         **kwargs: Any,
     ) -> bool:
         await self.delete_collection(collection_name, timeout=timeout)
@@ -1925,10 +1906,10 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         collection_name: str,
         max_retries: int,
         parallel: int = 1,
-        method: Optional[str] = None,
+        method: str | None = None,
         wait: bool = False,
-        shard_key_selector: Optional[types.ShardKeySelector] = None,
-        update_filter: Optional[types.Filter] = None,
+        shard_key_selector: types.ShardKeySelector | None = None,
+        update_filter: types.Filter | None = None,
     ) -> None:
         if method is not None:
             if method in get_all_start_methods():
@@ -1978,11 +1959,11 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         points: Iterable[types.PointStruct],
         batch_size: int = 64,
         parallel: int = 1,
-        method: Optional[str] = None,
+        method: str | None = None,
         max_retries: int = 3,
         wait: bool = False,
-        shard_key_selector: Optional[types.ShardKeySelector] = None,
-        update_filter: Optional[types.Filter] = None,
+        shard_key_selector: types.ShardKeySelector | None = None,
+        update_filter: types.Filter | None = None,
         **kwargs: Any,
     ) -> None:
         batches_iterator = self._updater_class.iterate_records_batches(
@@ -2002,18 +1983,16 @@ class AsyncQdrantRemote(AsyncQdrantBase):
     def upload_collection(
         self,
         collection_name: str,
-        vectors: Union[
-            dict[str, types.NumpyArray], types.NumpyArray, Iterable[types.VectorStruct]
-        ],
-        payload: Optional[Iterable[dict[Any, Any]]] = None,
-        ids: Optional[Iterable[types.PointId]] = None,
+        vectors: dict[str, types.NumpyArray] | types.NumpyArray | Iterable[types.VectorStruct],
+        payload: Iterable[dict[Any, Any]] | None = None,
+        ids: Iterable[types.PointId] | None = None,
         batch_size: int = 64,
         parallel: int = 1,
-        method: Optional[str] = None,
+        method: str | None = None,
         max_retries: int = 3,
         wait: bool = False,
-        shard_key_selector: Optional[types.ShardKeySelector] = None,
-        update_filter: Optional[types.Filter] = None,
+        shard_key_selector: types.ShardKeySelector | None = None,
+        update_filter: types.Filter | None = None,
         **kwargs: Any,
     ) -> None:
         batches_iterator = self._updater_class.iterate_batches(
@@ -2034,10 +2013,10 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         self,
         collection_name: str,
         field_name: str,
-        field_schema: Optional[types.PayloadSchemaType] = None,
-        field_type: Optional[types.PayloadSchemaType] = None,
+        field_schema: types.PayloadSchemaType | None = None,
+        field_type: types.PayloadSchemaType | None = None,
         wait: bool = True,
-        ordering: Optional[types.WriteOrdering] = None,
+        ordering: types.WriteOrdering | None = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
         if field_type is not None:
@@ -2095,7 +2074,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             field_schema = GrpcToRest.convert_payload_schema_type(field_schema)
         if isinstance(field_schema, grpc.PayloadIndexParams):
             field_schema = GrpcToRest.convert_payload_schema_params(field_schema)
-        result: Optional[types.UpdateResult] = (
+        result: types.UpdateResult | None = (
             await self.openapi_client.indexes_api.create_field_index(
                 collection_name=collection_name,
                 create_field_index=models.CreateFieldIndex(
@@ -2113,7 +2092,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         collection_name: str,
         field_name: str,
         wait: bool = True,
-        ordering: Optional[types.WriteOrdering] = None,
+        ordering: types.WriteOrdering | None = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
         if self._prefer_grpc:
@@ -2126,7 +2105,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             return GrpcToRest.convert_update_result(
                 (await self.grpc_points.DeleteFieldIndex(request, timeout=self._timeout)).result
             )
-        result: Optional[types.UpdateResult] = (
+        result: types.UpdateResult | None = (
             await self.openapi_client.indexes_api.delete_field_index(
                 collection_name=collection_name,
                 field_name=field_name,
@@ -2156,7 +2135,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
 
     async def create_snapshot(
         self, collection_name: str, wait: bool = True, **kwargs: Any
-    ) -> Optional[types.SnapshotDescription]:
+    ) -> types.SnapshotDescription | None:
         if self._prefer_grpc:
             snapshot = (
                 await self.grpc_snapshots.Create(
@@ -2173,7 +2152,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
 
     async def delete_snapshot(
         self, collection_name: str, snapshot_name: str, wait: bool = True, **kwargs: Any
-    ) -> Optional[bool]:
+    ) -> bool | None:
         if self._prefer_grpc:
             await self.grpc_snapshots.Delete(
                 grpc.DeleteSnapshotRequest(
@@ -2214,7 +2193,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
 
     async def delete_full_snapshot(
         self, snapshot_name: str, wait: bool = True, **kwargs: Any
-    ) -> Optional[bool]:
+    ) -> bool | None:
         if self._prefer_grpc:
             await self.grpc_snapshots.DeleteFull(
                 grpc.DeleteFullSnapshotRequest(snapshot_name=snapshot_name), timeout=self._timeout
@@ -2230,12 +2209,12 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         self,
         collection_name: str,
         location: str,
-        api_key: Optional[str] = None,
-        checksum: Optional[str] = None,
-        priority: Optional[types.SnapshotPriority] = None,
+        api_key: str | None = None,
+        checksum: str | None = None,
+        priority: types.SnapshotPriority | None = None,
         wait: bool = True,
         **kwargs: Any,
-    ) -> Optional[bool]:
+    ) -> bool | None:
         return (
             await self.openapi_client.snapshots_api.recover_from_snapshot(
                 collection_name=collection_name,
@@ -2259,7 +2238,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
 
     async def create_shard_snapshot(
         self, collection_name: str, shard_id: int, wait: bool = True, **kwargs: Any
-    ) -> Optional[types.SnapshotDescription]:
+    ) -> types.SnapshotDescription | None:
         return (
             await self.openapi_client.snapshots_api.create_shard_snapshot(
                 collection_name=collection_name, shard_id=shard_id, wait=wait
@@ -2273,7 +2252,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         snapshot_name: str,
         wait: bool = True,
         **kwargs: Any,
-    ) -> Optional[bool]:
+    ) -> bool | None:
         return (
             await self.openapi_client.snapshots_api.delete_shard_snapshot(
                 collection_name=collection_name,
@@ -2288,12 +2267,12 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         collection_name: str,
         shard_id: int,
         location: str,
-        api_key: Optional[str] = None,
-        checksum: Optional[str] = None,
-        priority: Optional[types.SnapshotPriority] = None,
+        api_key: str | None = None,
+        checksum: str | None = None,
+        priority: types.SnapshotPriority | None = None,
         wait: bool = True,
         **kwargs: Any,
-    ) -> Optional[bool]:
+    ) -> bool | None:
         return (
             await self.openapi_client.snapshots_api.recover_shard_from_snapshot(
                 collection_name=collection_name,
@@ -2309,11 +2288,11 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         self,
         collection_name: str,
         shard_key: types.ShardKey,
-        shards_number: Optional[int] = None,
-        replication_factor: Optional[int] = None,
-        placement: Optional[list[int]] = None,
-        initial_state: Optional[types.ReplicaState] = None,
-        timeout: Optional[int] = None,
+        shards_number: int | None = None,
+        replication_factor: int | None = None,
+        placement: list[int] | None = None,
+        initial_state: types.ReplicaState | None = None,
+        timeout: int | None = None,
         **kwargs: Any,
     ) -> bool:
         if self._prefer_grpc:
@@ -2358,7 +2337,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         self,
         collection_name: str,
         shard_key: types.ShardKey,
-        timeout: Optional[int] = None,
+        timeout: int | None = None,
         **kwargs: Any,
     ) -> bool:
         if self._prefer_grpc:
@@ -2399,7 +2378,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         self,
         collection_name: str,
         cluster_operation: types.ClusterOperations,
-        timeout: Optional[int] = None,
+        timeout: int | None = None,
         **kwargs: Any,
     ) -> bool:
         if self._prefer_grpc:
@@ -2452,11 +2431,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         return recover_result
 
     async def remove_peer(
-        self,
-        peer_id: int,
-        force: Optional[bool] = None,
-        timeout: Optional[int] = None,
-        **kwargs: Any,
+        self, peer_id: int, force: bool | None = None, timeout: int | None = None, **kwargs: Any
     ) -> bool:
         update_result = (
             await self.rest.distributed_api.remove_peer(

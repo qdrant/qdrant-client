@@ -1,6 +1,6 @@
 from itertools import count
 from time import sleep
-from typing import Any, Generator, Iterable, Optional, Union
+from typing import Any, Generator, Iterable
 from uuid import uuid4
 
 
@@ -17,12 +17,12 @@ from qdrant_client.conversions import common_types as types
 def upload_batch_grpc(
     points_client: grpc.PointsStub,
     collection_name: str,
-    batch: Union[rest.Batch, tuple],  # type: ignore[name-defined]
+    batch: rest.Batch | tuple,  # type: ignore[name-defined]
     max_retries: int,
-    shard_key_selector: Optional[grpc.ShardKeySelector],  # type: ignore[name-defined]
-    update_filter: Optional[grpc.Filter],
+    shard_key_selector: grpc.ShardKeySelector | None,  # type: ignore[name-defined]
+    update_filter: grpc.Filter | None,
     wait: bool = False,
-    timeout: Optional[int] = None,
+    timeout: int | None = None,
 ) -> bool:
     ids_batch, vectors_batch, payload_batch = batch
 
@@ -86,8 +86,8 @@ class GrpcBatchUploader(BaseUploader):
         collection_name: str,
         max_retries: int,
         wait: bool = False,
-        shard_key_selector: Optional[types.ShardKeySelector] = None,
-        update_filter: Optional[types.Filter] = None,
+        shard_key_selector: types.ShardKeySelector | None = None,
+        update_filter: types.Filter | None = None,
         **kwargs: Any,
     ):
         self.collection_name = collection_name
@@ -111,7 +111,7 @@ class GrpcBatchUploader(BaseUploader):
     @classmethod
     def start(
         cls,
-        collection_name: Optional[str] = None,
+        collection_name: str | None = None,
         host: str = "localhost",
         port: int = 6334,
         max_retries: int = 3,

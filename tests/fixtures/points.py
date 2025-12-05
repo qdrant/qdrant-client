@@ -1,6 +1,5 @@
 import random
 import uuid
-from typing import Union
 
 import numpy as np
 
@@ -12,7 +11,7 @@ from tests.fixtures.payload import one_random_payload_please
 
 
 def random_vectors(
-    vector_sizes: Union[dict[str, int], int],
+    vector_sizes: dict[str, int] | int,
 ) -> models.VectorStruct:
     if isinstance(vector_sizes, int):
         return np.random.random(vector_sizes).round(3).tolist()
@@ -25,7 +24,7 @@ def random_vectors(
         raise ValueError("vector_sizes must be int or dict")
 
 
-def random_multivectors(vector_sizes: Union[dict[str, int], int]) -> models.VectorStruct:
+def random_multivectors(vector_sizes: dict[str, int] | int) -> models.VectorStruct:
     if isinstance(vector_sizes, int):
         vec_count = random.randint(1, 10)
         return generate_random_multivector(vector_sizes, vec_count)
@@ -89,7 +88,7 @@ def random_sparse_vectors(
 
 def generate_points(
     num_points: int,
-    vector_sizes: Union[dict[str, int], int],
+    vector_sizes: dict[str, int] | int,
     with_payload: bool = False,
     random_ids: bool = False,
     skip_vectors: bool = False,

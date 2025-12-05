@@ -1,5 +1,3 @@
-from typing import Optional
-
 import numpy as np
 import pytest
 
@@ -62,7 +60,7 @@ class TestSimpleRecommendation:
 
     @classmethod
     def recommend_from_another_collection(
-        cls, client: QdrantBase, positive_point_id: Optional[int] = None
+        cls, client: QdrantBase, positive_point_id: int | None = None
     ) -> list[models.ScoredPoint]:
         return client.query_points(
             collection_name=COLLECTION_NAME,

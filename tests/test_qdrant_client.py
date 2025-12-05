@@ -17,7 +17,7 @@ from grpc import Compression, RpcError
 import qdrant_client.http.exceptions
 from qdrant_client import QdrantClient, models
 from qdrant_client._pydantic_compat import to_dict
-from qdrant_client.conversions.common_types import PointVectors, Record, StrictModeConfig
+from qdrant_client.conversions.common_types import PointVectors, StrictModeConfig
 from qdrant_client.common.client_exceptions import ResourceExhaustedResponse
 from qdrant_client.conversions.conversion import grpc_to_payload, json_to_value
 from qdrant_client.local.qdrant_local import QdrantLocal
@@ -42,12 +42,10 @@ from qdrant_client.models import (
     ProductQuantizationConfig,
     QuantizationSearchParams,
     Range,
-    RecommendRequest,
     ScalarQuantization,
     ScalarQuantizationConfig,
     ScalarType,
     SearchParams,
-    SearchRequest,
     TextIndexParams,
     TokenizerType,
     VectorParams,

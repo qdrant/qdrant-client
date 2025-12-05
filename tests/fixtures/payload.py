@@ -1,7 +1,7 @@
 import random
 import uuid
 from datetime import datetime, timedelta, timezone
-from typing import Any, Union
+from typing import Any
 
 from qdrant_client.local import datetime_utils
 
@@ -154,7 +154,7 @@ start_datetime = datetime(2000, 1, 1)
 end_datetime = datetime(2001, 1, 31)
 
 
-def random_datetime() -> Union[str, datetime]:
+def random_datetime() -> str | datetime:
     random_datetime = start_datetime + timedelta(
         seconds=random.randint(0, int((end_datetime - start_datetime).total_seconds())),
         microseconds=random.randint(0, 999999),

@@ -1,4 +1,4 @@
-from typing import Optional, Any
+from typing import Any
 
 from qdrant_client.http import models
 from qdrant_client.embed.models import NumericVector
@@ -13,8 +13,8 @@ class BuiltinEmbedder:
     def embed(
         self,
         model_name: str,
-        texts: Optional[list[str]] = None,
-        options: Optional[dict[str, Any]] = None,
+        texts: list[str] | None = None,
+        options: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> NumericVector:
         if texts is None:

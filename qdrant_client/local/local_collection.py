@@ -5,9 +5,7 @@ from collections import OrderedDict, defaultdict
 from typing import (
     Any,
     Callable,
-    Optional,
     Sequence,
-    Union,
     get_args,
 )
 from copy import deepcopy
@@ -102,7 +100,7 @@ class LocalCollection:
     def __init__(
         self,
         config: models.CreateCollection,
-        location: Optional[str] = None,
+        location: str | None = None,
         force_disable_check_same_thread: bool = False,
     ) -> None:
         """
@@ -284,26 +282,24 @@ class LocalCollection:
     @classmethod
     def _resolve_query_vector_name(
         cls,
-        query_vector: Union[
-            list[float],
-            tuple[str, list[float]],
-            list[list[float]],
-            tuple[str, list[list[float]]],
-            types.NamedVector,
-            types.NamedSparseVector,
-            DenseQueryVector,
-            tuple[str, DenseQueryVector],
-            tuple[str, SparseQueryVector],
-            MultiQueryVector,
-            tuple[str, MultiQueryVector],
-            types.NumpyArray,
-        ],
-    ) -> tuple[
-        str, Union[DenseQueryVector, SparseQueryVector, MultiQueryVector, types.NumpyArray]
-    ]:
+        query_vector: (
+            list[float]
+            | tuple[str, list[float]]
+            | list[list[float]]
+            | tuple[str, list[list[float]]]
+            | types.NamedVector
+            | types.NamedSparseVector
+            | DenseQueryVector
+            | tuple[str, DenseQueryVector]
+            | tuple[str, SparseQueryVector]
+            | MultiQueryVector
+            | tuple[str, MultiQueryVector]
+            | types.NumpyArray
+        ),
+    ) -> tuple[str, DenseQueryVector | SparseQueryVector | MultiQueryVector | types.NumpyArray]:
         # SparseQueryVector is not in the method's signature, because sparse vectors can only be used as named vectors,
         # and there is no default name for them
-        vector: Union[DenseQueryVector, SparseQueryVector, MultiQueryVector, types.NumpyArray]
+        vector: DenseQueryVector | SparseQueryVector | MultiQueryVector | types.NumpyArray
         if isinstance(query_vector, tuple):
             name, query = query_vector
             if isinstance(query, list):
@@ -413,8 +409,8 @@ class LocalCollection:
     def _process_payload(
         cls,
         payload: dict,
-        with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
-    ) -> Optional[dict]:
+        with_payload: bool | Sequence[str] | types.PayloadSelector = True,
+    ) -> dict | None:
         if not with_payload:
             return None
 
@@ -456,16 +452,16 @@ class LocalCollection:
     def _get_payload(
         self,
         idx: int,
-        with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
+        with_payload: bool | Sequence[str] | types.PayloadSelector = True,
         return_copy: bool = True,
-    ) -> Optional[models.Payload]:
+    ) -> models.Payload:
         payload = self.payload[idx]
         processed_payload = self._process_payload(payload, with_payload)
         return deepcopy(processed_payload) if return_copy else processed_payload
 
     def _get_vectors(
-        self, idx: int, with_vectors: Union[bool, Sequence[str], None] = False
-    ) -> Optional[models.VectorStruct]:
+        self, idx: int, with_vectors: bool | Sequence[str] | None = False
+    ) -> models.VectorStruct | None:
         if with_vectors is False or with_vectors is None:
             return None
 
@@ -500,8 +496,8 @@ class LocalCollection:
 
     def _payload_and_non_deleted_mask(
         self,
-        payload_filter: Optional[models.Filter],
-        vector_name: Optional[str] = None,
+        payload_filter: models.Filter | None,
+        vector_name: str | None = None,
     ) -> np.ndarray:
         """
         Calculate mask for filtered payload and non-deleted points. True - accepted, False - rejected
@@ -534,27 +530,27 @@ class LocalCollection:
 
     def search(
         self,
-        query_vector: Union[
-            list[float],
-            tuple[str, list[float]],
-            list[list[float]],
-            tuple[str, list[list[float]]],
-            types.NamedVector,
-            types.NamedSparseVector,
-            DenseQueryVector,
-            tuple[str, DenseQueryVector],
-            SparseQueryVector,
-            tuple[str, SparseQueryVector],
-            MultiQueryVector,
-            tuple[str, MultiQueryVector],
-            types.NumpyArray,
-        ],
-        query_filter: Optional[types.Filter] = None,
+        query_vector: (
+            list[float]
+            | tuple[str, list[float]]
+            | list[list[float]]
+            | tuple[str, list[list[float]]]
+            | types.NamedVector
+            | types.NamedSparseVector
+            | DenseQueryVector
+            | tuple[str, DenseQueryVector]
+            | SparseQueryVector
+            | tuple[str, SparseQueryVector]
+            | MultiQueryVector
+            | tuple[str, MultiQueryVector]
+            | types.NumpyArray
+        ),
+        query_filter: types.Filter | None = None,
         limit: int = 10,
-        offset: Optional[int] = None,
-        with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
-        with_vectors: Union[bool, Sequence[str]] = False,
-        score_threshold: Optional[float] = None,
+        offset: int | None = None,
+        with_payload: bool | Sequence[str] | types.PayloadSelector = True,
+        with_vectors: bool | Sequence[str] = False,
+        score_threshold: float | None = None,
     ) -> list[models.ScoredPoint]:
         name, query_vector = self._resolve_query_vector_name(query_vector)
         result: list[models.ScoredPoint] = []
@@ -704,15 +700,15 @@ class LocalCollection:
 
     def query_points(
         self,
-        query: Optional[types.Query] = None,
-        prefetch: Optional[list[types.Prefetch]] = None,
-        query_filter: Optional[types.Filter] = None,
+        query: types.Query | None = None,
+        prefetch: list[types.Prefetch] | None = None,
+        query_filter: types.Filter | None = None,
         limit: int = 10,
         offset: int = 0,
-        with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
-        with_vectors: Union[bool, Sequence[str]] = False,
-        score_threshold: Optional[float] = None,
-        using: Optional[str] = None,
+        with_payload: bool | Sequence[str] | types.PayloadSelector = True,
+        with_vectors: bool | Sequence[str] = False,
+        score_threshold: float | None = None,
+        using: str | None = None,
         **kwargs: Any,
     ) -> types.QueryResponse:
         """
@@ -803,11 +799,11 @@ class LocalCollection:
         query: types.Query,
         limit: int,
         offset: int,
-        using: Optional[str] = None,
-        query_filter: Optional[types.Filter] = None,
-        score_threshold: Optional[float] = None,
-        with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
-        with_vectors: Union[bool, Sequence[str]] = False,
+        using: str | None = None,
+        query_filter: types.Filter | None = None,
+        score_threshold: float | None = None,
+        with_payload: bool | Sequence[str] | types.PayloadSelector = True,
+        with_vectors: bool | Sequence[str] = False,
     ) -> list[types.ScoredPoint]:
         if isinstance(query, (models.FusionQuery, models.RrfQuery)):
             # Fuse results
@@ -874,14 +870,14 @@ class LocalCollection:
 
     def _query_collection(
         self,
-        query: Optional[types.Query] = None,
-        using: Optional[str] = None,
-        query_filter: Optional[types.Filter] = None,
-        limit: Optional[int] = None,
-        offset: Optional[int] = None,
-        with_payload: Union[bool, Sequence[str], types.PayloadSelector] = False,
-        with_vectors: Union[bool, Sequence[str]] = False,
-        score_threshold: Optional[float] = None,
+        query: types.Query | None = None,
+        using: str | None = None,
+        query_filter: types.Filter | None = None,
+        limit: int | None = None,
+        offset: int | None = None,
+        with_payload: bool | Sequence[str] | types.PayloadSelector = False,
+        with_vectors: bool | Sequence[str] = False,
+        score_threshold: float | None = None,
     ) -> list[types.ScoredPoint]:
         """
         Performs the query on the collection, assuming it didn't have any prefetches.
@@ -998,28 +994,28 @@ class LocalCollection:
     def query_groups(
         self,
         group_by: str,
-        query: Union[
-            types.PointId,
-            list[float],
-            list[list[float]],
-            types.SparseVector,
-            types.Query,
-            types.NumpyArray,
-            types.Document,
-            types.Image,
-            types.InferenceObject,
-            None,
-        ] = None,
-        using: Optional[str] = None,
-        prefetch: Union[types.Prefetch, list[types.Prefetch], None] = None,
-        query_filter: Optional[types.Filter] = None,
+        query: (
+            types.PointId
+            | list[float]
+            | list[list[float]]
+            | types.SparseVector
+            | types.Query
+            | types.NumpyArray
+            | types.Document
+            | types.Image
+            | types.InferenceObject
+            | None
+        ) = None,
+        using: str | None = None,
+        prefetch: types.Prefetch | list[types.Prefetch] | None = None,
+        query_filter: types.Filter | None = None,
         limit: int = 10,
         group_size: int = 3,
-        with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
-        with_vectors: Union[bool, Sequence[str]] = False,
-        score_threshold: Optional[float] = None,
-        with_lookup: Optional[types.WithLookupInterface] = None,
-        with_lookup_collection: Optional["LocalCollection"] = None,
+        with_payload: bool | Sequence[str] | types.PayloadSelector = True,
+        with_vectors: bool | Sequence[str] = False,
+        score_threshold: float | None = None,
+        with_lookup: types.WithLookupInterface | None = None,
+        with_lookup_collection: "LocalCollection | None" = None,
     ) -> models.GroupsResult:
         max_limit = len(self.ids_inv)
         # rewrite prefetch with larger limit
@@ -1086,35 +1082,26 @@ class LocalCollection:
 
     def search_groups(
         self,
-        query_vector: Union[
-            Sequence[float],
-            list[list[float]],
-            tuple[
-                str,
-                Union[
-                    models.Vector,
-                    RecoQuery,
-                    SparseRecoQuery,
-                    MultiRecoQuery,
-                    types.NumpyArray,
-                ],
-            ],
-            types.NamedVector,
-            types.NamedSparseVector,
-            RecoQuery,
-            SparseRecoQuery,
-            MultiRecoQuery,
-            types.NumpyArray,
-        ],
+        query_vector: Sequence[float]
+        | list[list[float]]
+        | tuple[
+            str, models.Vector | RecoQuery | SparseRecoQuery | MultiRecoQuery | types.NumpyArray
+        ]
+        | types.NamedVector
+        | types.NamedSparseVector
+        | RecoQuery
+        | SparseRecoQuery
+        | MultiRecoQuery
+        | types.NumpyArray,
         group_by: str,
-        query_filter: Optional[models.Filter] = None,
+        query_filter: models.Filter | None = None,
         limit: int = 10,
         group_size: int = 1,
-        with_payload: Union[bool, Sequence[str], models.PayloadSelector] = True,
-        with_vectors: Union[bool, Sequence[str]] = False,
-        score_threshold: Optional[float] = None,
-        with_lookup: Optional[types.WithLookupInterface] = None,
-        with_lookup_collection: Optional["LocalCollection"] = None,
+        with_payload: bool | Sequence[str] | models.PayloadSelector = True,
+        with_vectors: bool | Sequence[str] = False,
+        score_threshold: float | None = None,
+        with_lookup: types.WithLookupInterface | None = None,
+        with_lookup_collection: "LocalCollection | None" = None,
     ) -> models.GroupsResult:
         points = self.search(
             query_vector=query_vector,
@@ -1171,7 +1158,7 @@ class LocalCollection:
     def facet(
         self,
         key: str,
-        facet_filter: Optional[types.Filter] = None,
+        facet_filter: types.Filter | None = None,
         limit: int = 10,
     ) -> types.FacetResponse:
         facet_hits: dict[types.FacetValue, int] = defaultdict(int)
@@ -1222,8 +1209,8 @@ class LocalCollection:
     def retrieve(
         self,
         ids: Sequence[types.PointId],
-        with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
-        with_vectors: Union[bool, Sequence[str]] = False,
+        with_payload: bool | Sequence[str] | types.PayloadSelector = True,
+        with_vectors: bool | Sequence[str] = False,
     ) -> list[models.Record]:
         result = []
         ids = [str(id_) if isinstance(id_, uuid.UUID) else id_ for id_ in ids]
@@ -1247,13 +1234,13 @@ class LocalCollection:
 
     def _preprocess_recommend_input(
         self,
-        positive: Optional[Sequence[models.VectorInput]] = None,
-        negative: Optional[Sequence[models.VectorInput]] = None,
-        strategy: Optional[types.RecommendStrategy] = None,
-        query_filter: Optional[types.Filter] = None,
-        using: Optional[str] = None,
-        lookup_from_collection: Optional["LocalCollection"] = None,
-        lookup_from_vector_name: Optional[str] = None,
+        positive: Sequence[models.VectorInput] | None = None,
+        negative: Sequence[models.VectorInput] | None = None,
+        strategy: types.RecommendStrategy | None = None,
+        query_filter: types.Filter | None = None,
+        using: str | None = None,
+        lookup_from_collection: "LocalCollection | None" = None,
+        lookup_from_vector_name: str | None = None,
     ) -> tuple[
         list[list[float]],
         list[list[float]],
@@ -1265,7 +1252,7 @@ class LocalCollection:
     ]:
         def examples_into_vectors(
             examples: Sequence[models.VectorInput],
-            acc: Union[list[list[float]], list[models.SparseVector], list[list[list[float]]]],
+            acc: list[list[float]] | list[models.SparseVector] | list[list[list[float]]],
         ) -> None:
             for example in examples:
                 if isinstance(example, get_args(types.PointId)):
@@ -1395,15 +1382,15 @@ class LocalCollection:
 
     def _construct_recommend_query(
         self,
-        positive: Optional[Sequence[models.VectorInput]] = None,
-        negative: Optional[Sequence[models.VectorInput]] = None,
-        query_filter: Optional[types.Filter] = None,
-        using: Optional[str] = None,
-        lookup_from_collection: Optional["LocalCollection"] = None,
-        lookup_from_vector_name: Optional[str] = None,
-        strategy: Optional[types.RecommendStrategy] = None,
+        positive: Sequence[models.VectorInput] | None = None,
+        negative: Sequence[models.VectorInput] | None = None,
+        query_filter: types.Filter | None = None,
+        using: str | None = None,
+        lookup_from_collection: "LocalCollection | None" = None,
+        lookup_from_vector_name: str | None = None,
+        strategy: types.RecommendStrategy | None = None,
     ) -> tuple[
-        Union[RecoQuery, SparseRecoQuery, MultiRecoQuery, models.SparseVector, types.NumpyArray],
+        RecoQuery | SparseRecoQuery | MultiRecoQuery | models.SparseVector | types.NumpyArray,
         types.Filter,
     ]:
         strategy = strategy if strategy is not None else types.RecommendStrategy.AVERAGE_VECTOR
@@ -1479,18 +1466,18 @@ class LocalCollection:
 
     def recommend(
         self,
-        positive: Optional[Sequence[models.VectorInput]] = None,
-        negative: Optional[Sequence[models.VectorInput]] = None,
-        query_filter: Optional[types.Filter] = None,
+        positive: Sequence[models.VectorInput] | None = None,
+        negative: Sequence[models.VectorInput] | None = None,
+        query_filter: types.Filter | None = None,
         limit: int = 10,
         offset: int = 0,
-        with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
-        with_vectors: Union[bool, Sequence[str]] = False,
-        score_threshold: Optional[float] = None,
-        using: Optional[str] = None,
-        lookup_from_collection: Optional["LocalCollection"] = None,
-        lookup_from_vector_name: Optional[str] = None,
-        strategy: Optional[types.RecommendStrategy] = None,
+        with_payload: bool | Sequence[str] | types.PayloadSelector = True,
+        with_vectors: bool | Sequence[str] = False,
+        score_threshold: float | None = None,
+        using: str | None = None,
+        lookup_from_collection: "LocalCollection | None" = None,
+        lookup_from_vector_name: str | None = None,
+        strategy: types.RecommendStrategy | None = None,
     ) -> list[models.ScoredPoint]:
         query_vector, edited_query_filter = self._construct_recommend_query(
             positive,
@@ -1516,20 +1503,20 @@ class LocalCollection:
     def recommend_groups(
         self,
         group_by: str,
-        positive: Optional[Sequence[models.VectorInput]] = None,
-        negative: Optional[Sequence[models.VectorInput]] = None,
-        query_filter: Optional[models.Filter] = None,
+        positive: Sequence[models.VectorInput] | None = None,
+        negative: Sequence[models.VectorInput] | None = None,
+        query_filter: models.Filter | None = None,
         limit: int = 10,
         group_size: int = 1,
-        score_threshold: Optional[float] = None,
-        with_payload: Union[bool, Sequence[str], models.PayloadSelector] = True,
-        with_vectors: Union[bool, Sequence[str]] = False,
-        using: Optional[str] = None,
-        lookup_from_collection: Optional["LocalCollection"] = None,
-        lookup_from_vector_name: Optional[str] = None,
-        with_lookup: Optional[types.WithLookupInterface] = None,
-        with_lookup_collection: Optional["LocalCollection"] = None,
-        strategy: Optional[types.RecommendStrategy] = None,
+        score_threshold: float | None = None,
+        with_payload: bool | Sequence[str] | models.PayloadSelector = True,
+        with_vectors: bool | Sequence[str] = False,
+        using: str | None = None,
+        lookup_from_collection: "LocalCollection | None" = None,
+        lookup_from_vector_name: str | None = None,
+        with_lookup: types.WithLookupInterface | None = None,
+        with_lookup_collection: "LocalCollection | None" = None,
+        strategy: types.RecommendStrategy | None = None,
     ) -> types.GroupsResult:
         strategy = strategy if strategy is not None else types.RecommendStrategy.AVERAGE_VECTOR
 
@@ -1560,10 +1547,10 @@ class LocalCollection:
 
     def search_matrix_offsets(
         self,
-        query_filter: Optional[types.Filter] = None,
+        query_filter: types.Filter | None = None,
         limit: int = 3,
         sample: int = 10,
-        using: Optional[str] = None,
+        using: str | None = None,
     ) -> types.SearchMatrixOffsetsResponse:
         ids, all_scores = self._search_distance_matrix(
             query_filter=query_filter, limit=limit, sample=sample, using=using
@@ -1594,10 +1581,10 @@ class LocalCollection:
 
     def search_matrix_pairs(
         self,
-        query_filter: Optional[types.Filter] = None,
+        query_filter: types.Filter | None = None,
         limit: int = 3,
         sample: int = 10,
-        using: Optional[str] = None,
+        using: str | None = None,
     ) -> types.SearchMatrixPairsResponse:
         ids, all_scores = self._search_distance_matrix(
             query_filter=query_filter, limit=limit, sample=sample, using=using
@@ -1617,10 +1604,10 @@ class LocalCollection:
 
     def _search_distance_matrix(
         self,
-        query_filter: Optional[types.Filter] = None,
+        query_filter: types.Filter | None = None,
         limit: int = 3,
         sample: int = 10,
-        using: Optional[str] = None,
+        using: str | None = None,
     ) -> tuple[list[ExtendedPointId], list[list[ScoredPoint]]]:
         samples: list[ScoredPoint] = []
         search_in_vector_name = using if using is not None else DEFAULT_VECTOR_NAME
@@ -1670,8 +1657,8 @@ class LocalCollection:
 
     @staticmethod
     def _preprocess_target(
-        target: Optional[models.VectorInput], collection: "LocalCollection", vector_name: str
-    ) -> tuple[models.Vector, Optional[types.PointId]]:
+        target: models.VectorInput | None, collection: "LocalCollection", vector_name: str
+    ) -> tuple[models.Vector, types.PointId | None]:
         if isinstance(target, get_args(types.PointId)):
             if target not in collection.ids:
                 raise ValueError(f"Point {target} is not found in the collection")
@@ -1760,14 +1747,14 @@ class LocalCollection:
 
     def _preprocess_discover(
         self,
-        target: Optional[models.VectorInput] = None,
-        context: Optional[Sequence[models.ContextPair]] = None,
-        query_filter: Optional[types.Filter] = None,
-        using: Optional[str] = None,
-        lookup_from_collection: Optional["LocalCollection"] = None,
-        lookup_from_vector_name: Optional[str] = None,
+        target: models.VectorInput | None = None,
+        context: Sequence[models.ContextPair] | None = None,
+        query_filter: types.Filter | None = None,
+        using: str | None = None,
+        lookup_from_collection: "LocalCollection | None" = None,
+        lookup_from_vector_name: str | None = None,
     ) -> tuple[
-        Optional[models.Vector],
+        models.Vector | None,
         list[ContextPair],
         list[SparseContextPair],
         list[MultiContextPair],
@@ -1807,17 +1794,17 @@ class LocalCollection:
 
     def discover(
         self,
-        target: Optional[models.VectorInput] = None,
-        context: Optional[Sequence[models.ContextPair]] = None,
-        query_filter: Optional[types.Filter] = None,
+        target: models.VectorInput | None = None,
+        context: Sequence[models.ContextPair] | None = None,
+        query_filter: types.Filter | None = None,
         limit: int = 10,
         offset: int = 0,
-        with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
-        with_vectors: Union[bool, Sequence[str]] = False,
-        using: Optional[str] = None,
-        lookup_from_collection: Optional["LocalCollection"] = None,
-        lookup_from_vector_name: Optional[str] = None,
-        score_threshold: Optional[float] = None,
+        with_payload: bool | Sequence[str] | types.PayloadSelector = True,
+        with_vectors: bool | Sequence[str] = False,
+        using: str | None = None,
+        lookup_from_collection: "LocalCollection | None" = None,
+        lookup_from_vector_name: str | None = None,
+        score_threshold: float | None = None,
     ) -> list[models.ScoredPoint]:
         (
             target_vector,
@@ -1834,7 +1821,7 @@ class LocalCollection:
             lookup_from_vector_name,
         )
 
-        query_vector: Union[DenseQueryVector, SparseQueryVector, MultiQueryVector]
+        query_vector: DenseQueryVector | SparseQueryVector | MultiQueryVector
 
         # Discovery search
         if target_vector is not None:
@@ -1879,13 +1866,13 @@ class LocalCollection:
 
     def scroll(
         self,
-        scroll_filter: Optional[types.Filter] = None,
+        scroll_filter: types.Filter | None = None,
         limit: int = 10,
-        order_by: Optional[types.OrderBy] = None,
-        offset: Optional[types.PointId] = None,
-        with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
-        with_vectors: Union[bool, Sequence[str]] = False,
-    ) -> tuple[list[types.Record], Optional[types.PointId]]:
+        order_by: types.OrderBy | None = None,
+        offset: types.PointId | None = None,
+        with_payload: bool | Sequence[str] | types.PayloadSelector = True,
+        with_vectors: bool | Sequence[str] = False,
+    ) -> tuple[list[types.Record], types.PointId | None]:
         if len(self.ids) == 0:
             return [], None
 
@@ -1913,19 +1900,19 @@ class LocalCollection:
             with_vectors=with_vectors,
         )
 
-    def count(self, count_filter: Optional[types.Filter] = None) -> models.CountResult:
+    def count(self, count_filter: types.Filter | None = None) -> models.CountResult:
         mask = self._payload_and_non_deleted_mask(count_filter)
 
         return models.CountResult(count=np.count_nonzero(mask))
 
     def _scroll_by_id(
         self,
-        scroll_filter: Optional[types.Filter] = None,
+        scroll_filter: types.Filter | None = None,
         limit: int = 10,
-        offset: Optional[types.PointId] = None,
-        with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
-        with_vectors: Union[bool, Sequence[str]] = False,
-    ) -> tuple[list[types.Record], Optional[types.PointId]]:
+        offset: types.PointId | None = None,
+        with_payload: bool | Sequence[str] | types.PayloadSelector = True,
+        with_vectors: bool | Sequence[str] = False,
+    ) -> tuple[list[types.Record], types.PointId | None]:
         sorted_ids = sorted(self.ids.items(), key=lambda x: self._universal_id(x[0]))
 
         result: list[types.Record] = []
@@ -1958,11 +1945,11 @@ class LocalCollection:
     def _scroll_by_value(
         self,
         order_by: types.OrderBy,
-        scroll_filter: Optional[types.Filter] = None,
+        scroll_filter: types.Filter | None = None,
         limit: int = 10,
-        with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
-        with_vectors: Union[bool, Sequence[str]] = False,
-    ) -> tuple[list[types.Record], Optional[types.PointId]]:
+        with_payload: bool | Sequence[str] | types.PayloadSelector = True,
+        with_vectors: bool | Sequence[str] = False,
+    ) -> tuple[list[types.Record], types.PointId | None]:
         if isinstance(order_by, grpc.OrderBy):
             order_by = GrpcToRest.convert_order_by(order_by)
         if isinstance(order_by, str):
@@ -2032,9 +2019,9 @@ class LocalCollection:
     def _sample_randomly(
         self,
         limit: int,
-        query_filter: Optional[types.Filter],
-        with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
-        with_vectors: Union[bool, Sequence[str]] = False,
+        query_filter: types.Filter | None,
+        with_payload: bool | Sequence[str] | types.PayloadSelector = True,
+        with_vectors: bool | Sequence[str] = False,
     ) -> list[types.ScoredPoint]:
         mask = self._payload_and_non_deleted_mask(query_filter)
 
@@ -2066,19 +2053,15 @@ class LocalCollection:
 
     def _search_with_mmr(
         self,
-        query_vector: Union[
-            list[float],
-            SparseVector,
-            list[list[float]],
-        ],
+        query_vector: (list[float] | SparseVector | list[list[float]]),
         mmr: types.Mmr,
-        using: Optional[str],
-        query_filter: Optional[types.Filter] = None,
+        using: str | None,
+        query_filter: types.Filter | None = None,
         limit: int = 10,
-        offset: Optional[int] = None,
-        with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
-        with_vectors: Union[bool, Sequence[str]] = False,
-        score_threshold: Optional[float] = None,
+        offset: int | None = None,
+        with_payload: bool | Sequence[str] | types.PayloadSelector = True,
+        with_vectors: bool | Sequence[str] = False,
+        score_threshold: float | None = None,
     ) -> list[models.ScoredPoint]:
         search_limit = mmr.candidates_limit if mmr.candidates_limit is not None else limit
         using = using or DEFAULT_VECTOR_NAME
@@ -2100,7 +2083,7 @@ class LocalCollection:
     def _mmr(
         self,
         search_results: list[models.ScoredPoint],
-        query_vector: Union[list[float], SparseVector, list[list[float]]],
+        query_vector: list[float] | SparseVector | list[list[float]],
         using: str,
         lambda_: float,
         limit: int,
@@ -2213,8 +2196,8 @@ class LocalCollection:
         query: models.FormulaQuery,
         prefetches_results: list[list[models.ScoredPoint]],
         limit: int,
-        with_payload: Union[bool, Sequence[str], types.PayloadSelector],
-        with_vectors: Union[bool, Sequence[str]],
+        with_payload: bool | Sequence[str] | types.PayloadSelector,
+        with_vectors: bool | Sequence[str],
     ) -> list[models.ScoredPoint]:
         # collect prefetches in vec of dicts for faster lookup
         prefetches_scores = [
@@ -2423,7 +2406,7 @@ class LocalCollection:
     def _upsert_point(
         self,
         point: models.PointStruct,
-        update_filter: Optional[types.Filter] = None,
+        update_filter: types.Filter | None = None,
     ) -> None:
         if isinstance(point.id, str):
             # try to parse as UUID
@@ -2480,8 +2463,8 @@ class LocalCollection:
 
     def upsert(
         self,
-        points: Union[Sequence[models.PointStruct], models.Batch],
-        update_filter: Optional[types.Filter] = None,
+        points: Sequence[models.PointStruct] | models.Batch,
+        update_filter: types.Filter | None = None,
     ) -> None:
         if isinstance(points, list):
             for point in points:
@@ -2522,7 +2505,7 @@ class LocalCollection:
             )
 
     def _update_named_vectors(
-        self, idx: int, vectors: dict[str, Union[list[float], SparseVector, list[list[float]]]]
+        self, idx: int, vectors: dict[str, list[float] | SparseVector | list[list[float]]]
     ) -> None:
         for vector_name, vector in vectors.items():
             if vector_name not in self._all_vectors_keys:
@@ -2554,7 +2537,7 @@ class LocalCollection:
                 self.multivectors[vector_name][idx] = vector_np
 
     def update_vectors(
-        self, points: Sequence[types.PointVectors], update_filter: Optional[types.Filter] = None
+        self, points: Sequence[types.PointVectors], update_filter: types.Filter | None = None
     ) -> None:
         for point in points:
             point_id = str(point.id) if isinstance(point.id, uuid.UUID) else point.id
@@ -2580,12 +2563,12 @@ class LocalCollection:
     def delete_vectors(
         self,
         vectors: Sequence[str],
-        selector: Union[
-            models.Filter,
-            list[models.ExtendedPointId],
-            models.FilterSelector,
-            models.PointIdsList,
-        ],
+        selector: (
+            models.Filter
+            | list[models.ExtendedPointId]
+            | models.FilterSelector
+            | models.PointIdsList
+        ),
     ) -> None:
         ids = self._selector_to_ids(selector)
         for point_id in ids:
@@ -2612,12 +2595,12 @@ class LocalCollection:
 
     def _selector_to_ids(
         self,
-        selector: Union[
-            models.Filter,
-            list[models.ExtendedPointId],
-            models.FilterSelector,
-            models.PointIdsList,
-        ],
+        selector: (
+            models.Filter
+            | list[models.ExtendedPointId]
+            | models.FilterSelector
+            | models.PointIdsList
+        ),
     ) -> list[models.ExtendedPointId]:
         if isinstance(selector, list):
             return [str(id_) if isinstance(id_, uuid.UUID) else id_ for id_ in selector]
@@ -2632,12 +2615,12 @@ class LocalCollection:
 
     def delete(
         self,
-        selector: Union[
-            models.Filter,
-            list[models.ExtendedPointId],
-            models.FilterSelector,
-            models.PointIdsList,
-        ],
+        selector: (
+            models.Filter
+            | list[models.ExtendedPointId]
+            | models.FilterSelector
+            | models.PointIdsList
+        ),
     ) -> None:
         ids = self._selector_to_ids(selector)
         self._delete_ids(ids)
@@ -2655,18 +2638,18 @@ class LocalCollection:
     def set_payload(
         self,
         payload: models.Payload,
-        selector: Union[
-            models.Filter,
-            list[models.ExtendedPointId],
-            models.FilterSelector,
-            models.PointIdsList,
-        ],
-        key: Optional[str] = None,
+        selector: (
+            models.Filter
+            | list[models.ExtendedPointId]
+            | models.FilterSelector
+            | models.PointIdsList
+        ),
+        key: str | None = None,
     ) -> None:
         ids = self._selector_to_ids(selector)
         jsonable_payload = deepcopy(to_jsonable_python(payload))
 
-        keys: Optional[list[JsonPathItem]] = parse_json_path(key) if key is not None else None
+        keys: list[JsonPathItem] | None = parse_json_path(key) if key is not None else None
 
         for point_id in ids:
             idx = self.ids[point_id]
@@ -2681,12 +2664,12 @@ class LocalCollection:
     def overwrite_payload(
         self,
         payload: models.Payload,
-        selector: Union[
-            models.Filter,
-            list[models.ExtendedPointId],
-            models.FilterSelector,
-            models.PointIdsList,
-        ],
+        selector: (
+            models.Filter
+            | list[models.ExtendedPointId]
+            | models.FilterSelector
+            | models.PointIdsList
+        ),
     ) -> None:
         ids = self._selector_to_ids(selector)
         for point_id in ids:
@@ -2697,12 +2680,12 @@ class LocalCollection:
     def delete_payload(
         self,
         keys: Sequence[str],
-        selector: Union[
-            models.Filter,
-            list[models.ExtendedPointId],
-            models.FilterSelector,
-            models.PointIdsList,
-        ],
+        selector: (
+            models.Filter
+            | list[models.ExtendedPointId]
+            | models.FilterSelector
+            | models.PointIdsList
+        ),
     ) -> None:
         ids = self._selector_to_ids(selector)
         for point_id in ids:
@@ -2714,12 +2697,12 @@ class LocalCollection:
 
     def clear_payload(
         self,
-        selector: Union[
-            models.Filter,
-            list[models.ExtendedPointId],
-            models.FilterSelector,
-            models.PointIdsList,
-        ],
+        selector: (
+            models.Filter
+            | list[models.ExtendedPointId]
+            | models.FilterSelector
+            | models.PointIdsList
+        ),
     ) -> None:
         ids = self._selector_to_ids(selector)
         for point_id in ids:
@@ -2821,7 +2804,7 @@ class LocalCollection:
 
 
 def ignore_mentioned_ids_filter(
-    query_filter: Optional[types.Filter], mentioned_ids: list[types.PointId]
+    query_filter: types.Filter | None, mentioned_ids: list[types.PointId]
 ) -> types.Filter:
     if len(mentioned_ids) == 0:
         return query_filter
@@ -2845,7 +2828,7 @@ def ignore_mentioned_ids_filter(
 
 
 def _include_ids_in_filter(
-    query_filter: Optional[types.Filter], ids: list[types.PointId]
+    query_filter: types.Filter | None, ids: list[types.PointId]
 ) -> types.Filter:
     if len(ids) == 0:
         return query_filter
@@ -2880,10 +2863,10 @@ def record_to_scored_point(record: types.Record) -> types.ScoredPoint:
 
 
 def set_prefetch_limit_iteratively(
-    prefetch: Union[types.Prefetch, list[types.Prefetch]], limit: int
+    prefetch: types.Prefetch | list[types.Prefetch], limit: int
 ) -> None:
     """Set .limit on all nested Prefetch objects without recursion."""
-    stack: list[Union[types.Prefetch, list[types.Prefetch]]] = [prefetch]
+    stack: list[types.Prefetch | list[types.Prefetch]] = [prefetch]
 
     while stack:
         current = stack.pop()

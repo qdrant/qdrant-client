@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import Optional, Union
 
 from qdrant_client.http.models import OrderValue
 from qdrant_client.local.datetime_utils import parse
@@ -11,7 +10,7 @@ def datetime_to_microseconds(dt: datetime) -> int:
     return int(dt.timestamp() * MICROS_PER_SECOND)
 
 
-def to_order_value(value: Union[None, OrderValue, datetime, str]) -> Optional[OrderValue]:
+def to_order_value(value: str | datetime | OrderValue | None) -> OrderValue | None:
     if value is None:
         return None
 

@@ -1,9 +1,8 @@
 import ast
-from typing import Optional
 
 
 class ConstantTransformer(ast.NodeTransformer):
-    def __init__(self, constant_replace_map: Optional[dict[str, str]]):
+    def __init__(self, constant_replace_map: dict[str, str] | None):
         self.constant_replace_map = (
             constant_replace_map if constant_replace_map is not None else {}
         )

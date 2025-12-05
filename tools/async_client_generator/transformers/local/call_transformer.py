@@ -1,11 +1,10 @@
 import ast
-from typing import Union
 
 from tools.async_client_generator.transformers.call_transformer import CallTransformer
 
 
 class LocalCallTransformer(CallTransformer):
-    def visit_Call(self, node: ast.Call) -> Union[ast.AST, ast.Await]:
+    def visit_Call(self, node: ast.Call) -> ast.AST | ast.Await:
         if isinstance(node.func, ast.Name):
             if node.func.id in self.class_replace_map:
                 node.func.id = self.class_replace_map[node.func.id]

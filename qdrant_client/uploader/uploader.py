@@ -1,6 +1,6 @@
 from abc import ABC
 from itertools import count, islice
-from typing import Any, Generator, Iterable, Optional, Union
+from typing import Any, Generator, Iterable
 
 import numpy as np
 
@@ -10,7 +10,7 @@ from qdrant_client.http.models import ExtendedPointId
 from qdrant_client.parallel_processor import Worker
 
 
-def iter_batch(iterable: Union[Iterable, Generator], size: int) -> Iterable:
+def iter_batch(iterable: Iterable | Generator, size: int) -> Iterable:
     """
     >>> list(iter_batch([1,2,3,4,5], 3))
     [[1, 2, 3], [4, 5]]
@@ -27,7 +27,7 @@ class BaseUploader(Worker, ABC):
     @classmethod
     def iterate_records_batches(
         cls,
-        records: Iterable[Union[Record, types.PointStruct]],
+        records: Iterable[Record | types.PointStruct],
         batch_size: int,
     ) -> Iterable:
         record_batches = iter_batch(records, batch_size)
@@ -44,11 +44,9 @@ class BaseUploader(Worker, ABC):
     @classmethod
     def iterate_batches(
         cls,
-        vectors: Union[
-            dict[str, types.NumpyArray], types.NumpyArray, Iterable[types.VectorStruct]
-        ],
-        payload: Optional[Iterable[dict]],
-        ids: Optional[Iterable[ExtendedPointId]],
+        vectors: dict[str, types.NumpyArray] | types.NumpyArray | Iterable[types.VectorStruct],
+        payload: Iterable[dict] | None,
+        ids: Iterable[ExtendedPointId] | None,
         batch_size: int,
     ) -> Iterable:
         if ids is None:

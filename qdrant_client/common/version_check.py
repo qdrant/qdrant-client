@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Optional
+from typing import Any
 from collections import namedtuple
 
 import httpx
@@ -10,8 +10,8 @@ Version = namedtuple("Version", ["major", "minor", "rest"])
 
 
 def get_server_version(
-    rest_uri: str, rest_headers: dict[str, Any], auth_provider: Optional[BearerAuth]
-) -> Optional[str]:
+    rest_uri: str, rest_headers: dict[str, Any], auth_provider: BearerAuth | None
+) -> str | None:
     response = httpx.get(rest_uri, headers=rest_headers, auth=auth_provider)
 
     if response.status_code == 200:
@@ -40,7 +40,7 @@ def parse_version(version: str) -> Version:
         ) from er
 
 
-def is_compatible(client_version: Optional[str], server_version: Optional[str]) -> bool:
+def is_compatible(client_version: str | None, server_version: str | None) -> bool:
     if not client_version:
         logging.debug(f"Unable to compare with client version {client_version}")
         return False

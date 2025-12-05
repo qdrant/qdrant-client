@@ -1,6 +1,6 @@
 import uuid
 from datetime import date, datetime, timezone
-from typing import Any, Mapping, Optional, Sequence, Union, get_args
+from typing import Any, Mapping, Sequence, get_args
 
 from google.protobuf.internal.containers import MessageMap
 from google.protobuf.json_format import MessageToDict
@@ -636,7 +636,7 @@ class GrpcToRest:
 
         match = cls.convert_match(model.match) if model.HasField("match") else None
 
-        range_: Optional[rest.RangeInterface] = None
+        range_: rest.RangeInterface | None = None
         if model.HasField("range"):
             range_ = cls.convert_range(model.range)
         elif model.HasField("datetime_range"):
@@ -839,7 +839,7 @@ class GrpcToRest:
     def convert_points_selector(
         cls,
         model: grpc.PointsSelector,
-        shard_key_selector: Optional[grpc.ShardKeySelector] = None,
+        shard_key_selector: grpc.ShardKeySelector | None = None,
     ) -> rest.PointsSelector:
         name = model.WhichOneof("points_selector_one_of")
         if name is None:
@@ -989,17 +989,17 @@ class GrpcToRest:
 
     @classmethod
     def _convert_vector(
-        cls, model: Union[grpc.Vector, grpc.VectorOutput]
+        cls, model: grpc.Vector | grpc.VectorOutput
     ) -> tuple[
-        Optional[str],
-        Union[
-            list[float],
-            list[list[float]],
-            rest.SparseVector,
-            grpc.Document,
-            grpc.Image,
-            grpc.InferenceObject,
-        ],
+        str | None,
+        (
+            list[float]
+            | list[list[float]]
+            | rest.SparseVector
+            | grpc.Document
+            | grpc.Image
+            | grpc.InferenceObject
+        ),
     ]:
         """Parse common parts of vector structs
 
@@ -1039,14 +1039,14 @@ class GrpcToRest:
     @classmethod
     def convert_vector(
         cls, model: grpc.Vector
-    ) -> Union[
-        list[float],
-        list[list[float]],
-        rest.SparseVector,
-        rest.Document,
-        rest.Image,
-        rest.InferenceObject,
-    ]:
+    ) -> (
+        list[float]
+        | list[list[float]]
+        | rest.SparseVector
+        | rest.Document
+        | rest.Image
+        | rest.InferenceObject
+    ):
         name, val = cls._convert_vector(model)
 
         if name is None:
@@ -1066,7 +1066,7 @@ class GrpcToRest:
     @classmethod
     def convert_vector_output(
         cls, model: grpc.VectorOutput
-    ) -> Union[list[float], list[list[float]], rest.SparseVector]:
+    ) -> list[float] | list[list[float]] | rest.SparseVector:
         name, val = cls._convert_vector(model)
         if name is None:
             return val
@@ -2123,16 +2123,14 @@ class GrpcToRest:
     @classmethod
     def convert_cluster_operations(
         cls,
-        model: Union[
-            grpc.MoveShard,
-            grpc.ReplicateShard,
-            grpc.AbortShardTransfer,
-            grpc.Replica,
-            grpc.CreateShardKey,
-            grpc.DeleteShardKey,
-            grpc.RestartTransfer,
-            grpc.ReplicatePoints,
-        ],
+        model: grpc.MoveShard
+        | grpc.ReplicateShard
+        | grpc.AbortShardTransfer
+        | grpc.Replica
+        | grpc.CreateShardKey
+        | grpc.DeleteShardKey
+        | grpc.RestartTransfer
+        | grpc.ReplicatePoints,
     ) -> rest.ClusterOperations:
         if isinstance(model, grpc.MoveShard):
             return rest.MoveShardOperation(move_shard=cls.convert_move_shard(model))
@@ -2648,7 +2646,7 @@ class RestToGrpc:
     @classmethod
     def convert_filter(cls, model: rest.Filter) -> grpc.Filter:
         def convert_conditions(
-            conditions: Union[list[rest.Condition], rest.Condition],
+            conditions: list[rest.Condition] | rest.Condition,
         ) -> list[grpc.Condition]:
             if not isinstance(conditions, list):
                 conditions = [conditions]
@@ -2678,7 +2676,7 @@ class RestToGrpc:
         )
 
     @classmethod
-    def convert_datetime(cls, model: Union[datetime, date]) -> Timestamp:
+    def convert_datetime(cls, model: datetime | date) -> Timestamp:
         if isinstance(model, date) and not isinstance(model, datetime):
             model = datetime.combine(model, datetime.min.time())
         ts = Timestamp()
@@ -3482,7 +3480,7 @@ class RestToGrpc:
     @classmethod
     def convert_vector_struct(cls, model: rest.VectorStruct) -> grpc.Vectors:
         def convert_vector(
-            vector: Union[list[float], list[list[float]]],
+            vector: list[float] | list[list[float]],
         ) -> grpc.Vector:
             if len(vector) != 0 and isinstance(
                 vector[0], list
@@ -3525,7 +3523,7 @@ class RestToGrpc:
     @classmethod
     def convert_vector_struct_output(cls, model: rest.VectorStructOutput) -> grpc.VectorsOutput:
         def convert_vector(
-            vector: Union[list[float], list[list[float]]],
+            vector: list[float] | list[list[float]],
         ) -> grpc.VectorOutput:
             if len(vector) != 0 and isinstance(
                 vector[0], list
@@ -3580,7 +3578,7 @@ class RestToGrpc:
     @classmethod
     def convert_named_vector_struct(
         cls, model: rest.NamedVectorStruct
-    ) -> tuple[list[float], Optional[grpc.SparseIndices], Optional[str]]:
+    ) -> tuple[list[float], grpc.SparseIndices | None, str | None]:
         if isinstance(model, list):
             return model, None, None
         elif isinstance(model, rest.NamedVector):
@@ -4629,16 +4627,16 @@ class RestToGrpc:
     @classmethod
     def convert_cluster_operations(
         cls, model: rest.ClusterOperations
-    ) -> Union[
-        grpc.MoveShard,
-        grpc.ReplicateShard,
-        grpc.AbortShardTransfer,
-        grpc.Replica,
-        grpc.CreateShardKey,
-        grpc.DeleteShardKey,
-        grpc.RestartTransfer,
-        grpc.ReplicatePoints,
-    ]:
+    ) -> (
+        grpc.MoveShard
+        | grpc.ReplicateShard
+        | grpc.AbortShardTransfer
+        | grpc.Replica
+        | grpc.CreateShardKey
+        | grpc.DeleteShardKey
+        | grpc.RestartTransfer
+        | grpc.ReplicatePoints
+    ):
         if isinstance(model, rest.MoveShardOperation):
             operation = model.move_shard
             return cls.convert_move_shard(operation)

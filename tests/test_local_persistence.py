@@ -1,6 +1,5 @@
 import random
 import tempfile
-from typing import Optional
 
 import numpy as np
 import pytest
@@ -15,7 +14,7 @@ default_collection_name = "example"
 
 def ingest_dense_vector_data(
     vector_size: int = 1500,
-    path: Optional[str] = None,
+    path: str | None = None,
     collection_name: str = default_collection_name,
 ):
     lines = [x for x in range(10)]
@@ -46,7 +45,7 @@ def ingest_dense_vector_data(
 def ingest_sparse_vector_data(
     vector_count: int = 10,
     max_vector_size: int = 100,
-    path: Optional[str] = None,
+    path: str | None = None,
     collection_name: str = default_collection_name,
     add_dense_to_config: bool = False,
 ):

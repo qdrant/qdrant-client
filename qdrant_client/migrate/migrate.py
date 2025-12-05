@@ -1,5 +1,5 @@
 import time
-from typing import Iterable, Optional
+from typing import Iterable
 
 from qdrant_client._pydantic_compat import to_dict, model_fields
 from qdrant_client.client_base import QdrantBase
@@ -35,7 +35,7 @@ def upload_with_retry(
 def migrate(
     source_client: QdrantBase,
     dest_client: QdrantBase,
-    collection_names: Optional[list[str]] = None,
+    collection_names: list[str] | None = None,
     recreate_on_collision: bool = False,
     batch_size: int = 100,
 ) -> None:
@@ -81,7 +81,7 @@ def _has_custom_shards(source_client: QdrantBase, collection_name: str) -> bool:
 
 
 def _select_source_collections(
-    source_client: QdrantBase, collection_names: Optional[list[str]] = None
+    source_client: QdrantBase, collection_names: list[str] | None = None
 ) -> list[str]:
     source_collections = source_client.get_collections().collections
     source_collection_names = [collection.name for collection in source_collections]
@@ -114,7 +114,7 @@ def _recreate_collection(
     if dest_client.collection_exists(collection_name):
         dest_client.delete_collection(collection_name)
 
-    strict_mode_config: Optional[models.StrictModeConfig] = None
+    strict_mode_config: models.StrictModeConfig | None = None
     if src_config.strict_mode_config is not None:
         strict_mode_config = models.StrictModeConfig(
             **{
