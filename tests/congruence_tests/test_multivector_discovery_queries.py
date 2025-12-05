@@ -1,5 +1,5 @@
 import random
-from typing import Any, Optional
+from typing import Any
 
 import numpy as np
 import pytest
@@ -293,7 +293,7 @@ def discover_from_another_collection(
     client: QdrantBase,
     collection_name=COLLECTION_NAME,
     lookup_collection_name=secondary_collection_name,
-    positive_point_id: Optional[int] = None,
+    positive_point_id: int | None = None,
     **kwargs: dict[str, Any],
 ) -> list[models.ScoredPoint]:
     return client.query_points(

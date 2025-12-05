@@ -1,5 +1,4 @@
 from enum import Enum
-from typing import Optional
 
 from pydantic import BaseModel
 
@@ -12,11 +11,11 @@ class JsonPathItemType(str, Enum):
 
 class JsonPathItem(BaseModel):
     item_type: JsonPathItemType
-    index: Optional[int] = (
+    index: int | None = (
         None  # split into index and key instead of using Union, because pydantic coerces
     )
     # int to str even in case of Union[int, str]. Tested with pydantic==1.10.14
-    key: Optional[str] = None
+    key: str | None = None
 
 
 def parse_json_path(key: str) -> list[JsonPathItem]:
@@ -78,7 +77,7 @@ def trunk_sep(path: str) -> str:
         raise ValueError("Invalid path")
 
 
-def match_quote(path: str) -> tuple[Optional[JsonPathItem], str]:
+def match_quote(path: str) -> tuple[JsonPathItem | None, str]:
     if not path.startswith('"'):
         return None, path
 
@@ -96,7 +95,7 @@ def match_quote(path: str) -> tuple[Optional[JsonPathItem], str]:
     )
 
 
-def match_key(path: str) -> tuple[Optional[JsonPathItem], str]:
+def match_key(path: str) -> tuple[JsonPathItem | None, str]:
     char_counter = 0
     for char in path:
         if not char.isalnum() and char not in ["_", "-"]:
@@ -125,7 +124,7 @@ def match_brackets(rest: str) -> tuple[list[JsonPathItem], str]:
     return keys, rest
 
 
-def _match_brackets(path: str) -> tuple[Optional[JsonPathItem], str]:
+def _match_brackets(path: str) -> tuple[JsonPathItem | None, str]:
     if "[" not in path or not path.startswith("["):
         return None, path
 

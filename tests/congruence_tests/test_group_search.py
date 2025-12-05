@@ -1,4 +1,4 @@
-from typing import Sequence, Union
+from typing import Sequence
 
 import numpy as np
 
@@ -36,12 +36,10 @@ class TestGroupSearcher:
     def group_search(
         self,
         client: QdrantBase,
-        query_vector: Union[
-            types.NumpyArray,
-            Sequence[float],
-            tuple[str, list[float]],
-            types.NamedVector,
-        ],
+        query_vector: types.NumpyArray
+        | Sequence[float]
+        | tuple[str, list[float]]
+        | types.NamedVector,
     ) -> models.GroupsResult:
         using = None
         if isinstance(query_vector, tuple):

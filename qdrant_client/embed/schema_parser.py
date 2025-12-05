@@ -1,6 +1,6 @@
 from copy import copy, deepcopy
 from pathlib import Path
-from typing import Type, Union, Any, Optional
+from typing import Type, Any
 
 from pydantic import BaseModel
 
@@ -73,7 +73,7 @@ class ModelSchemaParser:
 
     def __init__(self) -> None:
         # self._defs does not include the whole schema, but only the part with the structures used in $defs
-        self._defs: dict[str, Union[dict[str, Any], list[dict[str, Any]]]] = deepcopy(DEFS)  # type: ignore[arg-type]
+        self._defs: dict[str, dict[str, Any] | list[dict[str, Any]]] = deepcopy(DEFS)  # type: ignore[arg-type]
         self._cache: dict[str, list[str]] = deepcopy(CACHE_STR_PATH)
 
         self._recursive_refs: set[str] = set(RECURSIVE_REFS)
@@ -90,10 +90,10 @@ class ModelSchemaParser:
 
     def _replace_refs(
         self,
-        schema: Union[dict[str, Any], list[dict[str, Any]]],
-        parent: Optional[str] = None,
-        seen_refs: Optional[set] = None,
-    ) -> Union[dict[str, Any], list[dict[str, Any]]]:
+        schema: dict[str, Any] | list[dict[str, Any]],
+        parent: str | None = None,
+        seen_refs: set | None = None,
+    ) -> dict[str, Any] | list[dict[str, Any]]:
         """Replace refs in schema with their definitions
 
         Args:
@@ -152,10 +152,10 @@ class ModelSchemaParser:
 
     def _find_document_paths(
         self,
-        schema: Union[dict[str, Any], list[dict[str, Any]]],
+        schema: dict[str, Any] | list[dict[str, Any]],
         current_path: str = "",
         after_properties: bool = False,
-        seen_refs: Optional[set] = None,
+        seen_refs: set | None = None,
     ) -> list[str]:
         """Read a schema and find paths to objects requiring inference
 
@@ -286,7 +286,7 @@ class ModelSchemaParser:
         # convert str paths to FieldPath objects which group path parts and reduce the time of the traversal
         self.path_cache = {model: convert_paths(paths) for model, paths in self._cache.items()}
 
-    def _persist(self, output_path: Union[Path, str] = CACHE_PATH) -> None:
+    def _persist(self, output_path: Path | str = CACHE_PATH) -> None:
         """Persist the parser state to a file
 
         Args:
