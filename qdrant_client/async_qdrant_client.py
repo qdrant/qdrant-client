@@ -571,6 +571,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             score_threshold=score_threshold,
             using=using,
             with_lookup=with_lookup,
+            lookup_from=lookup_from,
             consistency=consistency,
             shard_key_selector=shard_key_selector,
             timeout=timeout,
