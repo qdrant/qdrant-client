@@ -17,7 +17,6 @@ from typing import (
 from uuid import uuid4
 
 import numpy as np
-import portalocker
 
 from qdrant_client.common.client_warnings import show_warning, show_warning_once
 from qdrant_client._pydantic_compat import to_dict
@@ -46,7 +45,9 @@ class QdrantLocal(QdrantBase):
 
     LARGE_DATA_THRESHOLD = 20_000
 
-    def __init__(self, location: str, force_disable_check_same_thread: bool = False) -> None:
+    def __init__(
+        self, location: str, force_disable_check_same_thread: bool = False
+    ) -> None:
         """
         Initialize local Qdrant.
 
@@ -83,9 +84,13 @@ class QdrantLocal(QdrantBase):
 
         try:
             if self._flock_file is not None and not self._flock_file.closed:
+                import portalocker
+
                 portalocker.unlock(self._flock_file)
                 self._flock_file.close()
-        except TypeError:  # sometimes portalocker module can be garbage collected before
+        except (
+            TypeError
+        ):  # sometimes portalocker module can be garbage collected before
             # QdrantLocal instance
             pass
 
@@ -134,6 +139,8 @@ class QdrantLocal(QdrantBase):
             with open(lock_file_path, "w") as f:
                 f.write("tmp lock file")
         self._flock_file = open(lock_file_path, "r+")
+        import portalocker
+
         try:
             portalocker.lock(
                 self._flock_file,
@@ -150,7 +157,9 @@ class QdrantLocal(QdrantBase):
             return
 
         if self.closed:
-            raise RuntimeError("QdrantLocal instance is closed. Please create a new instance.")
+            raise RuntimeError(
+                "QdrantLocal instance is closed. Please create a new instance."
+            )
 
         meta_path = os.path.join(self.location, META_INFO_FILENAME)
         with open(meta_path, "w") as f:
@@ -168,7 +177,9 @@ class QdrantLocal(QdrantBase):
 
     def _get_collection(self, collection_name: str) -> LocalCollection:
         if self.closed:
-            raise RuntimeError("QdrantLocal instance is closed. Please create a new instance.")
+            raise RuntimeError(
+                "QdrantLocal instance is closed. Please create a new instance."
+            )
 
         if collection_name in self.collections:
             return self.collections[collection_name]
@@ -244,7 +255,9 @@ class QdrantLocal(QdrantBase):
         point ids that should be filtered when searching.
         """
 
-        lookup_collection_name = lookup_from.collection if lookup_from else collection_name
+        lookup_collection_name = (
+            lookup_from.collection if lookup_from else collection_name
+        )
         collection = self._get_collection(lookup_collection_name)
 
         search_in_vector_name = using if using is not None else DEFAULT_VECTOR_NAME
@@ -296,11 +309,13 @@ class QdrantLocal(QdrantBase):
         elif isinstance(query, rest_models.RecommendQuery):
             if query.recommend.negative is not None:
                 query.recommend.negative = [
-                    input_into_vector(vector_input) for vector_input in query.recommend.negative
+                    input_into_vector(vector_input)
+                    for vector_input in query.recommend.negative
                 ]
             if query.recommend.positive is not None:
                 query.recommend.positive = [
-                    input_into_vector(vector_input) for vector_input in query.recommend.positive
+                    input_into_vector(vector_input)
+                    for vector_input in query.recommend.positive
                 ]
 
         elif isinstance(query, rest_models.DiscoverQuery):
@@ -318,7 +333,9 @@ class QdrantLocal(QdrantBase):
                 for pair in pairs
             ]
         elif isinstance(query, rest_models.ContextQuery):
-            pairs = query.context if isinstance(query.context, list) else [query.context]
+            pairs = (
+                query.context if isinstance(query.context, list) else [query.context]
+            )
             query.context = [
                 rest_models.ContextPair(
                     positive=input_into_vector(pair.positive),
@@ -350,7 +367,9 @@ class QdrantLocal(QdrantBase):
         if isinstance(prefetch, types.Prefetch):
             prefetches = [prefetch]
             prefetches.extend(
-                prefetch.prefetch if isinstance(prefetch.prefetch, list) else [prefetch.prefetch]
+                prefetch.prefetch
+                if isinstance(prefetch.prefetch, list)
+                else [prefetch.prefetch]
             )
         elif isinstance(prefetch, Sequence):
             prefetches = list(prefetch)
@@ -376,9 +395,13 @@ class QdrantLocal(QdrantBase):
         )
         prefetch.query = query
 
-        prefetch.filter = ignore_mentioned_ids_filter(prefetch.filter, list(mentioned_ids))
+        prefetch.filter = ignore_mentioned_ids_filter(
+            prefetch.filter, list(mentioned_ids)
+        )
 
-        prefetch.prefetch = self._resolve_prefetches_input(prefetch.prefetch, collection_name)
+        prefetch.prefetch = self._resolve_prefetches_input(
+            prefetch.prefetch, collection_name
+        )
 
         return prefetch
 
@@ -404,7 +427,9 @@ class QdrantLocal(QdrantBase):
             query, mentioned_ids = self._resolve_query_input(
                 collection_name, query, using, lookup_from
             )
-            query_filter = ignore_mentioned_ids_filter(query_filter, list(mentioned_ids))
+            query_filter = ignore_mentioned_ids_filter(
+                query_filter, list(mentioned_ids)
+            )
 
         prefetch = self._resolve_prefetches_input(prefetch, collection_name)
 
@@ -475,7 +500,9 @@ class QdrantLocal(QdrantBase):
             query, mentioned_ids = self._resolve_query_input(
                 collection_name, query, using, lookup_from
             )
-            query_filter = ignore_mentioned_ids_filter(query_filter, list(mentioned_ids))
+            query_filter = ignore_mentioned_ids_filter(
+                query_filter, list(mentioned_ids)
+            )
         with_lookup_collection = None
         if with_lookup is not None:
             if isinstance(with_lookup, str):
@@ -674,7 +701,9 @@ class QdrantLocal(QdrantBase):
         self, collection_name: str, **kwargs: Any
     ) -> types.CollectionsAliasesResponse:
         if self.closed:
-            raise RuntimeError("QdrantLocal instance is closed. Please create a new instance.")
+            raise RuntimeError(
+                "QdrantLocal instance is closed. Please create a new instance."
+            )
 
         return types.CollectionsAliasesResponse(
             aliases=[
@@ -689,7 +718,9 @@ class QdrantLocal(QdrantBase):
 
     def get_aliases(self, **kwargs: Any) -> types.CollectionsAliasesResponse:
         if self.closed:
-            raise RuntimeError("QdrantLocal instance is closed. Please create a new instance.")
+            raise RuntimeError(
+                "QdrantLocal instance is closed. Please create a new instance."
+            )
 
         return types.CollectionsAliasesResponse(
             aliases=[
@@ -703,7 +734,9 @@ class QdrantLocal(QdrantBase):
 
     def get_collections(self, **kwargs: Any) -> types.CollectionsResponse:
         if self.closed:
-            raise RuntimeError("QdrantLocal instance is closed. Please create a new instance.")
+            raise RuntimeError(
+                "QdrantLocal instance is closed. Please create a new instance."
+            )
 
         return types.CollectionsResponse(
             collections=[
@@ -712,7 +745,9 @@ class QdrantLocal(QdrantBase):
             ]
         )
 
-    def get_collection(self, collection_name: str, **kwargs: Any) -> types.CollectionInfo:
+    def get_collection(
+        self, collection_name: str, **kwargs: Any
+    ) -> types.CollectionInfo:
         collection = self._get_collection(collection_name)
         return collection.info()
 
@@ -755,7 +790,9 @@ class QdrantLocal(QdrantBase):
 
     def delete_collection(self, collection_name: str, **kwargs: Any) -> bool:
         if self.closed:
-            raise RuntimeError("QdrantLocal instance is closed. Please create a new instance.")
+            raise RuntimeError(
+                "QdrantLocal instance is closed. Please create a new instance."
+            )
 
         _collection = self.collections.pop(collection_name, None)
         del _collection
@@ -773,13 +810,17 @@ class QdrantLocal(QdrantBase):
     def create_collection(
         self,
         collection_name: str,
-        vectors_config: types.VectorParams | Mapping[str, types.VectorParams] | None = None,
+        vectors_config: types.VectorParams
+        | Mapping[str, types.VectorParams]
+        | None = None,
         sparse_vectors_config: Mapping[str, types.SparseVectorParams] | None = None,
         metadata: types.Payload | None = None,
         **kwargs: Any,
     ) -> bool:
         if self.closed:
-            raise RuntimeError("QdrantLocal instance is closed. Please create a new instance.")
+            raise RuntimeError(
+                "QdrantLocal instance is closed. Please create a new instance."
+            )
 
         if collection_name in self.collections:
             raise ValueError(f"Collection {collection_name} already exists")
@@ -804,7 +845,9 @@ class QdrantLocal(QdrantBase):
     def recreate_collection(
         self,
         collection_name: str,
-        vectors_config: types.VectorParams | Mapping[str, types.VectorParams] | None = None,
+        vectors_config: types.VectorParams
+        | Mapping[str, types.VectorParams]
+        | None = None,
         sparse_vectors_config: Mapping[str, types.SparseVectorParams] | None = None,
         metadata: types.Payload | None = None,
         **kwargs: Any,
@@ -846,7 +889,9 @@ class QdrantLocal(QdrantBase):
     def upload_collection(
         self,
         collection_name: str,
-        vectors: dict[str, types.NumpyArray] | types.NumpyArray | Iterable[types.VectorStruct],
+        vectors: dict[str, types.NumpyArray]
+        | types.NumpyArray
+        | Iterable[types.VectorStruct],
         payload: Iterable[dict[Any, Any]] | None = None,
         ids: Iterable[types.PointId] | None = None,
         update_filter: types.Filter | None = None,
@@ -858,7 +903,9 @@ class QdrantLocal(QdrantBase):
                 yield str(uuid4())
 
         collection = self._get_collection(collection_name)
-        if isinstance(vectors, dict) and any(isinstance(v, np.ndarray) for v in vectors.values()):
+        if isinstance(vectors, dict) and any(
+            isinstance(v, np.ndarray) for v in vectors.values()
+        ):
             assert (
                 len(set([arr.shape[0] for arr in vectors.values()])) == 1
             ), "Each named vector should have the same number of vectors"
@@ -874,7 +921,10 @@ class QdrantLocal(QdrantBase):
             [
                 rest_models.PointStruct(
                     id=str(point_id) if isinstance(point_id, uuid.UUID) else point_id,
-                    vector=(vector.tolist() if isinstance(vector, np.ndarray) else vector) or {},
+                    vector=(
+                        vector.tolist() if isinstance(vector, np.ndarray) else vector
+                    )
+                    or {},
                     payload=payload or {},
                 )
                 for (point_id, vector, payload) in zip(
@@ -925,7 +975,9 @@ class QdrantLocal(QdrantBase):
             "Snapshots are not supported in the local Qdrant. Please use server Qdrant if you need full snapshots."
         )
 
-    def delete_snapshot(self, collection_name: str, snapshot_name: str, **kwargs: Any) -> bool:
+    def delete_snapshot(
+        self, collection_name: str, snapshot_name: str, **kwargs: Any
+    ) -> bool:
         raise NotImplementedError(
             "Snapshots are not supported in the local Qdrant. Please use server Qdrant if you need full snapshots."
         )
@@ -943,7 +995,9 @@ class QdrantLocal(QdrantBase):
             "Snapshots are not supported in the local Qdrant. Please use server Qdrant if you need full snapshots."
         )
 
-    def recover_snapshot(self, collection_name: str, location: str, **kwargs: Any) -> bool:
+    def recover_snapshot(
+        self, collection_name: str, location: str, **kwargs: Any
+    ) -> bool:
         raise NotImplementedError(
             "Snapshots are not supported in the local Qdrant. Please use server Qdrant if you need full snapshots."
         )
@@ -1018,7 +1072,9 @@ class QdrantLocal(QdrantBase):
             "Please use server Qdrant if you need a cluster"
         )
 
-    def collection_cluster_info(self, collection_name: str) -> types.CollectionClusterInfo:
+    def collection_cluster_info(
+        self, collection_name: str
+    ) -> types.CollectionClusterInfo:
         raise NotImplementedError(
             "Collection cluster info is not supported in the local Qdrant. "
             "Please use server Qdrant if you need a cluster"
