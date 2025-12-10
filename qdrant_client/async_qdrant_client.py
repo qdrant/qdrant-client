@@ -104,10 +104,10 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
     ):
         self._init_options = {
             key: value
-            for key, value in locals().items()
+            for (key, value) in locals().items()
             if key not in ("self", "__class__", "kwargs")
         }
-        self._init_options.update({k: v for k, v in kwargs.items()})
+        self._init_options.update({k: v for (k, v) in kwargs.items()})
         if sum([param is not None for param in (location, url, host, path)]) > 1:
             raise ValueError(
                 "Only one of <location>, <url>, <host> or <path> should be specified."
