@@ -82,7 +82,8 @@ class QdrantLocal(QdrantBase):
 
         try:
             if self._flock_file is not None and not self._flock_file.closed:
-                import portalocker
+                import portalocker  # `portalocker` can't be imported at the top level: it checks for writeable
+                # directories on import and crashes in read-only systems even if local mode is not used
 
                 portalocker.unlock(self._flock_file)
                 self._flock_file.close()
@@ -135,7 +136,9 @@ class QdrantLocal(QdrantBase):
             with open(lock_file_path, "w") as f:
                 f.write("tmp lock file")
         self._flock_file = open(lock_file_path, "r+")
-        import portalocker
+
+        import portalocker  # `portalocker` can't be imported at the top level: it checks for writeable directories
+        # on import and crashes in read-only systems even if local mode is not used
 
         try:
             portalocker.lock(
