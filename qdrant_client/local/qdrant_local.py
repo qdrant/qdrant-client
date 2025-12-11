@@ -17,7 +17,6 @@ from typing import (
 from uuid import uuid4
 
 import numpy as np
-import portalocker
 
 from qdrant_client.common.client_warnings import show_warning, show_warning_once
 from qdrant_client._pydantic_compat import to_dict
@@ -83,6 +82,9 @@ class QdrantLocal(QdrantBase):
 
         try:
             if self._flock_file is not None and not self._flock_file.closed:
+                import portalocker  # `portalocker` can't be imported at the top level: it checks for writeable
+                # directories on import and crashes in read-only systems even if local mode is not used
+
                 portalocker.unlock(self._flock_file)
                 self._flock_file.close()
         except TypeError:  # sometimes portalocker module can be garbage collected before
@@ -134,6 +136,10 @@ class QdrantLocal(QdrantBase):
             with open(lock_file_path, "w") as f:
                 f.write("tmp lock file")
         self._flock_file = open(lock_file_path, "r+")
+
+        import portalocker  # `portalocker` can't be imported at the top level: it checks for writeable directories
+        # on import and crashes in read-only systems even if local mode is not used
+
         try:
             portalocker.lock(
                 self._flock_file,

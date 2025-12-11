@@ -20,7 +20,6 @@ from io import TextIOWrapper
 from typing import Any, Generator, Iterable, Mapping, Sequence, get_args
 from uuid import uuid4
 import numpy as np
-import portalocker
 from qdrant_client.common.client_warnings import show_warning, show_warning_once
 from qdrant_client._pydantic_compat import to_dict
 from qdrant_client.async_client_base import AsyncQdrantBase
@@ -83,6 +82,8 @@ class AsyncQdrantLocal(AsyncQdrantBase):
                 )
         try:
             if self._flock_file is not None and (not self._flock_file.closed):
+                import portalocker
+
                 portalocker.unlock(self._flock_file)
                 self._flock_file.close()
         except TypeError:
@@ -124,6 +125,8 @@ class AsyncQdrantLocal(AsyncQdrantBase):
             with open(lock_file_path, "w") as f:
                 f.write("tmp lock file")
         self._flock_file = open(lock_file_path, "r+")
+        import portalocker
+
         try:
             portalocker.lock(
                 self._flock_file,
