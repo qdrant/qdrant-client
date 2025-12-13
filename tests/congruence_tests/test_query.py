@@ -413,6 +413,99 @@ class TestSimpleSearcher:
             limit=10,
         )
 
+    def dense_query_rrf_score_threshold(self, client: QdrantBase) -> list[models.ScoredPoint]:
+        res1 = client.query_points(
+            collection_name=COLLECTION_NAME,
+            prefetch=[
+                models.Prefetch(
+                    query=self.dense_vector_query_text,
+                    using="text",
+                )
+            ],
+            query=models.FusionQuery(fusion=models.Fusion.RRF),
+            with_payload=True,
+            limit=10,
+            score_threshold=0.1,
+        ).points
+
+        res2 = client.query_points(
+            collection_name=COLLECTION_NAME,
+            prefetch=[
+                models.Prefetch(
+                    query=self.dense_vector_query_text,
+                    using="text",
+                )
+            ],
+            query=models.FusionQuery(fusion=models.Fusion.RRF),
+            with_payload=True,
+            limit=10,
+            score_threshold=0.3,
+        ).points
+
+        res3 = client.query_points(
+            collection_name=COLLECTION_NAME,
+            prefetch=[
+                models.Prefetch(
+                    query=self.dense_vector_query_text,
+                    using="text",
+                )
+            ],
+            query=models.FusionQuery(fusion=models.Fusion.RRF),
+            with_payload=True,
+            limit=10,
+            score_threshold=0.5,
+        ).points
+
+        return res1 + res2 + res3
+
+    def dense_query_dbsf_score_threshold(self, client: QdrantBase) -> list[models.ScoredPoint]:
+        res1 = client.query_points(
+            collection_name=COLLECTION_NAME,
+            prefetch=[
+                models.Prefetch(
+                    query=self.dense_vector_query_text,
+                    using="text",
+                ),
+                models.Prefetch(query=self.dense_vector_query_code, using="code"),
+            ],
+            query=models.FusionQuery(fusion=models.Fusion.DBSF),
+            with_payload=True,
+            limit=10,
+            score_threshold=0.3,
+        ).points
+
+        res2 = client.query_points(
+            collection_name=COLLECTION_NAME,
+            prefetch=[
+                models.Prefetch(
+                    query=self.dense_vector_query_text,
+                    using="text",
+                ),
+                models.Prefetch(query=self.dense_vector_query_code, using="code"),
+            ],
+            query=models.FusionQuery(fusion=models.Fusion.DBSF),
+            with_payload=True,
+            limit=10,
+            score_threshold=0.5,
+        ).points
+
+        res3 = client.query_points(
+            collection_name=COLLECTION_NAME,
+            prefetch=[
+                models.Prefetch(
+                    query=self.dense_vector_query_text,
+                    using="text",
+                ),
+                models.Prefetch(query=self.dense_vector_query_code, using="code"),
+            ],
+            query=models.FusionQuery(fusion=models.Fusion.DBSF),
+            with_payload=True,
+            limit=10,
+            score_threshold=0.7,
+        ).points
+
+        return res1 + res2 + res3
+
     def deep_dense_queries_rrf(self, client: QdrantBase) -> models.QueryResponse:
         return client.query_points(
             collection_name=COLLECTION_NAME,
@@ -1300,6 +1393,12 @@ def test_dense_query_fusion():
 
     compare_clients_results(
         local_client, http_client, grpc_client, searcher.dense_query_parametrized_rrf
+    )
+    compare_clients_results(
+        local_client, http_client, grpc_client, searcher.dense_query_rrf_score_threshold
+    )
+    compare_clients_results(
+        local_client, http_client, grpc_client, searcher.dense_query_dbsf_score_threshold
     )
 
 

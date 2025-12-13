@@ -823,6 +823,10 @@ class LocalCollection:
                 else:
                     raise ValueError(f"Fusion method {query.fusion} does not exist")
 
+            # Apply score_threshold filtering (matching server behavior)
+            if score_threshold is not None:
+                fused = [p for p in fused if p.score >= score_threshold]
+
             # Fetch payload and vectors
             ids = [point.id for point in fused]
             fetched_points = self.retrieve(
