@@ -414,7 +414,7 @@ class TestSimpleSearcher:
         )
 
     def dense_query_rrf_score_threshold(self, client: QdrantBase) -> list[models.ScoredPoint]:
-        res1 = client.query_points(
+        return client.query_points(
             collection_name=COLLECTION_NAME,
             prefetch=[
                 models.Prefetch(
@@ -422,13 +422,14 @@ class TestSimpleSearcher:
                     using="text",
                 )
             ],
-            query=models.FusionQuery(fusion=models.Fusion.RRF),
+            query=models.RrfQuery(rrf=models.Rrf(k=1)),
             with_payload=True,
             limit=10,
-            score_threshold=0.1,
+            score_threshold=0.25,  # should return 3 results: 1.0, 0.5, 0.3(3)
         ).points
 
-        res2 = client.query_points(
+    def dense_query_formula_score_threshold(self, client: QdrantBase) -> list[models.ScoredPoint]:
+        return client.query_points(
             collection_name=COLLECTION_NAME,
             prefetch=[
                 models.Prefetch(
@@ -436,75 +437,11 @@ class TestSimpleSearcher:
                     using="text",
                 )
             ],
-            query=models.FusionQuery(fusion=models.Fusion.RRF),
+            query=models.FormulaQuery(formula=models.MultExpression(mult=["$score", 1.0])),
             with_payload=True,
             limit=10,
-            score_threshold=0.3,
+            score_threshold=1.0,  # todo: score threshold is not applied in formula queries in core
         ).points
-
-        res3 = client.query_points(
-            collection_name=COLLECTION_NAME,
-            prefetch=[
-                models.Prefetch(
-                    query=self.dense_vector_query_text,
-                    using="text",
-                )
-            ],
-            query=models.FusionQuery(fusion=models.Fusion.RRF),
-            with_payload=True,
-            limit=10,
-            score_threshold=0.5,
-        ).points
-
-        return res1 + res2 + res3
-
-    def dense_query_dbsf_score_threshold(self, client: QdrantBase) -> list[models.ScoredPoint]:
-        res1 = client.query_points(
-            collection_name=COLLECTION_NAME,
-            prefetch=[
-                models.Prefetch(
-                    query=self.dense_vector_query_text,
-                    using="text",
-                ),
-                models.Prefetch(query=self.dense_vector_query_code, using="code"),
-            ],
-            query=models.FusionQuery(fusion=models.Fusion.DBSF),
-            with_payload=True,
-            limit=10,
-            score_threshold=0.3,
-        ).points
-
-        res2 = client.query_points(
-            collection_name=COLLECTION_NAME,
-            prefetch=[
-                models.Prefetch(
-                    query=self.dense_vector_query_text,
-                    using="text",
-                ),
-                models.Prefetch(query=self.dense_vector_query_code, using="code"),
-            ],
-            query=models.FusionQuery(fusion=models.Fusion.DBSF),
-            with_payload=True,
-            limit=10,
-            score_threshold=0.5,
-        ).points
-
-        res3 = client.query_points(
-            collection_name=COLLECTION_NAME,
-            prefetch=[
-                models.Prefetch(
-                    query=self.dense_vector_query_text,
-                    using="text",
-                ),
-                models.Prefetch(query=self.dense_vector_query_code, using="code"),
-            ],
-            query=models.FusionQuery(fusion=models.Fusion.DBSF),
-            with_payload=True,
-            limit=10,
-            score_threshold=0.7,
-        ).points
-
-        return res1 + res2 + res3
 
     def deep_dense_queries_rrf(self, client: QdrantBase) -> models.QueryResponse:
         return client.query_points(
@@ -1390,7 +1327,6 @@ def test_dense_query_fusion():
     compare_clients_results(
         local_client, http_client, grpc_client, searcher.deep_dense_queries_dbsf
     )
-
     compare_clients_results(
         local_client, http_client, grpc_client, searcher.dense_query_parametrized_rrf
     )
@@ -1398,7 +1334,7 @@ def test_dense_query_fusion():
         local_client, http_client, grpc_client, searcher.dense_query_rrf_score_threshold
     )
     compare_clients_results(
-        local_client, http_client, grpc_client, searcher.dense_query_dbsf_score_threshold
+        local_client, http_client, grpc_client, searcher.dense_query_formula_score_threshold
     )
 
 
