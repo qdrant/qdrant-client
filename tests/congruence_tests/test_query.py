@@ -413,6 +413,36 @@ class TestSimpleSearcher:
             limit=10,
         )
 
+    def dense_query_rrf_score_threshold(self, client: QdrantBase) -> list[models.ScoredPoint]:
+        return client.query_points(
+            collection_name=COLLECTION_NAME,
+            prefetch=[
+                models.Prefetch(
+                    query=self.dense_vector_query_text,
+                    using="text",
+                )
+            ],
+            query=models.RrfQuery(rrf=models.Rrf(k=1)),
+            with_payload=True,
+            limit=10,
+            score_threshold=0.25,  # should return 3 results: 1.0, 0.5, 0.3(3)
+        ).points
+
+    def dense_query_formula_score_threshold(self, client: QdrantBase) -> list[models.ScoredPoint]:
+        return client.query_points(
+            collection_name=COLLECTION_NAME,
+            prefetch=[
+                models.Prefetch(
+                    query=self.dense_vector_query_text,
+                    using="text",
+                )
+            ],
+            query=models.FormulaQuery(formula=models.MultExpression(mult=["$score", 1.0])),
+            with_payload=True,
+            limit=10,
+            score_threshold=1.0,  # todo: score threshold is not applied in formula queries in core
+        ).points
+
     def deep_dense_queries_rrf(self, client: QdrantBase) -> models.QueryResponse:
         return client.query_points(
             collection_name=COLLECTION_NAME,
@@ -1297,9 +1327,14 @@ def test_dense_query_fusion():
     compare_clients_results(
         local_client, http_client, grpc_client, searcher.deep_dense_queries_dbsf
     )
-
     compare_clients_results(
         local_client, http_client, grpc_client, searcher.dense_query_parametrized_rrf
+    )
+    compare_clients_results(
+        local_client, http_client, grpc_client, searcher.dense_query_rrf_score_threshold
+    )
+    compare_clients_results(
+        local_client, http_client, grpc_client, searcher.dense_query_formula_score_threshold
     )
 
 
