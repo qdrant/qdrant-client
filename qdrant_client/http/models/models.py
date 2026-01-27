@@ -1,3 +1,4 @@
+from collections.abc import Mapping
 from datetime import date, datetime
 from enum import Enum
 from typing import Any, Dict, List, Literal, Optional, Union
@@ -6,7 +7,7 @@ from uuid import UUID
 from pydantic import BaseModel, Field
 from pydantic.types import StrictBool, StrictFloat, StrictInt, StrictStr
 
-Payload = Dict[str, Any]
+Payload = Mapping[str, Any]
 SparseVectorsConfig = Dict[str, "SparseVectorParams"]
 StrictModeMultivectorConfig = Dict[str, "StrictModeMultivector"]
 StrictModeMultivectorConfigOutput = Dict[str, "StrictModeMultivectorOutput"]
