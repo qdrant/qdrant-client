@@ -215,6 +215,7 @@ vectors = np.random.rand(100, 100)
 client.upsert(
     collection_name="my_collection",
     points=[
+        # Use PointStruct for strict typing. IDs can be integers or strings (UUIDs)
         PointStruct(
             id=idx,
             vector=vector.tolist(),
