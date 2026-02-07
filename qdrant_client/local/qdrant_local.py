@@ -764,6 +764,8 @@ class QdrantLocal(QdrantBase):
             raise RuntimeError("QdrantLocal instance is closed. Please create a new instance.")
 
         _collection = self.collections.pop(collection_name, None)
+        if _collection is not None:
+            _collection.close()
         del _collection
         self.aliases = {
             alias_name: name
@@ -865,9 +867,9 @@ class QdrantLocal(QdrantBase):
 
         collection = self._get_collection(collection_name)
         if isinstance(vectors, dict) and any(isinstance(v, np.ndarray) for v in vectors.values()):
-            assert (
-                len(set([arr.shape[0] for arr in vectors.values()])) == 1
-            ), "Each named vector should have the same number of vectors"
+            assert len(set([arr.shape[0] for arr in vectors.values()])) == 1, (
+                "Each named vector should have the same number of vectors"
+            )
 
             num_vectors = next(iter(vectors.values())).shape[0]
             # convert dict[str, np.ndarray] to list[dict[str, list[float]]]
