@@ -240,3 +240,5 @@ def test_delete_collection_removes_storage_files():
         assert not os.path.exists(collection_path), (
             "Collection directory should be removed after deletion"
         )
+
+        client.close()
