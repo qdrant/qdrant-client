@@ -1639,6 +1639,7 @@ class QdrantClient(QdrantFastembedMixin):
         timeout: int | None = None,
         strict_mode_config: types.StrictModeConfig | None = None,
         metadata: types.Payload | None = None,
+        if_not_exists: bool = False,
         **kwargs: Any,
     ) -> bool:
         """Create empty collection with given parameters
@@ -1685,11 +1686,17 @@ class QdrantClient(QdrantFastembedMixin):
                 If timeout is reached - request will return with service error.
             strict_mode_config: Configure limitations for the collection, such as max size, rate limits, etc.
             metadata: Arbitrary JSON-like metadata for the collection
+            if_not_exists:
+                If True, collection will only be created if it doesn't already exist.
+                If False (default), will attempt to create regardless of existence.
 
         Returns:
             Operation result
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
+        if if_not_exists and self.collection_exists(collection_name):
+            return True
 
         return self._client.create_collection(
             collection_name=collection_name,
