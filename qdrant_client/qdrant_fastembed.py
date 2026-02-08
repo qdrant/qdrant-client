@@ -804,7 +804,7 @@ class QdrantFastembedMixin(QdrantBase):
     def _resolve_query(
         cls,
         query: types.PointId
-        | list[float]
+        | Sequence[float]
         | list[list[float]]
         | types.SparseVector
         | types.Query
@@ -835,6 +835,9 @@ class QdrantFastembedMixin(QdrantBase):
             return models.NearestQuery(nearest=query.tolist())
         if isinstance(query, list):
             return models.NearestQuery(nearest=query)
+        if isinstance(query, tuple):
+            # Convert tuple to list for compatibility
+            return models.NearestQuery(nearest=list(query))
 
         if isinstance(query, get_args(types.PointId)):
             query = (

@@ -747,7 +747,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
     def _resolve_query(
         cls,
         query: types.PointId
-        | list[float]
+        | Sequence[float]
         | list[list[float]]
         | types.SparseVector
         | types.Query
@@ -776,6 +776,9 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
             return models.NearestQuery(nearest=query.tolist())
         if isinstance(query, list):
             return models.NearestQuery(nearest=query)
+        if isinstance(query, tuple):
+            # Convert tuple to list for compatibility
+            return models.NearestQuery(nearest=list(query))
         if isinstance(query, get_args(types.PointId)):
             query = (
                 GrpcToRest.convert_point_id(query) if isinstance(query, grpc.PointId) else query
