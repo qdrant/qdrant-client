@@ -1,5 +1,6 @@
 from enum import Enum
 from typing import TypeAlias
+from itertools import permutations
 
 import numpy as np
 
@@ -56,8 +57,46 @@ class ContextQuery:
     def __init__(self, context_pairs: list[ContextPair]):
         self.context_pairs = context_pairs
 
+class FeedbackItem:
+    def __init__(self, vector: list[float], score: float):
+        self.vector = np.array(vector)
+        self.score = score
+        assert not np.isnan(self.vector).any(), "Feedback vector must not contain NaN"
 
-DenseQueryVector: TypeAlias = DiscoveryQuery | ContextQuery | RecoQuery
+
+class NaiveFeedbackCoefficients:
+    def __init__(self, a: float, b: float, c: float):
+        self.a = a
+        self.b = b
+        self.c = c
+
+
+class FeedbackContextPair:
+    def __init__(
+        self, positive: types.NumpyArray, negative: types.NumpyArray, partial_computation: float
+    ):
+        self.positive = positive
+        self.negative = negative
+        self.partial_computation = partial_computation
+
+
+class NaiveFeedbackQuery:
+    def __init__(
+        self,
+        target: list[float],
+        feedback: list[FeedbackItem],
+        coefficients: NaiveFeedbackCoefficients,
+    ):
+        self.target = np.array(target)
+        self.feedback = feedback
+        self.coefficients = coefficients
+
+        assert not np.isnan(self.target).any(), "Target vector must not contain NaN"
+        for item in self.feedback:
+            assert not np.isnan(item.vector).any(), "Feedback vector must not contain NaN"
+
+
+DenseQueryVector: TypeAlias = DiscoveryQuery | ContextQuery | RecoQuery | NaiveFeedbackQuery
 
 
 def distance_to_order(distance: models.Distance) -> DistanceOrder:
@@ -296,3 +335,35 @@ def calculate_context_scores(
         overall_scores += pair_scores
 
     return overall_scores
+
+def calculate_naive_feedback_query(
+    query: NaiveFeedbackQuery, vectors: types.NumpyArray, distance_type: models.Distance
+) -> types.NumpyArray:
+    context_pairs: list[FeedbackContextPair] = []
+    if len(query.feedback) >= 2:
+        for p in permutations(query.feedback, 2):
+            positive_item, negative_item = p[0], p[1]
+            confidence = positive_item.score - negative_item.score
+
+            if confidence <= 0.0:
+                continue
+
+            partial_computation = (confidence**query.coefficients.b) * query.coefficients.c
+            context_pairs.append(
+                FeedbackContextPair(
+                    positive=positive_item.vector,
+                    negative=negative_item.vector,
+                    partial_computation=partial_computation,
+                )
+            )
+
+    score = query.coefficients.a * calculate_distance_core(query.target, vectors, distance_type)
+
+    for pair in context_pairs:
+        sim_pos = calculate_distance_core(pair.positive, vectors, distance_type)
+        sim_neg = calculate_distance_core(pair.negative, vectors, distance_type)
+        delta = sim_pos - sim_neg
+
+        score += pair.partial_computation * delta
+
+    return score
