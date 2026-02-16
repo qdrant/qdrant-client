@@ -10,6 +10,8 @@ from qdrant_client.http import models
 EPSILON = 1.1920929e-7  # https://doc.rust-lang.org/std/f32/constant.EPSILON.html
 # https://github.com/qdrant/qdrant/blob/7164ac4a5987d28f1c93f5712aef8e09e7d93555/lib/segment/src/spaces/simple_avx.rs#L99C10-L99C10
 
+NAIVE_FEEDBACK_CONFIDENCE_MARGIN = 0.0
+
 
 class DistanceOrder(str, Enum):
     BIGGER_IS_BETTER = "bigger_is_better"
@@ -56,6 +58,7 @@ class DiscoveryQuery:
 class ContextQuery:
     def __init__(self, context_pairs: list[ContextPair]):
         self.context_pairs = context_pairs
+
 
 class FeedbackItem:
     def __init__(self, vector: list[float], score: float):
@@ -336,6 +339,7 @@ def calculate_context_scores(
 
     return overall_scores
 
+
 def calculate_naive_feedback_query(
     query: NaiveFeedbackQuery, vectors: types.NumpyArray, distance_type: models.Distance
 ) -> types.NumpyArray:
@@ -345,7 +349,7 @@ def calculate_naive_feedback_query(
             positive_item, negative_item = p[0], p[1]
             confidence = positive_item.score - negative_item.score
 
-            if confidence <= 0.0:
+            if confidence <= NAIVE_FEEDBACK_CONFIDENCE_MARGIN:
                 continue
 
             partial_computation = (confidence**query.coefficients.b) * query.coefficients.c
