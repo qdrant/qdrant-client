@@ -944,7 +944,8 @@ class QdrantClient(QdrantFastembedMixin):
             ordering=ordering,
             shard_key_selector=shard_key_selector,
             update_filter=update_filter,
-            update_mode=update_mode**kwargs,
+            update_mode=update_mode,
+            **kwargs,
         )
 
     def update_vectors(

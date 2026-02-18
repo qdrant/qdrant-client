@@ -903,7 +903,8 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             ordering=ordering,
             shard_key_selector=shard_key_selector,
             update_filter=update_filter,
-            update_mode=update_mode**kwargs,
+            update_mode=update_mode,
+            **kwargs,
         )
 
     async def update_vectors(
