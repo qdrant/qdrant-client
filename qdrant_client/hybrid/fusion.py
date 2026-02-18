@@ -8,6 +8,7 @@ def reciprocal_rank_fusion(
     responses: list[list[models.ScoredPoint]],
     limit: int = 10,
     ranking_constant_k: int | None = None,
+    weights: list[float] | None = None,
 ) -> list[models.ScoredPoint]:
     def compute_score(pos: int) -> float:
         ranking_constant = (
@@ -17,13 +18,14 @@ def reciprocal_rank_fusion(
 
     scores: dict[models.ExtendedPointId, float] = {}
     point_pile = {}
-    for response in responses:
+    for response_idx, response in enumerate(responses):
+        weight = weights[response_idx] if weights is not None else 1.0
         for i, scored_point in enumerate(response):
             if scored_point.id in scores:
-                scores[scored_point.id] += compute_score(i)
+                scores[scored_point.id] += weight * compute_score(i)
             else:
                 point_pile[scored_point.id] = scored_point
-                scores[scored_point.id] = compute_score(i)
+                scores[scored_point.id] = weight * compute_score(i)
 
     sorted_scores = sorted(scores.items(), key=lambda item: item[1], reverse=True)
     sorted_points = []

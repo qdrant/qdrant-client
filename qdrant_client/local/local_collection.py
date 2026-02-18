@@ -809,7 +809,10 @@ class LocalCollection:
             # Fuse results
             if isinstance(query, models.RrfQuery):
                 fused = reciprocal_rank_fusion(
-                    responses=sources, limit=limit + offset, ranking_constant_k=query.rrf.k
+                    responses=sources,
+                    limit=limit + offset,
+                    ranking_constant_k=query.rrf.k,
+                    weights=query.rrf.weights,
                 )
             else:
                 if query.fusion == models.Fusion.RRF:
