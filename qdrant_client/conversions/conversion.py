@@ -239,6 +239,17 @@ class GrpcToRest:
             status=cls.convert_collection_status(model.status),
             points_count=model.points_count,
             indexed_vectors_count=model.indexed_vectors_count or 0,
+            update_queue=(
+                cls.convert_update_queue_info(model.update_queue)
+                if model.HasField("update_queue")
+                else None
+            ),
+        )
+
+    @classmethod
+    def convert_update_queue_info(cls, model: grpc.UpdateQueueInfo) -> rest.UpdateQueueInfo:
+        return rest.UpdateQueueInfo(
+            length=model.length,
         )
 
     @classmethod
@@ -339,9 +350,7 @@ class GrpcToRest:
             deleted_threshold=(
                 model.deleted_threshold if model.HasField("deleted_threshold") else None
             ),
-            flush_interval_sec=(
-                model.flush_interval_sec if model.HasField("flush_interval_sec") else None
-            ),
+            flush_interval_sec=int(model.flush_interval_sec),
             indexing_threshold=(
                 model.indexing_threshold if model.HasField("indexing_threshold") else None
             ),
@@ -356,6 +365,9 @@ class GrpcToRest:
                 model.vacuum_min_vector_number
                 if model.HasField("vacuum_min_vector_number")
                 else None
+            ),
+            prevent_unoptimized=(
+                model.prevent_unoptimized if model.HasField("prevent_unoptimized") else None
             ),
         )
 
@@ -477,8 +489,21 @@ class GrpcToRest:
             return rest.UpdateStatus.ACKNOWLEDGED
         elif model == grpc.UpdateStatus.Completed:
             return rest.UpdateStatus.COMPLETED
+        elif model == grpc.UpdateStatus.WaitTimeout:
+            return rest.UpdateStatus.WAIT_TIMEOUT
         else:
             raise ValueError(f"invalid UpdateStatus model: {model}")  # pragma: no cover
+
+    @classmethod
+    def convert_update_mode(cls, model: grpc.UpdateMode) -> rest.UpdateMode:
+        if model == grpc.Upsert:
+            return rest.UpdateMode.UPSERT
+        elif model == grpc.InsertOnly:
+            return rest.UpdateMode.INSERT_ONLY
+        elif model == grpc.UpdateOnly:
+            return rest.UpdateMode.UPDATE_ONLY
+        else:
+            raise ValueError(f"invalid UpdateMode model: {model}")  # pragma: no cover
 
     @classmethod
     def convert_has_id_condition(cls, model: grpc.HasIdCondition) -> rest.HasIdCondition:
@@ -718,6 +743,9 @@ class GrpcToRest:
             read_fan_out_factor=(
                 model.read_fan_out_factor if model.HasField("read_fan_out_factor") else None
             ),
+            read_fan_out_delay_ms=(
+                model.read_fan_out_delay_ms if model.HasField("read_fan_out_delay_ms") else None
+            ),
             write_consistency_factor=(
                 model.write_consistency_factor
                 if model.HasField("write_consistency_factor")
@@ -746,7 +774,6 @@ class GrpcToRest:
             max_optimization_threads = cls.convert_max_optimization_threads(
                 model.max_optimization_threads
             )
-
         return rest.OptimizersConfigDiff(
             default_segment_number=(
                 model.default_segment_number if model.HasField("default_segment_number") else None
@@ -755,7 +782,7 @@ class GrpcToRest:
                 model.deleted_threshold if model.HasField("deleted_threshold") else None
             ),
             flush_interval_sec=(
-                model.flush_interval_sec if model.HasField("flush_interval_sec") else None
+                int(model.flush_interval_sec) if model.HasField("flush_interval_sec") else None
             ),
             indexing_threshold=(
                 model.indexing_threshold if model.HasField("indexing_threshold") else None
@@ -771,6 +798,9 @@ class GrpcToRest:
                 model.vacuum_min_vector_number
                 if model.HasField("vacuum_min_vector_number")
                 else None
+            ),
+            prevent_unoptimized=(
+                model.prevent_unoptimized if model.HasField("prevent_unoptimized") else None
             ),
         )
 
@@ -1280,7 +1310,7 @@ class GrpcToRest:
                 gauss_decay=cls.convert_decay_params_expression(model.gauss_decay)
             )
 
-        raise ValueError(f"Unknown function name: {name}")
+        raise ValueError(f"Unknown function name: {name}")  # pragma: no cover
 
     @classmethod
     def convert_sum_expression(cls, model: grpc.SumExpression) -> rest.SumExpression:
@@ -1370,9 +1400,59 @@ class GrpcToRest:
 
         if name == "rrf":
             rrf = model.rrf
-            return rest.RrfQuery(rrf=rest.Rrf(k=rrf.k if rrf.HasField("k") else None))
+            return rest.RrfQuery(
+                rrf=rest.Rrf(
+                    k=rrf.k if rrf.HasField("k") else None,
+                    weights=list(rrf.weights) if len(rrf.weights) > 0 else None,
+                )
+            )
+
+        if name == "relevance_feedback":
+            return rest.RelevanceFeedbackQuery(
+                relevance_feedback=cls.convert_relevance_feedback_input(val)
+            )
 
         raise ValueError(f"invalid Query model: {model}")  # pragma: no cover
+
+    @classmethod
+    def convert_relevance_feedback_input(
+        cls, model: grpc.RelevanceFeedbackInput
+    ) -> rest.RelevanceFeedbackInput:
+        return rest.RelevanceFeedbackInput(
+            target=cls.convert_vector_input(model.target),
+            feedback=[cls.convert_feedback_item(item) for item in model.feedback],
+            strategy=cls.convert_feedback_strategy(model.strategy),
+        )
+
+    @classmethod
+    def convert_feedback_item(cls, model: grpc.FeedbackItem) -> rest.FeedbackItem:
+        return rest.FeedbackItem(
+            example=cls.convert_vector_input(model.example),
+            score=model.score,
+        )
+
+    @classmethod
+    def convert_feedback_strategy(cls, model: grpc.FeedbackStrategy) -> rest.FeedbackStrategy:
+        name = model.WhichOneof("variant")
+        if name is None:
+            raise ValueError(f"invalid FeedbackStrategy model: {model}")  # pragma: no cover
+
+        if name == "naive":
+            return rest.NaiveFeedbackStrategy(
+                naive=cls.convert_naive_feedback_strategy_params(model.naive)
+            )
+
+        raise ValueError(f"invalid FeedbackStrategy model: {model}")  # pragma: no cover
+
+    @classmethod
+    def convert_naive_feedback_strategy_params(
+        cls, model: grpc.NaiveFeedbackStrategy
+    ) -> rest.NaiveFeedbackStrategyParams:
+        return rest.NaiveFeedbackStrategyParams(
+            a=model.a,
+            b=model.b,
+            c=model.c,
+        )
 
     @classmethod
     def convert_prefetch_query(cls, model: grpc.PrefetchQuery) -> rest.Prefetch:
@@ -1479,6 +1559,7 @@ class GrpcToRest:
             on_disk=model.on_disk if model.HasField("on_disk") else None,
             stemmer=cls.convert_stemmer(model.stemmer) if model.HasField("stemmer") else None,
             ascii_folding=model.ascii_folding if model.HasField("ascii_folding") else None,
+            enable_hnsw=model.enable_hnsw if model.HasField("enable_hnsw") else None,
         )
 
     @classmethod
@@ -1517,6 +1598,7 @@ class GrpcToRest:
             lookup=model.lookup,
             is_principal=model.is_principal if model.HasField("is_principal") else None,
             on_disk=model.on_disk if model.HasField("on_disk") else None,
+            enable_hnsw=model.enable_hnsw if model.HasField("enable_hnsw") else None,
         )
 
     @classmethod
@@ -1527,6 +1609,7 @@ class GrpcToRest:
             type=rest.KeywordIndexType.KEYWORD,
             is_tenant=model.is_tenant if model.HasField("is_tenant") else None,
             on_disk=model.on_disk if model.HasField("on_disk") else None,
+            enable_hnsw=model.enable_hnsw if model.HasField("enable_hnsw") else None,
         )
 
     @classmethod
@@ -1535,6 +1618,7 @@ class GrpcToRest:
             type=rest.FloatIndexType.FLOAT,
             is_principal=model.is_principal if model.HasField("is_principal") else None,
             on_disk=model.on_disk if model.HasField("on_disk") else None,
+            enable_hnsw=model.enable_hnsw if model.HasField("enable_hnsw") else None,
         )
 
     @classmethod
@@ -1542,6 +1626,7 @@ class GrpcToRest:
         return rest.GeoIndexParams(
             type=rest.GeoIndexType.GEO,
             on_disk=model.on_disk if model.HasField("on_disk") else None,
+            enable_hnsw=model.enable_hnsw if model.HasField("enable_hnsw") else None,
         )
 
     @classmethod
@@ -1549,6 +1634,7 @@ class GrpcToRest:
         return rest.BoolIndexParams(
             type=rest.BoolIndexType.BOOL,
             on_disk=model.on_disk if model.HasField("on_disk") else None,
+            enable_hnsw=model.enable_hnsw if model.HasField("enable_hnsw") else None,
         )
 
     @classmethod
@@ -1559,6 +1645,7 @@ class GrpcToRest:
             type=rest.DatetimeIndexType.DATETIME,
             is_principal=model.is_principal if model.HasField("is_principal") else None,
             on_disk=model.on_disk if model.HasField("on_disk") else None,
+            enable_hnsw=model.enable_hnsw if model.HasField("enable_hnsw") else None,
         )
 
     @classmethod
@@ -1567,6 +1654,7 @@ class GrpcToRest:
             type=rest.UuidIndexType.UUID,
             is_tenant=model.is_tenant if model.HasField("is_tenant") else None,
             on_disk=model.on_disk if model.HasField("on_disk") else None,
+            enable_hnsw=model.enable_hnsw if model.HasField("enable_hnsw") else None,
         )
 
     @classmethod
@@ -1584,6 +1672,9 @@ class GrpcToRest:
             ),
             read_fan_out_factor=(
                 model.read_fan_out_factor if model.HasField("read_fan_out_factor") else None
+            ),
+            read_fan_out_delay_ms=(
+                model.read_fan_out_delay_ms if model.HasField("read_fan_out_delay_ms") else None
             ),
             on_disk_payload=model.on_disk_payload if model.HasField("on_disk_payload") else None,
         )
@@ -1683,7 +1774,9 @@ class GrpcToRest:
     ) -> rest.BinaryQuantizationQueryEncoding:
         name = model.WhichOneof("variant")
         if name is None:
-            raise ValueError(f"invalid BinaryQuantizationQueryEncoding model: {model}")
+            raise ValueError(
+                f"invalid BinaryQuantizationQueryEncoding model: {model}"
+            )  # pragma: no cover
 
         val = getattr(model, name)
         if name == "setting":
@@ -1855,11 +1948,15 @@ class GrpcToRest:
             update_filter = (
                 cls.convert_filter(val.update_filter) if val.HasField("update_filter") else None
             )
+            update_mode = (
+                cls.convert_update_mode(val.update_mode) if val.HasField("update_mode") else None
+            )
             return rest.UpsertOperation(
                 upsert=rest.PointsList(
                     points=[cls.convert_point_struct(point) for point in val.points],
                     shard_key=shard_key_selector,
                     update_filter=update_filter,
+                    update_mode=update_mode,
                 )
             )
         elif name == "delete_points":
@@ -2087,6 +2184,9 @@ class GrpcToRest:
 
         if model == grpc.ReplicaState.ActiveRead:
             return rest.ReplicaState.ACTIVEREAD
+
+        if model == grpc.ReplicaState.ManualRecovery:
+            return rest.ReplicaState.MANUALRECOVERY
 
         raise ValueError(f"invalid ReplicaState model: {model}")  # pragma: no cover
 
@@ -2728,6 +2828,17 @@ class RestToGrpc:
             segments_count=model.segments_count,
             status=cls.convert_collection_status(model.status),
             points_count=model.points_count,
+            update_queue=(
+                cls.convert_update_queue_info(model.update_queue)
+                if model.update_queue is not None
+                else None
+            ),
+        )
+
+    @classmethod
+    def convert_update_queue_info(cls, model: rest.UpdateQueueInfo) -> grpc.UpdateQueueInfo:
+        return grpc.UpdateQueueInfo(
+            length=model.length,
         )
 
     @classmethod
@@ -2840,8 +2951,21 @@ class RestToGrpc:
             return grpc.UpdateStatus.Completed
         if model == rest.UpdateStatus.ACKNOWLEDGED:
             return grpc.UpdateStatus.Acknowledged
+        if model == rest.UpdateStatus.WAIT_TIMEOUT:
+            return grpc.UpdateStatus.WaitTimeout
 
         raise ValueError(f"invalid UpdateStatus model: {model}")  # pragma: no cover
+
+    @classmethod
+    def convert_update_mode(cls, model: rest.UpdateMode) -> grpc.UpdateMode:
+        if model == rest.UpdateMode.UPSERT:
+            return grpc.Upsert
+        elif model == rest.UpdateMode.INSERT_ONLY:
+            return grpc.InsertOnly
+        elif model == rest.UpdateMode.UPDATE_ONLY:
+            return grpc.UpdateOnly
+        else:
+            raise ValueError(f"invalid UpdateMode model: {model}")  # pragma: no cover
 
     @classmethod
     def convert_has_id_condition(cls, model: rest.HasIdCondition) -> grpc.HasIdCondition:
@@ -3077,6 +3201,7 @@ class RestToGrpc:
             write_consistency_factor=model.write_consistency_factor,
             replication_factor=model.replication_factor,
             read_fan_out_factor=model.read_fan_out_factor,
+            read_fan_out_delay_ms=model.read_fan_out_delay_ms,
             sparse_vectors_config=(
                 cls.convert_sparse_vector_config(model.sparse_vectors)
                 if model.sparse_vectors is not None
@@ -3115,6 +3240,7 @@ class RestToGrpc:
             memmap_threshold=model.memmap_threshold,
             vacuum_min_vector_number=model.vacuum_min_vector_number,
             deprecated_max_optimization_threads=model.max_optimization_threads,
+            prevent_unoptimized=model.prevent_unoptimized,
         )
 
     @classmethod
@@ -3139,6 +3265,7 @@ class RestToGrpc:
             memmap_threshold=model.memmap_threshold,
             vacuum_min_vector_number=model.vacuum_min_vector_number,
             deprecated_max_optimization_threads=deprecated_max_optimization_threads,
+            prevent_unoptimized=model.prevent_unoptimized,
         )
 
     @classmethod
@@ -3753,9 +3880,52 @@ class RestToGrpc:
             rrf = grpc.Rrf()
             if model.rrf.k is not None:
                 rrf.k = model.rrf.k
+            if model.rrf.weights is not None:
+                rrf.weights.extend(model.rrf.weights)
             return grpc.Query(rrf=rrf)
 
+        if isinstance(model, rest.RelevanceFeedbackQuery):
+            return grpc.Query(
+                relevance_feedback=cls.convert_relevance_feedback_input(model.relevance_feedback)
+            )
+
         raise ValueError(f"invalid Query model: {model}")  # pragma: no cover
+
+    @classmethod
+    def convert_relevance_feedback_input(
+        cls, model: rest.RelevanceFeedbackInput
+    ) -> grpc.RelevanceFeedbackInput:
+        return grpc.RelevanceFeedbackInput(
+            target=cls.convert_vector_input(model.target),
+            feedback=[cls.convert_feedback_item(item) for item in model.feedback],
+            strategy=cls.convert_feedback_strategy(model.strategy),
+        )
+
+    @classmethod
+    def convert_feedback_item(cls, model: rest.FeedbackItem) -> grpc.FeedbackItem:
+        return grpc.FeedbackItem(
+            example=cls.convert_vector_input(model.example),
+            score=model.score,
+        )
+
+    @classmethod
+    def convert_feedback_strategy(cls, model: rest.FeedbackStrategy) -> grpc.FeedbackStrategy:
+        if isinstance(model, rest.NaiveFeedbackStrategy):
+            return grpc.FeedbackStrategy(
+                naive=cls.convert_naive_feedback_strategy_params(model.naive)
+            )
+
+        raise ValueError(f"invalid FeedbackStrategy model: {model}")  # pragma: no cover
+
+    @classmethod
+    def convert_naive_feedback_strategy_params(
+        cls, model: rest.NaiveFeedbackStrategyParams
+    ) -> grpc.NaiveFeedbackStrategy:
+        return grpc.NaiveFeedbackStrategy(
+            a=model.a,
+            b=model.b,
+            c=model.c,
+        )
 
     @classmethod
     def convert_formula_query(cls, model: rest.FormulaQuery) -> grpc.Formula:
@@ -3962,6 +4132,7 @@ class RestToGrpc:
             phrase_matching=model.phrase_matching,
             stemmer=cls.convert_stemmer(model.stemmer) if model.stemmer is not None else None,
             ascii_folding=model.ascii_folding if model.ascii_folding is not None else None,
+            enable_hnsw=model.enable_hnsw,
         )
 
     @classmethod
@@ -3993,35 +4164,44 @@ class RestToGrpc:
             range=model.range,
             is_principal=model.is_principal,
             on_disk=model.on_disk,
+            enable_hnsw=model.enable_hnsw,
         )
 
     @classmethod
     def convert_keyword_index_params(
         cls, model: rest.KeywordIndexParams
     ) -> grpc.KeywordIndexParams:
-        return grpc.KeywordIndexParams(is_tenant=model.is_tenant, on_disk=model.on_disk)
+        return grpc.KeywordIndexParams(
+            is_tenant=model.is_tenant, on_disk=model.on_disk, enable_hnsw=model.enable_hnsw
+        )
 
     @classmethod
     def convert_float_index_params(cls, model: rest.FloatIndexParams) -> grpc.FloatIndexParams:
-        return grpc.FloatIndexParams(is_principal=model.is_principal, on_disk=model.on_disk)
+        return grpc.FloatIndexParams(
+            is_principal=model.is_principal, on_disk=model.on_disk, enable_hnsw=model.enable_hnsw
+        )
 
     @classmethod
     def convert_geo_index_params(cls, model: rest.GeoIndexParams) -> grpc.GeoIndexParams:
-        return grpc.GeoIndexParams(on_disk=model.on_disk)
+        return grpc.GeoIndexParams(on_disk=model.on_disk, enable_hnsw=model.enable_hnsw)
 
     @classmethod
     def convert_bool_index_params(cls, model: rest.BoolIndexParams) -> grpc.BoolIndexParams:
-        return grpc.BoolIndexParams(on_disk=model.on_disk)
+        return grpc.BoolIndexParams(on_disk=model.on_disk, enable_hnsw=model.enable_hnsw)
 
     @classmethod
     def convert_datetime_index_params(
         cls, model: rest.DatetimeIndexParams
     ) -> grpc.DatetimeIndexParams:
-        return grpc.DatetimeIndexParams(is_principal=model.is_principal, on_disk=model.on_disk)
+        return grpc.DatetimeIndexParams(
+            is_principal=model.is_principal, on_disk=model.on_disk, enable_hnsw=model.enable_hnsw
+        )
 
     @classmethod
     def convert_uuid_index_params(cls, model: rest.UuidIndexParams) -> grpc.UuidIndexParams:
-        return grpc.UuidIndexParams(is_tenant=model.is_tenant, on_disk=model.on_disk)
+        return grpc.UuidIndexParams(
+            is_tenant=model.is_tenant, on_disk=model.on_disk, enable_hnsw=model.enable_hnsw
+        )
 
     @classmethod
     def convert_collection_params_diff(
@@ -4032,6 +4212,7 @@ class RestToGrpc:
             write_consistency_factor=model.write_consistency_factor,
             on_disk_payload=model.on_disk_payload,
             read_fan_out_factor=model.read_fan_out_factor,
+            read_fan_out_delay_ms=model.read_fan_out_delay_ms,
         )
 
     @classmethod
@@ -4352,11 +4533,17 @@ class RestToGrpc:
                 if model.upsert.update_filter
                 else None
             )
+            update_mode = (
+                cls.convert_update_mode(model.upsert.update_mode)
+                if model.upsert.update_mode is not None
+                else None
+            )
             return grpc.PointsUpdateOperation(
                 upsert=grpc.PointsUpdateOperation.PointStructList(
                     points=cls.convert_point_insert_operation(model.upsert),
                     shard_key_selector=shard_key_selector,
                     update_filter=update_filter,
+                    update_mode=update_mode,
                 )
             )
         elif isinstance(model, rest.DeleteOperation):
@@ -4593,6 +4780,9 @@ class RestToGrpc:
 
         if model == rest.ReplicaState.ACTIVEREAD:
             return grpc.ReplicaState.ActiveRead
+
+        if model == rest.ReplicaState.MANUALRECOVERY:
+            return grpc.ReplicaState.ManualRecovery
 
         raise ValueError(f"invalid ReplicaState model: {model}")  # pragma: no cover
 

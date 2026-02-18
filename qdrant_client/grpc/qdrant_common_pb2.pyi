@@ -503,7 +503,8 @@ class GeoLineString(google.protobuf.message.Message):
 global___GeoLineString = GeoLineString
 
 class GeoPolygon(google.protobuf.message.Message):
-    """For a valid GeoPolygon, both the exterior and interior GeoLineStrings must consist of a minimum of 4 points.
+    """For a valid GeoPolygon, both the exterior and interior GeoLineStrings must
+    consist of a minimum of 4 points.
     Additionally, the first and last points of each GeoLineString must be the same.
     """
 

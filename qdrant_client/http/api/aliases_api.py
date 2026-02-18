@@ -65,7 +65,7 @@ class _AliasesApi:
 
         headers = {}
         return self.api_client.request(
-            type_=m.InlineResponse2008,
+            type_=m.InlineResponse20011,
             method="GET",
             url="/collections/{collection_name}/aliases",
             headers=headers if headers else None,
@@ -80,7 +80,7 @@ class _AliasesApi:
         """
         headers = {}
         return self.api_client.request(
-            type_=m.InlineResponse2008,
+            type_=m.InlineResponse20011,
             method="GET",
             url="/aliases",
             headers=headers if headers else None,
@@ -100,7 +100,7 @@ class _AliasesApi:
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse200,
+            type_=m.InlineResponse2001,
             method="POST",
             url="/collections/aliases",
             headers=headers if headers else None,
@@ -113,7 +113,7 @@ class AsyncAliasesApi(_AliasesApi):
     async def get_collection_aliases(
         self,
         collection_name: str,
-    ) -> m.InlineResponse2008:
+    ) -> m.InlineResponse20011:
         """
         Get list of all aliases for a collection
         """
@@ -123,7 +123,7 @@ class AsyncAliasesApi(_AliasesApi):
 
     async def get_collections_aliases(
         self,
-    ) -> m.InlineResponse2008:
+    ) -> m.InlineResponse20011:
         """
         Get list of all existing collections aliases
         """
@@ -133,7 +133,7 @@ class AsyncAliasesApi(_AliasesApi):
         self,
         timeout: int = None,
         change_aliases_operation: m.ChangeAliasesOperation = None,
-    ) -> m.InlineResponse200:
+    ) -> m.InlineResponse2001:
         return await self._build_for_update_aliases(
             timeout=timeout,
             change_aliases_operation=change_aliases_operation,
@@ -144,7 +144,7 @@ class SyncAliasesApi(_AliasesApi):
     def get_collection_aliases(
         self,
         collection_name: str,
-    ) -> m.InlineResponse2008:
+    ) -> m.InlineResponse20011:
         """
         Get list of all aliases for a collection
         """
@@ -154,7 +154,7 @@ class SyncAliasesApi(_AliasesApi):
 
     def get_collections_aliases(
         self,
-    ) -> m.InlineResponse2008:
+    ) -> m.InlineResponse20011:
         """
         Get list of all existing collections aliases
         """
@@ -164,7 +164,7 @@ class SyncAliasesApi(_AliasesApi):
         self,
         timeout: int = None,
         change_aliases_operation: m.ChangeAliasesOperation = None,
-    ) -> m.InlineResponse200:
+    ) -> m.InlineResponse2001:
         return self._build_for_update_aliases(
             timeout=timeout,
             change_aliases_operation=change_aliases_operation,

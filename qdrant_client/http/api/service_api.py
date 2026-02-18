@@ -83,6 +83,7 @@ class _ServiceApi:
     def _build_for_metrics(
         self,
         anonymize: bool = None,
+        timeout: int = None,
     ):
         """
         Collect metrics data including app info, collections info, cluster info and statistics
@@ -90,6 +91,8 @@ class _ServiceApi:
         query_params = {}
         if anonymize is not None:
             query_params["anonymize"] = str(anonymize).lower()
+        if timeout is not None:
+            query_params["timeout"] = str(timeout)
 
         headers = {}
         return self.api_client.request(
@@ -132,6 +135,7 @@ class _ServiceApi:
         self,
         anonymize: bool = None,
         details_level: int = None,
+        timeout: int = None,
     ):
         """
         Collect telemetry data including app info, system info, collections info, cluster info, configs and statistics
@@ -141,10 +145,12 @@ class _ServiceApi:
             query_params["anonymize"] = str(anonymize).lower()
         if details_level is not None:
             query_params["details_level"] = str(details_level)
+        if timeout is not None:
+            query_params["timeout"] = str(timeout)
 
         headers = {}
         return self.api_client.request(
-            type_=m.InlineResponse2001,
+            type_=m.InlineResponse2002,
             method="GET",
             url="/telemetry",
             headers=headers if headers else None,
@@ -172,12 +178,14 @@ class AsyncServiceApi(_ServiceApi):
     async def metrics(
         self,
         anonymize: bool = None,
+        timeout: int = None,
     ) -> str:
         """
         Collect metrics data including app info, collections info, cluster info and statistics
         """
         return await self._build_for_metrics(
             anonymize=anonymize,
+            timeout=timeout,
         )
 
     async def readyz(
@@ -200,13 +208,15 @@ class AsyncServiceApi(_ServiceApi):
         self,
         anonymize: bool = None,
         details_level: int = None,
-    ) -> m.InlineResponse2001:
+        timeout: int = None,
+    ) -> m.InlineResponse2002:
         """
         Collect telemetry data including app info, system info, collections info, cluster info, configs and statistics
         """
         return await self._build_for_telemetry(
             anonymize=anonymize,
             details_level=details_level,
+            timeout=timeout,
         )
 
 
@@ -230,12 +240,14 @@ class SyncServiceApi(_ServiceApi):
     def metrics(
         self,
         anonymize: bool = None,
+        timeout: int = None,
     ) -> str:
         """
         Collect metrics data including app info, collections info, cluster info and statistics
         """
         return self._build_for_metrics(
             anonymize=anonymize,
+            timeout=timeout,
         )
 
     def readyz(
@@ -258,11 +270,13 @@ class SyncServiceApi(_ServiceApi):
         self,
         anonymize: bool = None,
         details_level: int = None,
-    ) -> m.InlineResponse2001:
+        timeout: int = None,
+    ) -> m.InlineResponse2002:
         """
         Collect telemetry data including app info, system info, collections info, cluster info, configs and statistics
         """
         return self._build_for_telemetry(
             anonymize=anonymize,
             details_level=details_level,
+            timeout=timeout,
         )

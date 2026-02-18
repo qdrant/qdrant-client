@@ -50,48 +50,42 @@ class SnapshotsServicer(object):
     """Missing associated documentation comment in .proto file."""
 
     def Create(self, request, context):
-        """
-        Create collection snapshot
+        """Create collection snapshot
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def List(self, request, context):
-        """
-        List collection snapshots
+        """List collection snapshots
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def Delete(self, request, context):
-        """
-        Delete collection snapshot
+        """Delete collection snapshot
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def CreateFull(self, request, context):
-        """
-        Create full storage snapshot
+        """Create full storage snapshot
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def ListFull(self, request, context):
-        """
-        List full storage snapshots
+        """List full storage snapshots
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def DeleteFull(self, request, context):
-        """
-        Delete full storage snapshot
+        """Delete full storage snapshot
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')

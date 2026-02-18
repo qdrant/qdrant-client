@@ -77,7 +77,7 @@ class _SearchApi:
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse20017,
+            type_=m.InlineResponse20020,
             method="POST",
             url="/collections/{collection_name}/points/discover/batch",
             headers=headers if headers else None,
@@ -111,7 +111,7 @@ class _SearchApi:
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse20016,
+            type_=m.InlineResponse20019,
             method="POST",
             url="/collections/{collection_name}/points/discover",
             headers=headers if headers else None,
@@ -145,7 +145,7 @@ class _SearchApi:
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse20022,
+            type_=m.InlineResponse20025,
             method="POST",
             url="/collections/{collection_name}/points/query/batch",
             headers=headers if headers else None,
@@ -179,7 +179,7 @@ class _SearchApi:
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse20021,
+            type_=m.InlineResponse20024,
             method="POST",
             url="/collections/{collection_name}/points/query",
             headers=headers if headers else None,
@@ -213,7 +213,7 @@ class _SearchApi:
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse20018,
+            type_=m.InlineResponse20021,
             method="POST",
             url="/collections/{collection_name}/points/query/groups",
             headers=headers if headers else None,
@@ -247,7 +247,7 @@ class _SearchApi:
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse20017,
+            type_=m.InlineResponse20020,
             method="POST",
             url="/collections/{collection_name}/points/recommend/batch",
             headers=headers if headers else None,
@@ -281,7 +281,7 @@ class _SearchApi:
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse20018,
+            type_=m.InlineResponse20021,
             method="POST",
             url="/collections/{collection_name}/points/recommend/groups",
             headers=headers if headers else None,
@@ -315,7 +315,7 @@ class _SearchApi:
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse20016,
+            type_=m.InlineResponse20019,
             method="POST",
             url="/collections/{collection_name}/points/recommend",
             headers=headers if headers else None,
@@ -349,7 +349,7 @@ class _SearchApi:
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse20017,
+            type_=m.InlineResponse20020,
             method="POST",
             url="/collections/{collection_name}/points/search/batch",
             headers=headers if headers else None,
@@ -383,7 +383,7 @@ class _SearchApi:
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse20024,
+            type_=m.InlineResponse20027,
             method="POST",
             url="/collections/{collection_name}/points/search/matrix/offsets",
             headers=headers if headers else None,
@@ -417,7 +417,7 @@ class _SearchApi:
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse20023,
+            type_=m.InlineResponse20026,
             method="POST",
             url="/collections/{collection_name}/points/search/matrix/pairs",
             headers=headers if headers else None,
@@ -451,7 +451,7 @@ class _SearchApi:
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse20018,
+            type_=m.InlineResponse20021,
             method="POST",
             url="/collections/{collection_name}/points/search/groups",
             headers=headers if headers else None,
@@ -485,7 +485,7 @@ class _SearchApi:
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse20016,
+            type_=m.InlineResponse20019,
             method="POST",
             url="/collections/{collection_name}/points/search",
             headers=headers if headers else None,
@@ -502,7 +502,7 @@ class AsyncSearchApi(_SearchApi):
         consistency: m.ReadConsistency = None,
         timeout: int = None,
         discover_request_batch: m.DiscoverRequestBatch = None,
-    ) -> m.InlineResponse20017:
+    ) -> m.InlineResponse20020:
         """
         Look for points based on target and/or positive and negative example pairs, in batch.
         """
@@ -519,7 +519,7 @@ class AsyncSearchApi(_SearchApi):
         consistency: m.ReadConsistency = None,
         timeout: int = None,
         discover_request: m.DiscoverRequest = None,
-    ) -> m.InlineResponse20016:
+    ) -> m.InlineResponse20019:
         """
         Use context and a target to find the most similar points to the target, constrained by the context. When using only the context (without a target), a special search - called context search - is performed where pairs of points are used to generate a loss that guides the search towards the zone where most positive examples overlap. This means that the score minimizes the scenario of finding a point closer to a negative than to a positive part of a pair. Since the score of a context relates to loss, the maximum score a point can get is 0.0, and it becomes normal that many points can have a score of 0.0. When using target (with or without context), the score behaves a little different: The integer part of the score represents the rank with respect to the context, while the decimal part of the score relates to the distance to the target. The context part of the score for each pair is calculated +1 if the point is closer to a positive than to a negative part of a pair, and -1 otherwise.
         """
@@ -536,7 +536,7 @@ class AsyncSearchApi(_SearchApi):
         consistency: m.ReadConsistency = None,
         timeout: int = None,
         query_request_batch: m.QueryRequestBatch = None,
-    ) -> m.InlineResponse20022:
+    ) -> m.InlineResponse20025:
         """
         Universally query points in batch. This endpoint covers all capabilities of search, recommend, discover, filters. But also enables hybrid and multi-stage queries.
         """
@@ -553,7 +553,7 @@ class AsyncSearchApi(_SearchApi):
         consistency: m.ReadConsistency = None,
         timeout: int = None,
         query_request: m.QueryRequest = None,
-    ) -> m.InlineResponse20021:
+    ) -> m.InlineResponse20024:
         """
         Universally query points. This endpoint covers all capabilities of search, recommend, discover, filters. But also enables hybrid and multi-stage queries.
         """
@@ -570,7 +570,7 @@ class AsyncSearchApi(_SearchApi):
         consistency: m.ReadConsistency = None,
         timeout: int = None,
         query_groups_request: m.QueryGroupsRequest = None,
-    ) -> m.InlineResponse20018:
+    ) -> m.InlineResponse20021:
         """
         Universally query points, grouped by a given payload field
         """
@@ -587,7 +587,7 @@ class AsyncSearchApi(_SearchApi):
         consistency: m.ReadConsistency = None,
         timeout: int = None,
         recommend_request_batch: m.RecommendRequestBatch = None,
-    ) -> m.InlineResponse20017:
+    ) -> m.InlineResponse20020:
         """
         Look for the points which are closer to stored positive examples and at the same time further to negative examples.
         """
@@ -604,7 +604,7 @@ class AsyncSearchApi(_SearchApi):
         consistency: m.ReadConsistency = None,
         timeout: int = None,
         recommend_groups_request: m.RecommendGroupsRequest = None,
-    ) -> m.InlineResponse20018:
+    ) -> m.InlineResponse20021:
         """
         Look for the points which are closer to stored positive examples and at the same time further to negative examples, grouped by a given payload field.
         """
@@ -621,7 +621,7 @@ class AsyncSearchApi(_SearchApi):
         consistency: m.ReadConsistency = None,
         timeout: int = None,
         recommend_request: m.RecommendRequest = None,
-    ) -> m.InlineResponse20016:
+    ) -> m.InlineResponse20019:
         """
         Look for the points which are closer to stored positive examples and at the same time further to negative examples.
         """
@@ -638,7 +638,7 @@ class AsyncSearchApi(_SearchApi):
         consistency: m.ReadConsistency = None,
         timeout: int = None,
         search_request_batch: m.SearchRequestBatch = None,
-    ) -> m.InlineResponse20017:
+    ) -> m.InlineResponse20020:
         """
         Retrieve by batch the closest points based on vector similarity and given filtering conditions
         """
@@ -655,7 +655,7 @@ class AsyncSearchApi(_SearchApi):
         consistency: m.ReadConsistency = None,
         timeout: int = None,
         search_matrix_request: m.SearchMatrixRequest = None,
-    ) -> m.InlineResponse20024:
+    ) -> m.InlineResponse20027:
         """
         Compute distance matrix for sampled points with an offset based output format
         """
@@ -672,7 +672,7 @@ class AsyncSearchApi(_SearchApi):
         consistency: m.ReadConsistency = None,
         timeout: int = None,
         search_matrix_request: m.SearchMatrixRequest = None,
-    ) -> m.InlineResponse20023:
+    ) -> m.InlineResponse20026:
         """
         Compute distance matrix for sampled points with a pair based output format
         """
@@ -689,7 +689,7 @@ class AsyncSearchApi(_SearchApi):
         consistency: m.ReadConsistency = None,
         timeout: int = None,
         search_groups_request: m.SearchGroupsRequest = None,
-    ) -> m.InlineResponse20018:
+    ) -> m.InlineResponse20021:
         """
         Retrieve closest points based on vector similarity and given filtering conditions, grouped by a given payload field
         """
@@ -706,7 +706,7 @@ class AsyncSearchApi(_SearchApi):
         consistency: m.ReadConsistency = None,
         timeout: int = None,
         search_request: m.SearchRequest = None,
-    ) -> m.InlineResponse20016:
+    ) -> m.InlineResponse20019:
         """
         Retrieve closest points based on vector similarity and given filtering conditions
         """
@@ -725,7 +725,7 @@ class SyncSearchApi(_SearchApi):
         consistency: m.ReadConsistency = None,
         timeout: int = None,
         discover_request_batch: m.DiscoverRequestBatch = None,
-    ) -> m.InlineResponse20017:
+    ) -> m.InlineResponse20020:
         """
         Look for points based on target and/or positive and negative example pairs, in batch.
         """
@@ -742,7 +742,7 @@ class SyncSearchApi(_SearchApi):
         consistency: m.ReadConsistency = None,
         timeout: int = None,
         discover_request: m.DiscoverRequest = None,
-    ) -> m.InlineResponse20016:
+    ) -> m.InlineResponse20019:
         """
         Use context and a target to find the most similar points to the target, constrained by the context. When using only the context (without a target), a special search - called context search - is performed where pairs of points are used to generate a loss that guides the search towards the zone where most positive examples overlap. This means that the score minimizes the scenario of finding a point closer to a negative than to a positive part of a pair. Since the score of a context relates to loss, the maximum score a point can get is 0.0, and it becomes normal that many points can have a score of 0.0. When using target (with or without context), the score behaves a little different: The integer part of the score represents the rank with respect to the context, while the decimal part of the score relates to the distance to the target. The context part of the score for each pair is calculated +1 if the point is closer to a positive than to a negative part of a pair, and -1 otherwise.
         """
@@ -759,7 +759,7 @@ class SyncSearchApi(_SearchApi):
         consistency: m.ReadConsistency = None,
         timeout: int = None,
         query_request_batch: m.QueryRequestBatch = None,
-    ) -> m.InlineResponse20022:
+    ) -> m.InlineResponse20025:
         """
         Universally query points in batch. This endpoint covers all capabilities of search, recommend, discover, filters. But also enables hybrid and multi-stage queries.
         """
@@ -776,7 +776,7 @@ class SyncSearchApi(_SearchApi):
         consistency: m.ReadConsistency = None,
         timeout: int = None,
         query_request: m.QueryRequest = None,
-    ) -> m.InlineResponse20021:
+    ) -> m.InlineResponse20024:
         """
         Universally query points. This endpoint covers all capabilities of search, recommend, discover, filters. But also enables hybrid and multi-stage queries.
         """
@@ -793,7 +793,7 @@ class SyncSearchApi(_SearchApi):
         consistency: m.ReadConsistency = None,
         timeout: int = None,
         query_groups_request: m.QueryGroupsRequest = None,
-    ) -> m.InlineResponse20018:
+    ) -> m.InlineResponse20021:
         """
         Universally query points, grouped by a given payload field
         """
@@ -810,7 +810,7 @@ class SyncSearchApi(_SearchApi):
         consistency: m.ReadConsistency = None,
         timeout: int = None,
         recommend_request_batch: m.RecommendRequestBatch = None,
-    ) -> m.InlineResponse20017:
+    ) -> m.InlineResponse20020:
         """
         Look for the points which are closer to stored positive examples and at the same time further to negative examples.
         """
@@ -827,7 +827,7 @@ class SyncSearchApi(_SearchApi):
         consistency: m.ReadConsistency = None,
         timeout: int = None,
         recommend_groups_request: m.RecommendGroupsRequest = None,
-    ) -> m.InlineResponse20018:
+    ) -> m.InlineResponse20021:
         """
         Look for the points which are closer to stored positive examples and at the same time further to negative examples, grouped by a given payload field.
         """
@@ -844,7 +844,7 @@ class SyncSearchApi(_SearchApi):
         consistency: m.ReadConsistency = None,
         timeout: int = None,
         recommend_request: m.RecommendRequest = None,
-    ) -> m.InlineResponse20016:
+    ) -> m.InlineResponse20019:
         """
         Look for the points which are closer to stored positive examples and at the same time further to negative examples.
         """
@@ -861,7 +861,7 @@ class SyncSearchApi(_SearchApi):
         consistency: m.ReadConsistency = None,
         timeout: int = None,
         search_request_batch: m.SearchRequestBatch = None,
-    ) -> m.InlineResponse20017:
+    ) -> m.InlineResponse20020:
         """
         Retrieve by batch the closest points based on vector similarity and given filtering conditions
         """
@@ -878,7 +878,7 @@ class SyncSearchApi(_SearchApi):
         consistency: m.ReadConsistency = None,
         timeout: int = None,
         search_matrix_request: m.SearchMatrixRequest = None,
-    ) -> m.InlineResponse20024:
+    ) -> m.InlineResponse20027:
         """
         Compute distance matrix for sampled points with an offset based output format
         """
@@ -895,7 +895,7 @@ class SyncSearchApi(_SearchApi):
         consistency: m.ReadConsistency = None,
         timeout: int = None,
         search_matrix_request: m.SearchMatrixRequest = None,
-    ) -> m.InlineResponse20023:
+    ) -> m.InlineResponse20026:
         """
         Compute distance matrix for sampled points with a pair based output format
         """
@@ -912,7 +912,7 @@ class SyncSearchApi(_SearchApi):
         consistency: m.ReadConsistency = None,
         timeout: int = None,
         search_groups_request: m.SearchGroupsRequest = None,
-    ) -> m.InlineResponse20018:
+    ) -> m.InlineResponse20021:
         """
         Retrieve closest points based on vector similarity and given filtering conditions, grouped by a given payload field
         """
@@ -929,7 +929,7 @@ class SyncSearchApi(_SearchApi):
         consistency: m.ReadConsistency = None,
         timeout: int = None,
         search_request: m.SearchRequest = None,
-    ) -> m.InlineResponse20016:
+    ) -> m.InlineResponse20019:
         """
         Retrieve closest points based on vector similarity and given filtering conditions
         """

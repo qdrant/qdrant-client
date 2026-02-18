@@ -60,10 +60,33 @@ class _DistributedApi:
         """
         headers = {}
         return self.api_client.request(
-            type_=m.InlineResponse2002,
+            type_=m.InlineResponse2003,
             method="GET",
             url="/cluster",
             headers=headers if headers else None,
+        )
+
+    def _build_for_cluster_telemetry(
+        self,
+        details_level: int = None,
+        timeout: int = None,
+    ):
+        """
+        Get telemetry data, from the point of view of the cluster. This includes peers info, collections info, shard transfers, and resharding status
+        """
+        query_params = {}
+        if details_level is not None:
+            query_params["details_level"] = str(details_level)
+        if timeout is not None:
+            query_params["timeout"] = str(timeout)
+
+        headers = {}
+        return self.api_client.request(
+            type_=m.InlineResponse2004,
+            method="GET",
+            url="/cluster/telemetry",
+            headers=headers if headers else None,
+            params=query_params,
         )
 
     def _build_for_collection_cluster_info(
@@ -79,7 +102,7 @@ class _DistributedApi:
 
         headers = {}
         return self.api_client.request(
-            type_=m.InlineResponse2007,
+            type_=m.InlineResponse2009,
             method="GET",
             url="/collections/{collection_name}/cluster",
             headers=headers if headers else None,
@@ -105,7 +128,7 @@ class _DistributedApi:
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse200,
+            type_=m.InlineResponse2001,
             method="PUT",
             url="/collections/{collection_name}/shards",
             headers=headers if headers else None,
@@ -133,7 +156,7 @@ class _DistributedApi:
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse200,
+            type_=m.InlineResponse2001,
             method="POST",
             url="/collections/{collection_name}/shards/delete",
             headers=headers if headers else None,
@@ -142,12 +165,29 @@ class _DistributedApi:
             content=body,
         )
 
+    def _build_for_list_shard_keys(
+        self,
+        collection_name: str,
+    ):
+        path_params = {
+            "collection_name": str(collection_name),
+        }
+
+        headers = {}
+        return self.api_client.request(
+            type_=m.InlineResponse200,
+            method="GET",
+            url="/collections/{collection_name}/shards",
+            headers=headers if headers else None,
+            path_params=path_params,
+        )
+
     def _build_for_recover_current_peer(
         self,
     ):
         headers = {}
         return self.api_client.request(
-            type_=m.InlineResponse200,
+            type_=m.InlineResponse2001,
             method="POST",
             url="/cluster/recover",
             headers=headers if headers else None,
@@ -174,7 +214,7 @@ class _DistributedApi:
 
         headers = {}
         return self.api_client.request(
-            type_=m.InlineResponse200,
+            type_=m.InlineResponse2001,
             method="DELETE",
             url="/cluster/peer/{peer_id}",
             headers=headers if headers else None,
@@ -201,7 +241,7 @@ class _DistributedApi:
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse200,
+            type_=m.InlineResponse2001,
             method="POST",
             url="/collections/{collection_name}/cluster",
             headers=headers if headers else None,
@@ -214,16 +254,29 @@ class _DistributedApi:
 class AsyncDistributedApi(_DistributedApi):
     async def cluster_status(
         self,
-    ) -> m.InlineResponse2002:
+    ) -> m.InlineResponse2003:
         """
         Get information about the current state and composition of the cluster
         """
         return await self._build_for_cluster_status()
 
+    async def cluster_telemetry(
+        self,
+        details_level: int = None,
+        timeout: int = None,
+    ) -> m.InlineResponse2004:
+        """
+        Get telemetry data, from the point of view of the cluster. This includes peers info, collections info, shard transfers, and resharding status
+        """
+        return await self._build_for_cluster_telemetry(
+            details_level=details_level,
+            timeout=timeout,
+        )
+
     async def collection_cluster_info(
         self,
         collection_name: str,
-    ) -> m.InlineResponse2007:
+    ) -> m.InlineResponse2009:
         """
         Get cluster information for a collection
         """
@@ -236,7 +289,7 @@ class AsyncDistributedApi(_DistributedApi):
         collection_name: str,
         timeout: int = None,
         create_sharding_key: m.CreateShardingKey = None,
-    ) -> m.InlineResponse200:
+    ) -> m.InlineResponse2001:
         return await self._build_for_create_shard_key(
             collection_name=collection_name,
             timeout=timeout,
@@ -248,16 +301,24 @@ class AsyncDistributedApi(_DistributedApi):
         collection_name: str,
         timeout: int = None,
         drop_sharding_key: m.DropShardingKey = None,
-    ) -> m.InlineResponse200:
+    ) -> m.InlineResponse2001:
         return await self._build_for_delete_shard_key(
             collection_name=collection_name,
             timeout=timeout,
             drop_sharding_key=drop_sharding_key,
         )
 
+    async def list_shard_keys(
+        self,
+        collection_name: str,
+    ) -> m.InlineResponse200:
+        return await self._build_for_list_shard_keys(
+            collection_name=collection_name,
+        )
+
     async def recover_current_peer(
         self,
-    ) -> m.InlineResponse200:
+    ) -> m.InlineResponse2001:
         return await self._build_for_recover_current_peer()
 
     async def remove_peer(
@@ -265,7 +326,7 @@ class AsyncDistributedApi(_DistributedApi):
         peer_id: int,
         timeout: int = None,
         force: bool = None,
-    ) -> m.InlineResponse200:
+    ) -> m.InlineResponse2001:
         """
         Tries to remove peer from the cluster. Will return an error if peer has shards on it.
         """
@@ -280,7 +341,7 @@ class AsyncDistributedApi(_DistributedApi):
         collection_name: str,
         timeout: int = None,
         cluster_operations: m.ClusterOperations = None,
-    ) -> m.InlineResponse200:
+    ) -> m.InlineResponse2001:
         return await self._build_for_update_collection_cluster(
             collection_name=collection_name,
             timeout=timeout,
@@ -291,16 +352,29 @@ class AsyncDistributedApi(_DistributedApi):
 class SyncDistributedApi(_DistributedApi):
     def cluster_status(
         self,
-    ) -> m.InlineResponse2002:
+    ) -> m.InlineResponse2003:
         """
         Get information about the current state and composition of the cluster
         """
         return self._build_for_cluster_status()
 
+    def cluster_telemetry(
+        self,
+        details_level: int = None,
+        timeout: int = None,
+    ) -> m.InlineResponse2004:
+        """
+        Get telemetry data, from the point of view of the cluster. This includes peers info, collections info, shard transfers, and resharding status
+        """
+        return self._build_for_cluster_telemetry(
+            details_level=details_level,
+            timeout=timeout,
+        )
+
     def collection_cluster_info(
         self,
         collection_name: str,
-    ) -> m.InlineResponse2007:
+    ) -> m.InlineResponse2009:
         """
         Get cluster information for a collection
         """
@@ -313,7 +387,7 @@ class SyncDistributedApi(_DistributedApi):
         collection_name: str,
         timeout: int = None,
         create_sharding_key: m.CreateShardingKey = None,
-    ) -> m.InlineResponse200:
+    ) -> m.InlineResponse2001:
         return self._build_for_create_shard_key(
             collection_name=collection_name,
             timeout=timeout,
@@ -325,16 +399,24 @@ class SyncDistributedApi(_DistributedApi):
         collection_name: str,
         timeout: int = None,
         drop_sharding_key: m.DropShardingKey = None,
-    ) -> m.InlineResponse200:
+    ) -> m.InlineResponse2001:
         return self._build_for_delete_shard_key(
             collection_name=collection_name,
             timeout=timeout,
             drop_sharding_key=drop_sharding_key,
         )
 
+    def list_shard_keys(
+        self,
+        collection_name: str,
+    ) -> m.InlineResponse200:
+        return self._build_for_list_shard_keys(
+            collection_name=collection_name,
+        )
+
     def recover_current_peer(
         self,
-    ) -> m.InlineResponse200:
+    ) -> m.InlineResponse2001:
         return self._build_for_recover_current_peer()
 
     def remove_peer(
@@ -342,7 +424,7 @@ class SyncDistributedApi(_DistributedApi):
         peer_id: int,
         timeout: int = None,
         force: bool = None,
-    ) -> m.InlineResponse200:
+    ) -> m.InlineResponse2001:
         """
         Tries to remove peer from the cluster. Will return an error if peer has shards on it.
         """
@@ -357,7 +439,7 @@ class SyncDistributedApi(_DistributedApi):
         collection_name: str,
         timeout: int = None,
         cluster_operations: m.ClusterOperations = None,
-    ) -> m.InlineResponse200:
+    ) -> m.InlineResponse2001:
         return self._build_for_update_collection_cluster(
             collection_name=collection_name,
             timeout=timeout,

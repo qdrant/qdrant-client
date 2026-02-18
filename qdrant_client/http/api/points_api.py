@@ -57,6 +57,7 @@ class _PointsApi:
         collection_name: str,
         wait: bool = None,
         ordering: WriteOrdering = None,
+        timeout: int = None,
         update_operations: m.UpdateOperations = None,
     ):
         """
@@ -71,13 +72,15 @@ class _PointsApi:
             query_params["wait"] = str(wait).lower()
         if ordering is not None:
             query_params["ordering"] = str(ordering)
+        if timeout is not None:
+            query_params["timeout"] = str(timeout)
 
         headers = {}
         body = jsonable_encoder(update_operations)
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse20014,
+            type_=m.InlineResponse20017,
             method="POST",
             url="/collections/{collection_name}/points/batch",
             headers=headers if headers else None,
@@ -91,6 +94,7 @@ class _PointsApi:
         collection_name: str,
         wait: bool = None,
         ordering: WriteOrdering = None,
+        timeout: int = None,
         points_selector: m.PointsSelector = None,
     ):
         """
@@ -105,13 +109,15 @@ class _PointsApi:
             query_params["wait"] = str(wait).lower()
         if ordering is not None:
             query_params["ordering"] = str(ordering)
+        if timeout is not None:
+            query_params["timeout"] = str(timeout)
 
         headers = {}
         body = jsonable_encoder(points_selector)
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse2005,
+            type_=m.InlineResponse2007,
             method="POST",
             url="/collections/{collection_name}/points/payload/clear",
             headers=headers if headers else None,
@@ -145,7 +151,7 @@ class _PointsApi:
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse20019,
+            type_=m.InlineResponse20022,
             method="POST",
             url="/collections/{collection_name}/points/count",
             headers=headers if headers else None,
@@ -159,6 +165,7 @@ class _PointsApi:
         collection_name: str,
         wait: bool = None,
         ordering: WriteOrdering = None,
+        timeout: int = None,
         delete_payload: m.DeletePayload = None,
     ):
         """
@@ -173,13 +180,15 @@ class _PointsApi:
             query_params["wait"] = str(wait).lower()
         if ordering is not None:
             query_params["ordering"] = str(ordering)
+        if timeout is not None:
+            query_params["timeout"] = str(timeout)
 
         headers = {}
         body = jsonable_encoder(delete_payload)
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse2005,
+            type_=m.InlineResponse2007,
             method="POST",
             url="/collections/{collection_name}/points/payload/delete",
             headers=headers if headers else None,
@@ -193,6 +202,7 @@ class _PointsApi:
         collection_name: str,
         wait: bool = None,
         ordering: WriteOrdering = None,
+        timeout: int = None,
         points_selector: m.PointsSelector = None,
     ):
         """
@@ -207,13 +217,15 @@ class _PointsApi:
             query_params["wait"] = str(wait).lower()
         if ordering is not None:
             query_params["ordering"] = str(ordering)
+        if timeout is not None:
+            query_params["timeout"] = str(timeout)
 
         headers = {}
         body = jsonable_encoder(points_selector)
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse2005,
+            type_=m.InlineResponse2007,
             method="POST",
             url="/collections/{collection_name}/points/delete",
             headers=headers if headers else None,
@@ -227,6 +239,7 @@ class _PointsApi:
         collection_name: str,
         wait: bool = None,
         ordering: WriteOrdering = None,
+        timeout: int = None,
         delete_vectors: m.DeleteVectors = None,
     ):
         """
@@ -241,13 +254,15 @@ class _PointsApi:
             query_params["wait"] = str(wait).lower()
         if ordering is not None:
             query_params["ordering"] = str(ordering)
+        if timeout is not None:
+            query_params["timeout"] = str(timeout)
 
         headers = {}
         body = jsonable_encoder(delete_vectors)
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse2005,
+            type_=m.InlineResponse2007,
             method="POST",
             url="/collections/{collection_name}/points/vectors/delete",
             headers=headers if headers else None,
@@ -281,7 +296,7 @@ class _PointsApi:
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse20020,
+            type_=m.InlineResponse20023,
             method="POST",
             url="/collections/{collection_name}/facet",
             headers=headers if headers else None,
@@ -310,7 +325,7 @@ class _PointsApi:
 
         headers = {}
         return self.api_client.request(
-            type_=m.InlineResponse20012,
+            type_=m.InlineResponse20015,
             method="GET",
             url="/collections/{collection_name}/points/{id}",
             headers=headers if headers else None,
@@ -343,7 +358,7 @@ class _PointsApi:
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse20013,
+            type_=m.InlineResponse20016,
             method="POST",
             url="/collections/{collection_name}/points",
             headers=headers if headers else None,
@@ -357,6 +372,7 @@ class _PointsApi:
         collection_name: str,
         wait: bool = None,
         ordering: WriteOrdering = None,
+        timeout: int = None,
         set_payload: m.SetPayload = None,
     ):
         """
@@ -371,13 +387,15 @@ class _PointsApi:
             query_params["wait"] = str(wait).lower()
         if ordering is not None:
             query_params["ordering"] = str(ordering)
+        if timeout is not None:
+            query_params["timeout"] = str(timeout)
 
         headers = {}
         body = jsonable_encoder(set_payload)
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse2005,
+            type_=m.InlineResponse2007,
             method="PUT",
             url="/collections/{collection_name}/points/payload",
             headers=headers if headers else None,
@@ -411,7 +429,7 @@ class _PointsApi:
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse20015,
+            type_=m.InlineResponse20018,
             method="POST",
             url="/collections/{collection_name}/points/scroll",
             headers=headers if headers else None,
@@ -425,6 +443,7 @@ class _PointsApi:
         collection_name: str,
         wait: bool = None,
         ordering: WriteOrdering = None,
+        timeout: int = None,
         set_payload: m.SetPayload = None,
     ):
         """
@@ -439,13 +458,15 @@ class _PointsApi:
             query_params["wait"] = str(wait).lower()
         if ordering is not None:
             query_params["ordering"] = str(ordering)
+        if timeout is not None:
+            query_params["timeout"] = str(timeout)
 
         headers = {}
         body = jsonable_encoder(set_payload)
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse2005,
+            type_=m.InlineResponse2007,
             method="POST",
             url="/collections/{collection_name}/points/payload",
             headers=headers if headers else None,
@@ -459,6 +480,7 @@ class _PointsApi:
         collection_name: str,
         wait: bool = None,
         ordering: WriteOrdering = None,
+        timeout: int = None,
         update_vectors: m.UpdateVectors = None,
     ):
         """
@@ -473,13 +495,15 @@ class _PointsApi:
             query_params["wait"] = str(wait).lower()
         if ordering is not None:
             query_params["ordering"] = str(ordering)
+        if timeout is not None:
+            query_params["timeout"] = str(timeout)
 
         headers = {}
         body = jsonable_encoder(update_vectors)
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse2005,
+            type_=m.InlineResponse2007,
             method="PUT",
             url="/collections/{collection_name}/points/vectors",
             headers=headers if headers else None,
@@ -493,6 +517,7 @@ class _PointsApi:
         collection_name: str,
         wait: bool = None,
         ordering: WriteOrdering = None,
+        timeout: int = None,
         point_insert_operations: m.PointInsertOperations = None,
     ):
         """
@@ -507,13 +532,15 @@ class _PointsApi:
             query_params["wait"] = str(wait).lower()
         if ordering is not None:
             query_params["ordering"] = str(ordering)
+        if timeout is not None:
+            query_params["timeout"] = str(timeout)
 
         headers = {}
         body = jsonable_encoder(point_insert_operations)
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse2005,
+            type_=m.InlineResponse2007,
             method="PUT",
             url="/collections/{collection_name}/points",
             headers=headers if headers else None,
@@ -529,8 +556,9 @@ class AsyncPointsApi(_PointsApi):
         collection_name: str,
         wait: bool = None,
         ordering: WriteOrdering = None,
+        timeout: int = None,
         update_operations: m.UpdateOperations = None,
-    ) -> m.InlineResponse20014:
+    ) -> m.InlineResponse20017:
         """
         Apply a series of update operations for points, vectors and payloads
         """
@@ -538,6 +566,7 @@ class AsyncPointsApi(_PointsApi):
             collection_name=collection_name,
             wait=wait,
             ordering=ordering,
+            timeout=timeout,
             update_operations=update_operations,
         )
 
@@ -546,8 +575,9 @@ class AsyncPointsApi(_PointsApi):
         collection_name: str,
         wait: bool = None,
         ordering: WriteOrdering = None,
+        timeout: int = None,
         points_selector: m.PointsSelector = None,
-    ) -> m.InlineResponse2005:
+    ) -> m.InlineResponse2007:
         """
         Remove all payload for specified points
         """
@@ -555,6 +585,7 @@ class AsyncPointsApi(_PointsApi):
             collection_name=collection_name,
             wait=wait,
             ordering=ordering,
+            timeout=timeout,
             points_selector=points_selector,
         )
 
@@ -564,7 +595,7 @@ class AsyncPointsApi(_PointsApi):
         consistency: m.ReadConsistency = None,
         timeout: int = None,
         count_request: m.CountRequest = None,
-    ) -> m.InlineResponse20019:
+    ) -> m.InlineResponse20022:
         """
         Count points which matches given filtering condition
         """
@@ -580,8 +611,9 @@ class AsyncPointsApi(_PointsApi):
         collection_name: str,
         wait: bool = None,
         ordering: WriteOrdering = None,
+        timeout: int = None,
         delete_payload: m.DeletePayload = None,
-    ) -> m.InlineResponse2005:
+    ) -> m.InlineResponse2007:
         """
         Delete specified key payload for points
         """
@@ -589,6 +621,7 @@ class AsyncPointsApi(_PointsApi):
             collection_name=collection_name,
             wait=wait,
             ordering=ordering,
+            timeout=timeout,
             delete_payload=delete_payload,
         )
 
@@ -597,8 +630,9 @@ class AsyncPointsApi(_PointsApi):
         collection_name: str,
         wait: bool = None,
         ordering: WriteOrdering = None,
+        timeout: int = None,
         points_selector: m.PointsSelector = None,
-    ) -> m.InlineResponse2005:
+    ) -> m.InlineResponse2007:
         """
         Delete points
         """
@@ -606,6 +640,7 @@ class AsyncPointsApi(_PointsApi):
             collection_name=collection_name,
             wait=wait,
             ordering=ordering,
+            timeout=timeout,
             points_selector=points_selector,
         )
 
@@ -614,8 +649,9 @@ class AsyncPointsApi(_PointsApi):
         collection_name: str,
         wait: bool = None,
         ordering: WriteOrdering = None,
+        timeout: int = None,
         delete_vectors: m.DeleteVectors = None,
-    ) -> m.InlineResponse2005:
+    ) -> m.InlineResponse2007:
         """
         Delete named vectors from the given points.
         """
@@ -623,6 +659,7 @@ class AsyncPointsApi(_PointsApi):
             collection_name=collection_name,
             wait=wait,
             ordering=ordering,
+            timeout=timeout,
             delete_vectors=delete_vectors,
         )
 
@@ -632,7 +669,7 @@ class AsyncPointsApi(_PointsApi):
         consistency: m.ReadConsistency = None,
         timeout: int = None,
         facet_request: m.FacetRequest = None,
-    ) -> m.InlineResponse20020:
+    ) -> m.InlineResponse20023:
         """
         Count points that satisfy the given filter for each unique value of a payload key.
         """
@@ -648,7 +685,7 @@ class AsyncPointsApi(_PointsApi):
         collection_name: str,
         id: m.ExtendedPointId,
         consistency: m.ReadConsistency = None,
-    ) -> m.InlineResponse20012:
+    ) -> m.InlineResponse20015:
         """
         Retrieve full information of single point by id
         """
@@ -664,7 +701,7 @@ class AsyncPointsApi(_PointsApi):
         consistency: m.ReadConsistency = None,
         timeout: int = None,
         point_request: m.PointRequest = None,
-    ) -> m.InlineResponse20013:
+    ) -> m.InlineResponse20016:
         """
         Retrieve multiple points by specified IDs
         """
@@ -680,8 +717,9 @@ class AsyncPointsApi(_PointsApi):
         collection_name: str,
         wait: bool = None,
         ordering: WriteOrdering = None,
+        timeout: int = None,
         set_payload: m.SetPayload = None,
-    ) -> m.InlineResponse2005:
+    ) -> m.InlineResponse2007:
         """
         Replace full payload of points with new one
         """
@@ -689,6 +727,7 @@ class AsyncPointsApi(_PointsApi):
             collection_name=collection_name,
             wait=wait,
             ordering=ordering,
+            timeout=timeout,
             set_payload=set_payload,
         )
 
@@ -698,7 +737,7 @@ class AsyncPointsApi(_PointsApi):
         consistency: m.ReadConsistency = None,
         timeout: int = None,
         scroll_request: m.ScrollRequest = None,
-    ) -> m.InlineResponse20015:
+    ) -> m.InlineResponse20018:
         """
         Scroll request - paginate over all points which matches given filtering condition
         """
@@ -714,8 +753,9 @@ class AsyncPointsApi(_PointsApi):
         collection_name: str,
         wait: bool = None,
         ordering: WriteOrdering = None,
+        timeout: int = None,
         set_payload: m.SetPayload = None,
-    ) -> m.InlineResponse2005:
+    ) -> m.InlineResponse2007:
         """
         Set payload values for points
         """
@@ -723,6 +763,7 @@ class AsyncPointsApi(_PointsApi):
             collection_name=collection_name,
             wait=wait,
             ordering=ordering,
+            timeout=timeout,
             set_payload=set_payload,
         )
 
@@ -731,8 +772,9 @@ class AsyncPointsApi(_PointsApi):
         collection_name: str,
         wait: bool = None,
         ordering: WriteOrdering = None,
+        timeout: int = None,
         update_vectors: m.UpdateVectors = None,
-    ) -> m.InlineResponse2005:
+    ) -> m.InlineResponse2007:
         """
         Update specified named vectors on points, keep unspecified vectors intact.
         """
@@ -740,6 +782,7 @@ class AsyncPointsApi(_PointsApi):
             collection_name=collection_name,
             wait=wait,
             ordering=ordering,
+            timeout=timeout,
             update_vectors=update_vectors,
         )
 
@@ -748,8 +791,9 @@ class AsyncPointsApi(_PointsApi):
         collection_name: str,
         wait: bool = None,
         ordering: WriteOrdering = None,
+        timeout: int = None,
         point_insert_operations: m.PointInsertOperations = None,
-    ) -> m.InlineResponse2005:
+    ) -> m.InlineResponse2007:
         """
         Perform insert + updates on points. If point with given ID already exists - it will be overwritten.
         """
@@ -757,6 +801,7 @@ class AsyncPointsApi(_PointsApi):
             collection_name=collection_name,
             wait=wait,
             ordering=ordering,
+            timeout=timeout,
             point_insert_operations=point_insert_operations,
         )
 
@@ -767,8 +812,9 @@ class SyncPointsApi(_PointsApi):
         collection_name: str,
         wait: bool = None,
         ordering: WriteOrdering = None,
+        timeout: int = None,
         update_operations: m.UpdateOperations = None,
-    ) -> m.InlineResponse20014:
+    ) -> m.InlineResponse20017:
         """
         Apply a series of update operations for points, vectors and payloads
         """
@@ -776,6 +822,7 @@ class SyncPointsApi(_PointsApi):
             collection_name=collection_name,
             wait=wait,
             ordering=ordering,
+            timeout=timeout,
             update_operations=update_operations,
         )
 
@@ -784,8 +831,9 @@ class SyncPointsApi(_PointsApi):
         collection_name: str,
         wait: bool = None,
         ordering: WriteOrdering = None,
+        timeout: int = None,
         points_selector: m.PointsSelector = None,
-    ) -> m.InlineResponse2005:
+    ) -> m.InlineResponse2007:
         """
         Remove all payload for specified points
         """
@@ -793,6 +841,7 @@ class SyncPointsApi(_PointsApi):
             collection_name=collection_name,
             wait=wait,
             ordering=ordering,
+            timeout=timeout,
             points_selector=points_selector,
         )
 
@@ -802,7 +851,7 @@ class SyncPointsApi(_PointsApi):
         consistency: m.ReadConsistency = None,
         timeout: int = None,
         count_request: m.CountRequest = None,
-    ) -> m.InlineResponse20019:
+    ) -> m.InlineResponse20022:
         """
         Count points which matches given filtering condition
         """
@@ -818,8 +867,9 @@ class SyncPointsApi(_PointsApi):
         collection_name: str,
         wait: bool = None,
         ordering: WriteOrdering = None,
+        timeout: int = None,
         delete_payload: m.DeletePayload = None,
-    ) -> m.InlineResponse2005:
+    ) -> m.InlineResponse2007:
         """
         Delete specified key payload for points
         """
@@ -827,6 +877,7 @@ class SyncPointsApi(_PointsApi):
             collection_name=collection_name,
             wait=wait,
             ordering=ordering,
+            timeout=timeout,
             delete_payload=delete_payload,
         )
 
@@ -835,8 +886,9 @@ class SyncPointsApi(_PointsApi):
         collection_name: str,
         wait: bool = None,
         ordering: WriteOrdering = None,
+        timeout: int = None,
         points_selector: m.PointsSelector = None,
-    ) -> m.InlineResponse2005:
+    ) -> m.InlineResponse2007:
         """
         Delete points
         """
@@ -844,6 +896,7 @@ class SyncPointsApi(_PointsApi):
             collection_name=collection_name,
             wait=wait,
             ordering=ordering,
+            timeout=timeout,
             points_selector=points_selector,
         )
 
@@ -852,8 +905,9 @@ class SyncPointsApi(_PointsApi):
         collection_name: str,
         wait: bool = None,
         ordering: WriteOrdering = None,
+        timeout: int = None,
         delete_vectors: m.DeleteVectors = None,
-    ) -> m.InlineResponse2005:
+    ) -> m.InlineResponse2007:
         """
         Delete named vectors from the given points.
         """
@@ -861,6 +915,7 @@ class SyncPointsApi(_PointsApi):
             collection_name=collection_name,
             wait=wait,
             ordering=ordering,
+            timeout=timeout,
             delete_vectors=delete_vectors,
         )
 
@@ -870,7 +925,7 @@ class SyncPointsApi(_PointsApi):
         consistency: m.ReadConsistency = None,
         timeout: int = None,
         facet_request: m.FacetRequest = None,
-    ) -> m.InlineResponse20020:
+    ) -> m.InlineResponse20023:
         """
         Count points that satisfy the given filter for each unique value of a payload key.
         """
@@ -886,7 +941,7 @@ class SyncPointsApi(_PointsApi):
         collection_name: str,
         id: m.ExtendedPointId,
         consistency: m.ReadConsistency = None,
-    ) -> m.InlineResponse20012:
+    ) -> m.InlineResponse20015:
         """
         Retrieve full information of single point by id
         """
@@ -902,7 +957,7 @@ class SyncPointsApi(_PointsApi):
         consistency: m.ReadConsistency = None,
         timeout: int = None,
         point_request: m.PointRequest = None,
-    ) -> m.InlineResponse20013:
+    ) -> m.InlineResponse20016:
         """
         Retrieve multiple points by specified IDs
         """
@@ -918,8 +973,9 @@ class SyncPointsApi(_PointsApi):
         collection_name: str,
         wait: bool = None,
         ordering: WriteOrdering = None,
+        timeout: int = None,
         set_payload: m.SetPayload = None,
-    ) -> m.InlineResponse2005:
+    ) -> m.InlineResponse2007:
         """
         Replace full payload of points with new one
         """
@@ -927,6 +983,7 @@ class SyncPointsApi(_PointsApi):
             collection_name=collection_name,
             wait=wait,
             ordering=ordering,
+            timeout=timeout,
             set_payload=set_payload,
         )
 
@@ -936,7 +993,7 @@ class SyncPointsApi(_PointsApi):
         consistency: m.ReadConsistency = None,
         timeout: int = None,
         scroll_request: m.ScrollRequest = None,
-    ) -> m.InlineResponse20015:
+    ) -> m.InlineResponse20018:
         """
         Scroll request - paginate over all points which matches given filtering condition
         """
@@ -952,8 +1009,9 @@ class SyncPointsApi(_PointsApi):
         collection_name: str,
         wait: bool = None,
         ordering: WriteOrdering = None,
+        timeout: int = None,
         set_payload: m.SetPayload = None,
-    ) -> m.InlineResponse2005:
+    ) -> m.InlineResponse2007:
         """
         Set payload values for points
         """
@@ -961,6 +1019,7 @@ class SyncPointsApi(_PointsApi):
             collection_name=collection_name,
             wait=wait,
             ordering=ordering,
+            timeout=timeout,
             set_payload=set_payload,
         )
 
@@ -969,8 +1028,9 @@ class SyncPointsApi(_PointsApi):
         collection_name: str,
         wait: bool = None,
         ordering: WriteOrdering = None,
+        timeout: int = None,
         update_vectors: m.UpdateVectors = None,
-    ) -> m.InlineResponse2005:
+    ) -> m.InlineResponse2007:
         """
         Update specified named vectors on points, keep unspecified vectors intact.
         """
@@ -978,6 +1038,7 @@ class SyncPointsApi(_PointsApi):
             collection_name=collection_name,
             wait=wait,
             ordering=ordering,
+            timeout=timeout,
             update_vectors=update_vectors,
         )
 
@@ -986,8 +1047,9 @@ class SyncPointsApi(_PointsApi):
         collection_name: str,
         wait: bool = None,
         ordering: WriteOrdering = None,
+        timeout: int = None,
         point_insert_operations: m.PointInsertOperations = None,
-    ) -> m.InlineResponse2005:
+    ) -> m.InlineResponse2007:
         """
         Perform insert + updates on points. If point with given ID already exists - it will be overwritten.
         """
@@ -995,5 +1057,6 @@ class SyncPointsApi(_PointsApi):
             collection_name=collection_name,
             wait=wait,
             ordering=ordering,
+            timeout=timeout,
             point_insert_operations=point_insert_operations,
         )
