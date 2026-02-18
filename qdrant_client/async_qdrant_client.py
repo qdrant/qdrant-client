@@ -837,6 +837,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         ordering: types.WriteOrdering | None = None,
         shard_key_selector: types.ShardKeySelector | None = None,
         update_filter: types.Filter | None = None,
+        update_mode: types.UpdateMode | None = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
         """
@@ -863,6 +864,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
                 Only works for collections with `custom` sharding method.
 
             update_filter: If specified, only points that match this filter will be updated, others will be inserted
+            update_mode: Allows to alter default upsert behavior, instead of inserting a point if it does not exist, or updating it if it does, can be set to insert-only or update-only strategies.
 
         Returns:
             Operation Result(UpdateResult)
@@ -901,7 +903,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             ordering=ordering,
             shard_key_selector=shard_key_selector,
             update_filter=update_filter,
-            **kwargs,
+            update_mode=update_mode**kwargs,
         )
 
     async def update_vectors(
@@ -1747,6 +1749,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         wait: bool = False,
         shard_key_selector: types.ShardKeySelector | None = None,
         update_filter: types.Filter | None = None,
+        update_mode: types.UpdateMode | None = None,
         **kwargs: Any,
     ) -> None:
         """Upload points to the collection
@@ -1771,6 +1774,8 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
                 Only works for collections with `custom` sharding method.
                 This parameter overwrites shard keys written in the records.
             update_filter: If specified, only points that match this filter will be updated, others will be inserted
+            update_mode: Allows to alter default upsert behavior, instead of inserting a point if it does not exist, or updating it if it does, can be set to insert-only or update-only strategies.
+
         """
 
         def chain(*iterables: Iterable) -> Iterable:
@@ -1801,6 +1806,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             wait=wait,
             shard_key_selector=shard_key_selector,
             update_filter=update_filter,
+            update_mode=update_mode,
         )
 
     def upload_collection(
@@ -1816,6 +1822,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         wait: bool = False,
         shard_key_selector: types.ShardKeySelector | None = None,
         update_filter: types.Filter | None = None,
+        update_mode: types.UpdateMode | None = None,
         **kwargs: Any,
     ) -> None:
         """Upload vectors and payload to the collection.
@@ -1842,6 +1849,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
                 If multiple shard_keys are provided, the update will be written to each of them.
                 Only works for collections with `custom` sharding method.
             update_filter: If specified, only points that match this filter will be updated, others will be inserted
+            update_mode: Allows to alter default upsert behavior, instead of inserting a point if it does not exist, or updating it if it does, can be set to insert-only or update-only strategies.
         """
 
         def chain(*iterables: Iterable) -> Iterable:
@@ -1875,6 +1883,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             wait=wait,
             shard_key_selector=shard_key_selector,
             update_filter=update_filter,
+            update_mode=update_mode,
         )
 
     async def create_payload_index(

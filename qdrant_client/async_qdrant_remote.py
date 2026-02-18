@@ -919,6 +919,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         ordering: types.WriteOrdering | None = None,
         shard_key_selector: types.ShardKeySelector | None = None,
         update_filter: types.Filter | None = None,
+        update_mode: types.UpdateMode | None = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
         if self._prefer_grpc:
@@ -949,6 +950,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 shard_key_selector = RestToGrpc.convert_shard_key_selector(shard_key_selector)
             if isinstance(update_filter, models.Filter):
                 update_filter = RestToGrpc.convert_filter(model=update_filter)
+            if isinstance(update_mode, models.UpdateMode):
+                update_mode = RestToGrpc.convert_update_mode(update_mode)
             grpc_result = (
                 await self.grpc_points.Upsert(
                     grpc.UpsertPoints(
@@ -958,6 +961,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                         ordering=ordering,
                         shard_key_selector=shard_key_selector,
                         update_filter=update_filter,
+                        update_mode=update_mode,
                     ),
                     timeout=self._timeout,
                 )
@@ -975,11 +979,17 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                     for point in points
                 ]
                 points = models.PointsList(
-                    points=points, shard_key=shard_key_selector, update_filter=update_filter
+                    points=points,
+                    shard_key=shard_key_selector,
+                    update_filter=update_filter,
+                    update_mode=update_mode,
                 )
             if isinstance(points, models.Batch):
                 points = models.PointsBatch(
-                    batch=points, shard_key=shard_key_selector, update_filter=update_filter
+                    batch=points,
+                    shard_key=shard_key_selector,
+                    update_filter=update_filter,
+                    update_mode=update_mode,
                 )
             http_result = (
                 await self.openapi_client.points_api.upsert_points(
@@ -1910,6 +1920,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         wait: bool = False,
         shard_key_selector: types.ShardKeySelector | None = None,
         update_filter: types.Filter | None = None,
+        update_mode: types.UpdateMode | None = None,
     ) -> None:
         if method is not None:
             if method in get_all_start_methods():
@@ -1933,6 +1944,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 "options": self._grpc_options,
                 "timeout": self._timeout,
                 "update_filter": update_filter,
+                "update_mode": update_mode,
             }
         else:
             updater_kwargs = {
@@ -1942,6 +1954,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 "wait": wait,
                 "shard_key_selector": shard_key_selector,
                 "update_filter": update_filter,
+                "update_mode": update_mode,
                 **self._rest_args,
             }
         if parallel == 1:
@@ -1964,6 +1977,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         wait: bool = False,
         shard_key_selector: types.ShardKeySelector | None = None,
         update_filter: types.Filter | None = None,
+        update_mode: types.UpdateMode | None = None,
         **kwargs: Any,
     ) -> None:
         batches_iterator = self._updater_class.iterate_records_batches(
@@ -1978,6 +1992,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             wait=wait,
             shard_key_selector=shard_key_selector,
             update_filter=update_filter,
+            update_mode=update_mode,
         )
 
     def upload_collection(
@@ -1993,6 +2008,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         wait: bool = False,
         shard_key_selector: types.ShardKeySelector | None = None,
         update_filter: types.Filter | None = None,
+        update_mode: types.UpdateMode | None = None,
         **kwargs: Any,
     ) -> None:
         batches_iterator = self._updater_class.iterate_batches(
@@ -2007,6 +2023,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             wait=wait,
             shard_key_selector=shard_key_selector,
             update_filter=update_filter,
+            update_mode=update_mode,
         )
 
     async def create_payload_index(

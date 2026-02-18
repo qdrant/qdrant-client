@@ -134,7 +134,12 @@ class AsyncQdrantBase:
         raise NotImplementedError()
 
     async def upsert(
-        self, collection_name: str, points: types.Points, **kwargs: Any
+        self,
+        collection_name: str,
+        points: types.Points,
+        update_filter: types.Filter | None = None,
+        update_mode: types.UpdateMode | None = None,
+        **kwargs: Any,
     ) -> types.UpdateResult:
         raise NotImplementedError()
 
@@ -253,7 +258,12 @@ class AsyncQdrantBase:
         raise NotImplementedError()
 
     def upload_points(
-        self, collection_name: str, points: Iterable[types.PointStruct], **kwargs: Any
+        self,
+        collection_name: str,
+        points: Iterable[types.PointStruct],
+        update_filter: types.Filter | None = None,
+        update_mode: types.UpdateMode | None = None,
+        **kwargs: Any,
     ) -> None:
         raise NotImplementedError()
 
@@ -263,6 +273,8 @@ class AsyncQdrantBase:
         vectors: dict[str, types.NumpyArray] | types.NumpyArray | Iterable[types.VectorStruct],
         payload: Iterable[dict[Any, Any]] | None = None,
         ids: Iterable[types.PointId] | None = None,
+        update_filter: types.Filter | None = None,
+        update_mode: types.UpdateMode | None = None,
         **kwargs: Any,
     ) -> None:
         raise NotImplementedError()

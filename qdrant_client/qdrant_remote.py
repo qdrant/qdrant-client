@@ -1043,6 +1043,7 @@ class QdrantRemote(QdrantBase):
         ordering: types.WriteOrdering | None = None,
         shard_key_selector: types.ShardKeySelector | None = None,
         update_filter: types.Filter | None = None,
+        update_mode: types.UpdateMode | None = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
         if self._prefer_grpc:
@@ -1081,6 +1082,9 @@ class QdrantRemote(QdrantBase):
             if isinstance(update_filter, models.Filter):
                 update_filter = RestToGrpc.convert_filter(model=update_filter)
 
+            if isinstance(update_mode, models.UpdateMode):
+                update_mode = RestToGrpc.convert_update_mode(update_mode)
+
             grpc_result = self.grpc_points.Upsert(
                 grpc.UpsertPoints(
                     collection_name=collection_name,
@@ -1089,6 +1093,7 @@ class QdrantRemote(QdrantBase):
                     ordering=ordering,
                     shard_key_selector=shard_key_selector,
                     update_filter=update_filter,
+                    update_mode=update_mode,
                 ),
                 timeout=self._timeout,
             ).result
@@ -1110,12 +1115,18 @@ class QdrantRemote(QdrantBase):
                 ]
 
                 points = models.PointsList(
-                    points=points, shard_key=shard_key_selector, update_filter=update_filter
+                    points=points,
+                    shard_key=shard_key_selector,
+                    update_filter=update_filter,
+                    update_mode=update_mode,
                 )
 
             if isinstance(points, models.Batch):
                 points = models.PointsBatch(
-                    batch=points, shard_key=shard_key_selector, update_filter=update_filter
+                    batch=points,
+                    shard_key=shard_key_selector,
+                    update_filter=update_filter,
+                    update_mode=update_mode,
                 )
 
             http_result = self.openapi_client.points_api.upsert_points(
@@ -2085,6 +2096,7 @@ class QdrantRemote(QdrantBase):
         wait: bool = False,
         shard_key_selector: types.ShardKeySelector | None = None,
         update_filter: types.Filter | None = None,
+        update_mode: types.UpdateMode | None = None,
     ) -> None:
         if method is not None:
             if method in get_all_start_methods():
@@ -2109,6 +2121,7 @@ class QdrantRemote(QdrantBase):
                 "options": self._grpc_options,
                 "timeout": self._timeout,
                 "update_filter": update_filter,
+                "update_mode": update_mode,
             }
         else:
             updater_kwargs = {
@@ -2118,6 +2131,7 @@ class QdrantRemote(QdrantBase):
                 "wait": wait,
                 "shard_key_selector": shard_key_selector,
                 "update_filter": update_filter,
+                "update_mode": update_mode,
                 **self._rest_args,
             }
 
@@ -2141,6 +2155,7 @@ class QdrantRemote(QdrantBase):
         wait: bool = False,
         shard_key_selector: types.ShardKeySelector | None = None,
         update_filter: types.Filter | None = None,
+        update_mode: types.UpdateMode | None = None,
         **kwargs: Any,
     ) -> None:
         batches_iterator = self._updater_class.iterate_records_batches(
@@ -2156,6 +2171,7 @@ class QdrantRemote(QdrantBase):
             wait=wait,
             shard_key_selector=shard_key_selector,
             update_filter=update_filter,
+            update_mode=update_mode,
         )
 
     def upload_collection(
@@ -2171,6 +2187,7 @@ class QdrantRemote(QdrantBase):
         wait: bool = False,
         shard_key_selector: types.ShardKeySelector | None = None,
         update_filter: types.Filter | None = None,
+        update_mode: types.UpdateMode | None = None,
         **kwargs: Any,
     ) -> None:
         batches_iterator = self._updater_class.iterate_batches(
@@ -2189,6 +2206,7 @@ class QdrantRemote(QdrantBase):
             wait=wait,
             shard_key_selector=shard_key_selector,
             update_filter=update_filter,
+            update_mode=update_mode,
         )
 
     def create_payload_index(

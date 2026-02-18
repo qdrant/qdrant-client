@@ -130,6 +130,8 @@ class QdrantBase:
         self,
         collection_name: str,
         points: types.Points,
+        update_filter: types.Filter | None = None,
+        update_mode: types.UpdateMode | None = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
         raise NotImplementedError()
@@ -267,6 +269,8 @@ class QdrantBase:
         self,
         collection_name: str,
         points: Iterable[types.PointStruct],
+        update_filter: types.Filter | None = None,
+        update_mode: types.UpdateMode | None = None,
         **kwargs: Any,
     ) -> None:
         raise NotImplementedError()
@@ -277,6 +281,8 @@ class QdrantBase:
         vectors: dict[str, types.NumpyArray] | types.NumpyArray | Iterable[types.VectorStruct],
         payload: Iterable[dict[Any, Any]] | None = None,
         ids: Iterable[types.PointId] | None = None,
+        update_filter: types.Filter | None = None,
+        update_mode: types.UpdateMode | None = None,
         **kwargs: Any,
     ) -> None:
         raise NotImplementedError()

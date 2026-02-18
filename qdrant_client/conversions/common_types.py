@@ -102,6 +102,7 @@ Document: TypeAlias = rest.Document
 Image: TypeAlias = rest.Image
 InferenceObject: TypeAlias = rest.InferenceObject
 StrictModeConfig: TypeAlias = rest.StrictModeConfig
+UpdateMode: TypeAlias = rest.UpdateMode
 
 QueryRequest: TypeAlias = rest.QueryRequest
 

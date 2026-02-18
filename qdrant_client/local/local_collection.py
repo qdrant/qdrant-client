@@ -2414,6 +2414,7 @@ class LocalCollection:
         self,
         point: models.PointStruct,
         update_filter: types.Filter | None = None,
+        update_mode: types.UpdateMode | None = None,
     ) -> None:
         if isinstance(point.id, str):
             # try to parse as UUID
@@ -2451,6 +2452,8 @@ class LocalCollection:
             point.id = str(point.id)
 
         if point.id in self.ids:
+            if update_mode == models.UpdateMode.INSERT_ONLY:
+                return None
             idx = self.ids[point.id]
             if not self.deleted[idx] and update_filter is not None:
                 has_vector = {}
@@ -2463,6 +2466,8 @@ class LocalCollection:
                     return None
             self._update_point(point)
         else:
+            if update_mode == models.UpdateMode.UPDATE_ONLY:
+                return None
             self._add_point(point)
 
         if self.storage is not None:
@@ -2472,10 +2477,11 @@ class LocalCollection:
         self,
         points: Sequence[models.PointStruct] | models.Batch,
         update_filter: types.Filter | None = None,
+        update_mode: types.UpdateMode | None = None,
     ) -> None:
         if isinstance(points, list):
             for point in points:
-                self._upsert_point(point, update_filter=update_filter)
+                self._upsert_point(point, update_filter=update_filter, update_mode=update_mode)
         elif isinstance(points, models.Batch):
             batch = points
             if isinstance(batch.vectors, list):
@@ -2497,6 +2503,7 @@ class LocalCollection:
                         vector=vector,
                     ),
                     update_filter=update_filter,
+                    update_mode=update_mode,
                 )
         else:
             raise ValueError(f"Unsupported type: {type(points)}")

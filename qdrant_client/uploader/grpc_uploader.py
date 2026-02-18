@@ -21,6 +21,7 @@ def upload_batch_grpc(
     max_retries: int,
     shard_key_selector: grpc.ShardKeySelector | None,  # type: ignore[name-defined]
     update_filter: grpc.Filter | None,
+    update_mode: grpc.UpdateMode | None = None,
     wait: bool = False,
     timeout: int | None = None,
 ) -> bool:
@@ -52,6 +53,7 @@ def upload_batch_grpc(
                     wait=wait,
                     shard_key_selector=shard_key_selector,
                     update_filter=update_filter,
+                    update_mode=update_mode,
                 ),
                 timeout=timeout,
             )
@@ -88,6 +90,7 @@ class GrpcBatchUploader(BaseUploader):
         wait: bool = False,
         shard_key_selector: types.ShardKeySelector | None = None,
         update_filter: types.Filter | None = None,
+        update_mode: types.UpdateMode | None = None,
         **kwargs: Any,
     ):
         self.collection_name = collection_name
@@ -106,6 +109,11 @@ class GrpcBatchUploader(BaseUploader):
             RestToGrpc.convert_filter(update_filter)
             if isinstance(update_filter, rest.Filter)  # type: ignore[attr-defined]
             else update_filter
+        )
+        self._update_mode = (
+            RestToGrpc.convert_update_mode(update_mode)
+            if isinstance(update_mode, rest.UpdateMode)  # type: ignore[attr-defined]
+            else update_mode
         )
 
     @classmethod
@@ -138,6 +146,7 @@ class GrpcBatchUploader(BaseUploader):
                 batch,
                 shard_key_selector=self._shard_key_selector,
                 update_filter=self._update_filter,
+                update_mode=self._update_mode,
                 max_retries=self.max_retries,
                 wait=self._wait,
                 timeout=self._timeout,
