@@ -2645,3 +2645,41 @@ class QdrantRemote(QdrantBase):
         ).result
         assert collection_info is not None, "Collection cluster info returned None"
         return collection_info
+
+    def get_optimizations(
+        self,
+        collection_name: str,
+        completed_limit: int | None = None,
+        **kwargs: Any,
+    ) -> types.OptimizationsResponse:
+        # No gRPC endpoint for optimizations
+        result = self.http.collections_api.get_optimizations(
+            collection_name=collection_name,
+            completed_limit=completed_limit,
+        ).result
+        assert result is not None, "Get optimizations returned None"
+        return result
+
+    def list_shard_keys(
+        self,
+        collection_name: str,
+        **kwargs: Any,
+    ) -> types.ShardKeysResponse:
+        if self._prefer_grpc:
+            response = self.grpc_collections.ListShardKeys(
+                grpc.ListShardKeysRequest(collection_name=collection_name),
+                timeout=self._timeout,
+            )
+            return models.ShardKeysResponse(
+                shard_keys=[
+                    models.ShardKeyDescription(
+                        key=GrpcToRest.convert_shard_key(sk.key),
+                    )
+                    for sk in response.shard_keys
+                ]
+            )
+        result = self.rest.distributed_api.list_shard_keys(
+            collection_name=collection_name,
+        ).result
+        assert result is not None, "List shard keys returned None"
+        return result

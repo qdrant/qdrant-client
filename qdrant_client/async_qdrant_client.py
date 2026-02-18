@@ -2344,3 +2344,32 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             bool: Operation result
         """
         return await self._client.remove_peer(peer_id, force=force, timeout=timeout, **kwargs)
+
+    async def get_optimizations(
+        self, collection_name: str, completed_limit: int | None = None, **kwargs: Any
+    ) -> types.OptimizationsResponse:
+        """Get progress of ongoing and completed optimizations for a collection.
+
+        Args:
+            collection_name: Name of the collection
+            completed_limit: Maximum number of completed optimizations to return
+
+        Returns:
+            types.OptimizationsResponse: Optimizations progress for the collection
+        """
+        return await self._client.get_optimizations(
+            collection_name=collection_name, completed_limit=completed_limit, **kwargs
+        )
+
+    async def list_shard_keys(
+        self, collection_name: str, **kwargs: Any
+    ) -> types.ShardKeysResponse:
+        """List shard keys for a collection.
+
+        Args:
+            collection_name: Name of the collection
+
+        Returns:
+            types.ShardKeysResponse: Shard keys of the collection
+        """
+        return await self._client.list_shard_keys(collection_name=collection_name, **kwargs)

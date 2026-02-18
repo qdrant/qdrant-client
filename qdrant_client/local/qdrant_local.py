@@ -1047,3 +1047,22 @@ class QdrantLocal(QdrantBase):
             "Remove peer info is not supported in the local Qdrant. "
             "Please use server Qdrant if you need a cluster"
         )
+
+    def get_optimizations(
+        self,
+        collection_name: str,
+        **kwargs: Any,
+    ) -> types.OptimizationsResponse:
+        raise NotImplementedError(
+            "Get optimizations is not supported in the local Qdrant. " "Please use server Qdrant."
+        )
+
+    def list_shard_keys(
+        self,
+        collection_name: str,
+        **kwargs: Any,
+    ) -> types.ShardKeysResponse:
+        raise NotImplementedError(
+            "List shard keys is not supported in the local Qdrant. "
+            "Please use server Qdrant if you need sharding."
+        )
