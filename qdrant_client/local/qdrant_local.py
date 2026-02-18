@@ -1066,3 +1066,12 @@ class QdrantLocal(QdrantBase):
             "List shard keys is not supported in the local Qdrant. "
             "Please use server Qdrant if you need sharding."
         )
+
+    def cluster_telemetry(
+        self,
+        **kwargs: Any,
+    ) -> types.DistributedTelemetryData:
+        raise NotImplementedError(
+            "Cluster telemetry is not supported in the local Qdrant. "
+            "Please use server Qdrant if you need a cluster."
+        )

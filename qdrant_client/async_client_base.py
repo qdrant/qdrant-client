@@ -388,3 +388,6 @@ class AsyncQdrantBase:
         self, collection_name: str, **kwargs: Any
     ) -> types.ShardKeysResponse:
         raise NotImplementedError()
+
+    async def cluster_telemetry(self, **kwargs: Any) -> types.DistributedTelemetryData:
+        raise NotImplementedError()

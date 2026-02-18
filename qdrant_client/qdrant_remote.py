@@ -2683,3 +2683,17 @@ class QdrantRemote(QdrantBase):
         ).result
         assert result is not None, "List shard keys returned None"
         return result
+
+    def cluster_telemetry(
+        self,
+        details_level: int | None = None,
+        timeout: int | None = None,
+        **kwargs: Any,
+    ) -> types.DistributedTelemetryData:
+        # No gRPC endpoint for cluster telemetry
+        result = self.rest.distributed_api.cluster_telemetry(
+            details_level=details_level,
+            timeout=timeout,
+        ).result
+        assert result is not None, "Cluster telemetry returned None"
+        return result

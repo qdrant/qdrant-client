@@ -422,3 +422,9 @@ class QdrantBase:
         **kwargs: Any,
     ) -> types.ShardKeysResponse:
         raise NotImplementedError()
+
+    def cluster_telemetry(
+        self,
+        **kwargs: Any,
+    ) -> types.DistributedTelemetryData:
+        raise NotImplementedError()

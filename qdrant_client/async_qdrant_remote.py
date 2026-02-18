@@ -2485,3 +2485,14 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         ).result
         assert result is not None, "List shard keys returned None"
         return result
+
+    async def cluster_telemetry(
+        self, details_level: int | None = None, timeout: int | None = None, **kwargs: Any
+    ) -> types.DistributedTelemetryData:
+        result = (
+            await self.rest.distributed_api.cluster_telemetry(
+                details_level=details_level, timeout=timeout
+            )
+        ).result
+        assert result is not None, "Cluster telemetry returned None"
+        return result

@@ -129,6 +129,7 @@ ClusterStatus: TypeAlias = rest.ClusterStatus
 CollectionClusterInfo: TypeAlias = rest.CollectionClusterInfo
 OptimizationsResponse: TypeAlias = rest.OptimizationsResponse
 ShardKeysResponse: TypeAlias = rest.ShardKeysResponse
+DistributedTelemetryData: TypeAlias = rest.DistributedTelemetryData
 
 # we can't use `nptyping` package due to numpy/python-version incompatibilities
 # thus we need to define precise type annotations while we support python3.7

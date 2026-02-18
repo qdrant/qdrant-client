@@ -2513,3 +2513,26 @@ class QdrantClient(QdrantFastembedMixin):
             collection_name=collection_name,
             **kwargs,
         )
+
+    def cluster_telemetry(
+        self,
+        details_level: int | None = None,
+        timeout: int | None = None,
+        **kwargs: Any,
+    ) -> types.DistributedTelemetryData:
+        """Get telemetry data from the point of view of the cluster.
+
+        This includes peers info, collections info, shard transfers, and resharding status.
+
+        Args:
+            details_level: Level of detail for the telemetry data
+            timeout: Wait for operation commit timeout in seconds
+
+        Returns:
+            types.DistributedTelemetryData: Cluster telemetry data
+        """
+        return self._client.cluster_telemetry(
+            details_level=details_level,
+            timeout=timeout,
+            **kwargs,
+        )
