@@ -2291,12 +2291,11 @@ class LocalCollection:
 
         feedback_items: list[DistFeedbackItem] = []
         for item in relevance_feedback.feedback:
-            # For relevance feedback we do not exclude mentioned items,
-            # as it is possible that they will have different score
-            # after another iteration of feedback, and we are interested in this score.
-            example_vector, _example_id = self._preprocess_vector_input(
+            example_vector, example_id = self._preprocess_vector_input(
                 item.example, self, vector_name
             )
+            if example_id is not None:
+                mentioned_ids.append(example_id)
             feedback_items.append(DistFeedbackItem(vector=example_vector, score=item.score))
 
         query_filter = ignore_mentioned_ids_filter(query_filter, mentioned_ids)
