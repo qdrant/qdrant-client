@@ -920,6 +920,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         shard_key_selector: types.ShardKeySelector | None = None,
         update_filter: types.Filter | None = None,
         update_mode: types.UpdateMode | None = None,
+        timeout: int | None = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
         if self._prefer_grpc:
@@ -961,6 +962,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                         ordering=ordering,
                         shard_key_selector=shard_key_selector,
                         update_filter=update_filter,
+                        timeout=timeout,
                         update_mode=update_mode,
                     ),
                     timeout=self._timeout,
@@ -997,6 +999,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                     wait=wait,
                     point_insert_operations=points,
                     ordering=ordering,
+                    timeout=timeout,
                 )
             ).result
             assert http_result is not None, "Upsert returned None result"
@@ -1010,6 +1013,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         ordering: types.WriteOrdering | None = None,
         shard_key_selector: types.ShardKeySelector | None = None,
         update_filter: types.Filter | None = None,
+        timeout: int | None = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
         if self._prefer_grpc:
@@ -1029,6 +1033,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                         ordering=ordering,
                         shard_key_selector=shard_key_selector,
                         update_filter=update_filter,
+                        timeout=timeout,
                     ),
                     timeout=self._timeout,
                 )
@@ -1046,6 +1051,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                         points=points, shard_key=shard_key_selector, update_filter=update_filter
                     ),
                     ordering=ordering,
+                    timeout=timeout,
                 )
             ).result
 
@@ -1057,6 +1063,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         wait: bool = True,
         ordering: types.WriteOrdering | None = None,
         shard_key_selector: types.ShardKeySelector | None = None,
+        timeout: int | None = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
         if self._prefer_grpc:
@@ -1075,6 +1082,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                         points_selector=points_selector,
                         ordering=ordering,
                         shard_key_selector=shard_key_selector,
+                        timeout=timeout,
                     ),
                     timeout=self._timeout,
                 )
@@ -1088,6 +1096,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                     collection_name=collection_name,
                     wait=wait,
                     ordering=ordering,
+                    timeout=timeout,
                     delete_vectors=construct(
                         models.DeleteVectors,
                         vector=vectors,
@@ -1274,6 +1283,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         wait: bool = True,
         ordering: types.WriteOrdering | None = None,
         shard_key_selector: types.ShardKeySelector | None = None,
+        timeout: int | None = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
         if self._prefer_grpc:
@@ -1294,6 +1304,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                             points=points_selector,
                             ordering=ordering,
                             shard_key_selector=shard_key_selector,
+                            timeout=timeout,
                         ),
                         timeout=self._timeout,
                     )
@@ -1309,6 +1320,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                     wait=wait,
                     points_selector=points_selector,
                     ordering=ordering,
+                    timeout=timeout,
                 )
             ).result
             assert result is not None, "Delete points returned None"
@@ -1323,6 +1335,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         wait: bool = True,
         ordering: types.WriteOrdering | None = None,
         shard_key_selector: types.ShardKeySelector | None = None,
+        timeout: int | None = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
         if self._prefer_grpc:
@@ -1343,6 +1356,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                             ordering=ordering,
                             shard_key_selector=shard_key_selector,
                             key=key,
+                            timeout=timeout,
                         ),
                         timeout=self._timeout,
                     )
@@ -1355,6 +1369,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                     collection_name=collection_name,
                     wait=wait,
                     ordering=ordering,
+                    timeout=timeout,
                     set_payload=models.SetPayload(
                         payload=payload,
                         points=_points,
@@ -1375,6 +1390,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         wait: bool = True,
         ordering: types.WriteOrdering | None = None,
         shard_key_selector: types.ShardKeySelector | None = None,
+        timeout: int | None = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
         if self._prefer_grpc:
@@ -1394,6 +1410,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                             points_selector=points_selector,
                             ordering=ordering,
                             shard_key_selector=shard_key_selector,
+                            timeout=timeout,
                         ),
                         timeout=self._timeout,
                     )
@@ -1406,6 +1423,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                     collection_name=collection_name,
                     wait=wait,
                     ordering=ordering,
+                    timeout=timeout,
                     set_payload=models.SetPayload(
                         payload=payload,
                         points=_points,
@@ -1425,6 +1443,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         wait: bool = True,
         ordering: types.WriteOrdering | None = None,
         shard_key_selector: types.ShardKeySelector | None = None,
+        timeout: int | None = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
         if self._prefer_grpc:
@@ -1444,6 +1463,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                             points_selector=points_selector,
                             ordering=ordering,
                             shard_key_selector=shard_key_selector,
+                            timeout=timeout,
                         ),
                         timeout=self._timeout,
                     )
@@ -1456,6 +1476,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                     collection_name=collection_name,
                     wait=wait,
                     ordering=ordering,
+                    timeout=timeout,
                     delete_payload=models.DeletePayload(
                         keys=keys, points=_points, filter=_filter, shard_key=shard_key_selector
                     ),
@@ -1471,6 +1492,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         wait: bool = True,
         ordering: types.WriteOrdering | None = None,
         shard_key_selector: types.ShardKeySelector | None = None,
+        timeout: int | None = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
         if self._prefer_grpc:
@@ -1491,6 +1513,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                             points=points_selector,
                             ordering=ordering,
                             shard_key_selector=shard_key_selector,
+                            timeout=timeout,
                         ),
                         timeout=self._timeout,
                     )
@@ -1505,6 +1528,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                     collection_name=collection_name,
                     wait=wait,
                     ordering=ordering,
+                    timeout=timeout,
                     points_selector=points_selector,
                 )
             ).result
@@ -1517,6 +1541,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         update_operations: Sequence[types.UpdateOperation],
         wait: bool = True,
         ordering: types.WriteOrdering | None = None,
+        timeout: int | None = None,
         **kwargs: Any,
     ) -> list[types.UpdateResult]:
         if self._prefer_grpc:
@@ -1534,6 +1559,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                             wait=wait,
                             operations=update_operations,
                             ordering=ordering,
+                            timeout=timeout,
                         ),
                         timeout=self._timeout,
                     )
@@ -1545,6 +1571,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                     collection_name=collection_name,
                     wait=wait,
                     ordering=ordering,
+                    timeout=timeout,
                     update_operations=models.UpdateOperations(operations=update_operations),
                 )
             ).result
@@ -2034,6 +2061,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         field_type: types.PayloadSchemaType | None = None,
         wait: bool = True,
         ordering: types.WriteOrdering | None = None,
+        timeout: int | None = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
         if field_type is not None:
@@ -2083,6 +2111,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 field_index_params=field_index_params,
                 wait=wait,
                 ordering=ordering,
+                timeout=timeout,
             )
             return GrpcToRest.convert_update_result(
                 (await self.grpc_points.CreateFieldIndex(request, timeout=self._timeout)).result
@@ -2099,6 +2128,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 ),
                 wait=wait,
                 ordering=ordering,
+                timeout=timeout,
             )
         ).result
         assert result is not None, "Create field index returned None"
@@ -2110,6 +2140,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         field_name: str,
         wait: bool = True,
         ordering: types.WriteOrdering | None = None,
+        timeout: int | None = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
         if self._prefer_grpc:
@@ -2118,6 +2149,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 field_name=field_name,
                 wait=wait,
                 ordering=ordering,
+                timeout=timeout,
             )
             return GrpcToRest.convert_update_result(
                 (await self.grpc_points.DeleteFieldIndex(request, timeout=self._timeout)).result
@@ -2128,6 +2160,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 field_name=field_name,
                 wait=wait,
                 ordering=ordering,
+                timeout=timeout,
             )
         ).result
         assert result is not None, "Delete field index returned None"
