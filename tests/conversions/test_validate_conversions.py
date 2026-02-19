@@ -594,3 +594,46 @@ def test_optimizers_config_diff_max_threads():
     assert restored_grpc_opt_conf.max_optimization_threads == q_grpc.MaxOptimizationThreads(
         value=value
     )
+
+
+def test_convert_dense_vector_with_nan_raises_error():
+    """test that convert_dense_vector raises UnexpectedResponse when vector contains NaN values."""
+    from qdrant_client.conversions.conversion import RestToGrpc
+    from qdrant_client.http.exceptions import UnexpectedResponse
+
+    # valid vector should work
+    result = RestToGrpc.convert_dense_vector([1.0, 2.0, 3.0])
+    assert result.data == [1.0, 2.0, 3.0]
+
+    # vector with NaN should raise UnexpectedResponse
+    with pytest.raises(UnexpectedResponse):
+        RestToGrpc.convert_dense_vector([1.0, float('nan'), 3.0])
+
+
+def test_convert_sparse_vector_with_nan_raises_error():
+    """test that convert_sparse_vector raises UnexpectedResponse when vector contains NaN values"""
+    from qdrant_client.conversions.conversion import RestToGrpc
+    from qdrant_client.http.models import SparseVector
+    from qdrant_client.http.exceptions import UnexpectedResponse
+
+    # valid sparse vector should work
+    result = RestToGrpc.convert_sparse_vector(SparseVector(values=[1.0, 2.0], indices=[0, 1]))
+    assert result.values == [1.0, 2.0]
+
+    # sparse vector with NaN should raise UnexpectedResponse
+    with pytest.raises(UnexpectedResponse):
+        RestToGrpc.convert_sparse_vector(SparseVector(values=[1.0, float('nan')], indices=[0, 1]))
+
+
+def test_convert_multi_dense_vector_with_nan_raises_error():
+    """test that convert_multi_dense_vector raises UnexpectedResponse when any vector contains NaN values."""
+    from qdrant_client.conversions.conversion import RestToGrpc
+    from qdrant_client.http.exceptions import UnexpectedResponse
+
+    # valid multi-dense vector should work
+    result = RestToGrpc.convert_multi_dense_vector([[1.0, 2.0], [3.0, 4.0]])
+    assert len(result.vectors) == 2
+
+    # multi-dense vector with NaN should raise UnexpectedResponse
+    with pytest.raises(UnexpectedResponse):
+        RestToGrpc.convert_multi_dense_vector([[1.0, 2.0], [3.0, float('nan')]])

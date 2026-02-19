@@ -1,3 +1,4 @@
+import math
 import uuid
 from datetime import date, datetime, timezone
 from typing import Any, Mapping, Sequence, get_args
@@ -3721,10 +3722,31 @@ class RestToGrpc:
 
     @classmethod
     def convert_dense_vector(cls, model: list[float]) -> grpc.DenseVector:
+        cls._validate_no_nan(model)
         return grpc.DenseVector(data=model)
+
+    @staticmethod
+    def _validate_no_nan(vector: list[float]) -> None:
+        """validate that vector does not contain NaN values
+        Args:
+            vector: List of float values to validate
+        Raises:
+            UnexpectedResponse: If the vector contains NaN values
+        """
+        if any(math.isnan(val) for val in vector):
+            from qdrant_client.http.exceptions import UnexpectedResponse
+            from httpx import Headers
+            import json
+            raise UnexpectedResponse(
+                status_code=400,
+                reason_phrase="Bad Request",
+                content=json.dumps({"error": "Query vector must not contain NaN values"}).encode(),
+                headers=Headers({})
+            )
 
     @classmethod
     def convert_sparse_vector(cls, model: rest.SparseVector) -> grpc.SparseVector:
+        cls._validate_no_nan(model.values)
         return grpc.SparseVector(values=model.values, indices=model.indices)
 
     @classmethod
