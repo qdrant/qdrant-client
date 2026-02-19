@@ -851,6 +851,8 @@ class LocalCollection:
                 with_vectors=with_vectors,
             )
 
+            rescored = [point for point in rescored if score_threshold is None or point.score >= score_threshold]
+
             return rescored[offset:]
         else:
             # Re-score with vector

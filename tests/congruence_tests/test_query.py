@@ -440,7 +440,7 @@ class TestSimpleSearcher:
             query=models.FormulaQuery(formula=models.MultExpression(mult=["$score", 1.0])),
             with_payload=True,
             limit=10,
-            score_threshold=1.0,  # todo: score threshold is not applied in formula queries in core
+            score_threshold=1.0,
         ).points
 
     def deep_dense_queries_rrf(self, client: QdrantBase) -> models.QueryResponse:
