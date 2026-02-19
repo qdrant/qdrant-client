@@ -79,110 +79,109 @@ class CollectionsStub(object):
                 request_serializer=collections__pb2.DeleteShardKeyRequest.SerializeToString,
                 response_deserializer=collections__pb2.DeleteShardKeyResponse.FromString,
                 )
+        self.ListShardKeys = channel.unary_unary(
+                '/qdrant.Collections/ListShardKeys',
+                request_serializer=collections__pb2.ListShardKeysRequest.SerializeToString,
+                response_deserializer=collections__pb2.ListShardKeysResponse.FromString,
+                )
 
 
 class CollectionsServicer(object):
     """Missing associated documentation comment in .proto file."""
 
     def Get(self, request, context):
-        """
-        Get detailed information about specified existing collection
+        """Get detailed information about specified existing collection
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def List(self, request, context):
-        """
-        Get list name of all existing collections
+        """Get list of names of all existing collections
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def Create(self, request, context):
-        """
-        Create new collection with given parameters
+        """Create new collection with given parameters
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def Update(self, request, context):
-        """
-        Update parameters of the existing collection
+        """Update parameters of the existing collection
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def Delete(self, request, context):
-        """
-        Drop collection and all associated data
+        """Drop collection and all associated data
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def UpdateAliases(self, request, context):
-        """
-        Update Aliases of the existing collection
+        """Update Aliases of the existing collection
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def ListCollectionAliases(self, request, context):
-        """
-        Get list of all aliases for a collection
+        """Get list of all aliases for a collection
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def ListAliases(self, request, context):
-        """
-        Get list of all aliases for all existing collections
+        """Get list of all aliases for all existing collections
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def CollectionClusterInfo(self, request, context):
-        """
-        Get cluster information for a collection
+        """Get cluster information for a collection
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def CollectionExists(self, request, context):
-        """
-        Check the existence of a collection
+        """Check the existence of a collection
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def UpdateCollectionClusterSetup(self, request, context):
-        """
-        Update cluster setup for a collection
+        """Update cluster setup for a collection
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def CreateShardKey(self, request, context):
-        """
-        Create shard key
+        """Create shard key
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def DeleteShardKey(self, request, context):
+        """Delete shard key
         """
-        Delete shard key
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ListShardKeys(self, request, context):
+        """List shard keys
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -255,6 +254,11 @@ def add_CollectionsServicer_to_server(servicer, server):
                     servicer.DeleteShardKey,
                     request_deserializer=collections__pb2.DeleteShardKeyRequest.FromString,
                     response_serializer=collections__pb2.DeleteShardKeyResponse.SerializeToString,
+            ),
+            'ListShardKeys': grpc.unary_unary_rpc_method_handler(
+                    servicer.ListShardKeys,
+                    request_deserializer=collections__pb2.ListShardKeysRequest.FromString,
+                    response_serializer=collections__pb2.ListShardKeysResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -484,5 +488,22 @@ class Collections(object):
         return grpc.experimental.unary_unary(request, target, '/qdrant.Collections/DeleteShardKey',
             collections__pb2.DeleteShardKeyRequest.SerializeToString,
             collections__pb2.DeleteShardKeyResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def ListShardKeys(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/qdrant.Collections/ListShardKeys',
+            collections__pb2.ListShardKeysRequest.SerializeToString,
+            collections__pb2.ListShardKeysResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

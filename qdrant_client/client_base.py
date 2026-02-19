@@ -408,3 +408,23 @@ class QdrantBase:
 
     def remove_peer(self, peer_id: int, **kwargs: Any) -> bool:
         raise NotImplementedError()
+
+    def get_optimizations(
+        self,
+        collection_name: str,
+        **kwargs: Any,
+    ) -> types.OptimizationsResponse:
+        raise NotImplementedError()
+
+    def list_shard_keys(
+        self,
+        collection_name: str,
+        **kwargs: Any,
+    ) -> types.ShardKeysResponse:
+        raise NotImplementedError()
+
+    def cluster_telemetry(
+        self,
+        **kwargs: Any,
+    ) -> types.DistributedTelemetryData:
+        raise NotImplementedError()

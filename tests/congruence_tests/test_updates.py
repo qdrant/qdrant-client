@@ -2,11 +2,13 @@ import itertools
 import uuid
 from collections import defaultdict
 import random
+from copy import deepcopy
 
 import numpy as np
 import pytest
 
 import qdrant_client.http.exceptions
+from qdrant_client.client_base import QdrantBase
 from qdrant_client.http import models
 from tests.congruence_tests.settings import TIMEOUT
 from tests.congruence_tests.test_common import (
@@ -15,6 +17,7 @@ from tests.congruence_tests.test_common import (
     generate_fixtures,
     init_local,
     init_remote,
+    initialize_fixture_collection,
 )
 from tests.fixtures.payload import one_random_payload_please
 
@@ -707,3 +710,119 @@ def test_update_filter(prefer_grpc):
     assert retrieved_points[0].payload["digit"] == 3
     assert retrieved_points[1].payload["digit"] == 99
     assert len(retrieved_points) == 3
+
+
+@pytest.mark.parametrize("prefer_grpc", [False, True])
+def test_update_mode(prefer_grpc: bool) -> None:
+    def upload(
+        client: QdrantBase,
+        collection_name: str,
+        points: list[models.PointStruct],
+        update_mode: models.UpdateMode,
+        method: str = "upsert",
+    ) -> None:
+        # method: `upsert`, `upload_points`, `upload_collection`
+        print(method)
+        if method == "upsert":
+            client.upsert(collection_name, points, update_mode=update_mode)
+        elif method == "upload_points":
+            client.upload_points(collection_name, points, update_mode=update_mode)
+        elif method == "upload_collection":
+            ids = []
+            payloads = []
+            vectors = []
+            for point in points:
+                ids.append(point.id)
+                payloads.append(point.payload)
+                vectors.append(point.vector)
+            client.upload_collection(
+                collection_name,
+                vectors=vectors,
+                ids=ids,
+                payload=payloads,
+                update_mode=update_mode,
+            )
+
+    for method in ("upsert", "upload_points", "upload_collection"):
+        local_client = init_local()
+        remote_client = init_remote()
+        vector_params = models.VectorParams(size=50, distance=models.Distance.DOT)
+        fixture_points = generate_fixtures(UPLOAD_NUM_VECTORS, vectors_sizes=50)
+        initialize_fixture_collection(local_client, COLLECTION_NAME, vectors_config=vector_params)
+        initialize_fixture_collection(remote_client, COLLECTION_NAME, vectors_config=vector_params)
+
+        first_point = fixture_points[0]
+        second_point = fixture_points[1]
+        new_point = fixture_points[-1]
+        new_point.id += 1
+
+        upload(
+            client=local_client,
+            collection_name=COLLECTION_NAME,
+            points=fixture_points,
+            update_mode=models.UpdateMode.UPSERT,
+            method=method,
+        )
+        upload(
+            client=remote_client,
+            collection_name=COLLECTION_NAME,
+            points=fixture_points,
+            update_mode=models.UpdateMode.UPSERT,
+            method=method,
+        )
+        modified_second_point = deepcopy(second_point)
+        modified_second_point.vector = first_point.vector
+
+        upload(
+            client=local_client,
+            collection_name=COLLECTION_NAME,
+            points=[modified_second_point, new_point],
+            update_mode=models.UpdateMode.INSERT_ONLY,
+            method=method,
+        )
+        upload(
+            client=remote_client,
+            collection_name=COLLECTION_NAME,
+            points=[modified_second_point, new_point],
+            update_mode=models.UpdateMode.INSERT_ONLY,
+            method=method,
+        )
+
+        local_points = local_client.retrieve(
+            COLLECTION_NAME, ids=[second_point.id, new_point.id], with_vectors=True
+        )
+        remote_points = remote_client.retrieve(
+            COLLECTION_NAME, ids=[second_point.id, new_point.id], with_vectors=True
+        )
+
+        assert np.allclose(local_points[0].vector, remote_points[0].vector)
+        assert np.allclose(local_points[0].vector, second_point.vector)
+        assert len(local_points) == len(remote_points) == 2
+
+        not_existing_point = deepcopy(new_point)
+        not_existing_point.id += 1
+
+        upload(
+            client=local_client,
+            collection_name=COLLECTION_NAME,
+            points=[modified_second_point, not_existing_point],
+            update_mode=models.UpdateMode.UPDATE_ONLY,
+            method=method,
+        )
+        upload(
+            client=remote_client,
+            collection_name=COLLECTION_NAME,
+            points=[modified_second_point, not_existing_point],
+            update_mode=models.UpdateMode.UPDATE_ONLY,
+            method=method,
+        )
+        local_points = local_client.retrieve(
+            COLLECTION_NAME, ids=[second_point.id, not_existing_point.id], with_vectors=True
+        )
+        remote_points = remote_client.retrieve(
+            COLLECTION_NAME, ids=[second_point.id, not_existing_point.id], with_vectors=True
+        )
+
+        assert np.allclose(local_points[0].vector, remote_points[0].vector)
+        assert np.allclose(local_points[0].vector, first_point.vector)
+        assert len(local_points) == len(remote_points) == 1

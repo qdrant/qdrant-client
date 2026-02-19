@@ -22,6 +22,7 @@ def upload_batch(
     max_retries: int,
     shard_key_selector: rest.ShardKeySelector | None,  # type: ignore[name-defined]
     update_filter: rest.Filter | None,  # type: ignore[name-defined]
+    update_mode: rest.UpdateMode | None = None,  # type: ignore[name-defined]
     wait: bool = False,
 ) -> bool:
     ids_batch, vectors_batch, payload_batch = batch
@@ -44,7 +45,10 @@ def upload_batch(
             openapi_client.points_api.upsert_points(
                 collection_name=collection_name,
                 point_insert_operations=rest.PointsList(  # type: ignore[attr-defined]
-                    points=points, shard_key=shard_key_selector, update_filter=update_filter
+                    points=points,
+                    shard_key=shard_key_selector,
+                    update_filter=update_filter,
+                    update_mode=update_mode,
                 ),
                 wait=wait,
             )
@@ -80,6 +84,7 @@ class RestBatchUploader(BaseUploader):
         wait: bool = False,
         shard_key_selector: types.ShardKeySelector | None = None,
         update_filter: types.Filter | None = None,
+        update_mode: types.UpdateMode | None = None,
         **kwargs: Any,
     ):
         self.collection_name = collection_name
@@ -92,6 +97,7 @@ class RestBatchUploader(BaseUploader):
             if isinstance(update_filter, grpc.Filter)
             else update_filter
         )
+        self._update_mode = update_mode
 
     @classmethod
     def start(
@@ -114,5 +120,6 @@ class RestBatchUploader(BaseUploader):
                 shard_key_selector=self._shard_key_selector,
                 max_retries=self.max_retries,
                 update_filter=self._update_filter,
+                update_mode=self._update_mode,
                 wait=self._wait,
             )

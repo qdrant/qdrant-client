@@ -254,17 +254,30 @@ class _ReplicaStateEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._E
     Initializing: _ReplicaState.ValueType  # 3
     """Collection is being created"""
     Listener: _ReplicaState.ValueType  # 4
-    """A shard which receives data, but is not used for search; Useful for backup shards"""
+    """A shard which receives data, but is not used for search.
+    Useful for backup shards.
+    """
     PartialSnapshot: _ReplicaState.ValueType  # 5
-    """Deprecated: snapshot shard transfer is in progress; Updates should not be sent to (and are ignored by) the shard"""
+    """Deprecated: snapshot shard transfer is in progress.
+    Updates should not be sent to (and are ignored by) the shard.
+    """
     Recovery: _ReplicaState.ValueType  # 6
-    """Shard is undergoing recovered by an external node; Normally rejects updates, accepts updates if force is true"""
+    """Shard is undergoing recovery by an external node.
+    Normally rejects updates, accepts updates if force is true.
+    """
     Resharding: _ReplicaState.ValueType  # 7
     """Points are being migrated to this shard as part of scale-up resharding"""
     ReshardingScaleDown: _ReplicaState.ValueType  # 8
     """Points are being migrated to this shard as part of scale-down resharding"""
     ActiveRead: _ReplicaState.ValueType  # 9
     """Active for readers, Partial for writers"""
+    ManualRecovery: _ReplicaState.ValueType  # 10
+    """State for manually creation/recovery of a shard.
+    Usually when snapshot is uploaded.
+    This state is equivalent to `Partial`, except:
+    - it can't receive updates
+    - it is not treated as broken on startup
+    """
 
 class ReplicaState(_ReplicaState, metaclass=_ReplicaStateEnumTypeWrapper): ...
 
@@ -277,17 +290,30 @@ Partial: ReplicaState.ValueType  # 2
 Initializing: ReplicaState.ValueType  # 3
 """Collection is being created"""
 Listener: ReplicaState.ValueType  # 4
-"""A shard which receives data, but is not used for search; Useful for backup shards"""
+"""A shard which receives data, but is not used for search.
+Useful for backup shards.
+"""
 PartialSnapshot: ReplicaState.ValueType  # 5
-"""Deprecated: snapshot shard transfer is in progress; Updates should not be sent to (and are ignored by) the shard"""
+"""Deprecated: snapshot shard transfer is in progress.
+Updates should not be sent to (and are ignored by) the shard.
+"""
 Recovery: ReplicaState.ValueType  # 6
-"""Shard is undergoing recovered by an external node; Normally rejects updates, accepts updates if force is true"""
+"""Shard is undergoing recovery by an external node.
+Normally rejects updates, accepts updates if force is true.
+"""
 Resharding: ReplicaState.ValueType  # 7
 """Points are being migrated to this shard as part of scale-up resharding"""
 ReshardingScaleDown: ReplicaState.ValueType  # 8
 """Points are being migrated to this shard as part of scale-down resharding"""
 ActiveRead: ReplicaState.ValueType  # 9
 """Active for readers, Partial for writers"""
+ManualRecovery: ReplicaState.ValueType  # 10
+"""State for manually creation/recovery of a shard.
+Usually when snapshot is uploaded.
+This state is equivalent to `Partial`, except:
+- it can't receive updates
+- it is not treated as broken on startup
+"""
 global___ReplicaState = ReplicaState
 
 class _ReshardingDirection:
@@ -302,9 +328,7 @@ class _ReshardingDirectionEnumTypeWrapper(google.protobuf.internal.enum_type_wra
     """Scale down, remove a shard"""
 
 class ReshardingDirection(_ReshardingDirection, metaclass=_ReshardingDirectionEnumTypeWrapper):
-    """
-    Resharding direction, scale up or down in number of shards
-    """
+    """Resharding direction, scale up or down in number of shards"""
 
 Up: ReshardingDirection.ValueType  # 0
 """Scale up, add a new shard"""
@@ -360,12 +384,18 @@ class VectorParams(google.protobuf.message.Message):
     """Distance function used for comparing vectors"""
     @property
     def hnsw_config(self) -> global___HnswConfigDiff:
-        """Configuration of vector HNSW graph. If omitted - the collection configuration will be used"""
+        """Configuration of vector HNSW graph.
+        If omitted - the collection configuration will be used
+        """
     @property
     def quantization_config(self) -> global___QuantizationConfig:
-        """Configuration of vector quantization config. If omitted - the collection configuration will be used"""
+        """Configuration of vector quantization config.
+        If omitted - the collection configuration will be used
+        """
     on_disk: builtins.bool
-    """If true - serve vectors from disk. If set to false, the vectors will be loaded in RAM."""
+    """If true - serve vectors from disk.
+    If set to false, the vectors will be loaded in RAM.
+    """
     datatype: global___Datatype.ValueType
     """Data type of the vectors"""
     @property
@@ -405,12 +435,16 @@ class VectorParamsDiff(google.protobuf.message.Message):
     ON_DISK_FIELD_NUMBER: builtins.int
     @property
     def hnsw_config(self) -> global___HnswConfigDiff:
-        """Update params for HNSW index. If empty object - it will be unset"""
+        """Update params for HNSW index.
+        If empty object - it will be unset
+        """
     @property
     def quantization_config(self) -> global___QuantizationConfigDiff:
         """Update quantization params. If none - it is left unchanged."""
     on_disk: builtins.bool
-    """If true - serve vectors from disk. If set to false, the vectors will be loaded in RAM."""
+    """If true - serve vectors from disk.
+    If set to false, the vectors will be loaded in RAM.
+    """
     def __init__(
         self,
         *,
@@ -805,16 +839,15 @@ class HnswConfigDiff(google.protobuf.message.Message):
     PAYLOAD_M_FIELD_NUMBER: builtins.int
     INLINE_STORAGE_FIELD_NUMBER: builtins.int
     m: builtins.int
-    """
-    Number of edges per node in the index graph. Larger the value - more accurate the search, more space required.
+    """Number of edges per node in the index graph.
+    Larger the value - more accurate the search, more space required.
     """
     ef_construct: builtins.int
-    """
-    Number of neighbours to consider during the index building. Larger the value - more accurate the search, more time required to build the index.
+    """Number of neighbours to consider during the index building.
+    Larger the value - more accurate the search, more time required to build the index.
     """
     full_scan_threshold: builtins.int
-    """
-    Minimal size threshold (in KiloBytes) below which full-scan is preferred over HNSW search.
+    """Minimal size threshold (in KiloBytes) below which full-scan is preferred over HNSW search.
     This measures the total size of vectors being queried against.
     When the maximum estimated amount of points that a condition satisfies is smaller than
     `full_scan_threshold`, the query planner will use full-scan search instead of HNSW index
@@ -822,23 +855,19 @@ class HnswConfigDiff(google.protobuf.message.Message):
     Note: 1Kb = 1 vector of size 256
     """
     max_indexing_threads: builtins.int
-    """
-    Number of parallel threads used for background index building.
+    """Number of parallel threads used for background index building.
     If 0 - automatically select from 8 to 16.
     Best to keep between 8 and 16 to prevent likelihood of building broken/inefficient HNSW graphs.
     On small CPUs, less threads are used.
     """
     on_disk: builtins.bool
-    """
-    Store HNSW index on disk. If set to false, the index will be stored in RAM.
-    """
+    """Store HNSW index on disk. If set to false, the index will be stored in RAM."""
     payload_m: builtins.int
-    """
-    Number of additional payload-aware links per node in the index graph. If not set - regular M parameter will be used.
+    """Number of additional payload-aware links per node in the index graph.
+    If not set - regular M parameter will be used.
     """
     inline_storage: builtins.bool
-    """
-    Store copies of original and quantized vectors within the HNSW index file. Default: false.
+    """Store copies of original and quantized vectors within the HNSW index file. Default: false.
     Enabling this option will trade the search speed for disk usage by reducing amount of
     random seeks during the search.
     Requires quantized vectors to be enabled. Multi-vectors are not supported.
@@ -880,18 +909,13 @@ class SparseIndexConfig(google.protobuf.message.Message):
     ON_DISK_FIELD_NUMBER: builtins.int
     DATATYPE_FIELD_NUMBER: builtins.int
     full_scan_threshold: builtins.int
-    """
-    Prefer a full scan search upto (excluding) this number of vectors.
+    """Prefer a full scan search upto (excluding) this number of vectors.
     Note: this is number of vectors, not KiloBytes.
     """
     on_disk: builtins.bool
-    """
-    Store inverted index on disk. If set to false, the index will be stored in RAM.
-    """
+    """Store inverted index on disk. If set to false, the index will be stored in RAM."""
     datatype: global___Datatype.ValueType
-    """
-    Datatype used to store weights in the index.
-    """
+    """Datatype used to store weights in the index."""
     def __init__(
         self,
         *,
@@ -952,17 +976,17 @@ class OptimizersConfigDiff(google.protobuf.message.Message):
     FLUSH_INTERVAL_SEC_FIELD_NUMBER: builtins.int
     DEPRECATED_MAX_OPTIMIZATION_THREADS_FIELD_NUMBER: builtins.int
     MAX_OPTIMIZATION_THREADS_FIELD_NUMBER: builtins.int
+    PREVENT_UNOPTIMIZED_FIELD_NUMBER: builtins.int
     deleted_threshold: builtins.float
-    """
-    The minimal fraction of deleted vectors in a segment, required to perform segment optimization
+    """The minimal fraction of deleted vectors in a segment, required to perform
+    segment optimization
     """
     vacuum_min_vector_number: builtins.int
-    """
-    The minimal number of vectors in a segment, required to perform segment optimization
+    """The minimal number of vectors in a segment, required to perform segment
+    optimization
     """
     default_segment_number: builtins.int
-    """
-    Target amount of segments the optimizer will try to keep.
+    """Target amount of segments the optimizer will try to keep.
     Real amount of segments may vary depending on multiple parameters:
 
     - Amount of stored points.
@@ -972,8 +996,7 @@ class OptimizersConfigDiff(google.protobuf.message.Message):
     so that each segment would be handled evenly by one of the threads.
     """
     max_segment_size: builtins.int
-    """
-    Deprecated:
+    """Deprecated:
 
     Do not create segments larger this size (in kilobytes).
     Large segments might require disproportionately long indexation times,
@@ -985,8 +1008,7 @@ class OptimizersConfigDiff(google.protobuf.message.Message):
     If not set, will be automatically selected considering the number of available CPUs.
     """
     memmap_threshold: builtins.int
-    """
-    Maximum size (in kilobytes) of vectors to store in-memory per segment.
+    """Maximum size (in kilobytes) of vectors to store in-memory per segment.
     Segments larger than this threshold will be stored as read-only memmapped file.
 
     Memmap storage is disabled by default, to enable it, set this threshold to a reasonable value.
@@ -996,29 +1018,34 @@ class OptimizersConfigDiff(google.protobuf.message.Message):
     Note: 1Kb = 1 vector of size 256
     """
     indexing_threshold: builtins.int
-    """
-    Maximum size (in kilobytes) of vectors allowed for plain index, exceeding this threshold will enable vector indexing
+    """Maximum size (in kilobytes) of vectors allowed for plain index, exceeding
+    this threshold will enable vector indexing
 
-    Default value is 20,000, based on <https://github.com/google-research/google-research/blob/master/scann/docs/algorithms.md>.
+    Default value is 20,000, based on
+    <https://github.com/google-research/google-research/blob/master/scann/docs/algorithms.md>.
 
     To disable vector indexing, set to `0`.
 
     Note: 1kB = 1 vector of size 256.
     """
     flush_interval_sec: builtins.int
-    """
-    Interval between forced flushes.
-    """
+    """Interval between forced flushes."""
     deprecated_max_optimization_threads: builtins.int
     """Deprecated in favor of `max_optimization_threads`"""
     @property
     def max_optimization_threads(self) -> global___MaxOptimizationThreads:
-        """
-        Max number of threads (jobs) for running optimizations per shard.
+        """Max number of threads (jobs) for running optimizations per shard.
         Note: each optimization job will also use `max_indexing_threads` threads by itself for index building.
         If "auto" - have no limit and choose dynamically to saturate CPU.
         If 0 - no optimization threads, optimizations will be disabled.
         """
+    prevent_unoptimized: builtins.bool
+    """If this option is set, service will try to prevent creation of large unoptimized segments.
+    When enabled, updates may be blocked at request level if there are unoptimized segments larger than indexing threshold.
+    Updates will be resumed when optimization is completed and segments are optimized below the threshold.
+    Using this option may lead to increased delay between submitting an update and its application.
+    Default is disabled.
+    """
     def __init__(
         self,
         *,
@@ -1031,9 +1058,10 @@ class OptimizersConfigDiff(google.protobuf.message.Message):
         flush_interval_sec: builtins.int | None = ...,
         deprecated_max_optimization_threads: builtins.int | None = ...,
         max_optimization_threads: global___MaxOptimizationThreads | None = ...,
+        prevent_unoptimized: builtins.bool | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_default_segment_number", b"_default_segment_number", "_deleted_threshold", b"_deleted_threshold", "_deprecated_max_optimization_threads", b"_deprecated_max_optimization_threads", "_flush_interval_sec", b"_flush_interval_sec", "_indexing_threshold", b"_indexing_threshold", "_max_optimization_threads", b"_max_optimization_threads", "_max_segment_size", b"_max_segment_size", "_memmap_threshold", b"_memmap_threshold", "_vacuum_min_vector_number", b"_vacuum_min_vector_number", "default_segment_number", b"default_segment_number", "deleted_threshold", b"deleted_threshold", "deprecated_max_optimization_threads", b"deprecated_max_optimization_threads", "flush_interval_sec", b"flush_interval_sec", "indexing_threshold", b"indexing_threshold", "max_optimization_threads", b"max_optimization_threads", "max_segment_size", b"max_segment_size", "memmap_threshold", b"memmap_threshold", "vacuum_min_vector_number", b"vacuum_min_vector_number"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_default_segment_number", b"_default_segment_number", "_deleted_threshold", b"_deleted_threshold", "_deprecated_max_optimization_threads", b"_deprecated_max_optimization_threads", "_flush_interval_sec", b"_flush_interval_sec", "_indexing_threshold", b"_indexing_threshold", "_max_optimization_threads", b"_max_optimization_threads", "_max_segment_size", b"_max_segment_size", "_memmap_threshold", b"_memmap_threshold", "_vacuum_min_vector_number", b"_vacuum_min_vector_number", "default_segment_number", b"default_segment_number", "deleted_threshold", b"deleted_threshold", "deprecated_max_optimization_threads", b"deprecated_max_optimization_threads", "flush_interval_sec", b"flush_interval_sec", "indexing_threshold", b"indexing_threshold", "max_optimization_threads", b"max_optimization_threads", "max_segment_size", b"max_segment_size", "memmap_threshold", b"memmap_threshold", "vacuum_min_vector_number", b"vacuum_min_vector_number"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_default_segment_number", b"_default_segment_number", "_deleted_threshold", b"_deleted_threshold", "_deprecated_max_optimization_threads", b"_deprecated_max_optimization_threads", "_flush_interval_sec", b"_flush_interval_sec", "_indexing_threshold", b"_indexing_threshold", "_max_optimization_threads", b"_max_optimization_threads", "_max_segment_size", b"_max_segment_size", "_memmap_threshold", b"_memmap_threshold", "_prevent_unoptimized", b"_prevent_unoptimized", "_vacuum_min_vector_number", b"_vacuum_min_vector_number", "default_segment_number", b"default_segment_number", "deleted_threshold", b"deleted_threshold", "deprecated_max_optimization_threads", b"deprecated_max_optimization_threads", "flush_interval_sec", b"flush_interval_sec", "indexing_threshold", b"indexing_threshold", "max_optimization_threads", b"max_optimization_threads", "max_segment_size", b"max_segment_size", "memmap_threshold", b"memmap_threshold", "prevent_unoptimized", b"prevent_unoptimized", "vacuum_min_vector_number", b"vacuum_min_vector_number"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_default_segment_number", b"_default_segment_number", "_deleted_threshold", b"_deleted_threshold", "_deprecated_max_optimization_threads", b"_deprecated_max_optimization_threads", "_flush_interval_sec", b"_flush_interval_sec", "_indexing_threshold", b"_indexing_threshold", "_max_optimization_threads", b"_max_optimization_threads", "_max_segment_size", b"_max_segment_size", "_memmap_threshold", b"_memmap_threshold", "_prevent_unoptimized", b"_prevent_unoptimized", "_vacuum_min_vector_number", b"_vacuum_min_vector_number", "default_segment_number", b"default_segment_number", "deleted_threshold", b"deleted_threshold", "deprecated_max_optimization_threads", b"deprecated_max_optimization_threads", "flush_interval_sec", b"flush_interval_sec", "indexing_threshold", b"indexing_threshold", "max_optimization_threads", b"max_optimization_threads", "max_segment_size", b"max_segment_size", "memmap_threshold", b"memmap_threshold", "prevent_unoptimized", b"prevent_unoptimized", "vacuum_min_vector_number", b"vacuum_min_vector_number"]) -> None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_default_segment_number", b"_default_segment_number"]) -> typing_extensions.Literal["default_segment_number"] | None: ...
     @typing.overload
@@ -1050,6 +1078,8 @@ class OptimizersConfigDiff(google.protobuf.message.Message):
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_max_segment_size", b"_max_segment_size"]) -> typing_extensions.Literal["max_segment_size"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_memmap_threshold", b"_memmap_threshold"]) -> typing_extensions.Literal["memmap_threshold"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_prevent_unoptimized", b"_prevent_unoptimized"]) -> typing_extensions.Literal["prevent_unoptimized"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_vacuum_min_vector_number", b"_vacuum_min_vector_number"]) -> typing_extensions.Literal["vacuum_min_vector_number"] | None: ...
 
@@ -1149,8 +1179,8 @@ class BinaryQuantization(google.protobuf.message.Message):
     """Binary quantization encoding method"""
     @property
     def query_encoding(self) -> global___BinaryQuantizationQueryEncoding:
-        """
-        Asymmetric quantization configuration allows a query to have different quantization than stored vectors.
+        """Asymmetric quantization configuration allows a query to have different
+        quantization than stored vectors.
         It can increase the accuracy of search at the cost of performance.
         """
     def __init__(
@@ -1507,11 +1537,15 @@ class CreateCollection(google.protobuf.message.Message):
     def optimizers_config(self) -> global___OptimizersConfigDiff:
         """Configuration of the optimizers"""
     shard_number: builtins.int
-    """Number of shards in the collection, default is 1 for standalone, otherwise equal to the number of nodes. Minimum is 1"""
+    """Number of shards in the collection, default is 1 for standalone, otherwise
+    equal to the number of nodes. Minimum is 1
+    """
     on_disk_payload: builtins.bool
     """If true - point's payload will not be stored in memory"""
     timeout: builtins.int
-    """Wait timeout for operation commit in seconds, if not specified - default value will be supplied"""
+    """Wait timeout for operation commit in seconds, if not specified - default
+    value will be supplied
+    """
     @property
     def vectors_config(self) -> global___VectorsConfig:
         """Configuration for vectors"""
@@ -1617,9 +1651,14 @@ class UpdateCollection(google.protobuf.message.Message):
     """Name of the collection"""
     @property
     def optimizers_config(self) -> global___OptimizersConfigDiff:
-        """New configuration parameters for the collection. This operation is blocking, it will only proceed once all current optimizations are complete"""
+        """New configuration parameters for the collection.
+        This operation is blocking, it will only proceed once all current
+        optimizations are complete
+        """
     timeout: builtins.int
-    """Wait timeout for operation commit in seconds if blocking, if not specified - default value will be supplied"""
+    """Wait timeout for operation commit in seconds if blocking.
+    If not specified - default value will be supplied.
+    """
     @property
     def params(self) -> global___CollectionParamsDiff:
         """New configuration parameters for the collection"""
@@ -1640,7 +1679,9 @@ class UpdateCollection(google.protobuf.message.Message):
         """New strict mode configuration"""
     @property
     def metadata(self) -> google.protobuf.internal.containers.MessageMap[builtins.str, json_with_int_pb2.Value]:
-        """Arbitrary JSON-like metadata for the collection, will be merged with already stored metadata"""
+        """Arbitrary JSON-like metadata for the collection, will be merged with
+        already stored metadata
+        """
     def __init__(
         self,
         *,
@@ -1684,7 +1725,9 @@ class DeleteCollection(google.protobuf.message.Message):
     collection_name: builtins.str
     """Name of the collection"""
     timeout: builtins.int
-    """Wait timeout for operation commit in seconds, if not specified - default value will be supplied"""
+    """Wait timeout for operation commit in seconds.
+    If not specified - default value will be supplied.
+    """
     def __init__(
         self,
         *,
@@ -1727,6 +1770,7 @@ class CollectionParams(google.protobuf.message.Message):
     READ_FAN_OUT_FACTOR_FIELD_NUMBER: builtins.int
     SHARDING_METHOD_FIELD_NUMBER: builtins.int
     SPARSE_VECTORS_CONFIG_FIELD_NUMBER: builtins.int
+    READ_FAN_OUT_DELAY_MS_FIELD_NUMBER: builtins.int
     shard_number: builtins.int
     """Number of shards in collection"""
     on_disk_payload: builtins.bool
@@ -1745,6 +1789,8 @@ class CollectionParams(google.protobuf.message.Message):
     @property
     def sparse_vectors_config(self) -> global___SparseVectorConfig:
         """Configuration for sparse vectors"""
+    read_fan_out_delay_ms: builtins.int
+    """Define number of milliseconds to wait before attempting to read from another replica."""
     def __init__(
         self,
         *,
@@ -1756,9 +1802,12 @@ class CollectionParams(google.protobuf.message.Message):
         read_fan_out_factor: builtins.int | None = ...,
         sharding_method: global___ShardingMethod.ValueType | None = ...,
         sparse_vectors_config: global___SparseVectorConfig | None = ...,
+        read_fan_out_delay_ms: builtins.int | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_read_fan_out_factor", b"_read_fan_out_factor", "_replication_factor", b"_replication_factor", "_sharding_method", b"_sharding_method", "_sparse_vectors_config", b"_sparse_vectors_config", "_vectors_config", b"_vectors_config", "_write_consistency_factor", b"_write_consistency_factor", "read_fan_out_factor", b"read_fan_out_factor", "replication_factor", b"replication_factor", "sharding_method", b"sharding_method", "sparse_vectors_config", b"sparse_vectors_config", "vectors_config", b"vectors_config", "write_consistency_factor", b"write_consistency_factor"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_read_fan_out_factor", b"_read_fan_out_factor", "_replication_factor", b"_replication_factor", "_sharding_method", b"_sharding_method", "_sparse_vectors_config", b"_sparse_vectors_config", "_vectors_config", b"_vectors_config", "_write_consistency_factor", b"_write_consistency_factor", "on_disk_payload", b"on_disk_payload", "read_fan_out_factor", b"read_fan_out_factor", "replication_factor", b"replication_factor", "shard_number", b"shard_number", "sharding_method", b"sharding_method", "sparse_vectors_config", b"sparse_vectors_config", "vectors_config", b"vectors_config", "write_consistency_factor", b"write_consistency_factor"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_read_fan_out_delay_ms", b"_read_fan_out_delay_ms", "_read_fan_out_factor", b"_read_fan_out_factor", "_replication_factor", b"_replication_factor", "_sharding_method", b"_sharding_method", "_sparse_vectors_config", b"_sparse_vectors_config", "_vectors_config", b"_vectors_config", "_write_consistency_factor", b"_write_consistency_factor", "read_fan_out_delay_ms", b"read_fan_out_delay_ms", "read_fan_out_factor", b"read_fan_out_factor", "replication_factor", b"replication_factor", "sharding_method", b"sharding_method", "sparse_vectors_config", b"sparse_vectors_config", "vectors_config", b"vectors_config", "write_consistency_factor", b"write_consistency_factor"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_read_fan_out_delay_ms", b"_read_fan_out_delay_ms", "_read_fan_out_factor", b"_read_fan_out_factor", "_replication_factor", b"_replication_factor", "_sharding_method", b"_sharding_method", "_sparse_vectors_config", b"_sparse_vectors_config", "_vectors_config", b"_vectors_config", "_write_consistency_factor", b"_write_consistency_factor", "on_disk_payload", b"on_disk_payload", "read_fan_out_delay_ms", b"read_fan_out_delay_ms", "read_fan_out_factor", b"read_fan_out_factor", "replication_factor", b"replication_factor", "shard_number", b"shard_number", "sharding_method", b"sharding_method", "sparse_vectors_config", b"sparse_vectors_config", "vectors_config", b"vectors_config", "write_consistency_factor", b"write_consistency_factor"]) -> None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_read_fan_out_delay_ms", b"_read_fan_out_delay_ms"]) -> typing_extensions.Literal["read_fan_out_delay_ms"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_read_fan_out_factor", b"_read_fan_out_factor"]) -> typing_extensions.Literal["read_fan_out_factor"] | None: ...
     @typing.overload
@@ -1781,6 +1830,7 @@ class CollectionParamsDiff(google.protobuf.message.Message):
     WRITE_CONSISTENCY_FACTOR_FIELD_NUMBER: builtins.int
     ON_DISK_PAYLOAD_FIELD_NUMBER: builtins.int
     READ_FAN_OUT_FACTOR_FIELD_NUMBER: builtins.int
+    READ_FAN_OUT_DELAY_MS_FIELD_NUMBER: builtins.int
     replication_factor: builtins.int
     """Number of replicas of each shard that network tries to maintain"""
     write_consistency_factor: builtins.int
@@ -1789,6 +1839,8 @@ class CollectionParamsDiff(google.protobuf.message.Message):
     """If true - point's payload will not be stored in memory"""
     read_fan_out_factor: builtins.int
     """Fan-out every read request to these many additional remote nodes (and return first available response)"""
+    read_fan_out_delay_ms: builtins.int
+    """Define number of milliseconds to wait before attempting to read from another replica."""
     def __init__(
         self,
         *,
@@ -1796,11 +1848,14 @@ class CollectionParamsDiff(google.protobuf.message.Message):
         write_consistency_factor: builtins.int | None = ...,
         on_disk_payload: builtins.bool | None = ...,
         read_fan_out_factor: builtins.int | None = ...,
+        read_fan_out_delay_ms: builtins.int | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_on_disk_payload", b"_on_disk_payload", "_read_fan_out_factor", b"_read_fan_out_factor", "_replication_factor", b"_replication_factor", "_write_consistency_factor", b"_write_consistency_factor", "on_disk_payload", b"on_disk_payload", "read_fan_out_factor", b"read_fan_out_factor", "replication_factor", b"replication_factor", "write_consistency_factor", b"write_consistency_factor"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_on_disk_payload", b"_on_disk_payload", "_read_fan_out_factor", b"_read_fan_out_factor", "_replication_factor", b"_replication_factor", "_write_consistency_factor", b"_write_consistency_factor", "on_disk_payload", b"on_disk_payload", "read_fan_out_factor", b"read_fan_out_factor", "replication_factor", b"replication_factor", "write_consistency_factor", b"write_consistency_factor"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_on_disk_payload", b"_on_disk_payload", "_read_fan_out_delay_ms", b"_read_fan_out_delay_ms", "_read_fan_out_factor", b"_read_fan_out_factor", "_replication_factor", b"_replication_factor", "_write_consistency_factor", b"_write_consistency_factor", "on_disk_payload", b"on_disk_payload", "read_fan_out_delay_ms", b"read_fan_out_delay_ms", "read_fan_out_factor", b"read_fan_out_factor", "replication_factor", b"replication_factor", "write_consistency_factor", b"write_consistency_factor"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_on_disk_payload", b"_on_disk_payload", "_read_fan_out_delay_ms", b"_read_fan_out_delay_ms", "_read_fan_out_factor", b"_read_fan_out_factor", "_replication_factor", b"_replication_factor", "_write_consistency_factor", b"_write_consistency_factor", "on_disk_payload", b"on_disk_payload", "read_fan_out_delay_ms", b"read_fan_out_delay_ms", "read_fan_out_factor", b"read_fan_out_factor", "replication_factor", b"replication_factor", "write_consistency_factor", b"write_consistency_factor"]) -> None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_on_disk_payload", b"_on_disk_payload"]) -> typing_extensions.Literal["on_disk_payload"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_read_fan_out_delay_ms", b"_read_fan_out_delay_ms"]) -> typing_extensions.Literal["read_fan_out_delay_ms"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_read_fan_out_factor", b"_read_fan_out_factor"]) -> typing_extensions.Literal["read_fan_out_factor"] | None: ...
     @typing.overload
@@ -1883,18 +1938,27 @@ class KeywordIndexParams(google.protobuf.message.Message):
 
     IS_TENANT_FIELD_NUMBER: builtins.int
     ON_DISK_FIELD_NUMBER: builtins.int
+    ENABLE_HNSW_FIELD_NUMBER: builtins.int
     is_tenant: builtins.bool
     """If true - used for tenant optimization."""
     on_disk: builtins.bool
     """If true - store index on disk."""
+    enable_hnsw: builtins.bool
+    """Enable HNSW graph building for this payload field.
+    If true, builds additional HNSW links (Need payload_m > 0).
+    Default: true.
+    """
     def __init__(
         self,
         *,
         is_tenant: builtins.bool | None = ...,
         on_disk: builtins.bool | None = ...,
+        enable_hnsw: builtins.bool | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_is_tenant", b"_is_tenant", "_on_disk", b"_on_disk", "is_tenant", b"is_tenant", "on_disk", b"on_disk"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_is_tenant", b"_is_tenant", "_on_disk", b"_on_disk", "is_tenant", b"is_tenant", "on_disk", b"on_disk"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw", "_is_tenant", b"_is_tenant", "_on_disk", b"_on_disk", "enable_hnsw", b"enable_hnsw", "is_tenant", b"is_tenant", "on_disk", b"on_disk"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw", "_is_tenant", b"_is_tenant", "_on_disk", b"_on_disk", "enable_hnsw", b"enable_hnsw", "is_tenant", b"is_tenant", "on_disk", b"on_disk"]) -> None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw"]) -> typing_extensions.Literal["enable_hnsw"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_is_tenant", b"_is_tenant"]) -> typing_extensions.Literal["is_tenant"] | None: ...
     @typing.overload
@@ -1909,14 +1973,23 @@ class IntegerIndexParams(google.protobuf.message.Message):
     RANGE_FIELD_NUMBER: builtins.int
     IS_PRINCIPAL_FIELD_NUMBER: builtins.int
     ON_DISK_FIELD_NUMBER: builtins.int
+    ENABLE_HNSW_FIELD_NUMBER: builtins.int
     lookup: builtins.bool
     """If true - support direct lookups. Default is true."""
     range: builtins.bool
     """If true - support ranges filters. Default is true."""
     is_principal: builtins.bool
-    """If true - use this key to organize storage of the collection data. This option assumes that this key will be used in majority of filtered requests. Default is false."""
+    """If true - use this key to organize storage of the collection data.
+    This option assumes that this key will be used in majority of filtered requests.
+    Default is false.
+    """
     on_disk: builtins.bool
     """If true - store index on disk. Default is false."""
+    enable_hnsw: builtins.bool
+    """Enable HNSW graph building for this payload field.
+    If true, builds additional HNSW links (Need payload_m > 0).
+    Default: true.
+    """
     def __init__(
         self,
         *,
@@ -1924,9 +1997,12 @@ class IntegerIndexParams(google.protobuf.message.Message):
         range: builtins.bool | None = ...,
         is_principal: builtins.bool | None = ...,
         on_disk: builtins.bool | None = ...,
+        enable_hnsw: builtins.bool | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_is_principal", b"_is_principal", "_lookup", b"_lookup", "_on_disk", b"_on_disk", "_range", b"_range", "is_principal", b"is_principal", "lookup", b"lookup", "on_disk", b"on_disk", "range", b"range"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_is_principal", b"_is_principal", "_lookup", b"_lookup", "_on_disk", b"_on_disk", "_range", b"_range", "is_principal", b"is_principal", "lookup", b"lookup", "on_disk", b"on_disk", "range", b"range"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw", "_is_principal", b"_is_principal", "_lookup", b"_lookup", "_on_disk", b"_on_disk", "_range", b"_range", "enable_hnsw", b"enable_hnsw", "is_principal", b"is_principal", "lookup", b"lookup", "on_disk", b"on_disk", "range", b"range"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw", "_is_principal", b"_is_principal", "_lookup", b"_lookup", "_on_disk", b"_on_disk", "_range", b"_range", "enable_hnsw", b"enable_hnsw", "is_principal", b"is_principal", "lookup", b"lookup", "on_disk", b"on_disk", "range", b"range"]) -> None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw"]) -> typing_extensions.Literal["enable_hnsw"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_is_principal", b"_is_principal"]) -> typing_extensions.Literal["is_principal"] | None: ...
     @typing.overload
@@ -1943,18 +2019,29 @@ class FloatIndexParams(google.protobuf.message.Message):
 
     ON_DISK_FIELD_NUMBER: builtins.int
     IS_PRINCIPAL_FIELD_NUMBER: builtins.int
+    ENABLE_HNSW_FIELD_NUMBER: builtins.int
     on_disk: builtins.bool
     """If true - store index on disk."""
     is_principal: builtins.bool
-    """If true - use this key to organize storage of the collection data. This option assumes that this key will be used in majority of filtered requests."""
+    """If true - use this key to organize storage of the collection data.
+    This option assumes that this key will be used in majority of filtered requests.
+    """
+    enable_hnsw: builtins.bool
+    """Enable HNSW graph building for this payload field.
+    If true, builds additional HNSW links (Need payload_m > 0).
+    Default: true.
+    """
     def __init__(
         self,
         *,
         on_disk: builtins.bool | None = ...,
         is_principal: builtins.bool | None = ...,
+        enable_hnsw: builtins.bool | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_is_principal", b"_is_principal", "_on_disk", b"_on_disk", "is_principal", b"is_principal", "on_disk", b"on_disk"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_is_principal", b"_is_principal", "_on_disk", b"_on_disk", "is_principal", b"is_principal", "on_disk", b"on_disk"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw", "_is_principal", b"_is_principal", "_on_disk", b"_on_disk", "enable_hnsw", b"enable_hnsw", "is_principal", b"is_principal", "on_disk", b"on_disk"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw", "_is_principal", b"_is_principal", "_on_disk", b"_on_disk", "enable_hnsw", b"enable_hnsw", "is_principal", b"is_principal", "on_disk", b"on_disk"]) -> None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw"]) -> typing_extensions.Literal["enable_hnsw"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_is_principal", b"_is_principal"]) -> typing_extensions.Literal["is_principal"] | None: ...
     @typing.overload
@@ -1966,15 +2053,25 @@ class GeoIndexParams(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
     ON_DISK_FIELD_NUMBER: builtins.int
+    ENABLE_HNSW_FIELD_NUMBER: builtins.int
     on_disk: builtins.bool
     """If true - store index on disk."""
+    enable_hnsw: builtins.bool
+    """Enable HNSW graph building for this payload field.
+    If true, builds additional HNSW links (Need payload_m > 0).
+    Default: true.
+    """
     def __init__(
         self,
         *,
         on_disk: builtins.bool | None = ...,
+        enable_hnsw: builtins.bool | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_on_disk", b"_on_disk", "on_disk", b"on_disk"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_on_disk", b"_on_disk", "on_disk", b"on_disk"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw", "_on_disk", b"_on_disk", "enable_hnsw", b"enable_hnsw", "on_disk", b"on_disk"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw", "_on_disk", b"_on_disk", "enable_hnsw", b"enable_hnsw", "on_disk", b"on_disk"]) -> None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw"]) -> typing_extensions.Literal["enable_hnsw"] | None: ...
+    @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_on_disk", b"_on_disk"]) -> typing_extensions.Literal["on_disk"] | None: ...
 
 global___GeoIndexParams = GeoIndexParams
@@ -2012,6 +2109,7 @@ class TextIndexParams(google.protobuf.message.Message):
     PHRASE_MATCHING_FIELD_NUMBER: builtins.int
     STEMMER_FIELD_NUMBER: builtins.int
     ASCII_FOLDING_FIELD_NUMBER: builtins.int
+    ENABLE_HNSW_FIELD_NUMBER: builtins.int
     tokenizer: global___TokenizerType.ValueType
     """Tokenizer type"""
     lowercase: builtins.bool
@@ -2031,7 +2129,14 @@ class TextIndexParams(google.protobuf.message.Message):
     def stemmer(self) -> global___StemmingAlgorithm:
         """Set an algorithm for stemming."""
     ascii_folding: builtins.bool
-    """If true, normalize tokens by folding accented characters to ASCII (e.g., "ação" -> "acao"). Default: false."""
+    """If true, normalize tokens by folding accented characters to ASCII (e.g., "ação" -> "acao").
+    Default: false.
+    """
+    enable_hnsw: builtins.bool
+    """Enable HNSW graph building for this payload field.
+    If true, builds additional HNSW links (Need payload_m > 0).
+    Default: true.
+    """
     def __init__(
         self,
         *,
@@ -2044,11 +2149,14 @@ class TextIndexParams(google.protobuf.message.Message):
         phrase_matching: builtins.bool | None = ...,
         stemmer: global___StemmingAlgorithm | None = ...,
         ascii_folding: builtins.bool | None = ...,
+        enable_hnsw: builtins.bool | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_ascii_folding", b"_ascii_folding", "_lowercase", b"_lowercase", "_max_token_len", b"_max_token_len", "_min_token_len", b"_min_token_len", "_on_disk", b"_on_disk", "_phrase_matching", b"_phrase_matching", "_stemmer", b"_stemmer", "_stopwords", b"_stopwords", "ascii_folding", b"ascii_folding", "lowercase", b"lowercase", "max_token_len", b"max_token_len", "min_token_len", b"min_token_len", "on_disk", b"on_disk", "phrase_matching", b"phrase_matching", "stemmer", b"stemmer", "stopwords", b"stopwords"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_ascii_folding", b"_ascii_folding", "_lowercase", b"_lowercase", "_max_token_len", b"_max_token_len", "_min_token_len", b"_min_token_len", "_on_disk", b"_on_disk", "_phrase_matching", b"_phrase_matching", "_stemmer", b"_stemmer", "_stopwords", b"_stopwords", "ascii_folding", b"ascii_folding", "lowercase", b"lowercase", "max_token_len", b"max_token_len", "min_token_len", b"min_token_len", "on_disk", b"on_disk", "phrase_matching", b"phrase_matching", "stemmer", b"stemmer", "stopwords", b"stopwords", "tokenizer", b"tokenizer"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_ascii_folding", b"_ascii_folding", "_enable_hnsw", b"_enable_hnsw", "_lowercase", b"_lowercase", "_max_token_len", b"_max_token_len", "_min_token_len", b"_min_token_len", "_on_disk", b"_on_disk", "_phrase_matching", b"_phrase_matching", "_stemmer", b"_stemmer", "_stopwords", b"_stopwords", "ascii_folding", b"ascii_folding", "enable_hnsw", b"enable_hnsw", "lowercase", b"lowercase", "max_token_len", b"max_token_len", "min_token_len", b"min_token_len", "on_disk", b"on_disk", "phrase_matching", b"phrase_matching", "stemmer", b"stemmer", "stopwords", b"stopwords"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_ascii_folding", b"_ascii_folding", "_enable_hnsw", b"_enable_hnsw", "_lowercase", b"_lowercase", "_max_token_len", b"_max_token_len", "_min_token_len", b"_min_token_len", "_on_disk", b"_on_disk", "_phrase_matching", b"_phrase_matching", "_stemmer", b"_stemmer", "_stopwords", b"_stopwords", "ascii_folding", b"ascii_folding", "enable_hnsw", b"enable_hnsw", "lowercase", b"lowercase", "max_token_len", b"max_token_len", "min_token_len", b"min_token_len", "on_disk", b"on_disk", "phrase_matching", b"phrase_matching", "stemmer", b"stemmer", "stopwords", b"stopwords", "tokenizer", b"tokenizer"]) -> None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_ascii_folding", b"_ascii_folding"]) -> typing_extensions.Literal["ascii_folding"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw"]) -> typing_extensions.Literal["enable_hnsw"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_lowercase", b"_lowercase"]) -> typing_extensions.Literal["lowercase"] | None: ...
     @typing.overload
@@ -2103,15 +2211,25 @@ class BoolIndexParams(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
     ON_DISK_FIELD_NUMBER: builtins.int
+    ENABLE_HNSW_FIELD_NUMBER: builtins.int
     on_disk: builtins.bool
     """If true - store index on disk."""
+    enable_hnsw: builtins.bool
+    """Enable HNSW graph building for this payload field.
+    If true, builds additional HNSW links (Need payload_m > 0).
+    Default: true.
+    """
     def __init__(
         self,
         *,
         on_disk: builtins.bool | None = ...,
+        enable_hnsw: builtins.bool | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_on_disk", b"_on_disk", "on_disk", b"on_disk"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_on_disk", b"_on_disk", "on_disk", b"on_disk"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw", "_on_disk", b"_on_disk", "enable_hnsw", b"enable_hnsw", "on_disk", b"on_disk"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw", "_on_disk", b"_on_disk", "enable_hnsw", b"enable_hnsw", "on_disk", b"on_disk"]) -> None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw"]) -> typing_extensions.Literal["enable_hnsw"] | None: ...
+    @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_on_disk", b"_on_disk"]) -> typing_extensions.Literal["on_disk"] | None: ...
 
 global___BoolIndexParams = BoolIndexParams
@@ -2121,18 +2239,29 @@ class DatetimeIndexParams(google.protobuf.message.Message):
 
     ON_DISK_FIELD_NUMBER: builtins.int
     IS_PRINCIPAL_FIELD_NUMBER: builtins.int
+    ENABLE_HNSW_FIELD_NUMBER: builtins.int
     on_disk: builtins.bool
     """If true - store index on disk."""
     is_principal: builtins.bool
-    """If true - use this key to organize storage of the collection data. This option assumes that this key will be used in majority of filtered requests."""
+    """If true - use this key to organize storage of the collection data.
+    This option assumes that this key will be used in majority of filtered requests.
+    """
+    enable_hnsw: builtins.bool
+    """Enable HNSW graph building for this payload field.
+    If true, builds additional HNSW links (Need payload_m > 0).
+    Default: true.
+    """
     def __init__(
         self,
         *,
         on_disk: builtins.bool | None = ...,
         is_principal: builtins.bool | None = ...,
+        enable_hnsw: builtins.bool | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_is_principal", b"_is_principal", "_on_disk", b"_on_disk", "is_principal", b"is_principal", "on_disk", b"on_disk"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_is_principal", b"_is_principal", "_on_disk", b"_on_disk", "is_principal", b"is_principal", "on_disk", b"on_disk"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw", "_is_principal", b"_is_principal", "_on_disk", b"_on_disk", "enable_hnsw", b"enable_hnsw", "is_principal", b"is_principal", "on_disk", b"on_disk"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw", "_is_principal", b"_is_principal", "_on_disk", b"_on_disk", "enable_hnsw", b"enable_hnsw", "is_principal", b"is_principal", "on_disk", b"on_disk"]) -> None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw"]) -> typing_extensions.Literal["enable_hnsw"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_is_principal", b"_is_principal"]) -> typing_extensions.Literal["is_principal"] | None: ...
     @typing.overload
@@ -2145,18 +2274,27 @@ class UuidIndexParams(google.protobuf.message.Message):
 
     IS_TENANT_FIELD_NUMBER: builtins.int
     ON_DISK_FIELD_NUMBER: builtins.int
+    ENABLE_HNSW_FIELD_NUMBER: builtins.int
     is_tenant: builtins.bool
     """If true - used for tenant optimization."""
     on_disk: builtins.bool
     """If true - store index on disk."""
+    enable_hnsw: builtins.bool
+    """Enable HNSW graph building for this payload field.
+    If true, builds additional HNSW links (Need payload_m > 0).
+    Default: true.
+    """
     def __init__(
         self,
         *,
         is_tenant: builtins.bool | None = ...,
         on_disk: builtins.bool | None = ...,
+        enable_hnsw: builtins.bool | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_is_tenant", b"_is_tenant", "_on_disk", b"_on_disk", "is_tenant", b"is_tenant", "on_disk", b"on_disk"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_is_tenant", b"_is_tenant", "_on_disk", b"_on_disk", "is_tenant", b"is_tenant", "on_disk", b"on_disk"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw", "_is_tenant", b"_is_tenant", "_on_disk", b"_on_disk", "enable_hnsw", b"enable_hnsw", "is_tenant", b"is_tenant", "on_disk", b"on_disk"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw", "_is_tenant", b"_is_tenant", "_on_disk", b"_on_disk", "enable_hnsw", b"enable_hnsw", "is_tenant", b"is_tenant", "on_disk", b"on_disk"]) -> None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw"]) -> typing_extensions.Literal["enable_hnsw"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_is_tenant", b"_is_tenant"]) -> typing_extensions.Literal["is_tenant"] | None: ...
     @typing.overload
@@ -2229,7 +2367,7 @@ class PayloadSchemaInfo(google.protobuf.message.Message):
     def params(self) -> global___PayloadIndexParams:
         """Field index parameters"""
     points: builtins.int
-    """Number of points indexed within this field indexed"""
+    """Number of points indexed within this field"""
     def __init__(
         self,
         *,
@@ -2245,6 +2383,21 @@ class PayloadSchemaInfo(google.protobuf.message.Message):
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_points", b"_points"]) -> typing_extensions.Literal["points"] | None: ...
 
 global___PayloadSchemaInfo = PayloadSchemaInfo
+
+class UpdateQueueInfo(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    LENGTH_FIELD_NUMBER: builtins.int
+    length: builtins.int
+    """Number of elements in the queue"""
+    def __init__(
+        self,
+        *,
+        length: builtins.int = ...,
+    ) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["length", b"length"]) -> None: ...
+
+global___UpdateQueueInfo = UpdateQueueInfo
 
 class CollectionInfo(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
@@ -2274,6 +2427,7 @@ class CollectionInfo(google.protobuf.message.Message):
     POINTS_COUNT_FIELD_NUMBER: builtins.int
     INDEXED_VECTORS_COUNT_FIELD_NUMBER: builtins.int
     WARNINGS_FIELD_NUMBER: builtins.int
+    UPDATE_QUEUE_FIELD_NUMBER: builtins.int
     status: global___CollectionStatus.ValueType
     """operating condition of the collection"""
     @property
@@ -2294,6 +2448,9 @@ class CollectionInfo(google.protobuf.message.Message):
     @property
     def warnings(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___CollectionWarning]:
         """Warnings related to the collection"""
+    @property
+    def update_queue(self) -> global___UpdateQueueInfo:
+        """Update queue info"""
     def __init__(
         self,
         *,
@@ -2305,9 +2462,10 @@ class CollectionInfo(google.protobuf.message.Message):
         points_count: builtins.int | None = ...,
         indexed_vectors_count: builtins.int | None = ...,
         warnings: collections.abc.Iterable[global___CollectionWarning] | None = ...,
+        update_queue: global___UpdateQueueInfo | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_indexed_vectors_count", b"_indexed_vectors_count", "_points_count", b"_points_count", "config", b"config", "indexed_vectors_count", b"indexed_vectors_count", "optimizer_status", b"optimizer_status", "points_count", b"points_count"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_indexed_vectors_count", b"_indexed_vectors_count", "_points_count", b"_points_count", "config", b"config", "indexed_vectors_count", b"indexed_vectors_count", "optimizer_status", b"optimizer_status", "payload_schema", b"payload_schema", "points_count", b"points_count", "segments_count", b"segments_count", "status", b"status", "warnings", b"warnings"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_indexed_vectors_count", b"_indexed_vectors_count", "_points_count", b"_points_count", "config", b"config", "indexed_vectors_count", b"indexed_vectors_count", "optimizer_status", b"optimizer_status", "points_count", b"points_count", "update_queue", b"update_queue"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_indexed_vectors_count", b"_indexed_vectors_count", "_points_count", b"_points_count", "config", b"config", "indexed_vectors_count", b"indexed_vectors_count", "optimizer_status", b"optimizer_status", "payload_schema", b"payload_schema", "points_count", b"points_count", "segments_count", b"segments_count", "status", b"status", "update_queue", b"update_queue", "warnings", b"warnings"]) -> None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_indexed_vectors_count", b"_indexed_vectors_count"]) -> typing_extensions.Literal["indexed_vectors_count"] | None: ...
     @typing.overload
@@ -2324,7 +2482,9 @@ class ChangeAliases(google.protobuf.message.Message):
     def actions(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___AliasOperations]:
         """List of actions"""
     timeout: builtins.int
-    """Wait timeout for operation commit in seconds, if not specified - default value will be supplied"""
+    """Wait timeout for operation commit in seconds.
+    If not specified - default value will be supplied.
+    """
     def __init__(
         self,
         *,
@@ -2586,7 +2746,9 @@ class ShardTransferInfo(google.protobuf.message.Message):
     to_shard_id: builtins.int
     to: builtins.int
     sync: builtins.bool
-    """If `true` transfer is a synchronization of a replicas; If `false` transfer is a moving of a shard from one peer to another"""
+    """If `true` transfer is a synchronization of a replicas;
+    If `false` transfer is a moving of a shard from one peer to another
+    """
     def __init__(
         self,
         *,
@@ -2919,7 +3081,9 @@ class UpdateCollectionClusterSetupRequest(google.protobuf.message.Message):
     @property
     def replicate_points(self) -> global___ReplicatePoints: ...
     timeout: builtins.int
-    """Wait timeout for operation commit in seconds, if not specified - default value will be supplied"""
+    """Wait timeout for operation commit in seconds.
+    If not specified - default value will be supplied.
+    """
     def __init__(
         self,
         *,
@@ -2969,7 +3133,9 @@ class CreateShardKeyRequest(google.protobuf.message.Message):
     def request(self) -> global___CreateShardKey:
         """Request to create shard key"""
     timeout: builtins.int
-    """Wait timeout for operation commit in seconds, if not specified - default value will be supplied"""
+    """Wait timeout for operation commit in seconds.
+    If not specified - default value will be supplied.
+    """
     def __init__(
         self,
         *,
@@ -2995,7 +3161,9 @@ class DeleteShardKeyRequest(google.protobuf.message.Message):
     def request(self) -> global___DeleteShardKey:
         """Request to delete shard key"""
     timeout: builtins.int
-    """Wait timeout for operation commit in seconds, if not specified - default value will be supplied"""
+    """Wait timeout for operation commit in seconds.
+    If not specified - default value will be supplied.
+    """
     def __init__(
         self,
         *,
@@ -3008,6 +3176,21 @@ class DeleteShardKeyRequest(google.protobuf.message.Message):
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_timeout", b"_timeout"]) -> typing_extensions.Literal["timeout"] | None: ...
 
 global___DeleteShardKeyRequest = DeleteShardKeyRequest
+
+class ListShardKeysRequest(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    COLLECTION_NAME_FIELD_NUMBER: builtins.int
+    collection_name: builtins.str
+    """Name of the collection"""
+    def __init__(
+        self,
+        *,
+        collection_name: builtins.str = ...,
+    ) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["collection_name", b"collection_name"]) -> None: ...
+
+global___ListShardKeysRequest = ListShardKeysRequest
 
 class CreateShardKeyResponse(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
@@ -3036,3 +3219,38 @@ class DeleteShardKeyResponse(google.protobuf.message.Message):
     def ClearField(self, field_name: typing_extensions.Literal["result", b"result"]) -> None: ...
 
 global___DeleteShardKeyResponse = DeleteShardKeyResponse
+
+class ShardKeyDescription(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    KEY_FIELD_NUMBER: builtins.int
+    @property
+    def key(self) -> global___ShardKey: ...
+    def __init__(
+        self,
+        *,
+        key: global___ShardKey | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["key", b"key"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["key", b"key"]) -> None: ...
+
+global___ShardKeyDescription = ShardKeyDescription
+
+class ListShardKeysResponse(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    SHARD_KEYS_FIELD_NUMBER: builtins.int
+    TIME_FIELD_NUMBER: builtins.int
+    @property
+    def shard_keys(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___ShardKeyDescription]: ...
+    time: builtins.float
+    """Time spent to process"""
+    def __init__(
+        self,
+        *,
+        shard_keys: collections.abc.Iterable[global___ShardKeyDescription] | None = ...,
+        time: builtins.float = ...,
+    ) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["shard_keys", b"shard_keys", "time", b"time"]) -> None: ...
+
+global___ListShardKeysResponse = ListShardKeysResponse

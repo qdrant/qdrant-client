@@ -285,6 +285,7 @@ collection_params_2 = grpc.CollectionParams(
     replication_factor=2,
     write_consistency_factor=1,
     read_fan_out_factor=2,
+    read_fan_out_delay_ms=100,
     sparse_vectors_config=sparse_vector_config,
 )
 
@@ -314,18 +315,16 @@ optimizer_config = grpc.OptimizersConfigDiff(
     memmap_threshold=50000,
     indexing_threshold=10000,
     flush_interval_sec=10,
-    max_optimization_threads=grpc.MaxOptimizationThreads(value=0),
-    deprecated_max_optimization_threads=0,
+    # max_optimization_threads=grpc.MaxOptimizationThreads(value=2),
+    prevent_unoptimized=True,
 )
 
 optimizer_config_half = grpc.OptimizersConfigDiff(
     deleted_threshold=0.2,
     vacuum_min_vector_number=10000,
     default_segment_number=5,
+    flush_interval_sec=1,
     max_segment_size=200000,
-    max_optimization_threads=grpc.MaxOptimizationThreads(
-        setting=grpc.MaxOptimizationThreads.Setting.Auto
-    ),
 )
 
 wal_config = grpc.WalConfigDiff(wal_capacity_mb=32, wal_segments_ahead=2)
@@ -381,7 +380,7 @@ collection_config = grpc.CollectionConfig(
 collection_config_w_metadata = grpc.CollectionConfig(
     params=collection_params,
     hnsw_config=hnsw_config,
-    optimizer_config=optimizer_config,
+    optimizer_config=optimizer_config_half,
     wal_config=wal_config,
     strict_mode_config=strict_mode_config,
     metadata=metadata,
@@ -563,30 +562,32 @@ text_index_params_5 = grpc.TextIndexParams(
     stemmer=grpc.StemmingAlgorithm(snowball=grpc.SnowballParams(language="english")),
 )
 
-text_index_params_6 = grpc.TextIndexParams(phrase_matching=False, on_disk=False)
+text_index_params_6 = grpc.TextIndexParams(phrase_matching=False, on_disk=False, enable_hnsw=True)
 
 integer_index_params_0 = grpc.IntegerIndexParams(lookup=False, range=False)
 integer_index_params_1 = grpc.IntegerIndexParams(
-    lookup=True, range=True, on_disk=True, is_principal=True
+    lookup=True, range=True, on_disk=True, is_principal=True, enable_hnsw=True
 )
 
 keyword_index_params_0 = grpc.KeywordIndexParams()
-keyword_index_params_1 = grpc.KeywordIndexParams(is_tenant=True, on_disk=True)
+keyword_index_params_1 = grpc.KeywordIndexParams(is_tenant=True, on_disk=True, enable_hnsw=True)
 
 float_index_params_0 = grpc.FloatIndexParams()
-float_index_params_1 = grpc.FloatIndexParams(on_disk=True, is_principal=True)
+float_index_params_1 = grpc.FloatIndexParams(on_disk=True, is_principal=True, enable_hnsw=True)
 
 bool_index_params = grpc.BoolIndexParams()
-bool_index_params_1 = grpc.BoolIndexParams(on_disk=True)
+bool_index_params_1 = grpc.BoolIndexParams(on_disk=True, enable_hnsw=True)
 
 geo_index_params_0 = grpc.GeoIndexParams()
-geo_index_params_1 = grpc.GeoIndexParams(on_disk=True)
+geo_index_params_1 = grpc.GeoIndexParams(on_disk=True, enable_hnsw=True)
 
 datetime_index_params_0 = grpc.DatetimeIndexParams()
-datetime_index_params_1 = grpc.DatetimeIndexParams(on_disk=True, is_principal=True)
+datetime_index_params_1 = grpc.DatetimeIndexParams(
+    on_disk=True, is_principal=True, enable_hnsw=True
+)
 
 uuid_index_params_0 = grpc.UuidIndexParams()
-uuid_index_params_1 = grpc.UuidIndexParams(on_disk=True, is_tenant=True)
+uuid_index_params_1 = grpc.UuidIndexParams(on_disk=True, is_tenant=True, enable_hnsw=True)
 
 payload_schema_text_prefix = grpc.PayloadSchemaInfo(
     data_type=grpc.PayloadSchemaType.Text,
@@ -691,6 +692,8 @@ payload_schema_uuid_on_disk_is_tenant = grpc.PayloadSchemaInfo(
     points=0,
 )
 
+update_queue_info = grpc.UpdateQueueInfo(length=42)
+
 collection_info_grey = grpc.CollectionInfo(
     status=collection_status_grey,
     optimizer_status=optimizer_status_error,
@@ -770,6 +773,7 @@ collection_info = grpc.CollectionInfo(
         "uuid_no_disk_not_tenant": payload_schema_uuid_no_disk_not_tenant,
         "uuid_on_disk_is_tenant": payload_schema_uuid_on_disk_is_tenant,
     },
+    update_queue=grpc.UpdateQueueInfo(length=42),
 )
 
 collection_info_red = grpc.CollectionInfo(
@@ -864,8 +868,10 @@ update_status = grpc.UpdateStatus.Acknowledged
 update_result = grpc.UpdateResult(operation_id=201, status=update_status)
 
 update_status_completed = grpc.UpdateStatus.Completed
+update_status_wait_timeout = grpc.UpdateStatus.WaitTimeout
 
 update_result_completed = grpc.UpdateResult(operation_id=201, status=update_status_completed)
+update_result_wait_timeout = grpc.UpdateResult(operation_id=201, status=update_status_wait_timeout)
 
 delete_alias = grpc.DeleteAlias(alias_name="col3")
 
@@ -943,6 +949,7 @@ collections_params_diff = grpc.CollectionParamsDiff(
     replication_factor=2,
     write_consistency_factor=2,
     on_disk_payload=True,
+    read_fan_out_delay_ms=50,
 )
 
 vector_params_diff = grpc.VectorParamsDiff(
@@ -1153,6 +1160,27 @@ with_lookup = grpc.WithLookup(
 upsert_operation = grpc.PointsUpdateOperation(
     upsert=grpc.PointsUpdateOperation.PointStructList(
         points=[point_struct],
+    ),
+)
+
+upsert_operation_with_update_mode_insert_only = grpc.PointsUpdateOperation(
+    upsert=grpc.PointsUpdateOperation.PointStructList(
+        points=[point_struct],
+        update_mode=grpc.InsertOnly,
+    ),
+)
+
+upsert_operation_with_update_mode_upsert = grpc.PointsUpdateOperation(
+    upsert=grpc.PointsUpdateOperation.PointStructList(
+        points=[point_struct],
+        update_mode=grpc.Upsert,
+    ),
+)
+
+upsert_operation_with_update_mode_update_only = grpc.PointsUpdateOperation(
+    upsert=grpc.PointsUpdateOperation.PointStructList(
+        points=[point_struct],
+        update_mode=grpc.UpdateOnly,
     ),
 )
 
@@ -1391,9 +1419,25 @@ query_nearest_with_mmr = grpc.Query(
 query_nearest_with_mmr_default = grpc.Query(
     nearest_with_mmr=grpc.NearestInputWithMmr(nearest=vector_input_dense, mmr=mmr_default)
 )
-query_rrf = grpc.Query(rrf=grpc.Rrf(k=3))
+query_rrf = grpc.Query(rrf=grpc.Rrf(k=3, weights=[1.0, 2.0, 3.0]))
 query_rrf_default = grpc.Query(rrf=grpc.Rrf())
 query_rrf_explicit_none = grpc.Query(rrf=grpc.Rrf(k=None))
+
+
+naive_feedback_strategy_params = grpc.NaiveFeedbackStrategy(a=1.5, b=2.5, c=3.5)
+feedback_strategy = grpc.FeedbackStrategy(naive=naive_feedback_strategy_params)
+feedback_item = grpc.FeedbackItem(example=vector_input_dense, score=0.95)
+feedback_item_2 = grpc.FeedbackItem(example=vector_input_dense_2, score=0.1)
+relevance_feedback_input = grpc.RelevanceFeedbackInput(
+    target=vector_input_dense,
+    feedback=[feedback_item, feedback_item_2],
+    strategy=feedback_strategy,
+)
+query_relevance_feedback = grpc.Query(relevance_feedback=relevance_feedback_input)
+
+update_mode_upsert = grpc.Upsert
+update_mode_insert_only = grpc.InsertOnly
+update_mode_update_only = grpc.UpdateOnly
 
 deep_prefetch_query = grpc.PrefetchQuery(query=query_recommend)
 prefetch_query = grpc.PrefetchQuery(
@@ -1460,6 +1504,7 @@ replica_state_recovery = grpc.ReplicaState.Recovery
 replica_state_resharding = grpc.ReplicaState.Resharding
 replica_state_resharding_scale_down = grpc.ReplicaState.ReshardingScaleDown
 replica_state_active_read = grpc.ReplicaState.ActiveRead
+replica_state_manual_recovery = grpc.ReplicaState.ManualRecovery
 
 
 move_shard = grpc.MoveShard(shard_id=1, from_peer_id=2, to_peer_id=3)
@@ -1562,7 +1607,6 @@ collection_cluster_info = grpc.CollectionClusterInfoResponse(
 )
 
 fixtures = {
-    "CollectionParams": [collection_params, collection_params_2],
     "CollectionConfig": [collection_config, collection_config_w_metadata],
     "ScoredPoint": [
         scored_point,
@@ -1577,7 +1621,6 @@ fixtures = {
     "RenameAlias": [rename_alias],
     "ValuesCount": [values_count],
     "Filter": [filter_nested, filter_],
-    "OptimizersConfigDiff": [optimizer_config, optimizer_config_half],
     "CollectionInfo": [
         collection_info,
         collection_info_ok,
@@ -1595,7 +1638,6 @@ fixtures = {
     "Range": [range_],
     "DatetimeRange": [datetime_range],
     "GeoRadius": [geo_radius],
-    "UpdateResult": [update_result, update_result_completed],
     "IsEmptyCondition": [is_empty],
     "IsNullCondition": [is_null],
     "DeleteAlias": [delete_alias],
@@ -1689,6 +1731,9 @@ fixtures = {
     "WithLookup": [with_lookup],
     "PointsUpdateOperation": [
         upsert_operation,
+        upsert_operation_with_update_mode_insert_only,
+        upsert_operation_with_update_mode_upsert,
+        upsert_operation_with_update_mode_update_only,
         delete_operation_1,
         delete_operation_2,
         set_payload_operation_1,
@@ -1726,6 +1771,7 @@ fixtures = {
         query_rrf,
         query_rrf_default,
         query_rrf_explicit_none,
+        query_relevance_feedback,
     ],
     "FacetValueHit": [facet_string_hit, facet_integer_hit],
     "PrefetchQuery": [deep_prefetch_query, prefetch_query, prefetch_full_query, prefetch_many],
@@ -1744,6 +1790,7 @@ fixtures = {
         replica_state_resharding,
         replica_state_resharding_scale_down,
         replica_state_active_read,
+        replica_state_manual_recovery,
     ],
     "ClusterOperations": [  # general cluster operations to test RestToGrpc
         move_shard,

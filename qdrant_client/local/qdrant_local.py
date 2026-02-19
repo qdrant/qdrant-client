@@ -552,10 +552,11 @@ class QdrantLocal(QdrantBase):
         collection_name: str,
         points: types.Points,
         update_filter: types.Filter | None = None,
+        update_mode: types.UpdateMode | None = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
         collection = self._get_collection(collection_name)
-        collection.upsert(points, update_filter=update_filter)
+        collection.upsert(points, update_filter=update_filter, update_mode=update_mode)
         return self._default_update_result()
 
     def update_vectors(
@@ -825,16 +826,20 @@ class QdrantLocal(QdrantBase):
         collection_name: str,
         points: Iterable[types.PointStruct],
         update_filter: types.Filter | None = None,
+        update_mode: types.UpdateMode | None = None,
         **kwargs: Any,
     ) -> None:
         # upload_points in local mode behaves like upload_points with wait=True in server mode
-        self._upload_points(collection_name, points, update_filter=update_filter)
+        self._upload_points(
+            collection_name, points, update_filter=update_filter, update_mode=update_mode
+        )
 
     def _upload_points(
         self,
         collection_name: str,
         points: Iterable[types.PointStruct | types.Record],
         update_filter: types.Filter | None = None,
+        update_mode: types.UpdateMode | None = None,
     ) -> None:
         collection = self._get_collection(collection_name)
         collection.upsert(
@@ -847,6 +852,7 @@ class QdrantLocal(QdrantBase):
                 for point in points
             ],
             update_filter=update_filter,
+            update_mode=update_mode,
         )
 
     def upload_collection(
@@ -856,6 +862,7 @@ class QdrantLocal(QdrantBase):
         payload: Iterable[dict[Any, Any]] | None = None,
         ids: Iterable[types.PointId] | None = None,
         update_filter: types.Filter | None = None,
+        update_mode: types.UpdateMode | None = None,
         **kwargs: Any,
     ) -> None:
         # upload_collection in local mode behaves like upload_collection with wait=True in server mode
@@ -890,6 +897,7 @@ class QdrantLocal(QdrantBase):
                 )
             ],
             update_filter=update_filter,
+            update_mode=update_mode,
         )
 
     def create_payload_index(
@@ -1046,4 +1054,32 @@ class QdrantLocal(QdrantBase):
         raise NotImplementedError(
             "Remove peer info is not supported in the local Qdrant. "
             "Please use server Qdrant if you need a cluster"
+        )
+
+    def get_optimizations(
+        self,
+        collection_name: str,
+        **kwargs: Any,
+    ) -> types.OptimizationsResponse:
+        raise NotImplementedError(
+            "Get optimizations is not supported in the local Qdrant. " "Please use server Qdrant."
+        )
+
+    def list_shard_keys(
+        self,
+        collection_name: str,
+        **kwargs: Any,
+    ) -> types.ShardKeysResponse:
+        raise NotImplementedError(
+            "List shard keys is not supported in the local Qdrant. "
+            "Please use server Qdrant if you need sharding."
+        )
+
+    def cluster_telemetry(
+        self,
+        **kwargs: Any,
+    ) -> types.DistributedTelemetryData:
+        raise NotImplementedError(
+            "Cluster telemetry is not supported in the local Qdrant. "
+            "Please use server Qdrant if you need a cluster."
         )

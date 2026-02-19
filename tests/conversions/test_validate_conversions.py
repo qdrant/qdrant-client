@@ -531,3 +531,66 @@ def test_legacy_vector():
             ]
         )
     )
+
+
+def test_optimizers_config_diff_max_threads():
+    from qdrant_client import grpc as q_grpc, models
+    from qdrant_client.conversions.conversion import GrpcToRest, RestToGrpc
+
+    for value in (0, 2):
+        grpc_opt_conf = q_grpc.OptimizersConfigDiff(
+            max_optimization_threads=q_grpc.MaxOptimizationThreads(value=value)
+        )
+
+        rest_opt_conf = GrpcToRest.convert_optimizers_config_diff(grpc_opt_conf)
+        restored_grpc_opt_conf = RestToGrpc.convert_optimizers_config_diff(rest_opt_conf)
+
+        assert (
+            grpc_opt_conf.max_optimization_threads
+            == restored_grpc_opt_conf.max_optimization_threads
+        )
+        assert restored_grpc_opt_conf.deprecated_max_optimization_threads == value
+
+    grpc_opt_conf = q_grpc.OptimizersConfigDiff(
+        deleted_threshold=10.0,
+        vacuum_min_vector_number=10,
+        default_segment_number=2,
+        max_optimization_threads=q_grpc.MaxOptimizationThreads(
+            setting=q_grpc.MaxOptimizationThreads.Setting.Auto
+        ),
+    )
+    rest_opt_conf = GrpcToRest.convert_optimizers_config_diff(grpc_opt_conf)
+    restored_grpc_opt_conf = RestToGrpc.convert_optimizers_config_diff(rest_opt_conf)
+
+    assert grpc_opt_conf == restored_grpc_opt_conf
+
+    rest_opt_conf = GrpcToRest.convert_optimizer_config(grpc_opt_conf)
+    assert rest_opt_conf.max_optimization_threads is None
+
+    rest_opt_conf = models.OptimizersConfig(
+        deleted_threshold=10.0,
+        vacuum_min_vector_number=200,
+        default_segment_number=2,
+        flush_interval_sec=3,
+        max_optimization_threads=3,
+    )
+    grpc_opt_conf = RestToGrpc.convert_optimizers_config(rest_opt_conf)
+    restored_rest_opt_conf = GrpcToRest.convert_optimizer_config(grpc_opt_conf)
+
+    assert rest_opt_conf == restored_rest_opt_conf
+
+    value = 3
+    grpc_deprecated_opt_conf = q_grpc.OptimizersConfigDiff(
+        deprecated_max_optimization_threads=value,
+    )
+    rest_opt_conf = GrpcToRest.convert_optimizers_config_diff(grpc_deprecated_opt_conf)
+
+    restored_grpc_opt_conf = RestToGrpc.convert_optimizers_config_diff(rest_opt_conf)
+
+    assert (
+        grpc_deprecated_opt_conf.deprecated_max_optimization_threads
+        == restored_grpc_opt_conf.deprecated_max_optimization_threads
+    )
+    assert restored_grpc_opt_conf.max_optimization_threads == q_grpc.MaxOptimizationThreads(
+        value=value
+    )

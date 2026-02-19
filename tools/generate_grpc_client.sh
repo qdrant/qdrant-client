@@ -44,6 +44,7 @@ rm -f $CLIENT_DIR/collections_internal_service.proto
 rm -f $CLIENT_DIR/points_internal_service.proto
 rm -f $CLIENT_DIR/qdrant_internal_service.proto
 rm -f $CLIENT_DIR/shard_snapshots_service.proto
+rm -f $CLIENT_DIR/telemetry_internal.proto
 rm -f $CLIENT_DIR/raft_service.proto
 rm -f $CLIENT_DIR/health_check.proto
 

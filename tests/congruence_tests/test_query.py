@@ -440,7 +440,7 @@ class TestSimpleSearcher:
             query=models.FormulaQuery(formula=models.MultExpression(mult=["$score", 1.0])),
             with_payload=True,
             limit=10,
-            score_threshold=1.0,  # todo: score threshold is not applied in formula queries in core
+            score_threshold=1.0,
         ).points
 
     def deep_dense_queries_rrf(self, client: QdrantBase) -> models.QueryResponse:
@@ -950,6 +950,30 @@ class TestSimpleSearcher:
             ),
             score_threshold=3.0,
             using="code",
+            limit=10,
+        )
+
+    def relevance_feedback_query(
+            self, client: QdrantBase
+    ) -> models.QueryResponse:
+        return client.query_points(
+            collection_name=COLLECTION_NAME,
+            query=models.RelevanceFeedbackQuery(
+                relevance_feedback=models.RelevanceFeedbackInput(
+                    target=self.dense_vector_query_text,
+                    feedback=[
+                        models.FeedbackItem(example=1, score=0.9),
+                        models.FeedbackItem(example=2, score=0.8),
+                        models.FeedbackItem(example=3, score=0.7),
+                        models.FeedbackItem(example=4, score=0.6),
+                    ],
+                    strategy=models.NaiveFeedbackStrategy(
+                        naive=models.NaiveFeedbackStrategyParams(a=0.5, b=1.0, c=0.7)
+                    )
+                )
+            ),
+            using="text",
+            with_payload=True,
             limit=10,
         )
 
@@ -1874,4 +1898,16 @@ def test_mmr_queries():
         http_client,
         grpc_client,
         searcher.mmr_query_parametrized_euclid_score_threshold,
+    )
+
+
+def test_relevance_feedback_queries():
+    fixture_points = generate_fixtures()
+
+    searcher = TestSimpleSearcher()
+
+    local_client, http_client, grpc_client = init_clients(fixture_points)
+
+    compare_clients_results(
+        local_client, http_client, grpc_client, searcher.relevance_feedback_query
     )

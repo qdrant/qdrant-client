@@ -31,19 +31,51 @@ class _WriteOrderingTypeEnumTypeWrapper(google.protobuf.internal.enum_type_wrapp
     Weak: _WriteOrderingType.ValueType  # 0
     """Write operations may be reordered, works faster, default"""
     Medium: _WriteOrderingType.ValueType  # 1
-    """Write operations go through dynamically selected leader, may be inconsistent for a short period of time in case of leader change"""
+    """Write operations go through dynamically selected leader,
+    may be inconsistent for a short period of time in case of leader change
+    """
     Strong: _WriteOrderingType.ValueType  # 2
-    """Write operations go through the permanent leader, consistent, but may be unavailable if leader is down"""
+    """Write operations go through the permanent leader, consistent,
+    but may be unavailable if leader is down
+    """
 
 class WriteOrderingType(_WriteOrderingType, metaclass=_WriteOrderingTypeEnumTypeWrapper): ...
 
 Weak: WriteOrderingType.ValueType  # 0
 """Write operations may be reordered, works faster, default"""
 Medium: WriteOrderingType.ValueType  # 1
-"""Write operations go through dynamically selected leader, may be inconsistent for a short period of time in case of leader change"""
+"""Write operations go through dynamically selected leader,
+may be inconsistent for a short period of time in case of leader change
+"""
 Strong: WriteOrderingType.ValueType  # 2
-"""Write operations go through the permanent leader, consistent, but may be unavailable if leader is down"""
+"""Write operations go through the permanent leader, consistent,
+but may be unavailable if leader is down
+"""
 global___WriteOrderingType = WriteOrderingType
+
+class _UpdateMode:
+    ValueType = typing.NewType("ValueType", builtins.int)
+    V: typing_extensions.TypeAlias = ValueType
+
+class _UpdateModeEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[_UpdateMode.ValueType], builtins.type):  # noqa: F821
+    DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
+    Upsert: _UpdateMode.ValueType  # 0
+    """Default mode - insert new points, update existing points"""
+    InsertOnly: _UpdateMode.ValueType  # 1
+    """Only insert new points, do not update existing points"""
+    UpdateOnly: _UpdateMode.ValueType  # 2
+    """Only update existing points, do not insert new points"""
+
+class UpdateMode(_UpdateMode, metaclass=_UpdateModeEnumTypeWrapper):
+    """Defines the mode of the upsert operation"""
+
+Upsert: UpdateMode.ValueType  # 0
+"""Default mode - insert new points, update existing points"""
+InsertOnly: UpdateMode.ValueType  # 1
+"""Only insert new points, do not update existing points"""
+UpdateOnly: UpdateMode.ValueType  # 2
+"""Only update existing points, do not insert new points"""
+global___UpdateMode = UpdateMode
 
 class _ReadConsistencyType:
     ValueType = typing.NewType("ValueType", builtins.int)
@@ -199,6 +231,8 @@ class _UpdateStatusEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._E
     """Update is applied and ready for search"""
     ClockRejected: _UpdateStatus.ValueType  # 3
     """Internal: update is rejected due to an outdated clock"""
+    WaitTimeout: _UpdateStatus.ValueType  # 4
+    """Timeout of awaited operations"""
 
 class UpdateStatus(_UpdateStatus, metaclass=_UpdateStatusEnumTypeWrapper): ...
 
@@ -209,6 +243,8 @@ Completed: UpdateStatus.ValueType  # 2
 """Update is applied and ready for search"""
 ClockRejected: UpdateStatus.ValueType  # 3
 """Internal: update is rejected due to an outdated clock"""
+WaitTimeout: UpdateStatus.ValueType  # 4
+"""Timeout of awaited operations"""
 global___UpdateStatus = UpdateStatus
 
 class WriteOrdering(google.protobuf.message.Message):
@@ -234,7 +270,9 @@ class ReadConsistency(google.protobuf.message.Message):
     type: global___ReadConsistencyType.ValueType
     """Common read consistency configurations"""
     factor: builtins.int
-    """Send request to a specified number of nodes, and return points which are present on all of them"""
+    """Send request to a specified number of nodes,
+    and return points which are present on all of them
+    """
     def __init__(
         self,
         *,
@@ -545,7 +583,9 @@ class MultiDenseVector(google.protobuf.message.Message):
 global___MultiDenseVector = MultiDenseVector
 
 class VectorInput(google.protobuf.message.Message):
-    """Vector type to be used in queries. Ids will be substituted with their corresponding vectors from the collection."""
+    """Vector type to be used in queries.
+    Ids will be substituted with their corresponding vectors from the collection.
+    """
 
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -628,6 +668,8 @@ class UpsertPoints(google.protobuf.message.Message):
     ORDERING_FIELD_NUMBER: builtins.int
     SHARD_KEY_SELECTOR_FIELD_NUMBER: builtins.int
     UPDATE_FILTER_FIELD_NUMBER: builtins.int
+    TIMEOUT_FIELD_NUMBER: builtins.int
+    UPDATE_MODE_FIELD_NUMBER: builtins.int
     collection_name: builtins.str
     """name of the collection"""
     wait: builtins.bool
@@ -642,7 +684,13 @@ class UpsertPoints(google.protobuf.message.Message):
         """Option for custom sharding to specify used shard keys"""
     @property
     def update_filter(self) -> qdrant_common_pb2.Filter:
-        """If specified, only points that match this filter will be updated, others will be inserted"""
+        """Filter to apply when updating existing points. Only points matching this filter will be updated.
+        Points that don't match will keep their current state. New points will be inserted regardless of the filter.
+        """
+    timeout: builtins.int
+    """Timeout for the request in seconds"""
+    update_mode: global___UpdateMode.ValueType
+    """Mode of the upsert operation: insert_only, upsert (default), update_only"""
     def __init__(
         self,
         *,
@@ -652,15 +700,21 @@ class UpsertPoints(google.protobuf.message.Message):
         ordering: global___WriteOrdering | None = ...,
         shard_key_selector: global___ShardKeySelector | None = ...,
         update_filter: qdrant_common_pb2.Filter | None = ...,
+        timeout: builtins.int | None = ...,
+        update_mode: global___UpdateMode.ValueType | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_ordering", b"_ordering", "_shard_key_selector", b"_shard_key_selector", "_update_filter", b"_update_filter", "_wait", b"_wait", "ordering", b"ordering", "shard_key_selector", b"shard_key_selector", "update_filter", b"update_filter", "wait", b"wait"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_ordering", b"_ordering", "_shard_key_selector", b"_shard_key_selector", "_update_filter", b"_update_filter", "_wait", b"_wait", "collection_name", b"collection_name", "ordering", b"ordering", "points", b"points", "shard_key_selector", b"shard_key_selector", "update_filter", b"update_filter", "wait", b"wait"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_ordering", b"_ordering", "_shard_key_selector", b"_shard_key_selector", "_timeout", b"_timeout", "_update_filter", b"_update_filter", "_update_mode", b"_update_mode", "_wait", b"_wait", "ordering", b"ordering", "shard_key_selector", b"shard_key_selector", "timeout", b"timeout", "update_filter", b"update_filter", "update_mode", b"update_mode", "wait", b"wait"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_ordering", b"_ordering", "_shard_key_selector", b"_shard_key_selector", "_timeout", b"_timeout", "_update_filter", b"_update_filter", "_update_mode", b"_update_mode", "_wait", b"_wait", "collection_name", b"collection_name", "ordering", b"ordering", "points", b"points", "shard_key_selector", b"shard_key_selector", "timeout", b"timeout", "update_filter", b"update_filter", "update_mode", b"update_mode", "wait", b"wait"]) -> None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_ordering", b"_ordering"]) -> typing_extensions.Literal["ordering"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_shard_key_selector", b"_shard_key_selector"]) -> typing_extensions.Literal["shard_key_selector"] | None: ...
     @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_timeout", b"_timeout"]) -> typing_extensions.Literal["timeout"] | None: ...
+    @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_update_filter", b"_update_filter"]) -> typing_extensions.Literal["update_filter"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_update_mode", b"_update_mode"]) -> typing_extensions.Literal["update_mode"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_wait", b"_wait"]) -> typing_extensions.Literal["wait"] | None: ...
 
@@ -674,6 +728,7 @@ class DeletePoints(google.protobuf.message.Message):
     POINTS_FIELD_NUMBER: builtins.int
     ORDERING_FIELD_NUMBER: builtins.int
     SHARD_KEY_SELECTOR_FIELD_NUMBER: builtins.int
+    TIMEOUT_FIELD_NUMBER: builtins.int
     collection_name: builtins.str
     """name of the collection"""
     wait: builtins.bool
@@ -687,6 +742,8 @@ class DeletePoints(google.protobuf.message.Message):
     @property
     def shard_key_selector(self) -> global___ShardKeySelector:
         """Option for custom sharding to specify used shard keys"""
+    timeout: builtins.int
+    """Timeout for the request in seconds"""
     def __init__(
         self,
         *,
@@ -695,13 +752,16 @@ class DeletePoints(google.protobuf.message.Message):
         points: global___PointsSelector | None = ...,
         ordering: global___WriteOrdering | None = ...,
         shard_key_selector: global___ShardKeySelector | None = ...,
+        timeout: builtins.int | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_ordering", b"_ordering", "_shard_key_selector", b"_shard_key_selector", "_wait", b"_wait", "ordering", b"ordering", "points", b"points", "shard_key_selector", b"shard_key_selector", "wait", b"wait"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_ordering", b"_ordering", "_shard_key_selector", b"_shard_key_selector", "_wait", b"_wait", "collection_name", b"collection_name", "ordering", b"ordering", "points", b"points", "shard_key_selector", b"shard_key_selector", "wait", b"wait"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_ordering", b"_ordering", "_shard_key_selector", b"_shard_key_selector", "_timeout", b"_timeout", "_wait", b"_wait", "ordering", b"ordering", "points", b"points", "shard_key_selector", b"shard_key_selector", "timeout", b"timeout", "wait", b"wait"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_ordering", b"_ordering", "_shard_key_selector", b"_shard_key_selector", "_timeout", b"_timeout", "_wait", b"_wait", "collection_name", b"collection_name", "ordering", b"ordering", "points", b"points", "shard_key_selector", b"shard_key_selector", "timeout", b"timeout", "wait", b"wait"]) -> None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_ordering", b"_ordering"]) -> typing_extensions.Literal["ordering"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_shard_key_selector", b"_shard_key_selector"]) -> typing_extensions.Literal["shard_key_selector"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_timeout", b"_timeout"]) -> typing_extensions.Literal["timeout"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_wait", b"_wait"]) -> typing_extensions.Literal["wait"] | None: ...
 
@@ -769,6 +829,7 @@ class UpdatePointVectors(google.protobuf.message.Message):
     ORDERING_FIELD_NUMBER: builtins.int
     SHARD_KEY_SELECTOR_FIELD_NUMBER: builtins.int
     UPDATE_FILTER_FIELD_NUMBER: builtins.int
+    TIMEOUT_FIELD_NUMBER: builtins.int
     collection_name: builtins.str
     """name of the collection"""
     wait: builtins.bool
@@ -785,6 +846,8 @@ class UpdatePointVectors(google.protobuf.message.Message):
     @property
     def update_filter(self) -> qdrant_common_pb2.Filter:
         """If specified, only points that match this filter will be updated"""
+    timeout: builtins.int
+    """Timeout for the request in seconds"""
     def __init__(
         self,
         *,
@@ -794,13 +857,16 @@ class UpdatePointVectors(google.protobuf.message.Message):
         ordering: global___WriteOrdering | None = ...,
         shard_key_selector: global___ShardKeySelector | None = ...,
         update_filter: qdrant_common_pb2.Filter | None = ...,
+        timeout: builtins.int | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_ordering", b"_ordering", "_shard_key_selector", b"_shard_key_selector", "_update_filter", b"_update_filter", "_wait", b"_wait", "ordering", b"ordering", "shard_key_selector", b"shard_key_selector", "update_filter", b"update_filter", "wait", b"wait"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_ordering", b"_ordering", "_shard_key_selector", b"_shard_key_selector", "_update_filter", b"_update_filter", "_wait", b"_wait", "collection_name", b"collection_name", "ordering", b"ordering", "points", b"points", "shard_key_selector", b"shard_key_selector", "update_filter", b"update_filter", "wait", b"wait"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_ordering", b"_ordering", "_shard_key_selector", b"_shard_key_selector", "_timeout", b"_timeout", "_update_filter", b"_update_filter", "_wait", b"_wait", "ordering", b"ordering", "shard_key_selector", b"shard_key_selector", "timeout", b"timeout", "update_filter", b"update_filter", "wait", b"wait"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_ordering", b"_ordering", "_shard_key_selector", b"_shard_key_selector", "_timeout", b"_timeout", "_update_filter", b"_update_filter", "_wait", b"_wait", "collection_name", b"collection_name", "ordering", b"ordering", "points", b"points", "shard_key_selector", b"shard_key_selector", "timeout", b"timeout", "update_filter", b"update_filter", "wait", b"wait"]) -> None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_ordering", b"_ordering"]) -> typing_extensions.Literal["ordering"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_shard_key_selector", b"_shard_key_selector"]) -> typing_extensions.Literal["shard_key_selector"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_timeout", b"_timeout"]) -> typing_extensions.Literal["timeout"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_update_filter", b"_update_filter"]) -> typing_extensions.Literal["update_filter"] | None: ...
     @typing.overload
@@ -839,6 +905,7 @@ class DeletePointVectors(google.protobuf.message.Message):
     VECTORS_FIELD_NUMBER: builtins.int
     ORDERING_FIELD_NUMBER: builtins.int
     SHARD_KEY_SELECTOR_FIELD_NUMBER: builtins.int
+    TIMEOUT_FIELD_NUMBER: builtins.int
     collection_name: builtins.str
     """name of the collection"""
     wait: builtins.bool
@@ -855,6 +922,8 @@ class DeletePointVectors(google.protobuf.message.Message):
     @property
     def shard_key_selector(self) -> global___ShardKeySelector:
         """Option for custom sharding to specify used shard keys"""
+    timeout: builtins.int
+    """Timeout for the request in seconds"""
     def __init__(
         self,
         *,
@@ -864,13 +933,16 @@ class DeletePointVectors(google.protobuf.message.Message):
         vectors: global___VectorsSelector | None = ...,
         ordering: global___WriteOrdering | None = ...,
         shard_key_selector: global___ShardKeySelector | None = ...,
+        timeout: builtins.int | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_ordering", b"_ordering", "_shard_key_selector", b"_shard_key_selector", "_wait", b"_wait", "ordering", b"ordering", "points_selector", b"points_selector", "shard_key_selector", b"shard_key_selector", "vectors", b"vectors", "wait", b"wait"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_ordering", b"_ordering", "_shard_key_selector", b"_shard_key_selector", "_wait", b"_wait", "collection_name", b"collection_name", "ordering", b"ordering", "points_selector", b"points_selector", "shard_key_selector", b"shard_key_selector", "vectors", b"vectors", "wait", b"wait"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_ordering", b"_ordering", "_shard_key_selector", b"_shard_key_selector", "_timeout", b"_timeout", "_wait", b"_wait", "ordering", b"ordering", "points_selector", b"points_selector", "shard_key_selector", b"shard_key_selector", "timeout", b"timeout", "vectors", b"vectors", "wait", b"wait"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_ordering", b"_ordering", "_shard_key_selector", b"_shard_key_selector", "_timeout", b"_timeout", "_wait", b"_wait", "collection_name", b"collection_name", "ordering", b"ordering", "points_selector", b"points_selector", "shard_key_selector", b"shard_key_selector", "timeout", b"timeout", "vectors", b"vectors", "wait", b"wait"]) -> None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_ordering", b"_ordering"]) -> typing_extensions.Literal["ordering"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_shard_key_selector", b"_shard_key_selector"]) -> typing_extensions.Literal["shard_key_selector"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_timeout", b"_timeout"]) -> typing_extensions.Literal["timeout"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_wait", b"_wait"]) -> typing_extensions.Literal["wait"] | None: ...
 
@@ -903,6 +975,7 @@ class SetPayloadPoints(google.protobuf.message.Message):
     ORDERING_FIELD_NUMBER: builtins.int
     SHARD_KEY_SELECTOR_FIELD_NUMBER: builtins.int
     KEY_FIELD_NUMBER: builtins.int
+    TIMEOUT_FIELD_NUMBER: builtins.int
     collection_name: builtins.str
     """name of the collection"""
     wait: builtins.bool
@@ -921,6 +994,8 @@ class SetPayloadPoints(google.protobuf.message.Message):
         """Option for custom sharding to specify used shard keys"""
     key: builtins.str
     """Option for indicate property of payload"""
+    timeout: builtins.int
+    """Timeout for the request in seconds"""
     def __init__(
         self,
         *,
@@ -931,9 +1006,10 @@ class SetPayloadPoints(google.protobuf.message.Message):
         ordering: global___WriteOrdering | None = ...,
         shard_key_selector: global___ShardKeySelector | None = ...,
         key: builtins.str | None = ...,
+        timeout: builtins.int | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_key", b"_key", "_ordering", b"_ordering", "_points_selector", b"_points_selector", "_shard_key_selector", b"_shard_key_selector", "_wait", b"_wait", "key", b"key", "ordering", b"ordering", "points_selector", b"points_selector", "shard_key_selector", b"shard_key_selector", "wait", b"wait"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_key", b"_key", "_ordering", b"_ordering", "_points_selector", b"_points_selector", "_shard_key_selector", b"_shard_key_selector", "_wait", b"_wait", "collection_name", b"collection_name", "key", b"key", "ordering", b"ordering", "payload", b"payload", "points_selector", b"points_selector", "shard_key_selector", b"shard_key_selector", "wait", b"wait"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_key", b"_key", "_ordering", b"_ordering", "_points_selector", b"_points_selector", "_shard_key_selector", b"_shard_key_selector", "_timeout", b"_timeout", "_wait", b"_wait", "key", b"key", "ordering", b"ordering", "points_selector", b"points_selector", "shard_key_selector", b"shard_key_selector", "timeout", b"timeout", "wait", b"wait"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_key", b"_key", "_ordering", b"_ordering", "_points_selector", b"_points_selector", "_shard_key_selector", b"_shard_key_selector", "_timeout", b"_timeout", "_wait", b"_wait", "collection_name", b"collection_name", "key", b"key", "ordering", b"ordering", "payload", b"payload", "points_selector", b"points_selector", "shard_key_selector", b"shard_key_selector", "timeout", b"timeout", "wait", b"wait"]) -> None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_key", b"_key"]) -> typing_extensions.Literal["key"] | None: ...
     @typing.overload
@@ -942,6 +1018,8 @@ class SetPayloadPoints(google.protobuf.message.Message):
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_points_selector", b"_points_selector"]) -> typing_extensions.Literal["points_selector"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_shard_key_selector", b"_shard_key_selector"]) -> typing_extensions.Literal["shard_key_selector"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_timeout", b"_timeout"]) -> typing_extensions.Literal["timeout"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_wait", b"_wait"]) -> typing_extensions.Literal["wait"] | None: ...
 
@@ -956,6 +1034,7 @@ class DeletePayloadPoints(google.protobuf.message.Message):
     POINTS_SELECTOR_FIELD_NUMBER: builtins.int
     ORDERING_FIELD_NUMBER: builtins.int
     SHARD_KEY_SELECTOR_FIELD_NUMBER: builtins.int
+    TIMEOUT_FIELD_NUMBER: builtins.int
     collection_name: builtins.str
     """name of the collection"""
     wait: builtins.bool
@@ -972,6 +1051,8 @@ class DeletePayloadPoints(google.protobuf.message.Message):
     @property
     def shard_key_selector(self) -> global___ShardKeySelector:
         """Option for custom sharding to specify used shard keys"""
+    timeout: builtins.int
+    """Timeout for the request in seconds"""
     def __init__(
         self,
         *,
@@ -981,15 +1062,18 @@ class DeletePayloadPoints(google.protobuf.message.Message):
         points_selector: global___PointsSelector | None = ...,
         ordering: global___WriteOrdering | None = ...,
         shard_key_selector: global___ShardKeySelector | None = ...,
+        timeout: builtins.int | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_ordering", b"_ordering", "_points_selector", b"_points_selector", "_shard_key_selector", b"_shard_key_selector", "_wait", b"_wait", "ordering", b"ordering", "points_selector", b"points_selector", "shard_key_selector", b"shard_key_selector", "wait", b"wait"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_ordering", b"_ordering", "_points_selector", b"_points_selector", "_shard_key_selector", b"_shard_key_selector", "_wait", b"_wait", "collection_name", b"collection_name", "keys", b"keys", "ordering", b"ordering", "points_selector", b"points_selector", "shard_key_selector", b"shard_key_selector", "wait", b"wait"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_ordering", b"_ordering", "_points_selector", b"_points_selector", "_shard_key_selector", b"_shard_key_selector", "_timeout", b"_timeout", "_wait", b"_wait", "ordering", b"ordering", "points_selector", b"points_selector", "shard_key_selector", b"shard_key_selector", "timeout", b"timeout", "wait", b"wait"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_ordering", b"_ordering", "_points_selector", b"_points_selector", "_shard_key_selector", b"_shard_key_selector", "_timeout", b"_timeout", "_wait", b"_wait", "collection_name", b"collection_name", "keys", b"keys", "ordering", b"ordering", "points_selector", b"points_selector", "shard_key_selector", b"shard_key_selector", "timeout", b"timeout", "wait", b"wait"]) -> None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_ordering", b"_ordering"]) -> typing_extensions.Literal["ordering"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_points_selector", b"_points_selector"]) -> typing_extensions.Literal["points_selector"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_shard_key_selector", b"_shard_key_selector"]) -> typing_extensions.Literal["shard_key_selector"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_timeout", b"_timeout"]) -> typing_extensions.Literal["timeout"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_wait", b"_wait"]) -> typing_extensions.Literal["wait"] | None: ...
 
@@ -1003,6 +1087,7 @@ class ClearPayloadPoints(google.protobuf.message.Message):
     POINTS_FIELD_NUMBER: builtins.int
     ORDERING_FIELD_NUMBER: builtins.int
     SHARD_KEY_SELECTOR_FIELD_NUMBER: builtins.int
+    TIMEOUT_FIELD_NUMBER: builtins.int
     collection_name: builtins.str
     """name of the collection"""
     wait: builtins.bool
@@ -1016,6 +1101,8 @@ class ClearPayloadPoints(google.protobuf.message.Message):
     @property
     def shard_key_selector(self) -> global___ShardKeySelector:
         """Option for custom sharding to specify used shard keys"""
+    timeout: builtins.int
+    """Timeout for the request in seconds"""
     def __init__(
         self,
         *,
@@ -1024,13 +1111,16 @@ class ClearPayloadPoints(google.protobuf.message.Message):
         points: global___PointsSelector | None = ...,
         ordering: global___WriteOrdering | None = ...,
         shard_key_selector: global___ShardKeySelector | None = ...,
+        timeout: builtins.int | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_ordering", b"_ordering", "_shard_key_selector", b"_shard_key_selector", "_wait", b"_wait", "ordering", b"ordering", "points", b"points", "shard_key_selector", b"shard_key_selector", "wait", b"wait"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_ordering", b"_ordering", "_shard_key_selector", b"_shard_key_selector", "_wait", b"_wait", "collection_name", b"collection_name", "ordering", b"ordering", "points", b"points", "shard_key_selector", b"shard_key_selector", "wait", b"wait"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_ordering", b"_ordering", "_shard_key_selector", b"_shard_key_selector", "_timeout", b"_timeout", "_wait", b"_wait", "ordering", b"ordering", "points", b"points", "shard_key_selector", b"shard_key_selector", "timeout", b"timeout", "wait", b"wait"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_ordering", b"_ordering", "_shard_key_selector", b"_shard_key_selector", "_timeout", b"_timeout", "_wait", b"_wait", "collection_name", b"collection_name", "ordering", b"ordering", "points", b"points", "shard_key_selector", b"shard_key_selector", "timeout", b"timeout", "wait", b"wait"]) -> None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_ordering", b"_ordering"]) -> typing_extensions.Literal["ordering"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_shard_key_selector", b"_shard_key_selector"]) -> typing_extensions.Literal["shard_key_selector"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_timeout", b"_timeout"]) -> typing_extensions.Literal["timeout"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_wait", b"_wait"]) -> typing_extensions.Literal["wait"] | None: ...
 
@@ -1045,6 +1135,7 @@ class CreateFieldIndexCollection(google.protobuf.message.Message):
     FIELD_TYPE_FIELD_NUMBER: builtins.int
     FIELD_INDEX_PARAMS_FIELD_NUMBER: builtins.int
     ORDERING_FIELD_NUMBER: builtins.int
+    TIMEOUT_FIELD_NUMBER: builtins.int
     collection_name: builtins.str
     """name of the collection"""
     wait: builtins.bool
@@ -1059,6 +1150,8 @@ class CreateFieldIndexCollection(google.protobuf.message.Message):
     @property
     def ordering(self) -> global___WriteOrdering:
         """Write ordering guarantees"""
+    timeout: builtins.int
+    """Timeout for the request in seconds"""
     def __init__(
         self,
         *,
@@ -1068,15 +1161,18 @@ class CreateFieldIndexCollection(google.protobuf.message.Message):
         field_type: global___FieldType.ValueType | None = ...,
         field_index_params: collections_pb2.PayloadIndexParams | None = ...,
         ordering: global___WriteOrdering | None = ...,
+        timeout: builtins.int | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_field_index_params", b"_field_index_params", "_field_type", b"_field_type", "_ordering", b"_ordering", "_wait", b"_wait", "field_index_params", b"field_index_params", "field_type", b"field_type", "ordering", b"ordering", "wait", b"wait"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_field_index_params", b"_field_index_params", "_field_type", b"_field_type", "_ordering", b"_ordering", "_wait", b"_wait", "collection_name", b"collection_name", "field_index_params", b"field_index_params", "field_name", b"field_name", "field_type", b"field_type", "ordering", b"ordering", "wait", b"wait"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_field_index_params", b"_field_index_params", "_field_type", b"_field_type", "_ordering", b"_ordering", "_timeout", b"_timeout", "_wait", b"_wait", "field_index_params", b"field_index_params", "field_type", b"field_type", "ordering", b"ordering", "timeout", b"timeout", "wait", b"wait"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_field_index_params", b"_field_index_params", "_field_type", b"_field_type", "_ordering", b"_ordering", "_timeout", b"_timeout", "_wait", b"_wait", "collection_name", b"collection_name", "field_index_params", b"field_index_params", "field_name", b"field_name", "field_type", b"field_type", "ordering", b"ordering", "timeout", b"timeout", "wait", b"wait"]) -> None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_field_index_params", b"_field_index_params"]) -> typing_extensions.Literal["field_index_params"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_field_type", b"_field_type"]) -> typing_extensions.Literal["field_type"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_ordering", b"_ordering"]) -> typing_extensions.Literal["ordering"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_timeout", b"_timeout"]) -> typing_extensions.Literal["timeout"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_wait", b"_wait"]) -> typing_extensions.Literal["wait"] | None: ...
 
@@ -1089,6 +1185,7 @@ class DeleteFieldIndexCollection(google.protobuf.message.Message):
     WAIT_FIELD_NUMBER: builtins.int
     FIELD_NAME_FIELD_NUMBER: builtins.int
     ORDERING_FIELD_NUMBER: builtins.int
+    TIMEOUT_FIELD_NUMBER: builtins.int
     collection_name: builtins.str
     """name of the collection"""
     wait: builtins.bool
@@ -1098,6 +1195,8 @@ class DeleteFieldIndexCollection(google.protobuf.message.Message):
     @property
     def ordering(self) -> global___WriteOrdering:
         """Write ordering guarantees"""
+    timeout: builtins.int
+    """Timeout for the request in seconds"""
     def __init__(
         self,
         *,
@@ -1105,11 +1204,14 @@ class DeleteFieldIndexCollection(google.protobuf.message.Message):
         wait: builtins.bool | None = ...,
         field_name: builtins.str = ...,
         ordering: global___WriteOrdering | None = ...,
+        timeout: builtins.int | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_ordering", b"_ordering", "_wait", b"_wait", "ordering", b"ordering", "wait", b"wait"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_ordering", b"_ordering", "_wait", b"_wait", "collection_name", b"collection_name", "field_name", b"field_name", "ordering", b"ordering", "wait", b"wait"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_ordering", b"_ordering", "_timeout", b"_timeout", "_wait", b"_wait", "ordering", b"ordering", "timeout", b"timeout", "wait", b"wait"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_ordering", b"_ordering", "_timeout", b"_timeout", "_wait", b"_wait", "collection_name", b"collection_name", "field_name", b"field_name", "ordering", b"ordering", "timeout", b"timeout", "wait", b"wait"]) -> None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_ordering", b"_ordering"]) -> typing_extensions.Literal["ordering"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_timeout", b"_timeout"]) -> typing_extensions.Literal["timeout"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_wait", b"_wait"]) -> typing_extensions.Literal["wait"] | None: ...
 
@@ -1303,7 +1405,7 @@ class WithVectorsSelector(google.protobuf.message.Message):
     """If `true` - return all vectors, if `false` - none"""
     @property
     def include(self) -> global___VectorsSelector:
-        """List of payload keys to include into result"""
+        """List of vectors to include into result"""
     def __init__(
         self,
         *,
@@ -1323,21 +1425,19 @@ class QuantizationSearchParams(google.protobuf.message.Message):
     RESCORE_FIELD_NUMBER: builtins.int
     OVERSAMPLING_FIELD_NUMBER: builtins.int
     ignore: builtins.bool
-    """
-    If set to true, search will ignore quantized vector data
-    """
+    """If set to true, search will ignore quantized vector data"""
     rescore: builtins.bool
-    """
-    If true, use original vectors to re-score top-k results. If ignored, qdrant decides automatically does rescore enabled or not.
+    """If true, use original vectors to re-score top-k results.
+    If ignored, qdrant decides automatically does rescore enabled or not.
     """
     oversampling: builtins.float
-    """
-    Oversampling factor for quantization.
+    """Oversampling factor for quantization.
 
     Defines how many extra vectors should be pre-selected using quantized index,
     and then re-scored using original vectors.
 
-    For example, if `oversampling` is 2.4 and `limit` is 100, then 240 vectors will be pre-selected using quantized index,
+    For example, if `oversampling` is 2.4 and `limit` is 100,
+    then 240 vectors will be pre-selected using quantized index,
     and then top-100 will be returned after re-scoring.
     """
     def __init__(
@@ -1364,16 +1464,14 @@ class AcornSearchParams(google.protobuf.message.Message):
     ENABLE_FIELD_NUMBER: builtins.int
     MAX_SELECTIVITY_FIELD_NUMBER: builtins.int
     enable: builtins.bool
-    """
-    If true, then ACORN may be used for the HNSW search based on filters
+    """If true, then ACORN may be used for the HNSW search based on filters
     selectivity.
 
     Improves search recall for searches with multiple low-selectivity
     payload filters, at cost of performance.
     """
     max_selectivity: builtins.float
-    """
-    Maximum selectivity of filters to enable ACORN.
+    """Maximum selectivity of filters to enable ACORN.
 
     If estimated filters selectivity is higher than this value,
     ACORN will not be used. Selectivity is estimated as:
@@ -1405,30 +1503,22 @@ class SearchParams(google.protobuf.message.Message):
     INDEXED_ONLY_FIELD_NUMBER: builtins.int
     ACORN_FIELD_NUMBER: builtins.int
     hnsw_ef: builtins.int
-    """
-    Params relevant to HNSW index. Size of the beam in a beam-search.
+    """Params relevant to HNSW index. Size of the beam in a beam-search.
     Larger the value - more accurate the result, more time required for search.
     """
     exact: builtins.bool
-    """
-    Search without approximation. If set to true, search may run long but with exact results.
-    """
+    """Search without approximation. If set to true, search may run long but with exact results."""
     @property
     def quantization(self) -> global___QuantizationSearchParams:
-        """
-        If set to true, search will ignore quantized vector data
-        """
+        """If set to true, search will ignore quantized vector data"""
     indexed_only: builtins.bool
-    """
-    If enabled, the engine will only perform search among indexed or small segments.
+    """If enabled, the engine will only perform search among indexed or small segments.
     Using this option prevents slow searches in case of delayed index, but does not
     guarantee that all uploaded vectors will be included in search results
     """
     @property
     def acorn(self) -> global___AcornSearchParams:
-        """
-        ACORN search params
-        """
+        """ACORN search params"""
     def __init__(
         self,
         *,
@@ -1650,7 +1740,10 @@ class SearchPointGroups(google.protobuf.message.Message):
     def with_vectors(self) -> global___WithVectorsSelector:
         """Options for specifying which vectors to include into response"""
     group_by: builtins.str
-    """Payload field to group by, must be a string or number field. If there are multiple values for the field, all of them will be used. One point can be in multiple groups."""
+    """Payload field to group by, must be a string or number field.
+    If there are multiple values for the field, all of them will be used.
+    One point can be in multiple groups.
+    """
     group_size: builtins.int
     """Maximum amount of points to return per group"""
     @property
@@ -2061,7 +2154,10 @@ class RecommendPointGroups(google.protobuf.message.Message):
     def lookup_from(self) -> global___LookupLocation:
         """Name of the collection to use for points lookup, if not specified - use current collection"""
     group_by: builtins.str
-    """Payload field to group by, must be a string or number field. If there are multiple values for the field, all of them will be used. One point can be in multiple groups."""
+    """Payload field to group by, must be a string or number field.
+    If there are multiple values for the field, all of them will be used.
+    One point can be in multiple groups.
+    """
     group_size: builtins.int
     """Maximum amount of points to return per group"""
     @property
@@ -2446,6 +2542,92 @@ class ContextInput(google.protobuf.message.Message):
 
 global___ContextInput = ContextInput
 
+class RelevanceFeedbackInput(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    TARGET_FIELD_NUMBER: builtins.int
+    FEEDBACK_FIELD_NUMBER: builtins.int
+    STRATEGY_FIELD_NUMBER: builtins.int
+    @property
+    def target(self) -> global___VectorInput:
+        """The original query vector"""
+    @property
+    def feedback(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___FeedbackItem]:
+        """Previous results scored by the feedback provider."""
+    @property
+    def strategy(self) -> global___FeedbackStrategy:
+        """Formula and trained coefficients to use."""
+    def __init__(
+        self,
+        *,
+        target: global___VectorInput | None = ...,
+        feedback: collections.abc.Iterable[global___FeedbackItem] | None = ...,
+        strategy: global___FeedbackStrategy | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["strategy", b"strategy", "target", b"target"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["feedback", b"feedback", "strategy", b"strategy", "target", b"target"]) -> None: ...
+
+global___RelevanceFeedbackInput = RelevanceFeedbackInput
+
+class FeedbackItem(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    EXAMPLE_FIELD_NUMBER: builtins.int
+    SCORE_FIELD_NUMBER: builtins.int
+    @property
+    def example(self) -> global___VectorInput:
+        """The id or vector from the original model"""
+    score: builtins.float
+    """Score for this vector as determined by the feedback provider"""
+    def __init__(
+        self,
+        *,
+        example: global___VectorInput | None = ...,
+        score: builtins.float = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["example", b"example"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["example", b"example", "score", b"score"]) -> None: ...
+
+global___FeedbackItem = FeedbackItem
+
+class FeedbackStrategy(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    NAIVE_FIELD_NUMBER: builtins.int
+    @property
+    def naive(self) -> global___NaiveFeedbackStrategy:
+        """a * score + sim(confidence^b * c * delta)"""
+    def __init__(
+        self,
+        *,
+        naive: global___NaiveFeedbackStrategy | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["naive", b"naive", "variant", b"variant"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["naive", b"naive", "variant", b"variant"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["variant", b"variant"]) -> typing_extensions.Literal["naive"] | None: ...
+
+global___FeedbackStrategy = FeedbackStrategy
+
+class NaiveFeedbackStrategy(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    A_FIELD_NUMBER: builtins.int
+    B_FIELD_NUMBER: builtins.int
+    C_FIELD_NUMBER: builtins.int
+    a: builtins.float
+    b: builtins.float
+    c: builtins.float
+    def __init__(
+        self,
+        *,
+        a: builtins.float = ...,
+        b: builtins.float = ...,
+        c: builtins.float = ...,
+    ) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["a", b"a", "b", b"b", "c", b"c"]) -> None: ...
+
+global___NaiveFeedbackStrategy = NaiveFeedbackStrategy
+
 class Formula(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -2693,9 +2875,14 @@ class DecayParamsExpression(google.protobuf.message.Message):
     def target(self) -> global___Expression:
         """The target value to start decaying from. Defaults to 0."""
     scale: builtins.float
-    """The scale factor of the decay, in terms of `x`. Defaults to 1.0. Must be a non-zero positive number."""
+    """The scale factor of the decay, in terms of `x`.
+    Defaults to 1.0. Must be a non-zero positive number.
+    """
     midpoint: builtins.float
-    """The midpoint of the decay. Should be between 0 and 1. Defaults to 0.5. Output will be this value when `|x - target| == scale`."""
+    """The midpoint of the decay.
+    Should be between 0 and 1. Defaults to 0.5.
+    Output will be this value when `|x - target| == scale`.
+    """
     def __init__(
         self,
         *,
@@ -2782,15 +2969,24 @@ class Rrf(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
     K_FIELD_NUMBER: builtins.int
+    WEIGHTS_FIELD_NUMBER: builtins.int
     k: builtins.int
     """K parameter for reciprocal rank fusion"""
+    @property
+    def weights(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.float]:
+        """Weights for each prefetch source.
+        Higher weight gives more influence on the final ranking.
+        If not specified, all prefetches are weighted equally.
+        The number of weights should match the number of prefetches.
+        """
     def __init__(
         self,
         *,
         k: builtins.int | None = ...,
+        weights: collections.abc.Iterable[builtins.float] | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing_extensions.Literal["_k", b"_k", "k", b"k"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_k", b"_k", "k", b"k"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_k", b"_k", "k", b"k", "weights", b"weights"]) -> None: ...
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_k", b"_k"]) -> typing_extensions.Literal["k"] | None: ...
 
 global___Rrf = Rrf
@@ -2808,6 +3004,7 @@ class Query(google.protobuf.message.Message):
     FORMULA_FIELD_NUMBER: builtins.int
     NEAREST_WITH_MMR_FIELD_NUMBER: builtins.int
     RRF_FIELD_NUMBER: builtins.int
+    RELEVANCE_FEEDBACK_FIELD_NUMBER: builtins.int
     @property
     def nearest(self) -> global___VectorInput:
         """Find the nearest neighbors to this vector."""
@@ -2836,6 +3033,9 @@ class Query(google.protobuf.message.Message):
     @property
     def rrf(self) -> global___Rrf:
         """Parameterized reciprocal rank fusion"""
+    @property
+    def relevance_feedback(self) -> global___RelevanceFeedbackInput:
+        """Search with feedback from some oracle."""
     def __init__(
         self,
         *,
@@ -2849,10 +3049,11 @@ class Query(google.protobuf.message.Message):
         formula: global___Formula | None = ...,
         nearest_with_mmr: global___NearestInputWithMmr | None = ...,
         rrf: global___Rrf | None = ...,
+        relevance_feedback: global___RelevanceFeedbackInput | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["context", b"context", "discover", b"discover", "formula", b"formula", "fusion", b"fusion", "nearest", b"nearest", "nearest_with_mmr", b"nearest_with_mmr", "order_by", b"order_by", "recommend", b"recommend", "rrf", b"rrf", "sample", b"sample", "variant", b"variant"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["context", b"context", "discover", b"discover", "formula", b"formula", "fusion", b"fusion", "nearest", b"nearest", "nearest_with_mmr", b"nearest_with_mmr", "order_by", b"order_by", "recommend", b"recommend", "rrf", b"rrf", "sample", b"sample", "variant", b"variant"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["variant", b"variant"]) -> typing_extensions.Literal["nearest", "recommend", "discover", "context", "order_by", "fusion", "sample", "formula", "nearest_with_mmr", "rrf"] | None: ...
+    def HasField(self, field_name: typing_extensions.Literal["context", b"context", "discover", b"discover", "formula", b"formula", "fusion", b"fusion", "nearest", b"nearest", "nearest_with_mmr", b"nearest_with_mmr", "order_by", b"order_by", "recommend", b"recommend", "relevance_feedback", b"relevance_feedback", "rrf", b"rrf", "sample", b"sample", "variant", b"variant"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["context", b"context", "discover", b"discover", "formula", b"formula", "fusion", b"fusion", "nearest", b"nearest", "nearest_with_mmr", b"nearest_with_mmr", "order_by", b"order_by", "recommend", b"recommend", "relevance_feedback", b"relevance_feedback", "rrf", b"rrf", "sample", b"sample", "variant", b"variant"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["variant", b"variant"]) -> typing_extensions.Literal["nearest", "recommend", "discover", "context", "order_by", "fusion", "sample", "formula", "nearest_with_mmr", "rrf", "relevance_feedback"] | None: ...
 
 global___Query = Query
 
@@ -2869,12 +3070,18 @@ class PrefetchQuery(google.protobuf.message.Message):
     LOOKUP_FROM_FIELD_NUMBER: builtins.int
     @property
     def prefetch(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___PrefetchQuery]:
-        """Sub-requests to perform first. If present, the query will be performed on the results of the prefetches."""
+        """Sub-requests to perform first.
+        If present, the query will be performed on the results of the prefetches.
+        """
     @property
     def query(self) -> global___Query:
-        """Query to perform. If missing, returns points ordered by their IDs."""
+        """Query to perform.
+        If missing, returns points ordered by their IDs.
+        """
     using: builtins.str
-    """Define which vector to use for querying. If missing, the default vector is is used."""
+    """Define which vector to use for querying.
+    If missing, the default vector is used.
+    """
     @property
     def filter(self) -> qdrant_common_pb2.Filter:
         """Filter conditions - return only those points that satisfy the specified conditions."""
@@ -2887,7 +3094,9 @@ class PrefetchQuery(google.protobuf.message.Message):
     """Max number of points. Default is 10"""
     @property
     def lookup_from(self) -> global___LookupLocation:
-        """The location to use for IDs lookup, if not specified - use the current collection and the 'using' vector"""
+        """The location to use for IDs lookup.
+        If not specified - use the current collection and the 'using' vector.
+        """
     def __init__(
         self,
         *,
@@ -2941,12 +3150,16 @@ class QueryPoints(google.protobuf.message.Message):
     """Name of the collection"""
     @property
     def prefetch(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___PrefetchQuery]:
-        """Sub-requests to perform first. If present, the query will be performed on the results of the prefetches."""
+        """Sub-requests to perform first.
+        If present, the query will be performed on the results of the prefetches.
+        """
     @property
     def query(self) -> global___Query:
         """Query to perform. If missing, returns points ordered by their IDs."""
     using: builtins.str
-    """Define which vector to use for querying. If missing, the default vector is used."""
+    """Define which vector to use for querying.
+    If missing, the default vector is used.
+    """
     @property
     def filter(self) -> qdrant_common_pb2.Filter:
         """Filter conditions - return only those points that satisfy the specified conditions."""
@@ -2970,10 +3183,14 @@ class QueryPoints(google.protobuf.message.Message):
         """Options for specifying read consistency guarantees."""
     @property
     def shard_key_selector(self) -> global___ShardKeySelector:
-        """Specify in which shards to look for the points, if not specified - look in all shards."""
+        """Specify in which shards to look for the points.
+        If not specified - look in all shards.
+        """
     @property
     def lookup_from(self) -> global___LookupLocation:
-        """The location to use for IDs lookup, if not specified - use the current collection and the 'using' vector"""
+        """The location to use for IDs lookup.
+        If not specified - use the current collection and the 'using' vector.
+        """
     timeout: builtins.int
     """If set, overrides global timeout setting for this request. Unit is seconds."""
     def __init__(
@@ -3082,12 +3299,16 @@ class QueryPointGroups(google.protobuf.message.Message):
     """Name of the collection"""
     @property
     def prefetch(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___PrefetchQuery]:
-        """Sub-requests to perform first. If present, the query will be performed on the results of the prefetches."""
+        """Sub-requests to perform first.
+        If present, the query will be performed on the results of the prefetches.
+        """
     @property
     def query(self) -> global___Query:
         """Query to perform. If missing, returns points ordered by their IDs."""
     using: builtins.str
-    """Define which vector to use for querying. If missing, the default vector is used."""
+    """Define which vector to use for querying.
+    If missing, the default vector is used.
+    """
     @property
     def filter(self) -> qdrant_common_pb2.Filter:
         """Filter conditions - return only those points that satisfy the specified conditions."""
@@ -3104,13 +3325,18 @@ class QueryPointGroups(google.protobuf.message.Message):
         """Options for specifying which vectors to include into response"""
     @property
     def lookup_from(self) -> global___LookupLocation:
-        """The location to use for IDs lookup, if not specified - use the current collection and the 'using' vector"""
+        """The location to use for IDs lookup.
+        If not specified - use the current collection and the 'using' vector.
+        """
     limit: builtins.int
     """Max number of points. Default is 3."""
     group_size: builtins.int
-    """Maximum amount of points to return per group. Default to 10."""
+    """Maximum amount of points to return per group. Defaults to 10."""
     group_by: builtins.str
-    """Payload field to group by, must be a string or number field. If there are multiple values for the field, all of them will be used. One point can be in multiple groups."""
+    """Payload field to group by, must be a string or number field.
+    If there are multiple values for the field, all of them will be used.
+    One point can be in multiple groups.
+    """
     @property
     def read_consistency(self) -> global___ReadConsistency:
         """Options for specifying read consistency guarantees"""
@@ -3300,7 +3526,7 @@ class SearchMatrixPoints(google.protobuf.message.Message):
     limit: builtins.int
     """How many neighbours per sample to find. Default is 3."""
     using: builtins.str
-    """Define which vector to use for querying. If missing, the default vector is is used."""
+    """Define which vector to use for querying. If missing, the default vector is used."""
     timeout: builtins.int
     """If set, overrides global timeout setting for this request. Unit is seconds."""
     @property
@@ -3422,6 +3648,7 @@ class PointsUpdateOperation(google.protobuf.message.Message):
         POINTS_FIELD_NUMBER: builtins.int
         SHARD_KEY_SELECTOR_FIELD_NUMBER: builtins.int
         UPDATE_FILTER_FIELD_NUMBER: builtins.int
+        UPDATE_MODE_FIELD_NUMBER: builtins.int
         @property
         def points(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___PointStruct]: ...
         @property
@@ -3429,20 +3656,27 @@ class PointsUpdateOperation(google.protobuf.message.Message):
             """Option for custom sharding to specify used shard keys"""
         @property
         def update_filter(self) -> qdrant_common_pb2.Filter:
-            """If specified, only points that match this filter will be updated, others will be inserted"""
+            """Filter to apply when updating existing points. Only points matching this filter will be updated.
+            Points that don't match will keep their current state. New points will be inserted regardless of the filter.
+            """
+        update_mode: global___UpdateMode.ValueType
+        """Mode of the upsert operation: insert_only, upsert (default), update_only"""
         def __init__(
             self,
             *,
             points: collections.abc.Iterable[global___PointStruct] | None = ...,
             shard_key_selector: global___ShardKeySelector | None = ...,
             update_filter: qdrant_common_pb2.Filter | None = ...,
+            update_mode: global___UpdateMode.ValueType | None = ...,
         ) -> None: ...
-        def HasField(self, field_name: typing_extensions.Literal["_shard_key_selector", b"_shard_key_selector", "_update_filter", b"_update_filter", "shard_key_selector", b"shard_key_selector", "update_filter", b"update_filter"]) -> builtins.bool: ...
-        def ClearField(self, field_name: typing_extensions.Literal["_shard_key_selector", b"_shard_key_selector", "_update_filter", b"_update_filter", "points", b"points", "shard_key_selector", b"shard_key_selector", "update_filter", b"update_filter"]) -> None: ...
+        def HasField(self, field_name: typing_extensions.Literal["_shard_key_selector", b"_shard_key_selector", "_update_filter", b"_update_filter", "_update_mode", b"_update_mode", "shard_key_selector", b"shard_key_selector", "update_filter", b"update_filter", "update_mode", b"update_mode"]) -> builtins.bool: ...
+        def ClearField(self, field_name: typing_extensions.Literal["_shard_key_selector", b"_shard_key_selector", "_update_filter", b"_update_filter", "_update_mode", b"_update_mode", "points", b"points", "shard_key_selector", b"shard_key_selector", "update_filter", b"update_filter", "update_mode", b"update_mode"]) -> None: ...
         @typing.overload
         def WhichOneof(self, oneof_group: typing_extensions.Literal["_shard_key_selector", b"_shard_key_selector"]) -> typing_extensions.Literal["shard_key_selector"] | None: ...
         @typing.overload
         def WhichOneof(self, oneof_group: typing_extensions.Literal["_update_filter", b"_update_filter"]) -> typing_extensions.Literal["update_filter"] | None: ...
+        @typing.overload
+        def WhichOneof(self, oneof_group: typing_extensions.Literal["_update_mode", b"_update_mode"]) -> typing_extensions.Literal["update_mode"] | None: ...
 
     class SetPayload(google.protobuf.message.Message):
         DESCRIPTOR: google.protobuf.descriptor.Descriptor
@@ -3728,6 +3962,7 @@ class UpdateBatchPoints(google.protobuf.message.Message):
     WAIT_FIELD_NUMBER: builtins.int
     OPERATIONS_FIELD_NUMBER: builtins.int
     ORDERING_FIELD_NUMBER: builtins.int
+    TIMEOUT_FIELD_NUMBER: builtins.int
     collection_name: builtins.str
     """name of the collection"""
     wait: builtins.bool
@@ -3737,6 +3972,8 @@ class UpdateBatchPoints(google.protobuf.message.Message):
     @property
     def ordering(self) -> global___WriteOrdering:
         """Write ordering guarantees"""
+    timeout: builtins.int
+    """Timeout for the operation in seconds"""
     def __init__(
         self,
         *,
@@ -3744,11 +3981,14 @@ class UpdateBatchPoints(google.protobuf.message.Message):
         wait: builtins.bool | None = ...,
         operations: collections.abc.Iterable[global___PointsUpdateOperation] | None = ...,
         ordering: global___WriteOrdering | None = ...,
+        timeout: builtins.int | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_ordering", b"_ordering", "_wait", b"_wait", "ordering", b"ordering", "wait", b"wait"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_ordering", b"_ordering", "_wait", b"_wait", "collection_name", b"collection_name", "operations", b"operations", "ordering", b"ordering", "wait", b"wait"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_ordering", b"_ordering", "_timeout", b"_timeout", "_wait", b"_wait", "ordering", b"ordering", "timeout", b"timeout", "wait", b"wait"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_ordering", b"_ordering", "_timeout", b"_timeout", "_wait", b"_wait", "collection_name", b"collection_name", "operations", b"operations", "ordering", b"ordering", "timeout", b"timeout", "wait", b"wait"]) -> None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_ordering", b"_ordering"]) -> typing_extensions.Literal["ordering"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_timeout", b"_timeout"]) -> typing_extensions.Literal["timeout"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_wait", b"_wait"]) -> typing_extensions.Literal["wait"] | None: ...
 
@@ -3899,7 +4139,7 @@ class GroupId(google.protobuf.message.Message):
     INTEGER_VALUE_FIELD_NUMBER: builtins.int
     STRING_VALUE_FIELD_NUMBER: builtins.int
     unsigned_value: builtins.int
-    """Represents a double value."""
+    """Represents an unsigned integer value."""
     integer_value: builtins.int
     """Represents an integer value"""
     string_value: builtins.str

@@ -378,3 +378,16 @@ class AsyncQdrantBase:
 
     async def remove_peer(self, peer_id: int, **kwargs: Any) -> bool:
         raise NotImplementedError()
+
+    async def get_optimizations(
+        self, collection_name: str, **kwargs: Any
+    ) -> types.OptimizationsResponse:
+        raise NotImplementedError()
+
+    async def list_shard_keys(
+        self, collection_name: str, **kwargs: Any
+    ) -> types.ShardKeysResponse:
+        raise NotImplementedError()
+
+    async def cluster_telemetry(self, **kwargs: Any) -> types.DistributedTelemetryData:
+        raise NotImplementedError()

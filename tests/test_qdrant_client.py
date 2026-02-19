@@ -2372,3 +2372,106 @@ def test_cluster_methods(prefer_grpc):
 
     cluster_status = client.cluster_status()
     assert cluster_status.status == "enabled"
+
+
+@pytest.mark.parametrize("prefer_grpc", [False, True])
+def test_create_payload_index_enable_hnsw(prefer_grpc: bool):
+    major, minor, patch, dev = read_version()
+    if not (major is None or dev):
+        if (major, minor, patch) < (1, 17, 0):
+            pytest.skip("enable_hnsw is supported as of Qdrant 1.17.0")
+
+    client = QdrantClient(prefer_grpc=prefer_grpc)
+    if client.collection_exists(COLLECTION_NAME):
+        client.delete_collection(COLLECTION_NAME, timeout=TIMEOUT)
+    client.create_collection(
+        collection_name=COLLECTION_NAME,
+        vectors_config=models.VectorParams(size=DIM, distance=models.Distance.DOT),
+        timeout=TIMEOUT,
+    )
+
+    client.create_payload_index(
+        COLLECTION_NAME,
+        field_name="uuid_field",
+        field_schema=models.UuidIndexParams(
+            type=models.UuidIndexType.UUID,
+            enable_hnsw=False,
+        ),
+    )
+
+    client.create_payload_index(
+        COLLECTION_NAME,
+        field_name="bool_field",
+        field_schema=models.BoolIndexParams(
+            type=models.BoolIndexType.BOOL,
+            enable_hnsw=False,
+        ),
+    )
+
+    client.create_payload_index(
+        COLLECTION_NAME,
+        field_name="text_field",
+        field_schema=models.TextIndexParams(
+            type=models.TextIndexType.TEXT,
+            tokenizer=models.TokenizerType.WHITESPACE,
+            enable_hnsw=False,
+        ),
+    )
+
+    client.create_payload_index(
+        COLLECTION_NAME,
+        field_name="keyword_field",
+        field_schema=models.KeywordIndexParams(
+            type=models.KeywordIndexType.KEYWORD,
+            enable_hnsw=False,
+        ),
+    )
+
+    client.create_payload_index(
+        COLLECTION_NAME,
+        field_name="integer_field",
+        field_schema=models.IntegerIndexParams(
+            type=models.IntegerIndexType.INTEGER,
+            enable_hnsw=False,
+        ),
+    )
+
+    client.create_payload_index(
+        COLLECTION_NAME,
+        field_name="geo_field",
+        field_schema=models.GeoIndexParams(
+            type=models.GeoIndexType.GEO,
+            enable_hnsw=False,
+        ),
+    )
+
+    client.create_payload_index(
+        COLLECTION_NAME,
+        field_name="float_field",
+        field_schema=models.FloatIndexParams(
+            type=models.FloatIndexType.FLOAT,
+            enable_hnsw=False,
+        ),
+    )
+
+    client.create_payload_index(
+        COLLECTION_NAME,
+        field_name="datetime_field",
+        field_schema=models.DatetimeIndexParams(
+            type=models.DatetimeIndexType.DATETIME,
+            enable_hnsw=False,
+        ),
+    )
+
+    info = client.get_collection(COLLECTION_NAME)
+    for field_name in [
+        "uuid_field",
+        "bool_field",
+        "text_field",
+        "keyword_field",
+        "integer_field",
+        "geo_field",
+        "float_field",
+        "datetime_field",
+    ]:
+        assert info.payload_schema[field_name].params.enable_hnsw is False, field_name

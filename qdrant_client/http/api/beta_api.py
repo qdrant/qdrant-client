@@ -5,6 +5,7 @@ from pydantic import BaseModel
 from pydantic.main import BaseModel
 from pydantic.version import VERSION as PYDANTIC_VERSION
 from qdrant_client.http.models import *
+from qdrant_client.http.models import models as m
 
 PYDANTIC_V2 = PYDANTIC_VERSION.startswith("2.")
 Model = TypeVar("Model", bound="BaseModel")
@@ -59,7 +60,7 @@ class _BetaApi:
         """
         headers = {}
         return self.api_client.request(
-            type_=bool,
+            type_=m.InlineResponse2001,
             method="DELETE",
             url="/issues",
             headers=headers if headers else None,
@@ -83,7 +84,7 @@ class _BetaApi:
 class AsyncBetaApi(_BetaApi):
     async def clear_issues(
         self,
-    ) -> bool:
+    ) -> m.InlineResponse2001:
         """
         Removes all issues reported so far
         """
@@ -101,7 +102,7 @@ class AsyncBetaApi(_BetaApi):
 class SyncBetaApi(_BetaApi):
     def clear_issues(
         self,
-    ) -> bool:
+    ) -> m.InlineResponse2001:
         """
         Removes all issues reported so far
         """

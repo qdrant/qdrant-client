@@ -505,10 +505,11 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         collection_name: str,
         points: types.Points,
         update_filter: types.Filter | None = None,
+        update_mode: types.UpdateMode | None = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
         collection = self._get_collection(collection_name)
-        collection.upsert(points, update_filter=update_filter)
+        collection.upsert(points, update_filter=update_filter, update_mode=update_mode)
         return self._default_update_result()
 
     async def update_vectors(
@@ -762,15 +763,19 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         collection_name: str,
         points: Iterable[types.PointStruct],
         update_filter: types.Filter | None = None,
+        update_mode: types.UpdateMode | None = None,
         **kwargs: Any,
     ) -> None:
-        self._upload_points(collection_name, points, update_filter=update_filter)
+        self._upload_points(
+            collection_name, points, update_filter=update_filter, update_mode=update_mode
+        )
 
     def _upload_points(
         self,
         collection_name: str,
         points: Iterable[types.PointStruct | types.Record],
         update_filter: types.Filter | None = None,
+        update_mode: types.UpdateMode | None = None,
     ) -> None:
         collection = self._get_collection(collection_name)
         collection.upsert(
@@ -781,6 +786,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
                 for point in points
             ],
             update_filter=update_filter,
+            update_mode=update_mode,
         )
 
     def upload_collection(
@@ -790,6 +796,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         payload: Iterable[dict[Any, Any]] | None = None,
         ids: Iterable[types.PointId] | None = None,
         update_filter: types.Filter | None = None,
+        update_mode: types.UpdateMode | None = None,
         **kwargs: Any,
     ) -> None:
         def uuid_generator() -> Generator[str, None, None]:
@@ -820,6 +827,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
                 )
             ],
             update_filter=update_filter,
+            update_mode=update_mode,
         )
 
     async def create_payload_index(
@@ -963,4 +971,23 @@ class AsyncQdrantLocal(AsyncQdrantBase):
     async def remove_peer(self, peer_id: int, **kwargs: Any) -> bool:
         raise NotImplementedError(
             "Remove peer info is not supported in the local Qdrant. Please use server Qdrant if you need a cluster"
+        )
+
+    async def get_optimizations(
+        self, collection_name: str, **kwargs: Any
+    ) -> types.OptimizationsResponse:
+        raise NotImplementedError(
+            "Get optimizations is not supported in the local Qdrant. Please use server Qdrant."
+        )
+
+    async def list_shard_keys(
+        self, collection_name: str, **kwargs: Any
+    ) -> types.ShardKeysResponse:
+        raise NotImplementedError(
+            "List shard keys is not supported in the local Qdrant. Please use server Qdrant if you need sharding."
+        )
+
+    async def cluster_telemetry(self, **kwargs: Any) -> types.DistributedTelemetryData:
+        raise NotImplementedError(
+            "Cluster telemetry is not supported in the local Qdrant. Please use server Qdrant if you need a cluster."
         )
