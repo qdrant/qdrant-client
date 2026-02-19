@@ -588,7 +588,7 @@ def test_optimizers_config_diff_max_threads():
     restored_grpc_opt_conf = RestToGrpc.convert_optimizers_config_diff(rest_opt_conf)
 
     assert (
-        grpc_opt_conf.deprecated_max_optimization_threads
+        grpc_deprecated_opt_conf.deprecated_max_optimization_threads
         == restored_grpc_opt_conf.deprecated_max_optimization_threads
     )
     assert restored_grpc_opt_conf.max_optimization_threads == q_grpc.MaxOptimizationThreads(
