@@ -37,7 +37,8 @@ from qdrant_client.local.distances import (
     calculate_recommend_best_scores,
     distance_to_order,
     calculate_recommend_sum_scores,
-    calculate_distance_core,
+    calculate_distance_core, calculate_naive_feedback_query, NaiveFeedbackQuery,
+    FeedbackItem as DistFeedbackItem, NaiveFeedbackCoefficients,
 )
 from qdrant_client.local.multi_distances import (
     MultiQueryVector,
@@ -641,6 +642,8 @@ class LocalCollection:
             # sparse vector query must be sorted by indices for dot product to work with persisted vectors
             query_vector = sort_sparse_vector(query_vector)
             scores = calculate_distance_sparse(query_vector, vectors)
+        elif isinstance(query_vector,  NaiveFeedbackQuery):
+            scores = calculate_naive_feedback_query(query_vector, vectors, distance)
         else:
             raise (ValueError(f"Unsupported query vector type {type(query_vector)}"))
 
@@ -988,6 +991,17 @@ class LocalCollection:
             raise ValueError("Cannot perform formula without prefetches")
         elif isinstance(query, models.RrfQuery):
             raise ValueError("Cannot perform RRF query without prefetches")
+        elif isinstance(query, models.RelevanceFeedbackQuery):
+            return self._relevance_feedback(
+                relevance_feedback=query.relevance_feedback,
+                using=using,
+                query_filter=query_filter,
+                limit=limit,
+                offset=offset,
+                with_payload=with_payload,
+                with_vectors=with_vectors,
+                score_threshold=score_threshold,
+            )
         else:
             # most likely a VectorInput, delegate to search
             return self.search(
@@ -1665,7 +1679,7 @@ class LocalCollection:
         return ids, scores
 
     @staticmethod
-    def _preprocess_target(
+    def _preprocess_vector_input(
         target: models.VectorInput | None, collection: "LocalCollection", vector_name: str
     ) -> tuple[models.Vector, types.PointId | None]:
         if isinstance(target, get_args(types.PointId)):
@@ -1780,7 +1794,7 @@ class LocalCollection:
             else search_in_vector_name
         )
 
-        target_vector, target_id = self._preprocess_target(target, collection, vector_name)
+        target_vector, target_id = self._preprocess_vector_input(target, collection, vector_name)
         context = list(context) if context is not None else []
 
         dense_context_vectors, sparse_context_vectors, multi_context_vectors, mentioned_ids = (
@@ -2253,6 +2267,60 @@ class LocalCollection:
         rescored.sort(key=lambda x: x.score, reverse=True)
 
         return rescored[:limit]
+
+    def _relevance_feedback(
+        self,
+        relevance_feedback: models.RelevanceFeedbackInput,
+        using: str | None,
+        query_filter: types.Filter | None = None,
+        limit: int = 10,
+        offset: int | None = None,
+        with_payload: bool | Sequence[str] | types.PayloadSelector = True,
+        with_vectors: bool | Sequence[str] = False,
+        score_threshold: float | None = None,
+    ) -> list[models.ScoredPoint]:
+        vector_name = using if using is not None else DEFAULT_VECTOR_NAME
+
+        target_vector, target_id = self._preprocess_vector_input(
+            relevance_feedback.target, self, vector_name
+        )
+
+        mentioned_ids: list[ExtendedPointId] = []
+        if target_id is not None:
+            mentioned_ids.append(target_id)
+
+        feedback_items: list[DistFeedbackItem] = []
+        for item in relevance_feedback.feedback:
+            example_vector, example_id = self._preprocess_vector_input(
+                item.example, self, vector_name
+            )
+            if example_id is not None:
+                mentioned_ids.append(example_id)
+            feedback_items.append(DistFeedbackItem(vector=example_vector, score=item.score))
+
+        query_filter = ignore_mentioned_ids_filter(query_filter, mentioned_ids)
+
+        strategy = relevance_feedback.strategy
+        if isinstance(strategy, models.NaiveFeedbackStrategy):
+            params = strategy.naive
+            coefficients = NaiveFeedbackCoefficients(a=params.a, b=params.b, c=params.c)
+            naive_query = NaiveFeedbackQuery(
+                target=target_vector,
+                feedback=feedback_items,
+                coefficients=coefficients,
+            )
+            return self.search(
+                query_vector=(vector_name, naive_query),
+                query_filter=query_filter,
+                limit=limit,
+                offset=offset,
+                with_payload=with_payload,
+                with_vectors=with_vectors,
+                score_threshold=score_threshold,
+            )
+        else:
+            raise ValueError(f"Unsupported feedback strategy: {strategy}")
+
 
     def _update_point(self, point: models.PointStruct) -> None:
         if isinstance(point.id, uuid.UUID):
