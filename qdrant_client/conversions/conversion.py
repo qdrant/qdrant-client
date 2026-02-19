@@ -3727,11 +3727,13 @@ class RestToGrpc:
 
     @staticmethod
     def _validate_no_nan(vector: list[float]) -> None:
-        """validate that vector does not contain NaN values
+        """Validate that vector does not contain NaN values.
+
         Args:
-            vector: List of float values to validate
+            vector: List of float values to validate.
+
         Raises:
-            UnexpectedResponse: If the vector contains NaN values
+            UnexpectedResponse: If the vector contains NaN values.
         """
         if any(math.isnan(val) for val in vector):
             from qdrant_client.http.exceptions import UnexpectedResponse
