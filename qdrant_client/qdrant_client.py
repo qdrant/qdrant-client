@@ -873,6 +873,7 @@ class QdrantClient(QdrantFastembedMixin):
         shard_key_selector: types.ShardKeySelector | None = None,
         update_filter: types.Filter | None = None,
         update_mode: types.UpdateMode | None = None,
+        timeout: int | None = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
         """
@@ -900,6 +901,9 @@ class QdrantClient(QdrantFastembedMixin):
 
             update_filter: If specified, only points that match this filter will be updated, others will be inserted
             update_mode: Allows to alter default upsert behavior, instead of inserting a point if it does not exist, or updating it if it does, can be set to insert-only or update-only strategies.
+            timeout:
+                Wait for operation commit timeout in seconds.
+                If timeout is reached, server will return `WAIT_TIMEOUT` status, meaning that operation was accepted but not yet applied
 
         Returns:
             Operation Result(UpdateResult)
@@ -945,6 +949,7 @@ class QdrantClient(QdrantFastembedMixin):
             shard_key_selector=shard_key_selector,
             update_filter=update_filter,
             update_mode=update_mode,
+            timeout=timeout,
             **kwargs,
         )
 
@@ -956,6 +961,7 @@ class QdrantClient(QdrantFastembedMixin):
         ordering: types.WriteOrdering | None = None,
         shard_key_selector: types.ShardKeySelector | None = None,
         update_filter: types.Filter | None = None,
+        timeout: int | None = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
         """Update specified vectors in the collection. Keeps payload and unspecified vectors unchanged.
@@ -987,6 +993,10 @@ class QdrantClient(QdrantFastembedMixin):
             update_filter:
                 If specified, only points that match this filter will be updated
 
+            timeout:
+                Wait for operation commit timeout in seconds.
+                If timeout is reached, server will return `WAIT_TIMEOUT` status, meaning that operation was accepted but not yet applied
+
         Returns:
             Operation Result(UpdateResult)
         """
@@ -1006,6 +1016,7 @@ class QdrantClient(QdrantFastembedMixin):
             ordering=ordering,
             shard_key_selector=shard_key_selector,
             update_filter=update_filter,
+            timeout=timeout,
         )
 
     def delete_vectors(
@@ -1016,6 +1027,7 @@ class QdrantClient(QdrantFastembedMixin):
         wait: bool = True,
         ordering: types.WriteOrdering | None = None,
         shard_key_selector: types.ShardKeySelector | None = None,
+        timeout: int | None = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
         """Delete specified vector from the collection. Does not affect payload.
@@ -1044,6 +1056,10 @@ class QdrantClient(QdrantFastembedMixin):
                 If multiple shard_keys are provided, the update will be written to each of them.
                 Only works for collections with `custom` sharding method.
 
+            timeout:
+                Wait for operation commit timeout in seconds.
+                If timeout is reached, server will return `WAIT_TIMEOUT` status, meaning that operation was accepted but not yet applied
+
         Returns:
             Operation result
         """
@@ -1056,6 +1072,7 @@ class QdrantClient(QdrantFastembedMixin):
             wait=wait,
             ordering=ordering,
             shard_key_selector=shard_key_selector,
+            timeout=timeout,
         )
 
     def retrieve(
@@ -1123,6 +1140,7 @@ class QdrantClient(QdrantFastembedMixin):
         wait: bool = True,
         ordering: types.WriteOrdering | None = None,
         shard_key_selector: types.ShardKeySelector | None = None,
+        timeout: int | None = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
         """Deletes selected points from collection
@@ -1149,6 +1167,10 @@ class QdrantClient(QdrantFastembedMixin):
                 If multiple shard_keys are provided, the update will be written to each of them.
                 Only works for collections with `custom` sharding method.
 
+            timeout:
+                Wait for operation commit timeout in seconds.
+                If timeout is reached, server will return `WAIT_TIMEOUT` status, meaning that operation was accepted but not yet applied
+
         Returns:
             Operation result
         """
@@ -1160,6 +1182,7 @@ class QdrantClient(QdrantFastembedMixin):
             wait=wait,
             ordering=ordering,
             shard_key_selector=shard_key_selector,
+            timeout=timeout,
             **kwargs,
         )
 
@@ -1172,6 +1195,7 @@ class QdrantClient(QdrantFastembedMixin):
         wait: bool = True,
         ordering: types.WriteOrdering | None = None,
         shard_key_selector: types.ShardKeySelector | None = None,
+        timeout: int | None = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
         """
@@ -1242,6 +1266,10 @@ class QdrantClient(QdrantFastembedMixin):
                         }
                     )
 
+            timeout:
+                Wait for operation commit timeout in seconds.
+                If timeout is reached, server will return `WAIT_TIMEOUT` status, meaning that operation was accepted but not yet applied
+
         Returns:
             Operation result.
         """
@@ -1256,6 +1284,7 @@ class QdrantClient(QdrantFastembedMixin):
             ordering=ordering,
             shard_key_selector=shard_key_selector,
             key=key,
+            timeout=timeout,
             **kwargs,
         )
 
@@ -1267,6 +1296,7 @@ class QdrantClient(QdrantFastembedMixin):
         wait: bool = True,
         ordering: types.WriteOrdering | None = None,
         shard_key_selector: types.ShardKeySelector | None = None,
+        timeout: int | None = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
         """Overwrites payload of the specified points
@@ -1311,6 +1341,10 @@ class QdrantClient(QdrantFastembedMixin):
                 If multiple shard_keys are provided, the update will be written to each of them.
                 Only works for collections with `custom` sharding method.
 
+            timeout:
+                Wait for operation commit timeout in seconds.
+                If timeout is reached, server will return `WAIT_TIMEOUT` status, meaning that operation was accepted but not yet applied
+
         Returns:
             Operation result
         """
@@ -1323,6 +1357,7 @@ class QdrantClient(QdrantFastembedMixin):
             wait=wait,
             ordering=ordering,
             shard_key_selector=shard_key_selector,
+            timeout=timeout,
             **kwargs,
         )
 
@@ -1334,6 +1369,7 @@ class QdrantClient(QdrantFastembedMixin):
         wait: bool = True,
         ordering: types.WriteOrdering | None = None,
         shard_key_selector: types.ShardKeySelector | None = None,
+        timeout: int | None = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
         """Remove values from point's payload
@@ -1360,6 +1396,10 @@ class QdrantClient(QdrantFastembedMixin):
                 If multiple shard_keys are provided, the update will be written to each of them.
                 Only works for collections with `custom` sharding method.
 
+            timeout:
+                Wait for operation commit timeout in seconds.
+                If timeout is reached, server will return `WAIT_TIMEOUT` status, meaning that operation was accepted but not yet applied
+
         Returns:
             Operation result
         """
@@ -1372,6 +1412,7 @@ class QdrantClient(QdrantFastembedMixin):
             wait=wait,
             ordering=ordering,
             shard_key_selector=shard_key_selector,
+            timeout=timeout,
             **kwargs,
         )
 
@@ -1382,6 +1423,7 @@ class QdrantClient(QdrantFastembedMixin):
         wait: bool = True,
         ordering: types.WriteOrdering | None = None,
         shard_key_selector: types.ShardKeySelector | None = None,
+        timeout: int | None = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
         """Delete all payload for selected points
@@ -1405,6 +1447,10 @@ class QdrantClient(QdrantFastembedMixin):
                 If multiple shard_keys are provided, the update will be written to each of them.
                 Only works for collections with `custom` sharding method.
 
+            timeout:
+                Wait for operation commit timeout in seconds.
+                If timeout is reached, server will return `WAIT_TIMEOUT` status, meaning that operation was accepted but not yet applied
+
         Returns:
             Operation result
         """
@@ -1416,6 +1462,7 @@ class QdrantClient(QdrantFastembedMixin):
             wait=wait,
             ordering=ordering,
             shard_key_selector=shard_key_selector,
+            timeout=timeout,
             **kwargs,
         )
 
@@ -1425,6 +1472,7 @@ class QdrantClient(QdrantFastembedMixin):
         update_operations: Sequence[types.UpdateOperation],
         wait: bool = True,
         ordering: types.WriteOrdering | None = None,
+        timeout: int | None = None,
         **kwargs: Any,
     ) -> list[types.UpdateResult]:
         """Batch update points in the collection.
@@ -1440,6 +1488,10 @@ class QdrantClient(QdrantFastembedMixin):
                 - `weak` (default) - write operations may be reordered, works faster
                 - `medium` - write operations go through dynamically selected leader, may be inconsistent for a short period of time in case of leader change
                 - `strong` - Write operations go through the permanent leader, consistent, but may be unavailable if leader is down
+
+            timeout:
+                Wait for operation commit timeout in seconds.
+                If timeout is reached, server will return `WAIT_TIMEOUT` status, meaning that operation was accepted but not yet applied
 
         Returns:
             Operation results
@@ -1458,6 +1510,7 @@ class QdrantClient(QdrantFastembedMixin):
             update_operations=update_operations,
             wait=wait,
             ordering=ordering,
+            timeout=timeout,
             **kwargs,
         )
 
@@ -1972,6 +2025,7 @@ class QdrantClient(QdrantFastembedMixin):
         field_type: types.PayloadSchemaType | None = None,
         wait: bool = True,
         ordering: types.WriteOrdering | None = None,
+        timeout: int | None = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
         """Creates index for a given payload field.
@@ -1992,6 +2046,10 @@ class QdrantClient(QdrantFastembedMixin):
                 - `medium` - write operations go through dynamically selected leader, may be inconsistent for a short period of time in case of leader change
                 - `strong` - Write operations go through the permanent leader, consistent, but may be unavailable if leader is down
 
+            timeout:
+                Wait for operation commit timeout in seconds.
+                If timeout is reached, server will return `WAIT_TIMEOUT` status, meaning that operation was accepted but not yet applied
+
         Returns:
             Operation Result
         """
@@ -2004,6 +2062,7 @@ class QdrantClient(QdrantFastembedMixin):
             field_type=field_type,
             wait=wait,
             ordering=ordering,
+            timeout=timeout,
             **kwargs,
         )
 
@@ -2013,6 +2072,7 @@ class QdrantClient(QdrantFastembedMixin):
         field_name: str,
         wait: bool = True,
         ordering: types.WriteOrdering | None = None,
+        timeout: int | None = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
         """Removes index for a given payload field.
@@ -2030,6 +2090,10 @@ class QdrantClient(QdrantFastembedMixin):
                 - `medium` - write operations go through dynamically selected leader, may be inconsistent for a short period of time in case of leader change
                 - `strong` - Write operations go through the permanent leader, consistent, but may be unavailable if leader is down
 
+            timeout:
+                Wait for operation commit timeout in seconds.
+                If timeout is reached, server will return `WAIT_TIMEOUT` status, meaning that operation was accepted but not yet applied
+
         Returns:
             Operation Result
         """
@@ -2040,6 +2104,7 @@ class QdrantClient(QdrantFastembedMixin):
             field_name=field_name,
             wait=wait,
             ordering=ordering,
+            timeout=timeout,
             **kwargs,
         )
 

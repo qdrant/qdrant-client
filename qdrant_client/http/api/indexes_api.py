@@ -57,6 +57,7 @@ class _IndexesApi:
         collection_name: str,
         wait: bool = None,
         ordering: WriteOrdering = None,
+        timeout: int = None,
         create_field_index: m.CreateFieldIndex = None,
     ):
         """
@@ -71,6 +72,8 @@ class _IndexesApi:
             query_params["wait"] = str(wait).lower()
         if ordering is not None:
             query_params["ordering"] = str(ordering)
+        if timeout is not None:
+            query_params["timeout"] = str(timeout)
 
         headers = {}
         body = jsonable_encoder(create_field_index)
@@ -92,6 +95,7 @@ class _IndexesApi:
         field_name: str,
         wait: bool = None,
         ordering: WriteOrdering = None,
+        timeout: int = None,
     ):
         """
         Delete field index for collection
@@ -106,6 +110,8 @@ class _IndexesApi:
             query_params["wait"] = str(wait).lower()
         if ordering is not None:
             query_params["ordering"] = str(ordering)
+        if timeout is not None:
+            query_params["timeout"] = str(timeout)
 
         headers = {}
         return self.api_client.request(
@@ -124,6 +130,7 @@ class AsyncIndexesApi(_IndexesApi):
         collection_name: str,
         wait: bool = None,
         ordering: WriteOrdering = None,
+        timeout: int = None,
         create_field_index: m.CreateFieldIndex = None,
     ) -> m.InlineResponse2007:
         """
@@ -133,6 +140,7 @@ class AsyncIndexesApi(_IndexesApi):
             collection_name=collection_name,
             wait=wait,
             ordering=ordering,
+            timeout=timeout,
             create_field_index=create_field_index,
         )
 
@@ -142,6 +150,7 @@ class AsyncIndexesApi(_IndexesApi):
         field_name: str,
         wait: bool = None,
         ordering: WriteOrdering = None,
+        timeout: int = None,
     ) -> m.InlineResponse2007:
         """
         Delete field index for collection
@@ -151,6 +160,7 @@ class AsyncIndexesApi(_IndexesApi):
             field_name=field_name,
             wait=wait,
             ordering=ordering,
+            timeout=timeout,
         )
 
 
@@ -160,6 +170,7 @@ class SyncIndexesApi(_IndexesApi):
         collection_name: str,
         wait: bool = None,
         ordering: WriteOrdering = None,
+        timeout: int = None,
         create_field_index: m.CreateFieldIndex = None,
     ) -> m.InlineResponse2007:
         """
@@ -169,6 +180,7 @@ class SyncIndexesApi(_IndexesApi):
             collection_name=collection_name,
             wait=wait,
             ordering=ordering,
+            timeout=timeout,
             create_field_index=create_field_index,
         )
 
@@ -178,6 +190,7 @@ class SyncIndexesApi(_IndexesApi):
         field_name: str,
         wait: bool = None,
         ordering: WriteOrdering = None,
+        timeout: int = None,
     ) -> m.InlineResponse2007:
         """
         Delete field index for collection
@@ -187,4 +200,5 @@ class SyncIndexesApi(_IndexesApi):
             field_name=field_name,
             wait=wait,
             ordering=ordering,
+            timeout=timeout,
         )
