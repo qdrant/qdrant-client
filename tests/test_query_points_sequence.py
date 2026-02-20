@@ -151,3 +151,42 @@ def test_query_points_groups_with_tuple_sync():
 
     # Clean up
     client.delete_collection(collection_name)
+
+
+@pytest.mark.asyncio
+async def test_query_points_groups_with_tuple_async():
+    """Test that query_points_groups accepts tuple (Sequence[float]) for async client"""
+    client = AsyncQdrantClient(":memory:")
+    collection_name = "test_query_groups_tuple_async"
+
+    # Create collection
+    await client.create_collection(
+        collection_name=collection_name,
+        vectors_config=models.VectorParams(size=10, distance=models.Distance.COSINE),
+    )
+
+    # Add some test points with groups
+    await client.upsert(
+        collection_name=collection_name,
+        points=[
+            models.PointStruct(
+                id=i,
+                vector=[float(i % 3)] * 10,
+                payload={"group": i % 3, "value": i},
+            )
+            for i in range(9)
+        ],
+    )
+
+    # Test with tuple (which is a Sequence but not a list)
+    query_tuple = tuple([1.0] * 10)
+    result = await client.query_points_groups(
+        collection_name=collection_name,
+        query=query_tuple,
+        group_by="group",
+        limit=3,
+    )
+    assert len(result.groups) >= 1
+
+    # Clean up
+    await client.delete_collection(collection_name)

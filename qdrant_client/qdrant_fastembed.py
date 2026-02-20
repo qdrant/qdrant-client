@@ -851,6 +851,10 @@ class QdrantFastembedMixin(QdrantBase):
         if query is None:
             return None
 
+        if isinstance(query, Sequence):
+            # Generic Sequence fallback - convert any Sequence[float] to list
+            return models.NearestQuery(nearest=list(query))
+
         raise ValueError(f"Unsupported query type: {type(query)}")
 
     def _resolve_query_request(self, query: models.QueryRequest) -> models.QueryRequest:
