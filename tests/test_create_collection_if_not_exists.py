@@ -89,3 +89,42 @@ async def test_create_collection_if_not_exists_false_async():
 
     # Clean up
     await client.delete_collection(collection_name)
+
+
+def test_create_collection_without_if_not_exists_raises_on_duplicate_sync():
+    """Test that creating an existing collection without if_not_exists=True raises an error."""
+    client = QdrantClient(":memory:")
+    collection_name = "test_duplicate_error"
+
+    client.create_collection(
+        collection_name=collection_name,
+        vectors_config=models.VectorParams(size=10, distance=models.Distance.COSINE),
+    )
+
+    with pytest.raises(ValueError, match="already exists"):
+        client.create_collection(
+            collection_name=collection_name,
+            vectors_config=models.VectorParams(size=10, distance=models.Distance.COSINE),
+        )
+
+    client.delete_collection(collection_name)
+
+
+@pytest.mark.asyncio
+async def test_create_collection_without_if_not_exists_raises_on_duplicate_async():
+    """Test that creating an existing collection without if_not_exists=True raises an error (async)."""
+    client = AsyncQdrantClient(":memory:")
+    collection_name = "test_duplicate_error_async"
+
+    await client.create_collection(
+        collection_name=collection_name,
+        vectors_config=models.VectorParams(size=10, distance=models.Distance.COSINE),
+    )
+
+    with pytest.raises(ValueError, match="already exists"):
+        await client.create_collection(
+            collection_name=collection_name,
+            vectors_config=models.VectorParams(size=10, distance=models.Distance.COSINE),
+        )
+
+    await client.delete_collection(collection_name)
