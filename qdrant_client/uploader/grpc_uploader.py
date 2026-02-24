@@ -21,7 +21,7 @@ def upload_batch_grpc(
     max_retries: int,
     shard_key_selector: grpc.ShardKeySelector | None,  # type: ignore[name-defined]
     update_filter: grpc.Filter | None,
-    update_mode: grpc.UpdateMode | None = None,
+    update_mode: grpc.UpdateMode = None,
     wait: bool = False,
     timeout: int | None = None,
 ) -> bool:
