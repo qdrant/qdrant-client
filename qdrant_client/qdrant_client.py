@@ -78,6 +78,10 @@ class QdrantClient(QdrantFastembedMixin):
             inherited from `httpx` (default: 100)
         headers: Custom headers to send with every request.
         **kwargs: Additional arguments passed directly into REST client initialization
+
+    Raises:
+        ValueError: If more than one of ``location``, ``url``, ``host``, or ``path`` is specified,
+            or if ``cloud_inference`` is used with a local Qdrant instance.
     """
 
     def __init__(
@@ -183,6 +187,9 @@ class QdrantClient(QdrantFastembedMixin):
 
         Returns:
             An instance of raw gRPC client, generated from Protobuf
+
+        Raises:
+            NotImplementedError: If the client is not connected to a remote Qdrant instance (e.g. using in-memory mode).
         """
         if isinstance(self._client, QdrantRemote):
             return self._client.grpc_collections
@@ -195,6 +202,9 @@ class QdrantClient(QdrantFastembedMixin):
 
         Returns:
             An instance of raw gRPC client, generated from Protobuf
+
+        Raises:
+            NotImplementedError: If the client is not connected to a remote Qdrant instance (e.g. using in-memory mode).
         """
         if isinstance(self._client, QdrantRemote):
             return self._client.grpc_points
@@ -207,6 +217,9 @@ class QdrantClient(QdrantFastembedMixin):
 
         Returns:
             An instance of raw REST API client, generated from OpenAPI schema
+
+        Raises:
+            NotImplementedError: If the client is not connected to a remote Qdrant instance (e.g. using in-memory mode).
         """
         if isinstance(self._client, QdrantRemote):
             return self._client.http
@@ -1631,8 +1644,12 @@ class QdrantClient(QdrantFastembedMixin):
             sparse_vectors_config: Override for sparse vector-specific configuration
             strict_mode_config: Override for strict mode configuration
             metadata: Arbitrary JSON-like metadata for the collection, will be merged with already stored metadata
+
         Returns:
             Operation result
+
+        Raises:
+            ValueError: If both ``optimizer_config`` and ``optimizers_config`` are specified.
         """
         if "optimizer_config" in kwargs and optimizers_config is not None:
             raise ValueError(
