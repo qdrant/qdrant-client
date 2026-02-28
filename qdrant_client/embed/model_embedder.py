@@ -1,5 +1,5 @@
 import os
-from collections import defaultdict
+from collections import defaultdict, deque
 from copy import deepcopy
 from multiprocessing import get_all_start_methods
 from typing import Iterable, Any, Type, get_args
@@ -51,7 +51,7 @@ class ModelEmbedder:
         **kwargs: Any,
     ):
         self._batch_accumulator: dict[str, list[INFERENCE_OBJECT_TYPES]] = {}
-        self._embed_storage: dict[str, list[NumericVector]] = {}
+        self._embed_storage: dict[str, deque[NumericVector]] = {}
         self._embed_inspector = InspectorEmbed(parser=parser)
         self._is_builtin_embedder_available = self._check_builtin_embedder_availability(
             is_local_mode, server_version
@@ -445,9 +445,9 @@ class ModelEmbedder:
                     raise ValueError(f"{model} is not among supported models")
 
         for model, data in self._batch_accumulator.items():
-            self._embed_storage[model] = embed(
+            self._embed_storage[model] = deque(embed(
                 objects=data, model_name=model, batch_size=inference_batch_size
-            )
+            ))
         self._batch_accumulator.clear()
 
     def _next_embed(self, model_name: str) -> NumericVector:
@@ -459,7 +459,7 @@ class ModelEmbedder:
         Returns:
             NumericVector: computed embedding
         """
-        return self._embed_storage[model_name].pop(0)
+        return self._embed_storage[model_name].popleft()
 
     def _resolve_inference_object(self, data: models.VectorStruct) -> models.VectorStruct:
         """Resolve inference object into a model
