@@ -77,6 +77,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         local_inference_batch_size: inference batch size used by fastembed when using local inference with `models.Document` and other models.
         pool_size: connection pool size, Default: None. Default value for gRPC connection pool is 3, rest default is
             inherited from `httpx` (default: 100)
+        headers: Custom headers to send with every request.
         **kwargs: Additional arguments passed directly into REST client initialization
     """
 
@@ -100,6 +101,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         local_inference_batch_size: int | None = None,
         check_compatibility: bool = True,
         pool_size: int | None = None,
+        headers: dict[str, str] | None = None,
         **kwargs: Any,
     ):
         self._init_options = {
@@ -139,6 +141,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
                 auth_token_provider=auth_token_provider,
                 check_compatibility=check_compatibility,
                 pool_size=pool_size,
+                headers=headers,
                 **kwargs,
             )
             server_version = self._client.server_version

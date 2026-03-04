@@ -59,6 +59,7 @@ class QdrantRemote(QdrantBase):
         auth_token_provider: Callable[[], str] | Callable[[], Awaitable[str]] | None = None,
         check_compatibility: bool = True,
         pool_size: int | None = None,
+        headers: dict[str, str] | None = None,
         **kwargs: Any,
     ):
         super().__init__(**kwargs)
@@ -142,6 +143,12 @@ class QdrantRemote(QdrantBase):
         http2 = kwargs.pop("http2", False)
         self._grpc_headers = []
         self._rest_headers = {k: v for k, v in kwargs.pop("metadata", {}).items()}
+
+        if headers:
+            for key, value in headers.items():
+                self._rest_headers[key] = value
+                self._grpc_headers.append((key, value))
+
         if api_key is not None:
             if self._scheme == "http":
                 show_warning(
