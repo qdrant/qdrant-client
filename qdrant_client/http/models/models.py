@@ -1165,15 +1165,25 @@ class HardwareUsage(BaseModel):
     Usage of the hardware resources, spent to process the request
     """
 
-    cpu: int = Field(..., description="Usage of the hardware resources, spent to process the request")
-    payload_io_read: int = Field(..., description="Usage of the hardware resources, spent to process the request")
-    payload_io_write: int = Field(..., description="Usage of the hardware resources, spent to process the request")
-    payload_index_io_read: int = Field(..., description="Usage of the hardware resources, spent to process the request")
-    payload_index_io_write: int = Field(
-        ..., description="Usage of the hardware resources, spent to process the request"
+    cpu: int = Field(default=0, description="Usage of the hardware resources, spent to process the request")
+    payload_io_read: int = Field(
+        default=0, description="Usage of the hardware resources, spent to process the request"
     )
-    vector_io_read: int = Field(..., description="Usage of the hardware resources, spent to process the request")
-    vector_io_write: int = Field(..., description="Usage of the hardware resources, spent to process the request")
+    payload_io_write: int = Field(
+        default=0, description="Usage of the hardware resources, spent to process the request"
+    )
+    payload_index_io_read: int = Field(
+        default=0, description="Usage of the hardware resources, spent to process the request"
+    )
+    payload_index_io_write: int = Field(
+        default=0, description="Usage of the hardware resources, spent to process the request"
+    )
+    vector_io_read: int = Field(
+        default=0, description="Usage of the hardware resources, spent to process the request"
+    )
+    vector_io_write: int = Field(
+        default=0, description="Usage of the hardware resources, spent to process the request"
+    )
 
 
 class HasIdCondition(BaseModel, extra="forbid"):
