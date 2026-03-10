@@ -27,7 +27,9 @@ class ModelInstance(BaseModel, Generic[T], arbitrary_types_allowed=True):  # typ
 
 
 class Embedder:
-    def __init__(self, threads: int | None = None, **kwargs: Any) -> None:
+    def __init__(
+        self, threads: int | None = None, use_core_bm25: bool = True, **kwargs: Any
+    ) -> None:
         self.embedding_models: dict[str, list[ModelInstance[TextEmbedding]]] = defaultdict(list)
         self.sparse_embedding_models: dict[str, list[ModelInstance[SparseTextEmbedding]]] = (
             defaultdict(list)
@@ -42,6 +44,7 @@ class Embedder:
             str, list[ModelInstance[LateInteractionMultimodalEmbedding]]
         ] = defaultdict(list)
         self._threads = threads
+        self._use_core_bm25 = use_core_bm25
 
     def get_or_init_model(
         self,
@@ -227,7 +230,7 @@ class Embedder:
         options: dict[str, Any] | None = None,
         is_query: bool = False,
         batch_size: int = 8,
-    ) -> NumericVector:
+    ) -> NumericVector | list[models.Document]:
         if (texts is None) is (images is None):
             raise ValueError("Either documents or images should be provided")
 
@@ -294,7 +297,12 @@ class Embedder:
         options: dict[str, Any] | None,
         is_query: bool,
         batch_size: int,
-    ) -> list[models.SparseVector]:
+    ) -> list[models.SparseVector] | list[models.Document]:
+        if self._use_core_bm25 and model_name == "Qdrant/bm25":
+            return [
+                models.Document(text=text, model=model_name, options=options) for text in texts
+            ]
+
         embedding_model_inst = self.get_or_init_sparse_model(
             model_name=model_name, **options or {}
         )
