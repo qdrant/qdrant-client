@@ -50,13 +50,13 @@ class ModelEmbedder:
         **kwargs: Any,
     ):
         self._batch_accumulator: dict[str, list[INFERENCE_OBJECT_TYPES]] = {}
-        self._embed_storage: dict[str, list[NumericVector]] = {}
+        self._embed_storage: dict[str, list[NumericVector] | list[models.Document]] = {}
         self._embed_inspector = InspectorEmbed(parser=parser)
         self._is_builtin_embedder_available = self._check_builtin_embedder_availability(
             is_local_mode=is_local_mode, server_version=server_version
         )  # check if bm25 is available in Qdrant core
         self._fastembed_available = FastEmbedMisc.is_installed()
-        self.embedder = Embedder(use_bm25_core=self._is_builtin_embedder_available, **kwargs)
+        self.embedder = Embedder(use_core_bm25=self._is_builtin_embedder_available, **kwargs)
 
     @staticmethod
     def _check_builtin_embedder_availability(
@@ -347,7 +347,7 @@ class ModelEmbedder:
 
         if isinstance(data, list):
             for i, value in enumerate(data):
-                if not isinstance(value, get_args(INFERENCE_OBJECT_TYPES)):  # if value is vector
+                if not isinstance(value, get_args(INFERENCE_OBJECT_TYPES)):  # if value is a vector
                     return data
 
                 data[i] = self._drain_accumulator(
@@ -379,7 +379,9 @@ class ModelEmbedder:
             objects: list[INFERENCE_OBJECT_TYPES], model_name: str, batch_size: int
         ) -> list[NumericVector] | list[models.Document]:
             """
-            Assemble batches by options and data type based groups, embeds and return embeddings in the original order
+            Assemble batches by options and data type based groups, embeds and return embeddings in the original order.
+            If models.Document model is bm25 and Qdrant version is 1.15.3 or higher, return the document without changes
+            to be processed by Qdrant itself.
             """
             unique_options: list[dict[str, Any]] = []
             unique_options_is_text: list[bool] = []  # multimodal models can have both text

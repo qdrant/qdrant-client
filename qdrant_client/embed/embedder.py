@@ -298,7 +298,7 @@ class Embedder:
         is_query: bool,
         batch_size: int,
     ) -> list[models.SparseVector] | list[models.Document]:
-        if self._use_core_bm25 and model_name == "Qdrant/bm25":
+        if self._use_core_bm25 and model_name.lower() == "Qdrant/bm25".lower():
             return [
                 models.Document(text=text, model=model_name, options=options) for text in texts
             ]
@@ -442,8 +442,7 @@ class Embedder:
         """
         return FastEmbedMisc.is_supported_late_interaction_multimodal_model(model_name)
 
-    @classmethod
-    def is_supported_sparse_model(cls, model_name: str) -> bool:
+    def is_supported_sparse_model(self, model_name: str) -> bool:
         """Check if model is supported by fastembed
 
         Args:
@@ -452,4 +451,6 @@ class Embedder:
         Returns:
             bool: True if the model is supported, False otherwise.
         """
+        if self._use_core_bm25 and model_name.lower() == "Qdrant/bm25".lower():
+            return True
         return FastEmbedMisc.is_supported_sparse_model(model_name)
