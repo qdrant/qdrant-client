@@ -789,6 +789,9 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         if query is None:
             return None
 
+        if isinstance(query, (bytes, bytearray, range)):
+            raise ValueError(f"Unsupported query type: {type(query)}")
+
         if isinstance(query, Sequence):
             # Generic Sequence fallback - convert any Sequence[float] to list
             return models.NearestQuery(nearest=list(query))

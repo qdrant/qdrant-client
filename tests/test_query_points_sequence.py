@@ -190,3 +190,76 @@ async def test_query_points_groups_with_tuple_async():
 
     # Clean up
     await client.delete_collection(collection_name)
+
+
+def test_query_points_with_deque_sync():
+    """Test that query_points accepts deque (generic Sequence[float]) for sync client"""
+    from collections import deque
+
+    client = QdrantClient(":memory:")
+    collection_name = "test_query_deque"
+
+    client.create_collection(
+        collection_name=collection_name,
+        vectors_config=models.VectorParams(size=10, distance=models.Distance.COSINE),
+    )
+
+    client.upsert(
+        collection_name=collection_name,
+        points=[
+            models.PointStruct(
+                id=i,
+                vector=[float(i)] * 10,
+                payload={"value": i},
+            )
+            for i in range(5)
+        ],
+    )
+
+    # Test with deque (a Sequence that is not list/tuple/ndarray)
+    query_deque = deque([1.0] * 10)
+    result = client.query_points(
+        collection_name=collection_name,
+        query=query_deque,
+        limit=5,
+    )
+    assert len(result.points) == 5
+
+    client.delete_collection(collection_name)
+
+
+@pytest.mark.asyncio
+async def test_query_points_with_deque_async():
+    """Test that query_points accepts deque (generic Sequence[float]) for async client"""
+    from collections import deque
+
+    client = AsyncQdrantClient(":memory:")
+    collection_name = "test_query_deque_async"
+
+    await client.create_collection(
+        collection_name=collection_name,
+        vectors_config=models.VectorParams(size=10, distance=models.Distance.COSINE),
+    )
+
+    await client.upsert(
+        collection_name=collection_name,
+        points=[
+            models.PointStruct(
+                id=i,
+                vector=[float(i)] * 10,
+                payload={"value": i},
+            )
+            for i in range(5)
+        ],
+    )
+
+    # Test with deque (a Sequence that is not list/tuple/ndarray)
+    query_deque = deque([1.0] * 10)
+    result = await client.query_points(
+        collection_name=collection_name,
+        query=query_deque,
+        limit=5,
+    )
+    assert len(result.points) == 5
+
+    await client.delete_collection(collection_name)
