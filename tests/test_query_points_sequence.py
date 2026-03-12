@@ -225,6 +225,28 @@ def test_query_points_with_deque_sync():
     )
     assert len(result.points) == 5
 
+    # Verify that bytes, bytearray, and range are rejected
+    with pytest.raises(ValueError, match="Unsupported query type"):
+        client.query_points(
+            collection_name=collection_name,
+            query=b"\x00" * 10,
+            limit=5,
+        )
+
+    with pytest.raises(ValueError, match="Unsupported query type"):
+        client.query_points(
+            collection_name=collection_name,
+            query=bytearray(10),
+            limit=5,
+        )
+
+    with pytest.raises(ValueError, match="Unsupported query type"):
+        client.query_points(
+            collection_name=collection_name,
+            query=range(10),
+            limit=5,
+        )
+
     client.delete_collection(collection_name)
 
 
@@ -261,5 +283,27 @@ async def test_query_points_with_deque_async():
         limit=5,
     )
     assert len(result.points) == 5
+
+    # Verify that bytes, bytearray, and range are rejected
+    with pytest.raises(ValueError, match="Unsupported query type"):
+        await client.query_points(
+            collection_name=collection_name,
+            query=b"\x00" * 10,
+            limit=5,
+        )
+
+    with pytest.raises(ValueError, match="Unsupported query type"):
+        await client.query_points(
+            collection_name=collection_name,
+            query=bytearray(10),
+            limit=5,
+        )
+
+    with pytest.raises(ValueError, match="Unsupported query type"):
+        await client.query_points(
+            collection_name=collection_name,
+            query=range(10),
+            limit=5,
+        )
 
     await client.delete_collection(collection_name)
