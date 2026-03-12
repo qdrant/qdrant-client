@@ -68,6 +68,12 @@ if [[ $PYTEST_EXIT_CODE -ne 0 ]]; then
   exit 1
 fi
 
+echo "Running inference tests without fastembed"
+
+pip3 uninstall fastembed -y
+
+pytest -x tests/test_fastembed.py
+pytest -x tests/embed_tests/test_local_inference.py
 
 echo "Ok, that is enough"
 

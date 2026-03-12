@@ -27,7 +27,9 @@ class ModelInstance(BaseModel, Generic[T], arbitrary_types_allowed=True):  # typ
 
 
 class Embedder:
-    def __init__(self, threads: int | None = None, **kwargs: Any) -> None:
+    def __init__(
+        self, threads: int | None = None, use_core_bm25: bool = True, **kwargs: Any
+    ) -> None:
         self.embedding_models: dict[str, list[ModelInstance[TextEmbedding]]] = defaultdict(list)
         self.sparse_embedding_models: dict[str, list[ModelInstance[SparseTextEmbedding]]] = (
             defaultdict(list)
@@ -42,6 +44,7 @@ class Embedder:
             str, list[ModelInstance[LateInteractionMultimodalEmbedding]]
         ] = defaultdict(list)
         self._threads = threads
+        self._use_core_bm25 = use_core_bm25
 
     def get_or_init_model(
         self,
@@ -227,7 +230,7 @@ class Embedder:
         options: dict[str, Any] | None = None,
         is_query: bool = False,
         batch_size: int = 8,
-    ) -> NumericVector:
+    ) -> NumericVector | list[models.Document]:
         if (texts is None) is (images is None):
             raise ValueError("Either documents or images should be provided")
 
@@ -237,7 +240,7 @@ class Embedder:
                 embeddings = self._embed_dense_text(
                     texts, model_name, options, is_query, batch_size
                 )
-            elif FastEmbedMisc.is_supported_sparse_model(model_name):
+            elif self.is_supported_sparse_model(model_name):
                 embeddings = self._embed_sparse_text(
                     texts, model_name, options, is_query, batch_size
                 )
@@ -294,7 +297,12 @@ class Embedder:
         options: dict[str, Any] | None,
         is_query: bool,
         batch_size: int,
-    ) -> list[models.SparseVector]:
+    ) -> list[models.SparseVector] | list[models.Document]:
+        if self._use_core_bm25 and model_name.lower() == "Qdrant/bm25".lower():
+            return [
+                models.Document(text=text, model=model_name, options=options) for text in texts
+            ]
+
         embedding_model_inst = self.get_or_init_sparse_model(
             model_name=model_name, **options or {}
         )
@@ -434,8 +442,7 @@ class Embedder:
         """
         return FastEmbedMisc.is_supported_late_interaction_multimodal_model(model_name)
 
-    @classmethod
-    def is_supported_sparse_model(cls, model_name: str) -> bool:
+    def is_supported_sparse_model(self, model_name: str) -> bool:
         """Check if model is supported by fastembed
 
         Args:
@@ -444,4 +451,6 @@ class Embedder:
         Returns:
             bool: True if the model is supported, False otherwise.
         """
+        if self._use_core_bm25 and model_name.lower() == "Qdrant/bm25".lower():
+            return True
         return FastEmbedMisc.is_supported_sparse_model(model_name)

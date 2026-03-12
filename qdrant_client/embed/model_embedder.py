@@ -6,7 +6,6 @@ from typing import Iterable, Any, Type, get_args
 
 from pydantic import BaseModel
 
-from qdrant_client.embed.builtin_embedder import BuiltinEmbedder
 from qdrant_client.http import models
 from qdrant_client.embed.common import INFERENCE_OBJECT_TYPES
 from qdrant_client.embed.embed_inspector import InspectorEmbed
@@ -51,14 +50,13 @@ class ModelEmbedder:
         **kwargs: Any,
     ):
         self._batch_accumulator: dict[str, list[INFERENCE_OBJECT_TYPES]] = {}
-        self._embed_storage: dict[str, list[NumericVector]] = {}
+        self._embed_storage: dict[str, list[NumericVector] | list[models.Document]] = {}
         self._embed_inspector = InspectorEmbed(parser=parser)
         self._is_builtin_embedder_available = self._check_builtin_embedder_availability(
-            is_local_mode, server_version
-        )
-        self.embedder = (
-            Embedder(**kwargs) if FastEmbedMisc.is_installed() else BuiltinEmbedder(**kwargs)
-        )
+            is_local_mode=is_local_mode, server_version=server_version
+        )  # check if bm25 is available in Qdrant core
+        self._fastembed_available = FastEmbedMisc.is_installed()
+        self.embedder = Embedder(use_core_bm25=self._is_builtin_embedder_available, **kwargs)
 
     @staticmethod
     def _check_builtin_embedder_availability(
@@ -139,12 +137,7 @@ class ModelEmbedder:
             if len(raw_models) < batch_size:
                 is_small = True
 
-        if (
-            isinstance(self.embedder, BuiltinEmbedder)
-            or parallel is None
-            or parallel == 1
-            or is_small
-        ):
+        if parallel is None or parallel == 1 or is_small:
             for batch in iter_batch(raw_models, batch_size):
                 yield from self.embed_models_batch(batch, inference_batch_size=batch_size)
         else:
@@ -211,7 +204,13 @@ class ModelEmbedder:
         is_query: bool = False,
         accumulating: bool = False,
         inference_batch_size: int | None = None,
-    ) -> dict[str, BaseModel] | dict[str, NumericVector] | BaseModel | NumericVector:
+    ) -> (
+        dict[str, BaseModel]
+        | dict[str, NumericVector]
+        | BaseModel
+        | NumericVector
+        | models.Document
+    ):
         """Embed model's fields requiring inference
 
         Args:
@@ -326,7 +325,7 @@ class ModelEmbedder:
 
     def _drain_accumulator(
         self, data: models.VectorStruct, is_query: bool, inference_batch_size: int = 8
-    ) -> NumericVectorStruct:
+    ) -> NumericVectorStruct | models.Document:
         """Drain accumulator and replaces inference objects with computed embeddings
             It is assumed objects are traversed in the same order as they were added to the accumulator
 
@@ -348,7 +347,7 @@ class ModelEmbedder:
 
         if isinstance(data, list):
             for i, value in enumerate(data):
-                if not isinstance(value, get_args(INFERENCE_OBJECT_TYPES)):  # if value is vector
+                if not isinstance(value, get_args(INFERENCE_OBJECT_TYPES)):  # if value is a vector
                     return data
 
                 data[i] = self._drain_accumulator(
@@ -378,9 +377,11 @@ class ModelEmbedder:
 
         def embed(
             objects: list[INFERENCE_OBJECT_TYPES], model_name: str, batch_size: int
-        ) -> list[NumericVector]:
+        ) -> list[NumericVector] | list[models.Document]:
             """
-            Assemble batches by options and data type based groups, embeds and return embeddings in the original order
+            Assemble batches by options and data type based groups, embeds and return embeddings in the original order.
+            If models.Document model is bm25 and Qdrant version is 1.15.3 or higher, return the document without changes
+            to be processed by Qdrant itself.
             """
             unique_options: list[dict[str, Any]] = []
             unique_options_is_text: list[bool] = []  # multimodal models can have both text
@@ -436,13 +437,10 @@ class ModelEmbedder:
                     self.embedder.is_supported_late_interaction_multimodal_model(model),
                 )
             ):
-                if isinstance(self.embedder, BuiltinEmbedder):
-                    raise ValueError(
-                        f"{model} is not among supported models. "
-                        f"Have you forgotten to set `cloud_inference` or install `fastembed` for local inference?"
-                    )
-                else:
-                    raise ValueError(f"{model} is not among supported models")
+                raise ValueError(
+                    f"{model} is not found among supported models."
+                    f"Check if `cloud_inference` is set to True or `fastembed` is installed (for local inference)?"
+                )
 
         for model, data in self._batch_accumulator.items():
             self._embed_storage[model] = embed(
@@ -450,14 +448,14 @@ class ModelEmbedder:
             )
         self._batch_accumulator.clear()
 
-    def _next_embed(self, model_name: str) -> NumericVector:
+    def _next_embed(self, model_name: str) -> NumericVector | models.Document:
         """Get next computed embedding from embedded batch
 
         Args:
             model_name: str - retrieve embedding from the storage by this model name
 
         Returns:
-            NumericVector: computed embedding
+            NumericVector | models.Document : computed embedding
         """
         return self._embed_storage[model_name].pop(0)
 
