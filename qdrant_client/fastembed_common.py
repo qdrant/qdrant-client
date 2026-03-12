@@ -74,7 +74,7 @@ class FastEmbedMisc:
         # If it's not, ask the user to install it
         raise ImportError(
             "fastembed is not installed."
-            " Please install it to enable fast vector indexing with `pip install fastembed`."
+            " Please install it to compute embedding for document implicitly with `pip install fastembed`."
         )
 
     @classmethod

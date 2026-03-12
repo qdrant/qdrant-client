@@ -240,7 +240,7 @@ class Embedder:
                 embeddings = self._embed_dense_text(
                     texts, model_name, options, is_query, batch_size
                 )
-            elif FastEmbedMisc.is_supported_sparse_model(model_name):
+            elif self.is_supported_sparse_model(model_name):
                 embeddings = self._embed_sparse_text(
                     texts, model_name, options, is_query, batch_size
                 )

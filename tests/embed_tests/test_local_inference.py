@@ -20,7 +20,6 @@ from qdrant_client.fastembed_common import (
     ImageEmbedding,
 )
 
-
 COLLECTION_NAME = "inference_collection"
 DENSE_MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
 DENSE_DIM = 384
@@ -1516,7 +1515,6 @@ def test_upload_mixed_batches_upload_collection(parallel, cached_embeddings):
     # endregion
 
 
-@pytest.mark.skip
 def test_upsert_batch_with_different_options():
     bm25_name = "Qdrant/bm25"
     local_client = QdrantClient(":memory:")
@@ -1555,7 +1553,6 @@ def test_upsert_batch_with_different_options():
             vector={
                 "sparse-text-en": sparse_doc_1,
                 "sparse-text-de": sparse_doc_2,
-                **download_options,
             },
         ),
         models.PointStruct(id=1, vector={"sparse-text-en": sparse_doc_3}),
@@ -1580,7 +1577,6 @@ def test_upsert_batch_with_different_options():
     )
 
 
-@pytest.mark.skip
 def test_batch_size_propagation():
     def mock(func, kw_param_storage):
         def decorated(*args, **kwargs):
@@ -1671,7 +1667,7 @@ def mock_late_interaction_multimodal_embedding():
     qdrant_client.embed.embedder.LateInteractionMultimodalEmbedding = original_class
 
 
-@pytest.mark.skip
+@pytest.mark.skip(reason="colpali is a humongous model")
 def test_embed_multimodal(mock_late_interaction_multimodal_embedding):
     mock_cls = mock_late_interaction_multimodal_embedding
 
@@ -1735,3 +1731,49 @@ def test_embed_multimodal(mock_late_interaction_multimodal_embedding):
     assert np.allclose(np_text_vectors[0], mock_cls.text_embedding)
     assert np.allclose(np_text_vectors[1], mock_cls.text_embedding)
     assert np.allclose(np_image_vector, mock_cls.image_embedding)
+
+
+def test_bm25_core():
+    bm25_name = "Qdrant/bm25"
+    local_client = QdrantClient(":memory:")
+    remote_client = QdrantClient()
+    if remote_client.collection_exists(COLLECTION_NAME):
+        remote_client.delete_collection(COLLECTION_NAME)
+
+    remote_kwargs = {}
+    remote_client._client.upsert = arg_interceptor(remote_client._client.upsert, remote_kwargs)
+
+    sparse_doc_1 = models.Document(text="a sunny day", model=bm25_name)
+    sparse_doc_2 = models.Document(
+        text="a rainy day",
+        model=bm25_name,
+    )
+
+    sparse_vectors_config = {
+        "sparse": models.SparseVectorParams(modifier=models.Modifier.IDF),
+    }
+    for client in (local_client, remote_client):
+        client.create_collection(
+            COLLECTION_NAME, vectors_config={}, sparse_vectors_config=sparse_vectors_config
+        )
+
+    points = [
+        models.PointStruct(
+            id=0,
+            vector={
+                "sparse": sparse_doc_1,
+            },
+        ),
+        models.PointStruct(id=1, vector={"sparse": sparse_doc_2}),
+    ]
+
+    remote_client.upsert(COLLECTION_NAME, points)
+
+    for point in remote_kwargs["points"]:
+        assert isinstance(point.vector["sparse"], models.Document)
+
+    if not local_client._FASTEMBED_INSTALLED:
+        with pytest.raises(ImportError):
+            local_client.upsert(COLLECTION_NAME, points)
+    else:
+        local_client.upsert(COLLECTION_NAME, points)
