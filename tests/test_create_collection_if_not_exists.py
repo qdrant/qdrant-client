@@ -43,10 +43,11 @@ def test_create_collection_if_not_exists_false_sync(sync_client):
     """Test that create_collection with if_not_exists=False still creates collection"""
     collection_name = "test_collection_if_not_exists_false"
 
-    # Create collection without if_not_exists (default behavior)
+    # Create collection with explicit if_not_exists=False
     result = sync_client.create_collection(
         collection_name=collection_name,
         vectors_config=models.VectorParams(size=10, distance=models.Distance.COSINE),
+        if_not_exists=False,
     )
     assert result is True
     assert sync_client.collection_exists(collection_name)
@@ -80,10 +81,11 @@ async def test_create_collection_if_not_exists_false_async(async_client):
     """Test that create_collection with if_not_exists=False still creates collection"""
     collection_name = "test_collection_if_not_exists_false_async"
 
-    # Create collection without if_not_exists (default behavior)
+    # Create collection with explicit if_not_exists=False
     result = await async_client.create_collection(
         collection_name=collection_name,
         vectors_config=models.VectorParams(size=10, distance=models.Distance.COSINE),
+        if_not_exists=False,
     )
     assert result is True
     assert await async_client.collection_exists(collection_name)
