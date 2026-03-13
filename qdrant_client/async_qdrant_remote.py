@@ -193,19 +193,19 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 show_warning(
                     message="Failed to obtain server version. Unable to check client-server compatibility. Set check_compatibility=False to skip version check.",
                     category=UserWarning,
-                    stacklevel=4,
+                    stacklevel=2,
                 )
             elif not is_compatible(client_version, server_version):
                 show_warning(
                     message=f"Qdrant client version {client_version} is incompatible with server version {server_version}. Major versions should match and minor version difference must not exceed 1. Set check_compatibility=False to skip version check.",
                     category=UserWarning,
-                    stacklevel=4,
+                    stacklevel=2,
                 )
         except Exception:
             show_warning(
                 message="Failed to obtain server version. Unable to check client-server compatibility. Set check_compatibility=False to skip version check.",
                 category=UserWarning,
-                stacklevel=4,
+                stacklevel=2,
             )
 
     @property
