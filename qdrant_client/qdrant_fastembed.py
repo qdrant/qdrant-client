@@ -34,14 +34,12 @@ class QdrantFastembedMixin(QdrantBase):
     DEFAULT_BATCH_SIZE = 8
     _FASTEMBED_INSTALLED: bool
 
-    def __init__(self, parser: ModelSchemaParser, is_local_mode: bool, server_version: str | None):
+    def __init__(self, parser: ModelSchemaParser, is_local_mode: bool):
         self.__class__._FASTEMBED_INSTALLED = FastEmbedMisc.is_installed()
         self._embedding_model_name: str | None = None
         self._sparse_embedding_model_name: str | None = None
 
-        self._model_embedder = ModelEmbedder(
-            parser=parser, is_local_mode=is_local_mode, server_version=server_version
-        )
+        self._model_embedder = ModelEmbedder(parser=parser, is_local_mode=is_local_mode)
         super().__init__()
 
     @classmethod
