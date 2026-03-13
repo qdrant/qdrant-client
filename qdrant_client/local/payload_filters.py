@@ -135,16 +135,16 @@ def check_datetime_range(condition: models.DatetimeRange, value: Any) -> bool:
     if dt is None:
         return False
 
-    condition.lt = make_condition_tz_aware(condition.lt)
-    condition.lte = make_condition_tz_aware(condition.lte)
-    condition.gt = make_condition_tz_aware(condition.gt)
-    condition.gte = make_condition_tz_aware(condition.gte)
+    lt = make_condition_tz_aware(condition.lt)
+    lte = make_condition_tz_aware(condition.lte)
+    gt = make_condition_tz_aware(condition.gt)
+    gte = make_condition_tz_aware(condition.gte)
 
     return (
-        (condition.lt is None or dt < condition.lt)
-        and (condition.lte is None or dt <= condition.lte)
-        and (condition.gt is None or dt > condition.gt)
-        and (condition.gte is None or dt >= condition.gte)
+        (lt is None or dt < lt)
+        and (lte is None or dt <= lte)
+        and (gt is None or dt > gt)
+        and (gte is None or dt >= gte)
     )
 
 
