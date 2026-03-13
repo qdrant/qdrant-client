@@ -20,6 +20,7 @@ from grpc import Compression
 from urllib3.util import Url, parse_url
 from urllib.parse import urljoin
 from qdrant_client.common.client_warnings import show_warning, show_warning_once
+from qdrant_client.common.retry import RetryConfig, install_retry_middleware
 from qdrant_client import grpc as grpc
 from qdrant_client._pydantic_compat import construct
 from qdrant_client.auth import BearerAuth
@@ -60,9 +61,11 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         check_compatibility: bool = True,
         pool_size: int | None = None,
         headers: dict[str, str] | None = None,
+        retry_config: RetryConfig | None = None,
         **kwargs: Any,
     ):
         super().__init__(**kwargs)
+        self._retry_config = retry_config
         self._prefer_grpc = prefer_grpc
         self._grpc_port = grpc_port
         self._grpc_options = grpc_options or {}
@@ -187,6 +190,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         self.openapi_client: AsyncApis[AsyncApiClient] = AsyncApis(
             host=self.rest_uri, **self._rest_args
         )
+        if self._retry_config is not None:
+            install_retry_middleware(self.openapi_client, self._retry_config)
         self._grpc_channel_pool: list[grpc.Channel] = []
         self._grpc_points_client_pool: list[grpc.PointsStub] | None = None
         self._grpc_collections_client_pool: list[grpc.CollectionsStub] | None = None
@@ -296,6 +301,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                         options=self._grpc_options,
                         compression=self._grpc_compression,
                         auth_token_provider=self._auth_token_provider,
+                        retry_config=self._retry_config,
                     )
                     channel_pool.append(channel)
                 self._grpc_channel_pool = channel_pool

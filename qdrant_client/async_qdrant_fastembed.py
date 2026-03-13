@@ -394,31 +394,31 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
     def _validate_collection_info(self, collection_info: models.CollectionInfo) -> None:
         (embeddings_size, distance) = self._get_model_params(model_name=self.embedding_model_name)
         vector_field_name = self.get_vector_field_name()
-        assert isinstance(
-            collection_info.config.params.vectors, dict
-        ), f"Collection have incompatible vector params: {collection_info.config.params.vectors}"
-        assert (
-            vector_field_name in collection_info.config.params.vectors
-        ), f"Collection have incompatible vector params: {collection_info.config.params.vectors}, expected {vector_field_name}"
+        assert isinstance(collection_info.config.params.vectors, dict), (
+            f"Collection have incompatible vector params: {collection_info.config.params.vectors}"
+        )
+        assert vector_field_name in collection_info.config.params.vectors, (
+            f"Collection have incompatible vector params: {collection_info.config.params.vectors}, expected {vector_field_name}"
+        )
         vector_params = collection_info.config.params.vectors[vector_field_name]
-        assert (
-            embeddings_size == vector_params.size
-        ), f"Embedding size mismatch: {embeddings_size} != {vector_params.size}"
-        assert (
-            distance == vector_params.distance
-        ), f"Distance mismatch: {distance} != {vector_params.distance}"
+        assert embeddings_size == vector_params.size, (
+            f"Embedding size mismatch: {embeddings_size} != {vector_params.size}"
+        )
+        assert distance == vector_params.distance, (
+            f"Distance mismatch: {distance} != {vector_params.distance}"
+        )
         sparse_vector_field_name = self.get_sparse_vector_field_name()
         if sparse_vector_field_name is not None:
-            assert (
-                sparse_vector_field_name in collection_info.config.params.sparse_vectors
-            ), f"Collection have incompatible vector params: {collection_info.config.params.vectors}"
+            assert sparse_vector_field_name in collection_info.config.params.sparse_vectors, (
+                f"Collection have incompatible vector params: {collection_info.config.params.vectors}"
+            )
             if self.sparse_embedding_model_name in IDF_EMBEDDING_MODELS:
                 modifier = collection_info.config.params.sparse_vectors[
                     sparse_vector_field_name
                 ].modifier
-                assert (
-                    modifier == models.Modifier.IDF
-                ), f"{self.sparse_embedding_model_name} requires modifier IDF, current modifier is {modifier}"
+                assert modifier == models.Modifier.IDF, (
+                    f"{self.sparse_embedding_model_name} requires modifier IDF, current modifier is {modifier}"
+                )
 
     def get_embedding_size(self, model_name: str | None = None) -> int:
         """Get the size of the embeddings produced by the specified model.
