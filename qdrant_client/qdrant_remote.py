@@ -256,8 +256,13 @@ class QdrantRemote(QdrantBase):
                     category=UserWarning,
                     stacklevel=4,
                 )
-        except Exception as er:
-            logging.debug(f"Unable to get server version: {er}, server version defaults to None")
+        except Exception:
+            show_warning(
+                message="Failed to obtain server version. Unable to check client-server compatibility."
+                " Set check_compatibility=False to skip version check.",
+                category=UserWarning,
+                stacklevel=4,
+            )
 
     @property
     def closed(self) -> bool:

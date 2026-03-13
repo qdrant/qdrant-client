@@ -20,8 +20,6 @@ COLLECTION_NAME = "async_test_collection"
 @pytest.mark.asyncio
 @pytest.mark.parametrize("prefer_grpc", [True, False])
 async def test_async_qdrant_client(prefer_grpc):
-    major, minor, patch, dev = read_version()
-
     client = AsyncQdrantClient(prefer_grpc=prefer_grpc, timeout=15)
     collection_params = dict(
         collection_name=COLLECTION_NAME,
@@ -486,7 +484,7 @@ async def test_async_auth():
     async def async_auth_token_provider():
         nonlocal token
         nonlocal call_num
-        await asyncio.sleep(0.1)
+        await asyncio.sleep(0.3)
         token = f"token_{call_num}"
         call_num += 1
         return token
@@ -519,6 +517,7 @@ async def test_async_auth():
     def auth_token_provider():
         nonlocal sync_token
         nonlocal call_num
+        time.sleep(0.3)
         sync_token = f"token_{call_num}"
         call_num += 1
         return sync_token
@@ -546,6 +545,7 @@ async def test_async_auth():
     # Additional sync request is sent during client init to check compatibility
     client = AsyncQdrantClient(timeout=3, auth_token_provider=auth_token_provider)
     await client.get_collections()
+
     assert sync_token == "token_1"
 
     await client.get_collections()
