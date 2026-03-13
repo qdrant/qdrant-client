@@ -1809,6 +1809,7 @@ def test_auth_token_provider():
 
     # Additional sync request is sent during client init to check compatibility
     client = QdrantClient(auth_token_provider=auth_token_provider)
+    time.sleep(0.5)
     client.get_collections()
     assert token == "token_1"
     client.get_collections()
@@ -1828,6 +1829,7 @@ def test_auth_token_provider():
 
     # Additional sync http request is sent during client init to check compatibility
     client = QdrantClient(prefer_grpc=True, auth_token_provider=auth_token_provider)
+    time.sleep(0.5)
     client.get_collections()
     assert token == "token_1"
     client.get_collections()
