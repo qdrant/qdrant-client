@@ -158,13 +158,34 @@ class QdrantRemote(QdrantBase):
                 )
 
             # http2 = True
-
+            if (
+                any([header_name == "api-key" for header_name, _ in self._grpc_headers])
+                or "api-key" in self._rest_headers
+            ):
+                show_warning_once(
+                    message="`api-key` has been passed in `headers`, but it will be overridden with `api_key` "
+                    "parameter value",
+                    category=UserWarning,
+                    stacklevel=4,
+                )
             self._rest_headers["api-key"] = api_key
             self._grpc_headers.append(("api-key", api_key))
 
         client_version = importlib.metadata.version("qdrant-client")
         python_version = platform.python_version()
         user_agent = f"python-client/{client_version} python/{python_version}"
+        if "User-Agent" in self._rest_headers:
+            show_warning_once(
+                "`User-Agent` has been passed in `headers`, but "
+                f"it will be overridden with the builtin value: `{user_agent}`."
+            )
+
+        if "grpc.primary_user_agent" in grpc_options:
+            show_warning_once(
+                message=f"`grpc.primary_user_agent will be overridden with the builtin value: {user_agent}`.",
+                category=UserWarning,
+                stacklevel=4,
+            )
         self._rest_headers["User-Agent"] = user_agent
         self._grpc_options["grpc.primary_user_agent"] = user_agent
 
