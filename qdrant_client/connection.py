@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import asyncio
 import collections
 from typing import Any, Awaitable, Callable
@@ -6,6 +8,7 @@ import grpc
 
 from qdrant_client.common.client_exceptions import ResourceExhaustedResponse
 from qdrant_client.common.client_warnings import show_warning_once
+from qdrant_client.common.retry import RetryConfig, retry_async_interceptor, retry_interceptor
 
 
 # type: ignore # noqa: F401
@@ -297,6 +300,7 @@ def get_channel(
     options: dict[str, Any] | None = None,
     compression: grpc.Compression | None = None,
     auth_token_provider: Callable[[], str] | None = None,
+    retry_config: RetryConfig | None = None,
 ) -> grpc.Channel:
     # Parse gRPC client options
     _copied_options = (
@@ -308,13 +312,18 @@ def get_channel(
         new_metadata=metadata or [], auth_token_provider=auth_token_provider
     )
 
+    interceptors: list[Any] = [metadata_interceptor]
+    if retry_config is not None:
+        # Retry interceptor wraps the metadata interceptor (outermost).
+        interceptors.insert(0, retry_interceptor(retry_config))
+
     if ssl:
         ssl_creds = grpc.ssl_channel_credentials(**_ssl_cred_options)
         channel = grpc.secure_channel(f"{host}:{port}", ssl_creds, _options, compression)
-        return grpc.intercept_channel(channel, metadata_interceptor)
+        return grpc.intercept_channel(channel, *interceptors)
     else:
         channel = grpc.insecure_channel(f"{host}:{port}", _options, compression)
-        return grpc.intercept_channel(channel, metadata_interceptor)
+        return grpc.intercept_channel(channel, *interceptors)
 
 
 def get_async_channel(
@@ -325,6 +334,7 @@ def get_async_channel(
     options: dict[str, Any] | None = None,
     compression: grpc.Compression | None = None,
     auth_token_provider: Callable[[], str] | Callable[[], Awaitable[str]] | None = None,
+    retry_config: RetryConfig | None = None,
 ) -> grpc.aio.Channel:
     # Parse gRPC client options
     _copied_options = (
@@ -338,6 +348,11 @@ def get_async_channel(
         new_metadata=metadata or [], auth_token_provider=auth_token_provider
     )
 
+    interceptors: list[Any] = [metadata_interceptor]
+    if retry_config is not None:
+        # Retry interceptor outermost.
+        interceptors.insert(0, retry_async_interceptor(retry_config))
+
     if ssl:
         ssl_creds = grpc.ssl_channel_credentials(**_ssl_cred_options)
         return grpc.aio.secure_channel(
@@ -345,9 +360,9 @@ def get_async_channel(
             ssl_creds,
             _options,
             compression,
-            interceptors=[metadata_interceptor],
+            interceptors=interceptors,
         )
     else:
         return grpc.aio.insecure_channel(
-            f"{host}:{port}", _options, compression, interceptors=[metadata_interceptor]
+            f"{host}:{port}", _options, compression, interceptors=interceptors
         )

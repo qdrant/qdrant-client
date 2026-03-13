@@ -13,6 +13,7 @@ import numpy as np
 from qdrant_client import grpc as grpc
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.common.client_warnings import show_warning_once
+from qdrant_client.common.retry import RetryConfig
 from qdrant_client.conversions import common_types as types
 from qdrant_client.embed.type_inspector import Inspector
 from qdrant_client.http import ApiClient, SyncApis
@@ -77,6 +78,10 @@ class QdrantClient(QdrantFastembedMixin):
         pool_size: connection pool size, Default: None. Default value for gRPC connection pool is 3, rest default is
             inherited from `httpx` (default: 100)
         headers: Custom headers to send with every request.
+        retry_config:
+            Configuration for automatic retries with exponential backoff.
+            If ``None`` (default), no retries are performed and behaviour is unchanged.
+            Pass a ``RetryConfig`` instance to enable retries for transient failures.
         **kwargs: Additional arguments passed directly into REST client initialization
     """
 
@@ -101,6 +106,7 @@ class QdrantClient(QdrantFastembedMixin):
         check_compatibility: bool = True,
         pool_size: int | None = None,
         headers: dict[str, str] | None = None,
+        retry_config: RetryConfig | None = None,
         **kwargs: Any,
     ):
         # Saving the init options to facilitate building AsyncQdrantClient from QdrantClient and vice versa.
@@ -146,6 +152,7 @@ class QdrantClient(QdrantFastembedMixin):
                 check_compatibility=check_compatibility,
                 pool_size=pool_size,
                 headers=headers,
+                retry_config=retry_config,
                 **kwargs,
             )
 
