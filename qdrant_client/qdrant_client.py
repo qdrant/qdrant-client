@@ -116,7 +116,6 @@ class QdrantClient(QdrantFastembedMixin):
             )
         self._client: QdrantBase
 
-        server_version = None
         if location == ":memory:":
             self._client = QdrantLocal(
                 location=location,
@@ -146,7 +145,6 @@ class QdrantClient(QdrantFastembedMixin):
                 pool_size=pool_size,
                 **kwargs,
             )
-            server_version = self._client.server_version
 
         if isinstance(self._client, QdrantLocal) and cloud_inference:
             raise ValueError(
@@ -159,7 +157,6 @@ class QdrantClient(QdrantFastembedMixin):
         super().__init__(
             parser=self._inference_inspector.parser,
             is_local_mode=isinstance(self._client, QdrantLocal),
-            server_version=server_version,
         )  # If we'd like to pass any kwargs to the parent class or ignore unexpected kwargs,
         # we will need to pop them from **kwargs and call super().__init__ before creating QdrantRemote instance.
         # Otherwise, they might be passed to QdrantRemote as httpx kwargs.

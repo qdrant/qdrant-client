@@ -46,41 +46,14 @@ class ModelEmbedder:
         self,
         parser: ModelSchemaParser | None = None,
         is_local_mode: bool = False,
-        server_version: str | None = None,
         **kwargs: Any,
     ):
         self._batch_accumulator: dict[str, list[INFERENCE_OBJECT_TYPES]] = {}
         self._embed_storage: dict[str, list[NumericVector] | list[models.Document]] = {}
         self._embed_inspector = InspectorEmbed(parser=parser)
-        self._is_builtin_embedder_available = self._check_builtin_embedder_availability(
-            is_local_mode=is_local_mode, server_version=server_version
-        )  # check if bm25 is available in Qdrant core
+        self._is_builtin_embedder_available = not is_local_mode
         self._fastembed_available = FastEmbedMisc.is_installed()
         self.embedder = Embedder(use_core_bm25=self._is_builtin_embedder_available, **kwargs)
-
-    @staticmethod
-    def _check_builtin_embedder_availability(
-        is_local_mode: bool, server_version: str | None
-    ) -> bool:
-        if is_local_mode:
-            return False
-
-        if (
-            server_version is None
-        ):  # failed to detect server version, it might happen due to security or network
-            # problems even on supported server versions, so we are not blocking usage of BuiltinEmbedder.
-            return True
-
-        try:
-            major, minor, patch = server_version.split(".")
-            patch = patch.split("-")[0]
-
-            if (int(major), int(minor), int(patch)) >= (1, 15, 3):
-                return True
-
-            return False
-        except Exception:
-            return True
 
     def embed_models(
         self,
