@@ -180,7 +180,7 @@ class QdrantRemote(QdrantBase):
                 f"it will be overridden with the builtin value: `{user_agent}`."
             )
 
-        if "grpc.primary_user_agent" in grpc_options:
+        if grpc_options is not None and "grpc.primary_user_agent" in grpc_options:
             show_warning_once(
                 message=f"`grpc.primary_user_agent will be overridden with the builtin value: {user_agent}`.",
                 category=UserWarning,
