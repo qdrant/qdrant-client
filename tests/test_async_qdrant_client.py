@@ -517,7 +517,7 @@ async def test_async_auth():
     def auth_token_provider():
         nonlocal sync_token
         nonlocal call_num
-        time.sleep(0.3)
+
         sync_token = f"token_{call_num}"
         call_num += 1
         return sync_token
@@ -535,15 +535,9 @@ async def test_async_auth():
     sync_token = ""
     call_num = 0
 
-    def auth_token_provider():
-        nonlocal sync_token
-        nonlocal call_num
-        sync_token = f"token_{call_num}"
-        call_num += 1
-        return sync_token
-
     # Additional sync request is sent during client init to check compatibility
     client = AsyncQdrantClient(timeout=3, auth_token_provider=auth_token_provider)
+    time.sleep(0.5)  # sync request is sent in a thread, need some time to send the request
     await client.get_collections()
 
     assert sync_token == "token_1"
