@@ -2548,7 +2548,8 @@ class QdrantClient(QdrantFastembedMixin):
                 raise ValueError exception
 
         Raises:
-            ValueError: If `recreate_on_collision` is False and a destination collection already exists.
+            ValueError: If `recreate_on_collision` is False and a destination collection already exists, or if
+                attempting to migrate collections that use custom shards.
         """
         migrate(
             self,
