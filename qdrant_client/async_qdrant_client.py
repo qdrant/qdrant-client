@@ -245,9 +245,10 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             List of query responses
 
         Raises:
-            AssertionError: If unknown keyword arguments are provided.
+            TypeError: If unknown keyword arguments are provided.
         """
-        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+        if kwargs:
+            raise TypeError(f"Unknown keyword arguments: {list(kwargs.keys())}")
         requests = self._resolve_query_batch_request(requests)
         if not self.cloud_inference and self._inference_inspector.inspect(requests):
             requests = list(
