@@ -79,6 +79,9 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             inherited from `httpx` (default: 100)
         headers: Custom headers to send with every request.
         **kwargs: Additional arguments passed directly into REST client initialization
+
+    Raises:
+        ValueError: If mutually exclusive initialization arguments are provided, or if cloud inference is requested in local mode.
     """
 
     def __init__(
@@ -168,6 +171,9 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
     def grpc_collections(self) -> grpc.CollectionsStub:
         """gRPC client for collections methods
 
+        Raises:
+            NotImplementedError: If the current client mode does not support gRPC.
+
         Returns:
             An instance of raw gRPC client, generated from Protobuf
         """
@@ -179,6 +185,9 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
     def grpc_points(self) -> grpc.PointsStub:
         """gRPC client for points methods
 
+        Raises:
+            NotImplementedError: If the current client mode does not support gRPC.
+
         Returns:
             An instance of raw gRPC client, generated from Protobuf
         """
@@ -189,6 +198,9 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
     @property
     def http(self) -> AsyncApis[AsyncApiClient]:
         """REST Client
+
+        Raises:
+            NotImplementedError: If the current client mode does not support REST.
 
         Returns:
             An instance of raw REST API client, generated from OpenAPI schema
@@ -231,6 +243,9 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
 
         Returns:
             List of query responses
+
+        Raises:
+            AssertionError: If unknown keyword arguments are provided.
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
         requests = self._resolve_query_batch_request(requests)
@@ -359,6 +374,9 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
 
         Returns:
             QueryResponse structure containing list of found close points with similarity scores.
+
+        Raises:
+            AssertionError: If unknown keyword arguments are provided.
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
         query = self._resolve_query(query)
@@ -525,6 +543,9 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
          Returns:
             List of groups with not more than `group_size` hits in each group.
             Each group also contains an id of the group, which is the value of the payload field.
+
+        Raises:
+            AssertionError: If unknown keyword arguments are provided.
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
         query = self._resolve_query(query)
@@ -610,6 +631,9 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
 
         Returns:
             Distance matrix using a pair-based encoding.
+
+        Raises:
+            AssertionError: If unknown keyword arguments are provided.
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
         return await self._client.search_matrix_pairs(
@@ -656,6 +680,9 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
 
         Returns:
             Distance matrix using an offset-based encoding.
+
+        Raises:
+            AssertionError: If unknown keyword arguments are provided.
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
         return await self._client.search_matrix_offsets(
@@ -723,6 +750,9 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         Returns:
             A pair of (List of points) and (optional offset for the next scroll request).
             If next page offset is `None` - there is no more points in the collection to scroll.
+
+        Raises:
+            AssertionError: If unknown keyword arguments are provided.
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
         return await self._client.scroll(
@@ -768,6 +798,9 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
 
         Returns:
             Amount of points in the collection matching the filter.
+
+        Raises:
+            AssertionError: If unknown keyword arguments are provided.
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
         return await self._client.count(
@@ -815,6 +848,9 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
 
         Returns:
             Unique values in the facet and the amount of points that they cover.
+
+        Raises:
+            AssertionError: If unknown keyword arguments are provided.
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
         return await self._client.facet(
@@ -872,6 +908,9 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
 
         Returns:
             Operation Result(UpdateResult)
+
+        Raises:
+            AssertionError: If unknown keyword arguments are provided.
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
         if (
@@ -958,6 +997,9 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
 
         Returns:
             Operation Result(UpdateResult)
+
+        Raises:
+            AssertionError: If unknown keyword arguments are provided.
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
         if not self.cloud_inference and self._inference_inspector.inspect(points):
@@ -1019,6 +1061,9 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
 
         Returns:
             Operation result
+
+        Raises:
+            AssertionError: If unknown keyword arguments are provided.
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
         return await self._client.delete_vectors(
@@ -1075,6 +1120,9 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
 
         Returns:
             List of points
+
+        Raises:
+            AssertionError: If unknown keyword arguments are provided.
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
         return await self._client.retrieve(
@@ -1128,6 +1176,9 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
 
         Returns:
             Operation result
+
+        Raises:
+            AssertionError: If unknown keyword arguments are provided.
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
         return await self._client.delete(
@@ -1226,6 +1277,9 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
 
         Returns:
             Operation result.
+
+        Raises:
+            AssertionError: If unknown keyword arguments are provided.
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
         return await self._client.set_payload(
@@ -1299,6 +1353,9 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
 
         Returns:
             Operation result
+
+        Raises:
+            AssertionError: If unknown keyword arguments are provided.
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
         return await self._client.overwrite_payload(
@@ -1353,6 +1410,9 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
 
         Returns:
             Operation result
+
+        Raises:
+            AssertionError: If unknown keyword arguments are provided.
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
         return await self._client.delete_payload(
@@ -1403,6 +1463,9 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
 
         Returns:
             Operation result
+
+        Raises:
+            AssertionError: If unknown keyword arguments are provided.
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
         return await self._client.clear_payload(
@@ -1444,6 +1507,9 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
 
         Returns:
             Operation results
+
+        Raises:
+            AssertionError: If unknown keyword arguments are provided.
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
         if not self.cloud_inference and self._inference_inspector.inspect(update_operations):
@@ -1479,6 +1545,9 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
 
         Returns:
             Operation result
+
+        Raises:
+            AssertionError: If unknown keyword arguments are provided.
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
         return await self._client.update_collection_aliases(
@@ -1495,6 +1564,9 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
 
         Returns:
             Collection aliases
+
+        Raises:
+            AssertionError: If unknown keyword arguments are provided.
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
         return await self._client.get_collection_aliases(collection_name=collection_name, **kwargs)
@@ -1504,6 +1576,9 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
 
         Returns:
             All aliases of all collections
+
+        Raises:
+            AssertionError: If unknown keyword arguments are provided.
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
         return await self._client.get_aliases(**kwargs)
@@ -1513,6 +1588,9 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
 
         Returns:
             List of the collections
+
+        Raises:
+            AssertionError: If unknown keyword arguments are provided.
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
         return await self._client.get_collections(**kwargs)
@@ -1525,6 +1603,9 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
 
         Returns:
             Detailed information about the collection
+
+        Raises:
+            AssertionError: If unknown keyword arguments are provided.
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
         return await self._client.get_collection(collection_name=collection_name, **kwargs)
@@ -1537,6 +1618,9 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
 
         Returns:
             True if collection exists, False if not
+
+        Raises:
+            AssertionError: If unknown keyword arguments are provided.
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
         return await self._client.collection_exists(collection_name=collection_name, **kwargs)
@@ -1570,6 +1654,11 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             sparse_vectors_config: Override for sparse vector-specific configuration
             strict_mode_config: Override for strict mode configuration
             metadata: Arbitrary JSON-like metadata for the collection, will be merged with already stored metadata
+
+        Raises:
+            ValueError: If both `optimizer_config` and `optimizers_config` are provided.
+            AssertionError: If unknown keyword arguments are provided.
+
         Returns:
             Operation result
         """
@@ -1607,6 +1696,9 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
 
         Returns:
             Operation result
+
+        Raises:
+            AssertionError: If unknown keyword arguments are provided.
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
         return await self._client.delete_collection(
@@ -1679,6 +1771,9 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
 
         Returns:
             Operation result
+
+        Raises:
+            AssertionError: If unknown keyword arguments are provided.
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
         return await self._client.create_collection(
@@ -1766,6 +1861,9 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
 
         Returns:
             Operation result
+
+        Raises:
+            AssertionError: If unknown keyword arguments are provided.
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
         warnings.warn(
@@ -1830,6 +1928,9 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             update_filter: If specified, only points that match this filter will be updated, others will be inserted
             update_mode: Allows to alter default upsert behavior, instead of inserting a point if it does not exist, or updating it if it does, can be set to insert-only or update-only strategies.
 
+
+        Raises:
+            AssertionError: If unknown keyword arguments are provided.
         """
 
         def chain(*iterables: Iterable) -> Iterable:
@@ -1975,6 +2076,9 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
 
         Returns:
             Operation Result
+
+        Raises:
+            AssertionError: If unknown keyword arguments are provided.
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
         return await self._client.create_payload_index(
@@ -2018,6 +2122,9 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
 
         Returns:
             Operation Result
+
+        Raises:
+            AssertionError: If unknown keyword arguments are provided.
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
         return await self._client.delete_payload_index(
@@ -2039,6 +2146,9 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
 
         Returns:
             List of snapshots
+
+        Raises:
+            AssertionError: If unknown keyword arguments are provided.
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
         return await self._client.list_snapshots(collection_name=collection_name, **kwargs)
@@ -2057,6 +2167,9 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
 
         Returns:
             Snapshot description
+
+        Raises:
+            AssertionError: If unknown keyword arguments are provided.
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
         return await self._client.create_snapshot(
@@ -2078,6 +2191,9 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
 
         Returns:
             True if snapshot was deleted
+
+        Raises:
+            AssertionError: If unknown keyword arguments are provided.
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
         return await self._client.delete_snapshot(
@@ -2089,6 +2205,9 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
 
         Returns:
             List of snapshots
+
+        Raises:
+            AssertionError: If unknown keyword arguments are provided.
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
         return await self._client.list_full_snapshots(**kwargs)
@@ -2106,6 +2225,9 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
 
         Returns:
             Snapshot description
+
+        Raises:
+            AssertionError: If unknown keyword arguments are provided.
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
         return await self._client.create_full_snapshot(wait=wait, **kwargs)
@@ -2124,6 +2246,9 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
 
         Returns:
             True if snapshot was deleted
+
+        Raises:
+            AssertionError: If unknown keyword arguments are provided.
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
         return await self._client.delete_full_snapshot(
@@ -2166,6 +2291,9 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
 
         Returns:
             True if snapshot was recovered
+
+        Raises:
+            AssertionError: If unknown keyword arguments are provided.
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
         return await self._client.recover_snapshot(
@@ -2189,6 +2317,9 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
 
         Returns:
             List of snapshots
+
+        Raises:
+            AssertionError: If unknown keyword arguments are provided.
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
         return await self._client.list_shard_snapshots(
@@ -2210,6 +2341,9 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
 
         Returns:
             Snapshot description
+
+        Raises:
+            AssertionError: If unknown keyword arguments are provided.
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
         return await self._client.create_shard_snapshot(
@@ -2237,6 +2371,9 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
 
         Returns:
             True if snapshot was deleted
+
+        Raises:
+            AssertionError: If unknown keyword arguments are provided.
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
         return await self._client.delete_shard_snapshot(
@@ -2281,6 +2418,9 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
 
         Returns:
             True if snapshot was recovered
+
+        Raises:
+            AssertionError: If unknown keyword arguments are provided.
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
         return await self._client.recover_shard_snapshot(
@@ -2369,6 +2509,9 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
 
         Returns:
             bool: Operation result
+
+        Raises:
+            AssertionError: If unknown keyword arguments are provided.
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
         return await self._client.cluster_collection_update(
