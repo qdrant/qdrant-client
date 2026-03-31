@@ -241,6 +241,9 @@ def parse_channel_options(options: dict[str, Any] | None = None) -> list[tuple[s
     default_options: list[tuple[str, Any]] = [
         ("grpc.max_send_message_length", -1),
         ("grpc.max_receive_message_length", -1),
+        ("grpc.enable_retries", 1),
+        ("grpc.initial_reconnect_backoff_ms", 1000),
+        ("grpc.max_reconnect_backoff_ms", 30000),
     ]
 
     if options is None:
