@@ -8,6 +8,8 @@ from pathlib import Path
 
 
 def remove_repo_from_sys_path() -> None:
+    """Remove repository paths so imports resolve from the installed distribution."""
+
     repo_root = Path(__file__).resolve().parents[1]
     excluded_paths = {
         str(repo_root),
@@ -33,6 +35,8 @@ def remove_repo_from_sys_path() -> None:
 
 
 def get_distribution_requirements() -> list[str]:
+    """Return the installed qdrant-client distribution requirements."""
+
     for distribution in importlib.metadata.distributions():
         name = distribution.metadata.get("Name", "")
         if name in {"qdrant-client", "qdrant_client"}:
@@ -42,6 +46,8 @@ def get_distribution_requirements() -> list[str]:
 
 
 def check_runtime_dependencies() -> None:
+    """Fail if pytest leaks into the installed runtime requirements."""
+
     requirements = get_distribution_requirements()
     pytest_requirements = [requirement for requirement in requirements if "pytest" in requirement.lower()]
     if pytest_requirements:
@@ -50,6 +56,8 @@ def check_runtime_dependencies() -> None:
 
 
 def import_non_test_modules() -> None:
+    """Import installed non-test qdrant_client modules and collect failures."""
+
     import qdrant_client
 
     failed_imports: list[tuple[str, str]] = []
@@ -74,6 +82,8 @@ def import_non_test_modules() -> None:
 
 
 def main() -> int:
+    """Run release package sanity checks for a built wheel."""
+
     if len(sys.argv) != 2:
         raise SystemExit("Usage: python tools/check_release_package.py <wheel-path>")
 
