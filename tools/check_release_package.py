@@ -7,6 +7,31 @@ import sys
 from pathlib import Path
 
 
+def remove_repo_from_sys_path() -> None:
+    repo_root = Path(__file__).resolve().parents[1]
+    excluded_paths = {
+        str(repo_root),
+        str(repo_root / "tools"),
+    }
+
+    normalized_excluded = {str(Path(path).resolve()) for path in excluded_paths}
+    sanitized_sys_path: list[str] = []
+    for entry in sys.path:
+        if entry == "":
+            continue
+
+        try:
+            resolved = str(Path(entry).resolve())
+        except OSError:
+            sanitized_sys_path.append(entry)
+            continue
+
+        if resolved not in normalized_excluded:
+            sanitized_sys_path.append(entry)
+
+    sys.path[:] = sanitized_sys_path
+
+
 def get_distribution_requirements() -> list[str]:
     for distribution in importlib.metadata.distributions():
         name = distribution.metadata.get("Name", "")
@@ -56,6 +81,7 @@ def main() -> int:
     if not wheel_path.exists():
         raise SystemExit(f"Wheel not found: {wheel_path}")
 
+    remove_repo_from_sys_path()
     check_runtime_dependencies()
     import_non_test_modules()
     print(f"Release package sanity checks passed for {wheel_path.name}")
