@@ -36,26 +36,30 @@ jobs:
       - name: Verify import works
         run: |
           /tmp/sanity-venv/bin/python -c "
-          import qdrant_client
-          from importlib.metadata import version
-print(f'qdrant-client {version("qdrant-client")} imported successfully')
-          from qdrant_client import QdrantClient
+          import qdrant_client;
+          from importlib.metadata import version as get_ver;
+          pkg = 'qdrant-client';
+          print(f'qdrant-client {get_ver(pkg)} imported successfully');
+          from qdrant_client import QdrantClient;
           print('QdrantClient class available')
           "
 
       - name: Verify no test deps leaked
         run: |
           /tmp/sanity-venv/bin/python -c "
+          import sys;
+          leaked = [];
+          test_deps = ['pytest', 'hypothesis', 'coverage'];
+          [leaked.append(m) for m in test_deps if __import__(m, globals(), locals(), [], 0) or False];
+          " 2>/dev/null || true
+          /tmp/sanity-venv/bin/python -c "
           import sys
-          leaked = []
           for mod in ['pytest', 'hypothesis', 'coverage']:
               try:
                   __import__(mod)
-                  leaked.append(mod)
+                  print(f'FAIL: {mod} leaked into package')
+                  sys.exit(1)
               except ImportError:
                   pass
-          if leaked:
-              print(f'FAIL: test dependencies leaked into package: {leaked}')
-              sys.exit(1)
           print('No test dependencies leaked')
           "
