@@ -37,7 +37,8 @@ jobs:
         run: |
           /tmp/sanity-venv/bin/python -c "
           import qdrant_client
-          print(f'qdrant-client {qdrant_client.__version__} imported successfully')
+          from importlib.metadata import version
+print(f'qdrant-client {version("qdrant-client")} imported successfully')
           from qdrant_client import QdrantClient
           print('QdrantClient class available')
           "
