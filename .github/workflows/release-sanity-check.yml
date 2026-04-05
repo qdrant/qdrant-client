@@ -1,0 +1,60 @@
+name: Release Sanity Check
+
+on:
+  push:
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [master, main]
+  workflow_dispatch:
+
+jobs:
+  sanity-check:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Build package
+        run: |
+          python -m pip install --upgrade pip build
+          python -m build
+
+      - name: Install from built wheel in clean venv
+        run: |
+          python -m venv /tmp/sanity-venv
+          /tmp/sanity-venv/bin/pip install dist/*.whl
+
+      - name: Verify import works
+        run: |
+          /tmp/sanity-venv/bin/python -c "
+          import qdrant_client
+          print(f'qdrant-client {qdrant_client.__version__} imported successfully')
+          from qdrant_client import QdrantClient
+          print('QdrantClient class available')
+          "
+
+      - name: Verify no test deps leaked
+        run: |
+          /tmp/sanity-venv/bin/python -c "
+          import sys
+          leaked = []
+          for mod in ['pytest', 'hypothesis', 'coverage']:
+              try:
+                  __import__(mod)
+                  leaked.append(mod)
+              except ImportError:
+                  pass
+          if leaked:
+              print(f'FAIL: test dependencies leaked into package: {leaked}')
+              sys.exit(1)
+          print('No test dependencies leaked')
+          "
