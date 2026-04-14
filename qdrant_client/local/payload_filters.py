@@ -20,7 +20,7 @@ def get_value_counts(values: list[Any]) -> list[int]:
         for value in values:
             if value is None:
                 counts.append(0)
-            elif hasattr(value, "__len__") and not isinstance(value, str):
+            elif isinstance(value, list):
                 counts.append(len(value))
             else:
                 counts.append(1)
