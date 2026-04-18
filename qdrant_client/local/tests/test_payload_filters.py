@@ -142,6 +142,76 @@ def test_nested_payload_filters():
     assert res is False
 
 
+def test_values_count_with_dict_payload():
+    """Dict payloads should count as 1 scalar value, not len(dict) keys."""
+    payload = {
+        "metadata": {"key1": "val1", "key2": "val2"},
+    }
+
+    # A dict with 2 keys should count as 1 (scalar JSON object), not 2
+    query_eq_1 = models.Filter(
+        must=[
+            models.FieldCondition(
+                key="metadata",
+                values_count=models.ValuesCount(gte=1, lte=1),
+            )
+        ]
+    )
+    assert check_filter(query_eq_1, payload, 0, has_vector={}) is True
+
+    # Should NOT match count >= 2, since dict is a single value
+    query_gte_2 = models.Filter(
+        must=[
+            models.FieldCondition(
+                key="metadata",
+                values_count=models.ValuesCount(gte=2),
+            )
+        ]
+    )
+    assert check_filter(query_gte_2, payload, 0, has_vector={}) is False
+
+    # gt and lt operators should also work correctly with dict payloads
+    query_gt_0 = models.Filter(
+        must=[
+            models.FieldCondition(
+                key="metadata",
+                values_count=models.ValuesCount(gt=0),
+            )
+        ]
+    )
+    assert check_filter(query_gt_0, payload, 0, has_vector={}) is True
+
+    query_lt_2 = models.Filter(
+        must=[
+            models.FieldCondition(
+                key="metadata",
+                values_count=models.ValuesCount(lt=2),
+            )
+        ]
+    )
+    assert check_filter(query_lt_2, payload, 0, has_vector={}) is True
+
+    # Empty dict should count as 1 (a value exists), not 0
+    empty_dict_payload = {"metadata": {}}
+    assert check_filter(query_eq_1, empty_dict_payload, 0, has_vector={}) is True
+
+    # Nested dict should also count as 1
+    nested_dict_payload = {"metadata": {"outer": {"inner": "value"}}}
+    assert check_filter(query_eq_1, nested_dict_payload, 0, has_vector={}) is True
+
+    # A list of 3 items should still count as 3
+    list_payload = {"tags": ["a", "b", "c"]}
+    query_eq_3 = models.Filter(
+        must=[
+            models.FieldCondition(
+                key="tags",
+                values_count=models.ValuesCount(gte=3, lte=3),
+            )
+        ]
+    )
+    assert check_filter(query_eq_3, list_payload, 0, has_vector={}) is True
+
+
 def test_geo_polygon_filter_query():
     payload = {
         "location": [
