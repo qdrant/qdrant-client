@@ -76,3 +76,16 @@ markers = [
 
 [tool.isort]
 known_third_party = "grpc"
+
+[tool.ruff]
+line-length = 99
+
+[tool.ruff.lint]
+# TODO: Enable more rules later
+select = ["TID251"]
+
+[tool.ruff.lint.flake8-tidy-imports.banned-api]
+"pytest".msg = "pytest is a testing library and should not be imported into application source code."
+
+[tool.ruff.lint.per-file-ignores]
+"**/tests/**" = ["TID251"]
