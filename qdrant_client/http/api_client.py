@@ -4,7 +4,7 @@ from typing import Any, Awaitable, Callable, Dict, Generic, Type, TypeVar, overl
 from urllib.parse import urljoin
 
 from httpx import AsyncClient, Client, Request, Response
-from pydantic import ValidationError
+from pydantic import TypeAdapter, ValidationError
 from qdrant_client.common.client_exceptions import ResourceExhaustedResponse
 from qdrant_client.http.api.aliases_api import AsyncAliasesApi, SyncAliasesApi
 from qdrant_client.http.api.beta_api import AsyncBetaApi, SyncBetaApi
@@ -124,7 +124,7 @@ class ApiClient:
 
         if response.status_code in [200, 201, 202]:
             try:
-                return parse_as_type(response.json(), type_)
+                return parse_as_type(response.content, type_)
             except ValidationError as e:
                 raise ResponseHandlingException(e)
         raise UnexpectedResponse.for_response(response)
@@ -213,7 +213,7 @@ class AsyncApiClient:
 
         if response.status_code in [200, 201, 202]:
             try:
-                return parse_as_type(response.json(), type_)
+                return parse_as_type(response.content, type_)
             except ValidationError as e:
                 raise ResponseHandlingException(e)
         raise UnexpectedResponse.for_response(response)
@@ -251,13 +251,9 @@ class BaseMiddleware:
 
 
 @lru_cache(maxsize=None)
-def _get_parsing_type(type_: Any, source: str) -> Any:
-    from pydantic.main import create_model
-
-    type_name = getattr(type_, "__name__", str(type_))
-    return create_model(f"ParsingModel[{type_name}] (for {source})", obj=(type_, ...))
+def _wrap_in_pydantic_model(type_: T) -> TypeAdapter[T]:
+    return TypeAdapter(type_)
 
 
-def parse_as_type(obj: Any, type_: Type[T]) -> T:
-    model_type = _get_parsing_type(type_, source=parse_as_type.__name__)
-    return model_type(obj=obj).obj
+def parse_as_type(data: bytes, type_: Type[T]) -> T:
+    return _wrap_in_pydantic_model(type_).validate_json(data)
