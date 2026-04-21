@@ -1,5 +1,4 @@
 import importlib.metadata
-import logging
 import math
 import platform
 from multiprocessing import get_all_start_methods
@@ -36,6 +35,7 @@ from qdrant_client.conversions.conversion import (
     grpc_payload_schema_to_field_type,
 )
 from qdrant_client.http import ApiClient, SyncApis, models
+from qdrant_client.context_headers import rest_headers_middleware
 from qdrant_client.parallel_processor import ParallelWorkerPool
 from qdrant_client.uploader.grpc_uploader import GrpcBatchUploader
 from qdrant_client.uploader.rest_uploader import RestBatchUploader
@@ -234,6 +234,8 @@ class QdrantRemote(QdrantBase):
             host=self.rest_uri,
             **self._rest_args,
         )
+
+        self.openapi_client.client.add_middleware(rest_headers_middleware)
 
         self._grpc_channel_pool: list[grpc.Channel] = []
         self._grpc_points_client_pool: list[grpc.PointsStub] | None = None

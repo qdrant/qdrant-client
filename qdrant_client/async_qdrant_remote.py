@@ -34,6 +34,7 @@ from qdrant_client.conversions.conversion import (
     grpc_payload_schema_to_field_type,
 )
 from qdrant_client.http import AsyncApiClient, AsyncApis, models
+from qdrant_client.context_headers import async_rest_headers_middleware
 from qdrant_client.parallel_processor import ParallelWorkerPool
 from qdrant_client.uploader.grpc_uploader import GrpcBatchUploader
 from qdrant_client.uploader.rest_uploader import RestBatchUploader
@@ -187,6 +188,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         self.openapi_client: AsyncApis[AsyncApiClient] = AsyncApis(
             host=self.rest_uri, **self._rest_args
         )
+        self.openapi_client.client.add_middleware(async_rest_headers_middleware)
         self._grpc_channel_pool: list[grpc.Channel] = []
         self._grpc_points_client_pool: list[grpc.PointsStub] | None = None
         self._grpc_collections_client_pool: list[grpc.CollectionsStub] | None = None

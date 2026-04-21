@@ -132,6 +132,7 @@ if __name__ == "__main__":
             "QdrantRemote": "AsyncQdrantRemote",
             "ApiClient": "AsyncApiClient",
             "SyncApis": "AsyncApis",
+            "rest_headers_middleware": "async_rest_headers_middleware",
         },
         exclude_methods=[
             "__del__",
