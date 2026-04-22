@@ -1,5 +1,7 @@
+import functools
 import json
 import math
+import threading
 import uuid
 from collections import OrderedDict, defaultdict
 from typing import (
@@ -84,6 +86,19 @@ EPSILON = 1.1920929e-7  # https://doc.rust-lang.org/std/f32/constant.EPSILON.htm
 # https://github.com/qdrant/qdrant/blob/7164ac4a5987d28f1c93f5712aef8e09e7d93555/lib/segment/src/spaces/simple_avx.rs#L99C10-L99C10
 
 
+def _synchronized_write(method: Callable) -> Callable:
+    # Serialize collection writes so that multi-step mutations (e.g. growing
+    # `payload`, `deleted`, and per-vector arrays inside `upsert`) stay atomic
+    # w.r.t. other writers on the same collection. The in-memory backend is
+    # explicitly test-scoped, so a coarse RLock is acceptable (see #1193).
+    @functools.wraps(method)
+    def wrapper(self: "LocalCollection", *args: Any, **kwargs: Any) -> Any:
+        with self._write_lock:
+            return method(self, *args, **kwargs)
+
+    return wrapper
+
+
 def to_jsonable_python(x: Any) -> Any:
     try:
         return json.loads(json.dumps(x, allow_nan=True))
@@ -144,6 +159,10 @@ class LocalCollection:
         self.persistent = location is not None
         self.storage = None
         self.config = config
+        # Serializes concurrent write operations (upsert / delete / payload
+        # updates / vector updates). Reentrant so write methods can delegate
+        # to each other (e.g. batch_update_points -> upsert / delete).
+        self._write_lock = threading.RLock()
         if location is not None:
             self.storage = CollectionPersistence(location, force_disable_check_same_thread)
         self.load_vectors()
@@ -2543,6 +2562,7 @@ class LocalCollection:
         if self.storage is not None:
             self.storage.persist(point)
 
+    @_synchronized_write
     def upsert(
         self,
         points: Sequence[models.PointStruct] | models.Batch,
@@ -2620,6 +2640,7 @@ class LocalCollection:
                     vector_np /= np.where(vector_norm != 0.0, vector_norm, EPSILON)
                 self.multivectors[vector_name][idx] = vector_np
 
+    @_synchronized_write
     def update_vectors(
         self, points: Sequence[types.PointVectors], update_filter: types.Filter | None = None
     ) -> None:
@@ -2644,6 +2665,7 @@ class LocalCollection:
             self._update_named_vectors(idx, fixed_vectors)
             self._persist_by_id(point_id)
 
+    @_synchronized_write
     def delete_vectors(
         self,
         vectors: Sequence[str],
@@ -2697,6 +2719,7 @@ class LocalCollection:
         else:
             raise ValueError(f"Unsupported selector type: {type(selector)}")
 
+    @_synchronized_write
     def delete(
         self,
         selector: (
@@ -2719,6 +2742,7 @@ class LocalCollection:
             )
             self.storage.persist(point)
 
+    @_synchronized_write
     def set_payload(
         self,
         payload: models.Payload,
@@ -2745,6 +2769,7 @@ class LocalCollection:
 
             self._persist_by_id(point_id)
 
+    @_synchronized_write
     def overwrite_payload(
         self,
         payload: models.Payload,
@@ -2761,6 +2786,7 @@ class LocalCollection:
             self.payload[idx] = deepcopy(to_jsonable_python(payload)) or {}
             self._persist_by_id(point_id)
 
+    @_synchronized_write
     def delete_payload(
         self,
         keys: Sequence[str],
@@ -2779,6 +2805,7 @@ class LocalCollection:
                     self.payload[idx].pop(key)
             self._persist_by_id(point_id)
 
+    @_synchronized_write
     def clear_payload(
         self,
         selector: (
@@ -2794,6 +2821,7 @@ class LocalCollection:
             self.payload[idx] = {}
             self._persist_by_id(point_id)
 
+    @_synchronized_write
     def batch_update_points(
         self,
         update_operations: Sequence[types.UpdateOperation],
