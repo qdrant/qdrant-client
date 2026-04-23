@@ -1,5 +1,6 @@
 import json
 import math
+import threading
 import uuid
 from collections import OrderedDict, defaultdict
 from typing import (
@@ -144,6 +145,12 @@ class LocalCollection:
         self.persistent = location is not None
         self.storage = None
         self.config = config
+        # Reentrant because upsert/delete call private mutators that are also
+        # reachable from other write entry points. Guards concurrent mutations
+        # of `payload`, `deleted`, `vectors`, `sparse_vectors`, `multivectors`,
+        # `ids`, `ids_inv`, and `deleted_per_vector` so that read paths never
+        # observe these arrays at mismatched lengths.
+        self._lock = threading.RLock()
         if location is not None:
             self.storage = CollectionPersistence(location, force_disable_check_same_thread)
         self.load_vectors()
@@ -2549,44 +2556,47 @@ class LocalCollection:
         update_filter: types.Filter | None = None,
         update_mode: types.UpdateMode | None = None,
     ) -> None:
-        if isinstance(points, list):
-            for point in points:
-                self._upsert_point(point, update_filter=update_filter, update_mode=update_mode)
-        elif isinstance(points, models.Batch):
-            batch = points
-            if isinstance(batch.vectors, list):
-                vectors = {DEFAULT_VECTOR_NAME: batch.vectors}
+        with self._lock:
+            if isinstance(points, list):
+                for point in points:
+                    self._upsert_point(
+                        point, update_filter=update_filter, update_mode=update_mode
+                    )
+            elif isinstance(points, models.Batch):
+                batch = points
+                if isinstance(batch.vectors, list):
+                    vectors = {DEFAULT_VECTOR_NAME: batch.vectors}
+                else:
+                    vectors = batch.vectors
+
+                for idx, point_id in enumerate(batch.ids):
+                    payload = None
+                    if batch.payloads is not None:
+                        payload = batch.payloads[idx]
+
+                    vector = {name: v[idx] for name, v in vectors.items()}
+
+                    self._upsert_point(
+                        models.PointStruct(
+                            id=point_id,
+                            payload=payload,
+                            vector=vector,
+                        ),
+                        update_filter=update_filter,
+                        update_mode=update_mode,
+                    )
             else:
-                vectors = batch.vectors
+                raise ValueError(f"Unsupported type: {type(points)}")
 
-            for idx, point_id in enumerate(batch.ids):
-                payload = None
-                if batch.payloads is not None:
-                    payload = batch.payloads[idx]
-
-                vector = {name: v[idx] for name, v in vectors.items()}
-
-                self._upsert_point(
-                    models.PointStruct(
-                        id=point_id,
-                        payload=payload,
-                        vector=vector,
-                    ),
-                    update_filter=update_filter,
-                    update_mode=update_mode,
+            if len(self.ids) > self.LARGE_DATA_THRESHOLD:
+                show_warning_once(
+                    f"Local mode is not recommended for collections with more than {self.LARGE_DATA_THRESHOLD:,} "
+                    f"points. Current collection contains {len(self.ids)} points. "
+                    "Consider using Qdrant in Docker or Qdrant Cloud for better performance with large datasets.",
+                    category=UserWarning,
+                    idx="large-local-collection",
+                    stacklevel=6,
                 )
-        else:
-            raise ValueError(f"Unsupported type: {type(points)}")
-
-        if len(self.ids) > self.LARGE_DATA_THRESHOLD:
-            show_warning_once(
-                f"Local mode is not recommended for collections with more than {self.LARGE_DATA_THRESHOLD:,} "
-                f"points. Current collection contains {len(self.ids)} points. "
-                "Consider using Qdrant in Docker or Qdrant Cloud for better performance with large datasets.",
-                category=UserWarning,
-                idx="large-local-collection",
-                stacklevel=6,
-            )
 
     def _update_named_vectors(
         self, idx: int, vectors: dict[str, list[float] | SparseVector | list[list[float]]]
@@ -2623,26 +2633,27 @@ class LocalCollection:
     def update_vectors(
         self, points: Sequence[types.PointVectors], update_filter: types.Filter | None = None
     ) -> None:
-        for point in points:
-            point_id = str(point.id) if isinstance(point.id, uuid.UUID) else point.id
-            idx = self.ids[point_id]
-            vector_struct = point.vector
-            if isinstance(vector_struct, list):
-                fixed_vectors = {DEFAULT_VECTOR_NAME: vector_struct}
-            else:
-                fixed_vectors = vector_struct
+        with self._lock:
+            for point in points:
+                point_id = str(point.id) if isinstance(point.id, uuid.UUID) else point.id
+                idx = self.ids[point_id]
+                vector_struct = point.vector
+                if isinstance(vector_struct, list):
+                    fixed_vectors = {DEFAULT_VECTOR_NAME: vector_struct}
+                else:
+                    fixed_vectors = vector_struct
 
-            if not self.deleted[idx] and update_filter is not None:
-                has_vector = {}
-                for vector_name, deleted in self.deleted_per_vector.items():
-                    if not deleted[idx]:
-                        has_vector[vector_name] = True
-                if not check_filter(
-                    update_filter, self.payload[idx], self.ids_inv[idx], has_vector
-                ):
-                    return None
-            self._update_named_vectors(idx, fixed_vectors)
-            self._persist_by_id(point_id)
+                if not self.deleted[idx] and update_filter is not None:
+                    has_vector = {}
+                    for vector_name, deleted in self.deleted_per_vector.items():
+                        if not deleted[idx]:
+                            has_vector[vector_name] = True
+                    if not check_filter(
+                        update_filter, self.payload[idx], self.ids_inv[idx], has_vector
+                    ):
+                        return None
+                self._update_named_vectors(idx, fixed_vectors)
+                self._persist_by_id(point_id)
 
     def delete_vectors(
         self,
@@ -2654,12 +2665,13 @@ class LocalCollection:
             | models.PointIdsList
         ),
     ) -> None:
-        ids = self._selector_to_ids(selector)
-        for point_id in ids:
-            idx = self.ids[point_id]
-            for vector_name in vectors:
-                self.deleted_per_vector[vector_name][idx] = 1
-            self._persist_by_id(point_id)
+        with self._lock:
+            ids = self._selector_to_ids(selector)
+            for point_id in ids:
+                idx = self.ids[point_id]
+                for vector_name in vectors:
+                    self.deleted_per_vector[vector_name][idx] = 1
+                self._persist_by_id(point_id)
 
     def _delete_ids(self, ids: list[types.PointId]) -> None:
         for point_id in ids:
@@ -2706,8 +2718,9 @@ class LocalCollection:
             | models.PointIdsList
         ),
     ) -> None:
-        ids = self._selector_to_ids(selector)
-        self._delete_ids(ids)
+        with self._lock:
+            ids = self._selector_to_ids(selector)
+            self._delete_ids(ids)
 
     def _persist_by_id(self, point_id: models.ExtendedPointId) -> None:
         if self.storage is not None:
@@ -2730,20 +2743,25 @@ class LocalCollection:
         ),
         key: str | None = None,
     ) -> None:
-        ids = self._selector_to_ids(selector)
-        jsonable_payload = deepcopy(to_jsonable_python(payload))
+        with self._lock:
+            ids = self._selector_to_ids(selector)
+            jsonable_payload = deepcopy(to_jsonable_python(payload))
 
-        keys: list[JsonPathItem] | None = parse_json_path(key) if key is not None else None
+            keys: list[JsonPathItem] | None = (
+                parse_json_path(key) if key is not None else None
+            )
 
-        for point_id in ids:
-            idx = self.ids[point_id]
-            if keys is None:
-                self.payload[idx] = {**self.payload[idx], **jsonable_payload}
-            else:
-                if self.payload[idx] is not None:
-                    set_value_by_key(payload=self.payload[idx], value=jsonable_payload, keys=keys)
+            for point_id in ids:
+                idx = self.ids[point_id]
+                if keys is None:
+                    self.payload[idx] = {**self.payload[idx], **jsonable_payload}
+                else:
+                    if self.payload[idx] is not None:
+                        set_value_by_key(
+                            payload=self.payload[idx], value=jsonable_payload, keys=keys
+                        )
 
-            self._persist_by_id(point_id)
+                self._persist_by_id(point_id)
 
     def overwrite_payload(
         self,
@@ -2755,11 +2773,12 @@ class LocalCollection:
             | models.PointIdsList
         ),
     ) -> None:
-        ids = self._selector_to_ids(selector)
-        for point_id in ids:
-            idx = self.ids[point_id]
-            self.payload[idx] = deepcopy(to_jsonable_python(payload)) or {}
-            self._persist_by_id(point_id)
+        with self._lock:
+            ids = self._selector_to_ids(selector)
+            for point_id in ids:
+                idx = self.ids[point_id]
+                self.payload[idx] = deepcopy(to_jsonable_python(payload)) or {}
+                self._persist_by_id(point_id)
 
     def delete_payload(
         self,
@@ -2771,13 +2790,14 @@ class LocalCollection:
             | models.PointIdsList
         ),
     ) -> None:
-        ids = self._selector_to_ids(selector)
-        for point_id in ids:
-            idx = self.ids[point_id]
-            for key in keys:
-                if key in self.payload[idx]:
-                    self.payload[idx].pop(key)
-            self._persist_by_id(point_id)
+        with self._lock:
+            ids = self._selector_to_ids(selector)
+            for point_id in ids:
+                idx = self.ids[point_id]
+                for key in keys:
+                    if key in self.payload[idx]:
+                        self.payload[idx].pop(key)
+                self._persist_by_id(point_id)
 
     def clear_payload(
         self,
@@ -2788,11 +2808,12 @@ class LocalCollection:
             | models.PointIdsList
         ),
     ) -> None:
-        ids = self._selector_to_ids(selector)
-        for point_id in ids:
-            idx = self.ids[point_id]
-            self.payload[idx] = {}
-            self._persist_by_id(point_id)
+        with self._lock:
+            ids = self._selector_to_ids(selector)
+            for point_id in ids:
+                idx = self.ids[point_id]
+                self.payload[idx] = {}
+                self._persist_by_id(point_id)
 
     def batch_update_points(
         self,
