@@ -41,6 +41,8 @@ from qdrant_client.uploader.grpc_uploader import GrpcBatchUploader
 from qdrant_client.uploader.rest_uploader import RestBatchUploader
 from qdrant_client.uploader.uploader import BaseUploader
 
+logger = logging.getLogger(__name__)
+
 
 class QdrantRemote(QdrantBase):
     DEFAULT_GRPC_TIMEOUT = 5  # seconds
@@ -284,7 +286,16 @@ class QdrantRemote(QdrantBase):
                     category=UserWarning,
                     stacklevel=2,
                 )
+        except httpx.HTTPError as e:
+            logger.debug("Server version check failed: %s: %s", type(e).__name__, e)
+            show_warning(
+                message="Failed to obtain server version. Unable to check client-server compatibility."
+                " Set check_compatibility=False to skip version check.",
+                category=UserWarning,
+                stacklevel=2,
+            )
         except Exception:
+            logger.exception("Unexpected error during server version check")
             show_warning(
                 message="Failed to obtain server version. Unable to check client-server compatibility."
                 " Set check_compatibility=False to skip version check.",
