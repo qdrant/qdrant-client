@@ -1632,20 +1632,19 @@ class LocalCollection:
         sample: int = 10,
         using: str | None = None,
     ) -> tuple[list[ExtendedPointId], list[list[ScoredPoint]]]:
-        samples: list[ScoredPoint] = []
         search_in_vector_name = using if using is not None else DEFAULT_VECTOR_NAME
-        # Sample random points from the whole collection to filter out the ones without vectors
-        # TODO: use search_filter once with have an HasVector like condition
-        candidates = self._sample_randomly(
-            len(self.ids), query_filter, False, search_in_vector_name
-        )
-        for candidate in candidates:
-            # check if enough samples are collected
-            if len(samples) == sample:
-                break
-            # check if the candidate has a vector
-            if candidate.vector is not None:
-                samples.append(candidate)
+        has_vector = models.HasVectorCondition(has_vector=search_in_vector_name)
+        if query_filter is None:
+            search_filter = models.Filter(must=[has_vector])
+        else:
+            search_filter = deepcopy(query_filter)
+            if search_filter.must is None:
+                search_filter.must = [has_vector]
+            elif isinstance(search_filter.must, list):
+                search_filter.must.append(has_vector)
+            else:
+                search_filter.must = [search_filter.must, has_vector]
+        samples = self._sample_randomly(sample, search_filter, False, search_in_vector_name)
 
         # can't build a matrix with less than 2 results
         if len(samples) < 2:

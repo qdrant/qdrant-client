@@ -86,6 +86,42 @@ def test_search_pairs_no_filter(
     compare_all_clients_results(local_client, http_client, grpc_client, search_pairs_no_filter)
 
 
+def test_search_matrix_with_missing_vectors():
+    collection_name = "congruence_search_matrix_missing_vectors"
+    points = generate_fixtures(TEST_NUM_POINTS, skip_vectors=True)
+
+    local_client = init_local()
+    init_client(local_client, points, collection_name=collection_name)
+
+    http_client = init_remote()
+    init_client(http_client, points, collection_name=collection_name)
+
+    grpc_client = init_remote(prefer_grpc=True)
+
+    def search_offsets_missing_vectors(client: QdrantBase) -> models.SearchMatrixOffsetsResponse:
+        return client.search_matrix_offsets(
+            collection_name=collection_name,
+            sample=TEST_NUM_POINTS,
+            limit=3,
+            using="text",
+        )
+
+    def search_pairs_missing_vectors(client: QdrantBase) -> models.SearchMatrixPairsResponse:
+        return client.search_matrix_pairs(
+            collection_name=collection_name,
+            sample=TEST_NUM_POINTS,
+            limit=3,
+            using="text",
+        )
+
+    compare_all_clients_results(
+        local_client, http_client, grpc_client, search_offsets_missing_vectors
+    )
+    compare_all_clients_results(
+        local_client, http_client, grpc_client, search_pairs_missing_vectors
+    )
+
+
 def test_search_offsets_filter(
     local_client,
     http_client,
