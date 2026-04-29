@@ -85,6 +85,24 @@ def _worker(
 
 
 class ParallelWorkerPool:
+    """Process-based worker pool that streams items through `Worker` subclasses.
+
+    Spawns `num_workers` child processes via `multiprocessing`. Items pushed onto
+    the input queue are picked up by any free worker; results return on the output
+    queue. Backpressure is bounded by `num_workers * max_internal_batch_size`.
+
+    Three map variants:
+
+    - `unordered_map` — yields in completion order.
+    - `semi_ordered_map` — same, but each result carries its source index.
+    - `ordered_map` — yields in input order (buffers out-of-order results).
+
+    Worker failures surface as `QueueSignals.error`, causing the active map call
+    to raise `RuntimeError` after terminating remaining workers. Drain the map
+    generator (or close it) so `join` runs in the `finally` block; relying on
+    `__del__` for cleanup is a fallback only.
+    """
+
     def __init__(
         self,
         num_workers: int,
