@@ -7,7 +7,9 @@ from collections import OrderedDict, defaultdict
 from typing import (
     Any,
     Callable,
+    ParamSpec,
     Sequence,
+    TypeVar,
     get_args,
 )
 from copy import deepcopy
@@ -86,15 +88,20 @@ EPSILON = 1.1920929e-7  # https://doc.rust-lang.org/std/f32/constant.EPSILON.htm
 # https://github.com/qdrant/qdrant/blob/7164ac4a5987d28f1c93f5712aef8e09e7d93555/lib/segment/src/spaces/simple_avx.rs#L99C10-L99C10
 
 
-def _synchronized_write(method: Callable) -> Callable:
+_P = ParamSpec("_P")
+_R = TypeVar("_R")
+
+
+def _synchronized_write(method: Callable[_P, _R]) -> Callable[_P, _R]:
     # Serialize collection writes so that multi-step mutations (e.g. growing
     # `payload`, `deleted`, and per-vector arrays inside `upsert`) stay atomic
     # w.r.t. other writers on the same collection. The in-memory backend is
     # explicitly test-scoped, so a coarse RLock is acceptable (see #1193).
     @functools.wraps(method)
-    def wrapper(self: "LocalCollection", *args: Any, **kwargs: Any) -> Any:
+    def wrapper(*args: _P.args, **kwargs: _P.kwargs) -> _R:
+        self = args[0]  # bound LocalCollection instance
         with self._write_lock:
-            return method(self, *args, **kwargs)
+            return method(*args, **kwargs)
 
     return wrapper
 

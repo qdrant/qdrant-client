@@ -18,6 +18,7 @@ LocalCollection. These tests assert:
 """
 
 import threading
+import time
 import uuid
 
 import pytest
@@ -141,6 +142,7 @@ def test_concurrent_upsert_and_delete_does_not_corrupt() -> None:
     ]
 
     stop = threading.Event()
+    deleter_error: list[BaseException] = []
 
     def deleter() -> None:
         while not stop.is_set():
@@ -160,12 +162,16 @@ def test_concurrent_upsert_and_delete_does_not_corrupt() -> None:
                         )
                     ),
                 )
-            except Exception:
-                # delete should never raise under the lock; surface via assert below.
+            except BaseException as exc:  # noqa: BLE001 — capture for main-thread assert
+                # delete should never raise under the lock; record and stop so
+                # the main thread can fail the test with the original traceback.
+                deleter_error.append(exc)
                 stop.set()
-                raise
+                return
+            # Yield so upserters aren't starved by a tight delete loop.
+            time.sleep(0.01)
 
-    del_thread = threading.Thread(target=deleter, daemon=True)
+    del_thread = threading.Thread(target=deleter)
     del_thread.start()
     for t in upsert_threads:
         t.start()
@@ -173,6 +179,8 @@ def test_concurrent_upsert_and_delete_does_not_corrupt() -> None:
         t.join()
     stop.set()
     del_thread.join(timeout=5)
+    assert not del_thread.is_alive(), "deleter thread did not stop within 5s"
+    assert not deleter_error, f"deleter raised: {deleter_error[0]!r}"
 
     # Pure read; must not raise operand-broadcast ValueError.
     points, _ = client.scroll(collection_name="race", limit=num_upserters * runs * batch * 2)
