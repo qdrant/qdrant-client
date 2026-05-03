@@ -18,6 +18,8 @@ from uuid import uuid4
 
 import numpy as np
 
+import portalocker
+
 from qdrant_client.common.client_warnings import show_warning, show_warning_once
 from qdrant_client._pydantic_compat import to_dict
 from qdrant_client.client_base import QdrantBase
@@ -82,9 +84,6 @@ class QdrantLocal(QdrantBase):
 
         try:
             if self._flock_file is not None and not self._flock_file.closed:
-                import portalocker  # `portalocker` can't be imported at the top level: it checks for writeable
-                # directories on import and crashes in read-only systems even if local mode is not used
-
                 portalocker.unlock(self._flock_file)
                 self._flock_file.close()
         except TypeError:  # sometimes portalocker module can be garbage collected before
@@ -137,9 +136,6 @@ class QdrantLocal(QdrantBase):
                 f.write("tmp lock file")
         self._flock_file = open(lock_file_path, "r+")
 
-        import portalocker  # `portalocker` can't be imported at the top level: it checks for writeable directories
-        # on import and crashes in read-only systems even if local mode is not used
-
         try:
             portalocker.lock(
                 self._flock_file,
@@ -185,11 +181,13 @@ class QdrantLocal(QdrantBase):
     def search(
         self,
         collection_name: str,
-        query_vector: types.NumpyArray
-        | Sequence[float]
-        | tuple[str, list[float]]
-        | types.NamedVector
-        | types.NamedSparseVector,
+        query_vector: (
+            types.NumpyArray
+            | Sequence[float]
+            | tuple[str, list[float]]
+            | types.NamedVector
+            | types.NamedSparseVector
+        ),
         query_filter: types.Filter | None = None,
         search_params: types.SearchParams | None = None,
         limit: int = 10,
@@ -453,16 +451,18 @@ class QdrantLocal(QdrantBase):
         self,
         collection_name: str,
         group_by: str,
-        query: types.PointId
-        | list[float]
-        | list[list[float]]
-        | types.SparseVector
-        | types.Query
-        | types.NumpyArray
-        | types.Document
-        | types.Image
-        | types.InferenceObject
-        | None = None,
+        query: (
+            types.PointId
+            | list[float]
+            | list[list[float]]
+            | types.SparseVector
+            | types.Query
+            | types.NumpyArray
+            | types.Document
+            | types.Image
+            | types.InferenceObject
+            | None
+        ) = None,
         using: str | None = None,
         prefetch: types.Prefetch | list[types.Prefetch] | None = None,
         query_filter: types.Filter | None = None,
@@ -780,7 +780,7 @@ class QdrantLocal(QdrantBase):
     def create_collection(
         self,
         collection_name: str,
-        vectors_config: types.VectorParams | Mapping[str, types.VectorParams] | None = None,
+        vectors_config: (types.VectorParams | Mapping[str, types.VectorParams] | None) = None,
         sparse_vectors_config: Mapping[str, types.SparseVectorParams] | None = None,
         metadata: types.Payload | None = None,
         **kwargs: Any,
@@ -811,7 +811,7 @@ class QdrantLocal(QdrantBase):
     def recreate_collection(
         self,
         collection_name: str,
-        vectors_config: types.VectorParams | Mapping[str, types.VectorParams] | None = None,
+        vectors_config: (types.VectorParams | Mapping[str, types.VectorParams] | None) = None,
         sparse_vectors_config: Mapping[str, types.SparseVectorParams] | None = None,
         metadata: types.Payload | None = None,
         **kwargs: Any,
@@ -831,7 +831,10 @@ class QdrantLocal(QdrantBase):
     ) -> None:
         # upload_points in local mode behaves like upload_points with wait=True in server mode
         self._upload_points(
-            collection_name, points, update_filter=update_filter, update_mode=update_mode
+            collection_name,
+            points,
+            update_filter=update_filter,
+            update_mode=update_mode,
         )
 
     def _upload_points(
@@ -858,7 +861,7 @@ class QdrantLocal(QdrantBase):
     def upload_collection(
         self,
         collection_name: str,
-        vectors: dict[str, types.NumpyArray] | types.NumpyArray | Iterable[types.VectorStruct],
+        vectors: (dict[str, types.NumpyArray] | types.NumpyArray | Iterable[types.VectorStruct]),
         payload: Iterable[dict[Any, Any]] | None = None,
         ids: Iterable[types.PointId] | None = None,
         update_filter: types.Filter | None = None,
@@ -872,9 +875,9 @@ class QdrantLocal(QdrantBase):
 
         collection = self._get_collection(collection_name)
         if isinstance(vectors, dict) and any(isinstance(v, np.ndarray) for v in vectors.values()):
-            assert (
-                len(set([arr.shape[0] for arr in vectors.values()])) == 1
-            ), "Each named vector should have the same number of vectors"
+            assert len(set([arr.shape[0] for arr in vectors.values()])) == 1, (
+                "Each named vector should have the same number of vectors"
+            )
 
             num_vectors = next(iter(vectors.values())).shape[0]
             # convert dict[str, np.ndarray] to list[dict[str, list[float]]]
@@ -1062,7 +1065,7 @@ class QdrantLocal(QdrantBase):
         **kwargs: Any,
     ) -> types.OptimizationsResponse:
         raise NotImplementedError(
-            "Get optimizations is not supported in the local Qdrant. " "Please use server Qdrant."
+            "Get optimizations is not supported in the local Qdrant. Please use server Qdrant."
         )
 
     def list_shard_keys(

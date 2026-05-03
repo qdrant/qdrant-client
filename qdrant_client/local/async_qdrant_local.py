@@ -19,7 +19,10 @@ from copy import deepcopy
 from io import TextIOWrapper
 from typing import Any, Generator, Iterable, Mapping, Sequence, get_args
 from uuid import uuid4
+
 import numpy as np
+import portalocker
+
 from qdrant_client.common.client_warnings import show_warning, show_warning_once
 from qdrant_client._pydantic_compat import to_dict
 from qdrant_client.async_client_base import AsyncQdrantBase
@@ -82,8 +85,6 @@ class AsyncQdrantLocal(AsyncQdrantBase):
                 )
         try:
             if self._flock_file is not None and (not self._flock_file.closed):
-                import portalocker
-
                 portalocker.unlock(self._flock_file)
                 self._flock_file.close()
         except TypeError:
@@ -125,7 +126,6 @@ class AsyncQdrantLocal(AsyncQdrantBase):
             with open(lock_file_path, "w") as f:
                 f.write("tmp lock file")
         self._flock_file = open(lock_file_path, "r+")
-        import portalocker
 
         try:
             portalocker.lock(
@@ -149,7 +149,10 @@ class AsyncQdrantLocal(AsyncQdrantBase):
                     {
                         "collections": {
                             collection_name: to_dict(collection.config)
-                            for (collection_name, collection) in self.collections.items()
+                            for (
+                                collection_name,
+                                collection,
+                            ) in self.collections.items()
                         },
                         "aliases": self.aliases,
                     }
@@ -168,11 +171,13 @@ class AsyncQdrantLocal(AsyncQdrantBase):
     def search(
         self,
         collection_name: str,
-        query_vector: types.NumpyArray
-        | Sequence[float]
-        | tuple[str, list[float]]
-        | types.NamedVector
-        | types.NamedSparseVector,
+        query_vector: (
+            types.NumpyArray
+            | Sequence[float]
+            | tuple[str, list[float]]
+            | types.NamedVector
+            | types.NamedSparseVector
+        ),
         query_filter: types.Filter | None = None,
         search_params: types.SearchParams | None = None,
         limit: int = 10,
@@ -314,7 +319,9 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         return (query, mentioned_ids)
 
     def _resolve_prefetches_input(
-        self, prefetch: Sequence[types.Prefetch] | types.Prefetch | None, collection_name: str
+        self,
+        prefetch: Sequence[types.Prefetch] | types.Prefetch | None,
+        collection_name: str,
     ) -> list[types.Prefetch]:
         if prefetch is None:
             return []
@@ -340,7 +347,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         if prefetch.query is None:
             return prefetch
         prefetch = deepcopy(prefetch)
-        (query, mentioned_ids) = self._resolve_query_input(
+        query, mentioned_ids = self._resolve_query_input(
             collection_name, prefetch.query, prefetch.using, prefetch.lookup_from
         )
         prefetch.query = query
@@ -366,7 +373,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
     ) -> types.QueryResponse:
         collection = self._get_collection(collection_name)
         if query is not None:
-            (query, mentioned_ids) = self._resolve_query_input(
+            query, mentioned_ids = self._resolve_query_input(
                 collection_name, query, using, lookup_from
             )
             query_filter = ignore_mentioned_ids_filter(query_filter, list(mentioned_ids))
@@ -384,7 +391,10 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         )
 
     async def query_batch_points(
-        self, collection_name: str, requests: Sequence[types.QueryRequest], **kwargs: Any
+        self,
+        collection_name: str,
+        requests: Sequence[types.QueryRequest],
+        **kwargs: Any,
     ) -> list[types.QueryResponse]:
         return [
             await self.query_points(
@@ -407,16 +417,18 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         self,
         collection_name: str,
         group_by: str,
-        query: types.PointId
-        | list[float]
-        | list[list[float]]
-        | types.SparseVector
-        | types.Query
-        | types.NumpyArray
-        | types.Document
-        | types.Image
-        | types.InferenceObject
-        | None = None,
+        query: (
+            types.PointId
+            | list[float]
+            | list[list[float]]
+            | types.SparseVector
+            | types.Query
+            | types.NumpyArray
+            | types.Document
+            | types.Image
+            | types.InferenceObject
+            | None
+        ) = None,
         using: str | None = None,
         prefetch: types.Prefetch | list[types.Prefetch] | None = None,
         query_filter: types.Filter | None = None,
@@ -432,7 +444,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
     ) -> types.GroupsResult:
         collection = self._get_collection(collection_name)
         if query is not None:
-            (query, mentioned_ids) = self._resolve_query_input(
+            query, mentioned_ids = self._resolve_query_input(
                 collection_name, query, using, lookup_from
             )
             query_filter = ignore_mentioned_ids_filter(query_filter, list(mentioned_ids))
@@ -720,7 +732,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
     async def create_collection(
         self,
         collection_name: str,
-        vectors_config: types.VectorParams | Mapping[str, types.VectorParams] | None = None,
+        vectors_config: (types.VectorParams | Mapping[str, types.VectorParams] | None) = None,
         sparse_vectors_config: Mapping[str, types.SparseVectorParams] | None = None,
         metadata: types.Payload | None = None,
         **kwargs: Any,
@@ -748,7 +760,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
     async def recreate_collection(
         self,
         collection_name: str,
-        vectors_config: types.VectorParams | Mapping[str, types.VectorParams] | None = None,
+        vectors_config: (types.VectorParams | Mapping[str, types.VectorParams] | None) = None,
         sparse_vectors_config: Mapping[str, types.SparseVectorParams] | None = None,
         metadata: types.Payload | None = None,
         **kwargs: Any,
@@ -767,7 +779,10 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         **kwargs: Any,
     ) -> None:
         self._upload_points(
-            collection_name, points, update_filter=update_filter, update_mode=update_mode
+            collection_name,
+            points,
+            update_filter=update_filter,
+            update_mode=update_mode,
         )
 
     def _upload_points(
@@ -792,7 +807,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
     def upload_collection(
         self,
         collection_name: str,
-        vectors: dict[str, types.NumpyArray] | types.NumpyArray | Iterable[types.VectorStruct],
+        vectors: (dict[str, types.NumpyArray] | types.NumpyArray | Iterable[types.VectorStruct]),
         payload: Iterable[dict[Any, Any]] | None = None,
         ids: Iterable[types.PointId] | None = None,
         update_filter: types.Filter | None = None,
@@ -807,9 +822,9 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         if isinstance(vectors, dict) and any(
             (isinstance(v, np.ndarray) for v in vectors.values())
         ):
-            assert (
-                len(set([arr.shape[0] for arr in vectors.values()])) == 1
-            ), "Each named vector should have the same number of vectors"
+            assert len(set([arr.shape[0] for arr in vectors.values()])) == 1, (
+                "Each named vector should have the same number of vectors"
+            )
             num_vectors = next(iter(vectors.values())).shape[0]
             vectors = [
                 {name: vectors[name][i].tolist() for name in vectors.keys()}
@@ -823,7 +838,9 @@ class AsyncQdrantLocal(AsyncQdrantBase):
                     payload=payload or {},
                 )
                 for (point_id, vector, payload) in zip(
-                    ids or uuid_generator(), iter(vectors), payload or itertools.cycle([{}])
+                    ids or uuid_generator(),
+                    iter(vectors),
+                    payload or itertools.cycle([{}]),
                 )
             ],
             update_filter=update_filter,
@@ -947,7 +964,10 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         )
 
     async def cluster_collection_update(
-        self, collection_name: str, cluster_operation: types.ClusterOperations, **kwargs: Any
+        self,
+        collection_name: str,
+        cluster_operation: types.ClusterOperations,
+        **kwargs: Any,
     ) -> bool:
         raise NotImplementedError(
             "Cluster collection update is not supported in the local Qdrant. Please use server Qdrant if you need a cluster"
