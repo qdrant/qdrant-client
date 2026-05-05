@@ -257,6 +257,28 @@ binary_quantization_w_encodings_3 = grpc.BinaryQuantization(
     ),
 )
 
+turbo_quantization = grpc.TurboQuantization(
+    always_ram=True,
+    bits=grpc.TurboQuantBitSize.Bits2,
+    plus=True,
+)
+
+turbo_quantization_minimal = grpc.TurboQuantization(
+    always_ram=False,
+)
+
+turbo_quantization_bits1 = grpc.TurboQuantization(
+    bits=grpc.TurboQuantBitSize.Bits1,
+)
+
+turbo_quantization_bits1_5 = grpc.TurboQuantization(
+    bits=grpc.TurboQuantBitSize.Bits1_5,
+)
+
+turbo_quantization_bits4 = grpc.TurboQuantization(
+    bits=grpc.TurboQuantBitSize.Bits4,
+)
+
 vector_param_with_quant = grpc.VectorParams(
     size=100,
     distance=grpc.Distance.Cosine,
@@ -830,6 +852,26 @@ binary_quantization_config_3 = grpc.QuantizationConfig(
     binary=binary_quantization_w_encodings_3,
 )
 
+turbo_quantization_config = grpc.QuantizationConfig(
+    turboquant=turbo_quantization,
+)
+
+turbo_quantization_config_minimal = grpc.QuantizationConfig(
+    turboquant=turbo_quantization_minimal,
+)
+
+turbo_quantization_config_bits1 = grpc.QuantizationConfig(
+    turboquant=turbo_quantization_bits1,
+)
+
+turbo_quantization_config_bits1_5 = grpc.QuantizationConfig(
+    turboquant=turbo_quantization_bits1_5,
+)
+
+turbo_quantization_config_bits4 = grpc.QuantizationConfig(
+    turboquant=turbo_quantization_bits4,
+)
+
 sparse_vector_params = grpc.SparseVectorParams(
     index=grpc.SparseIndexConfig(
         full_scan_threshold=1000,
@@ -936,6 +978,14 @@ quantization_config_diff_scalar = grpc.QuantizationConfigDiff(scalar=scalar_quan
 
 quantization_config_diff_product = grpc.QuantizationConfigDiff(
     product=product_quantizations[0].product
+)
+
+quantization_config_diff_turbo = grpc.QuantizationConfigDiff(
+    turboquant=turbo_quantization,
+)
+
+quantization_config_diff_binary = grpc.QuantizationConfigDiff(
+    binary=binary_quantization,
 )
 
 update_collection = grpc.UpdateCollection(
@@ -1717,8 +1767,20 @@ fixtures = {
         binary_quantization_config_1,
         binary_quantization_config_2,
         binary_quantization_config_3,
+        turbo_quantization_config,
+        turbo_quantization_config_minimal,
+        turbo_quantization_config_bits1,
+        turbo_quantization_config_bits1_5,
+        turbo_quantization_config_bits4,
     ]
     + product_quantizations,
+    "QuantizationConfigDiff": [
+        quantization_config_diff_disabled,
+        quantization_config_diff_scalar,
+        quantization_config_diff_product,
+        quantization_config_diff_turbo,
+        quantization_config_diff_binary,
+    ],
     "QuantizationSearchParams": [quantization_search_params],
     "PointVectors": [
         point_vector_1,

@@ -93,6 +93,7 @@ VectorInput: TypeAlias = rest.VectorInput
 VectorStruct: TypeAlias = rest.VectorStruct
 VectorParams: TypeAlias = rest.VectorParams
 SparseVectorParams: TypeAlias = rest.SparseVectorParams
+VectorNameConfig: TypeAlias = rest.VectorNameConfig
 SnapshotPriority: TypeAlias = rest.SnapshotPriority
 CollectionsAliasesResponse: TypeAlias = rest.CollectionsAliasesResponse
 UpdateOperation: TypeAlias = rest.UpdateOperation

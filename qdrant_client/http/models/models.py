@@ -58,10 +58,12 @@ class AppBuildTelemetry(BaseModel):
     version: str = Field(..., description="")
     features: Optional["AppFeaturesTelemetry"] = Field(default=None, description="")
     runtime_features: Optional["FeatureFlags"] = Field(default=None, description="")
+    low_memory_mode: Optional["LowMemoryMode"] = Field(default=None, description="")
     hnsw_global_config: Optional["HnswGlobalConfig"] = Field(default=None, description="")
     system: Optional["RunningEnvironmentTelemetry"] = Field(default=None, description="")
     jwt_rbac: Optional[bool] = Field(default=None, description="")
     hide_jwt_dashboard: Optional[bool] = Field(default=None, description="")
+    audit: Optional["AuditTelemetry"] = Field(default=None, description="")
     startup: Union[datetime, date] = Field(..., description="")
 
 
@@ -72,6 +74,15 @@ class AppFeaturesTelemetry(BaseModel):
     gpu: bool = Field(..., description="")
     rocksdb: bool = Field(..., description="")
     staging: bool = Field(..., description="")
+
+
+class AuditTelemetry(BaseModel):
+    dir: str = Field(..., description="")
+    rotation: str = Field(..., description="")
+    max_log_files: int = Field(..., description="")
+    trust_forwarded_headers: bool = Field(..., description="")
+    log_api: bool = Field(..., description="")
+    dir_size_bytes: Optional[int] = Field(default=None, description="")
 
 
 class Batch(BaseModel, extra="forbid"):
@@ -707,6 +718,32 @@ class DeleteVectorsOperation(BaseModel, extra="forbid"):
     delete_vectors: "DeleteVectors" = Field(..., description="")
 
 
+class DenseVectorConfig(BaseModel, extra="forbid"):
+    """
+    Configuration for creating a new dense named vector.  Only includes properties that define the vector space and cannot be changed after creation. Storage type, index type, and quantization are inferred.
+    """
+
+    size: int = Field(..., description="Dimensionality of the vectors")
+    distance: "Distance" = Field(
+        ...,
+        description="Configuration for creating a new dense named vector.  Only includes properties that define the vector space and cannot be changed after creation. Storage type, index type, and quantization are inferred.",
+    )
+    multivector_config: Optional["MultiVectorConfig"] = Field(
+        default=None, description="Configuration for multi-vector points (e.g., ColBERT)"
+    )
+    datatype: Optional["VectorStorageDatatype"] = Field(
+        default=None, description="Element storage type (Float32, Float16, Uint8)"
+    )
+
+
+class DenseVectorNameConfig(BaseModel, extra="forbid"):
+    """
+    Wrapper for dense vector creation config.
+    """
+
+    dense: "DenseVectorConfig" = Field(..., description="Wrapper for dense vector creation config.")
+
+
 class Direction(str, Enum):
     ASC = "asc"
     DESC = "desc"
@@ -933,36 +970,8 @@ class FeatureFlags(BaseModel):
         default=False,
         description="Magic feature flag that enables all features.  Note that this will only be applied to all flags when passed into [`init_feature_flags`].",
     )
-    payload_index_skip_rocksdb: Optional[bool] = Field(
-        default=True,
-        description="Skip usage of RocksDB in new immutable payload indices.  First implemented in Qdrant 1.13.5. Enabled by default in Qdrant 1.14.1.",
-    )
-    payload_index_skip_mutable_rocksdb: Optional[bool] = Field(
-        default=True,
-        description="Skip usage of RocksDB in new mutable payload indices.  First implemented in Qdrant 1.15.0. Enabled by default in Qdrant 1.16.0.",
-    )
-    payload_storage_skip_rocksdb: Optional[bool] = Field(
-        default=True,
-        description="Skip usage of RocksDB in new payload storages.  On-disk payload storages never use Gridstore.  First implemented in Qdrant 1.15.0. Enabled by default in Qdrant 1.16.0.",
-    )
     incremental_hnsw_building: Optional[bool] = Field(
         default=True, description="Use incremental HNSW building.  Enabled by default in Qdrant 1.14.1."
-    )
-    migrate_rocksdb_id_tracker: Optional[bool] = Field(
-        default=True,
-        description="Migrate RocksDB based ID trackers into file based ID tracker on start.  Enabled by default in Qdrant 1.15.0.",
-    )
-    migrate_rocksdb_vector_storage: Optional[bool] = Field(
-        default=True,
-        description="Migrate RocksDB based vector storages into new format on start.  Enabled by default in Qdrant 1.16.1.",
-    )
-    migrate_rocksdb_payload_storage: Optional[bool] = Field(
-        default=True,
-        description="Migrate RocksDB based payload storages into new format on start.  Enabled by default in Qdrant 1.16.1.",
-    )
-    migrate_rocksdb_payload_indices: Optional[bool] = Field(
-        default=True,
-        description="Migrate RocksDB based payload indices into new format on start.  Rebuilds a new payload index from scratch.  Enabled by default in Qdrant 1.16.1.",
     )
     appendable_quantization: Optional[bool] = Field(
         default=True,
@@ -1154,6 +1163,9 @@ class GroupsResult(BaseModel):
 
 class GrpcTelemetry(BaseModel):
     responses: Dict[str, Dict[str, "OperationDurationStatistics"]] = Field(..., description="")
+    per_collection_responses: Optional[Dict[str, Dict[str, Dict[str, "OperationDurationStatistics"]]]] = Field(
+        default=None, description=""
+    )
 
 
 class HardwareTelemetry(BaseModel):
@@ -1683,6 +1695,39 @@ class LookupLocation(BaseModel, extra="forbid"):
     )
 
 
+class LowMemoryModeOneOf(str, Enum):
+    """
+    No special handling. Every component loads as persisted.
+    """
+
+    def __str__(self) -> str:
+        return str(self.value)
+
+    DISABLED = "disabled"
+
+
+class LowMemoryModeOneOf1(str, Enum):
+    """
+    Load RAM-friendly components as their on-disk variants where possible:  * Quantization is loaded as if `always_ram = false`. * Payload field indexes are loaded as if `on_disk = true`. * Payload storage is loaded as the mmap variant (lazy populate).
+    """
+
+    def __str__(self) -> str:
+        return str(self.value)
+
+    NO_RESIDENT = "no_resident"
+
+
+class LowMemoryModeOneOf2(str, Enum):
+    """
+    Same as [`LowMemoryMode::NoResident`], plus mmap page population is skipped on load (for original vectors, HNSW graph and payload storage).
+    """
+
+    def __str__(self) -> str:
+        return str(self.value)
+
+    NO_POPULATE = "no_populate"
+
+
 class MatchAny(BaseModel, extra="forbid"):
     """
     Exact match on any of the given values
@@ -1944,12 +1989,12 @@ class OptimizerTelemetry(BaseModel):
 
 
 class OptimizersConfig(BaseModel):
-    deleted_threshold: float = Field(
-        ...,
+    deleted_threshold: Optional[float] = Field(
+        default=0.2,
         description="The minimal fraction of deleted vectors in a segment, required to perform segment optimization",
     )
-    vacuum_min_vector_number: int = Field(
-        ..., description="The minimal number of vectors in a segment, required to perform segment optimization"
+    vacuum_min_vector_number: Optional[int] = Field(
+        default=1000, description="The minimal number of vectors in a segment, required to perform segment optimization"
     )
     default_segment_number: int = Field(
         ...,
@@ -2117,23 +2162,11 @@ class PayloadSelectorInclude(BaseModel, extra="forbid"):
 
 class PayloadStorageTypeOneOf(BaseModel):
     type: Literal[
-        "in_memory",
-    ] = Field(..., description="")
-
-
-class PayloadStorageTypeOneOf1(BaseModel):
-    type: Literal[
-        "on_disk",
-    ] = Field(..., description="")
-
-
-class PayloadStorageTypeOneOf2(BaseModel):
-    type: Literal[
         "mmap",
     ] = Field(..., description="")
 
 
-class PayloadStorageTypeOneOf3(BaseModel):
+class PayloadStorageTypeOneOf1(BaseModel):
     type: Literal[
         "in_ram_mmap",
     ] = Field(..., description="")
@@ -2289,7 +2322,7 @@ class QuantizationSearchParams(BaseModel, extra="forbid"):
     )
     oversampling: Optional[float] = Field(
         default=None,
-        description="Oversampling factor for quantization. Default is 1.0.  Defines how many extra vectors should be pre-selected using quantized index, and then re-scored using original vectors.  For example, if `oversampling` is 2.4 and `limit` is 100, then 240 vectors will be pre-selected using quantized index, and then top-100 will be returned after re-scoring.",
+        description="Oversampling factor for quantization. Default is 1.0.  Defines how many extra vectors should be preselected using quantized index, and then re-scored using original vectors.  For example, if `oversampling` is 2.4 and `limit` is 100, then 240 vectors will be preselected using quantized index, and then top-100 will be returned after re-scoring.",
     )
 
 
@@ -2706,6 +2739,10 @@ class RunningEnvironmentTelemetry(BaseModel):
     distribution_version: Optional[str] = Field(default=None, description="")
     is_docker: bool = Field(..., description="")
     cores: Optional[int] = Field(default=None, description="")
+    cpu_cores_used: Optional[float] = Field(
+        default=None,
+        description="Average number of CPU cores used by this process over roughly the last two seconds. `None` on unsupported platforms, before two samples are collected, or on transient failures reading process CPU time.",
+    )
     ram_size: Optional[int] = Field(default=None, description="")
     disk_size: Optional[int] = Field(default=None, description="")
     cpu_flags: str = Field(..., description="")
@@ -2912,6 +2949,16 @@ class SearchRequestBatch(BaseModel, extra="forbid"):
     searches: List["SearchRequest"] = Field(..., description="")
 
 
+class SearchThreadPoolTelemetry(BaseModel):
+    """
+    Live snapshot of the adaptive search routing.  `mode` is the runtime currently selected by [`SearchMode`]; `high_cpu_threads` and `high_io_threads` are the blocking-thread budgets of the two underlying runtimes that the adaptive handle routes between.
+    """
+
+    mode: str = Field(..., description="Currently active mode (`high_cpu` or `high_io`).")
+    high_cpu_threads: int = Field(..., description="Blocking-thread count of the high-CPU runtime.")
+    high_io_threads: int = Field(..., description="Blocking-thread count of the high-IO runtime.")
+
+
 class SegmentConfig(BaseModel):
     vector_data: Optional[Dict[str, "VectorDataConfig"]] = Field(default={}, description="")
     sparse_vector_data: Optional[Dict[str, "SparseVectorDataConfig"]] = Field(default=None, description="")
@@ -2927,6 +2974,8 @@ class SegmentInfo(BaseModel):
     segment_type: "SegmentType" = Field(..., description="Aggregated information about segment")
     num_vectors: int = Field(..., description="Aggregated information about segment")
     num_points: int = Field(..., description="Aggregated information about segment")
+    num_deferred_points: Optional[int] = Field(default=None, description="Aggregated information about segment")
+    num_deleted_deferred_points: Optional[int] = Field(default=None, description="Aggregated information about segment")
     num_indexed_vectors: int = Field(..., description="Aggregated information about segment")
     num_deleted_vectors: int = Field(..., description="Aggregated information about segment")
     vectors_size_bytes: int = Field(
@@ -2941,6 +2990,10 @@ class SegmentInfo(BaseModel):
     is_appendable: bool = Field(..., description="Aggregated information about segment")
     index_schema: Dict[str, "PayloadIndexInfo"] = Field(..., description="Aggregated information about segment")
     vector_data: Dict[str, "VectorDataInfo"] = Field(..., description="Aggregated information about segment")
+    deferred_internal_id: Optional[int] = Field(
+        default=None,
+        description="Internal ID from which points are deferred (hidden from reads). Only set for appendable segments.",
+    )
 
 
 class SegmentTelemetry(BaseModel):
@@ -3086,6 +3139,10 @@ class ShardTransferMethod(str, Enum):
 class ShardUpdateQueueInfo(BaseModel):
     length: int = Field(..., description="Number of elements in the queue")
     op_num: Optional[int] = Field(default=None, description="last operation number processed")
+    deferred_points: Optional[int] = Field(
+        default=None,
+        description="Number of points that are deferred (i.e hidden from search as they&#x27;re not yet optimized).",
+    )
 
 
 class ShardingMethod(str, Enum):
@@ -3244,6 +3301,17 @@ class SparseVector(BaseModel, extra="forbid"):
     values: List[float] = Field(..., description="Values and indices must be the same length")
 
 
+class SparseVectorConfig(BaseModel, extra="forbid"):
+    """
+    Configuration for creating a new sparse named vector.  Only includes properties that define the vector space and cannot be changed after creation.
+    """
+
+    modifier: Optional["Modifier"] = Field(default=None, description="Value modifier for sparse vectors (e.g., IDF)")
+    datatype: Optional["VectorStorageDatatype"] = Field(
+        default=None, description="Datatype used to store weights in the index"
+    )
+
+
 class SparseVectorDataConfig(BaseModel):
     """
     Config of single sparse vector data storage
@@ -3256,6 +3324,14 @@ class SparseVectorDataConfig(BaseModel):
     modifier: Optional["Modifier"] = Field(
         default=None, description="Configures addition value modifications for sparse vectors. Default: none"
     )
+
+
+class SparseVectorNameConfig(BaseModel, extra="forbid"):
+    """
+    Wrapper for sparse vector creation config.
+    """
+
+    sparse: "SparseVectorConfig" = Field(..., description="Wrapper for sparse vector creation config.")
 
 
 class SparseVectorParams(BaseModel, extra="forbid"):
@@ -3273,17 +3349,6 @@ class SparseVectorParams(BaseModel, extra="forbid"):
 
 class SparseVectorStorageTypeOneOf(str, Enum):
     """
-    Storage on disk (rocksdb storage)
-    """
-
-    def __str__(self) -> str:
-        return str(self.value)
-
-    ON_DISK = "on_disk"
-
-
-class SparseVectorStorageTypeOneOf1(str, Enum):
-    """
     Storage in memory maps (gridstore storage)
     """
 
@@ -3291,6 +3356,17 @@ class SparseVectorStorageTypeOneOf1(str, Enum):
         return str(self.value)
 
     MMAP = "mmap"
+
+
+class SparseVectorStorageTypeOneOf1(str, Enum):
+    """
+    Placeholder storage: contains no data, all vectors reported as deleted. Used for newly created sparse named vectors on immutable segments.
+    """
+
+    def __str__(self) -> str:
+        return str(self.value)
+
+    EMPTY = "empty"
 
 
 class SqrtExpression(BaseModel, extra="forbid"):
@@ -3351,6 +3427,7 @@ class StrictModeConfig(BaseModel, extra="forbid"):
         default=None, description="Max oversampling value allowed in search."
     )
     upsert_max_batchsize: Optional[int] = Field(default=None, description="Max batchsize when upserting")
+    search_max_batchsize: Optional[int] = Field(default=None, description="Max batchsize when searching")
     max_collection_vector_size_bytes: Optional[int] = Field(
         default=None, description="Max size of a collections vector storage in bytes, ignoring replicas."
     )
@@ -3377,6 +3454,10 @@ class StrictModeConfig(BaseModel, extra="forbid"):
     max_payload_index_count: Optional[int] = Field(
         default=None, description="Max number of payload indexes in a collection"
     )
+    max_resident_memory_percent: Optional[int] = Field(
+        default=None,
+        description="Reject memory-consuming update operations (e.g. upsert, set payload) when the process resident memory exceeds this percentage of total system memory (or cgroup limit). Value in [1, 100]. Applied uniformly to external and internal (replication) traffic — rejection is deterministic so it does not cause replica divergence. Delete operations are not affected, so callers can still free memory.",
+    )
 
 
 class StrictModeConfigOutput(BaseModel):
@@ -3397,6 +3478,7 @@ class StrictModeConfigOutput(BaseModel):
         default=None, description="Max oversampling value allowed in search."
     )
     upsert_max_batchsize: Optional[int] = Field(default=None, description="Max batchsize when upserting")
+    search_max_batchsize: Optional[int] = Field(default=None, description="Max batchsize when searching")
     max_collection_vector_size_bytes: Optional[int] = Field(
         default=None, description="Max size of a collections vector storage in bytes, ignoring replicas."
     )
@@ -3422,6 +3504,10 @@ class StrictModeConfigOutput(BaseModel):
     )
     max_payload_index_count: Optional[int] = Field(
         default=None, description="Max number of payload indexes in a collection"
+    )
+    max_resident_memory_percent: Optional[int] = Field(
+        default=None,
+        description="Reject memory-consuming update operations when resident memory exceeds this percentage of total RAM (1-100)",
     )
 
 
@@ -3453,6 +3539,7 @@ class TelemetryData(BaseModel):
     requests: Optional["RequestsTelemetry"] = Field(default=None, description="")
     memory: Optional["MemoryTelemetry"] = Field(default=None, description="")
     hardware: Optional["HardwareTelemetry"] = Field(default=None, description="")
+    search_pool: Optional["SearchThreadPoolTelemetry"] = Field(default=None, description="")
 
 
 class TextIndexParams(BaseModel, extra="forbid"):
@@ -3526,6 +3613,23 @@ class TrackerTelemetry(BaseModel):
     end_at: Optional[Union[datetime, date]] = Field(default=None, description="End time of the optimizer")
 
 
+class TurboQuantBitSize(str, Enum):
+    BITS1 = "bits1"
+    BITS1_5 = "bits1_5"
+    BITS2 = "bits2"
+    BITS4 = "bits4"
+
+
+class TurboQuantQuantizationConfig(BaseModel, extra="forbid"):
+    always_ram: Optional[bool] = Field(default=None, description="")
+    plus: Optional[bool] = Field(default=None, description="")
+    bits: Optional["TurboQuantBitSize"] = Field(default=None, description="")
+
+
+class TurboQuantization(BaseModel, extra="forbid"):
+    turbo: "TurboQuantQuantizationConfig" = Field(..., description="")
+
+
 class UpdateCollection(BaseModel, extra="forbid"):
     """
     Operation for updating parameters of the existing collection
@@ -3579,6 +3683,10 @@ class UpdateOperations(BaseModel, extra="forbid"):
 
 class UpdateQueueInfo(BaseModel):
     length: int = Field(..., description="Number of elements in the queue")
+    deferred_points: Optional[int] = Field(
+        default=None,
+        description="Number of points that are deferred (i.e hidden from search as they&#x27;re not yet optimized).",
+    )
 
 
 class UpdateResult(BaseModel):
@@ -3798,6 +3906,17 @@ class VectorStorageTypeOneOf4(str, Enum):
     INRAMMMAP = "InRamMmap"
 
 
+class VectorStorageTypeOneOf5(str, Enum):
+    """
+    Placeholder storage: contains no data, all vectors reported as deleted. Used for newly created named vectors on immutable segments. No files on disk, reconstructed from config on load.
+    """
+
+    def __str__(self) -> str:
+        return str(self.value)
+
+    EMPTY = "Empty"
+
+
 class VersionInfo(BaseModel):
     title: str = Field(..., description="")
     version: str = Field(..., description="")
@@ -3820,6 +3939,9 @@ class WalConfigDiff(BaseModel, extra="forbid"):
 
 class WebApiTelemetry(BaseModel):
     responses: Dict[str, Dict[str, "OperationDurationStatistics"]] = Field(..., description="")
+    per_collection_responses: Optional[Dict[str, Dict[str, Dict[str, "OperationDurationStatistics"]]]] = Field(
+        default=None, description=""
+    )
 
 
 class WithLookup(BaseModel, extra="forbid"):
@@ -3916,6 +4038,11 @@ Indexes = Union[
     IndexesOneOf,
     IndexesOneOf1,
 ]
+LowMemoryMode = Union[
+    LowMemoryModeOneOf,
+    LowMemoryModeOneOf1,
+    LowMemoryModeOneOf2,
+]
 Match = Union[
     MatchValue,
     MatchText,
@@ -3962,8 +4089,6 @@ PayloadSelector = Union[
 PayloadStorageType = Union[
     PayloadStorageTypeOneOf,
     PayloadStorageTypeOneOf1,
-    PayloadStorageTypeOneOf2,
-    PayloadStorageTypeOneOf3,
 ]
 PointInsertOperations = Union[
     PointsBatch,
@@ -3977,11 +4102,13 @@ QuantizationConfig = Union[
     ScalarQuantization,
     ProductQuantization,
     BinaryQuantization,
+    TurboQuantization,
 ]
 QuantizationConfigDiff = Union[
     ScalarQuantization,
     ProductQuantization,
     BinaryQuantization,
+    TurboQuantization,
     Disabled,
 ]
 Query = Union[
@@ -4069,6 +4196,10 @@ Vector = Union[
     Image,
     InferenceObject,
 ]
+VectorNameConfig = Union[
+    DenseVectorNameConfig,
+    SparseVectorNameConfig,
+]
 VectorOutput = Union[
     List[StrictFloat],
     SparseVector,
@@ -4080,6 +4211,7 @@ VectorStorageType = Union[
     VectorStorageTypeOneOf2,
     VectorStorageTypeOneOf3,
     VectorStorageTypeOneOf4,
+    VectorStorageTypeOneOf5,
 ]
 VectorsConfig = Union[
     VectorParams,

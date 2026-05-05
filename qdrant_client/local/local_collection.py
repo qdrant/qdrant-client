@@ -37,8 +37,11 @@ from qdrant_client.local.distances import (
     calculate_recommend_best_scores,
     distance_to_order,
     calculate_recommend_sum_scores,
-    calculate_distance_core, calculate_naive_feedback_query, NaiveFeedbackQuery,
-    FeedbackItem as DistFeedbackItem, NaiveFeedbackCoefficients,
+    calculate_distance_core,
+    calculate_naive_feedback_query,
+    NaiveFeedbackQuery,
+    FeedbackItem as DistFeedbackItem,
+    NaiveFeedbackCoefficients,
 )
 from qdrant_client.local.multi_distances import (
     MultiQueryVector,
@@ -642,7 +645,7 @@ class LocalCollection:
             # sparse vector query must be sorted by indices for dot product to work with persisted vectors
             query_vector = sort_sparse_vector(query_vector)
             scores = calculate_distance_sparse(query_vector, vectors)
-        elif isinstance(query_vector,  NaiveFeedbackQuery):
+        elif isinstance(query_vector, NaiveFeedbackQuery):
             scores = calculate_naive_feedback_query(query_vector, vectors, distance)
         else:
             raise (ValueError(f"Unsupported query vector type {type(query_vector)}"))
@@ -854,7 +857,11 @@ class LocalCollection:
                 with_vectors=with_vectors,
             )
 
-            rescored = [point for point in rescored if score_threshold is None or point.score >= score_threshold]
+            rescored = [
+                point
+                for point in rescored
+                if score_threshold is None or point.score >= score_threshold
+            ]
 
             return rescored[offset:]
         else:
@@ -2321,7 +2328,6 @@ class LocalCollection:
         else:
             raise ValueError(f"Unsupported feedback strategy: {strategy}")
 
-
     def _update_point(self, point: models.PointStruct) -> None:
         if isinstance(point.id, uuid.UUID):
             point.id = str(point.id)
@@ -2846,6 +2852,77 @@ class LocalCollection:
             raise ValueError(f"Vector {vector_name} does not exist in the collection")
 
         self.config.sparse_vectors[vector_name] = new_config
+
+    def create_dense_vector_name(self, vector_name: str, config: models.DenseVectorConfig) -> None:
+        if vector_name in self._all_vectors_keys:
+            raise ValueError(f"Vector {vector_name} already exists in the collection")
+
+        params = models.VectorParams(
+            size=config.size,
+            distance=config.distance,
+            multivector_config=config.multivector_config,
+        )
+
+        num_points = len(self.ids_inv)
+
+        if config.multivector_config is not None:
+            self.multivectors_config[vector_name] = params
+            self.multivectors[vector_name] = [np.array([]) for _ in range(num_points)]
+        else:
+            self.vectors_config[vector_name] = params
+            self.vectors[vector_name] = np.zeros((num_points, config.size), dtype=np.float32)
+
+        self.deleted_per_vector[vector_name] = np.ones(num_points, dtype=bool)
+        self._all_vectors_keys.append(vector_name)
+
+        if self.config.vectors is None:
+            self.config.vectors = {}
+        if isinstance(self.config.vectors, dict):
+            self.config.vectors[vector_name] = params
+
+    def create_sparse_vector_name(
+        self, vector_name: str, config: models.SparseVectorConfig
+    ) -> None:
+        if vector_name in self._all_vectors_keys:
+            raise ValueError(f"Vector {vector_name} already exists in the collection")
+
+        params = models.SparseVectorParams(
+            modifier=config.modifier,
+        )
+
+        num_points = len(self.ids_inv)
+
+        self.sparse_vectors[vector_name] = [empty_sparse_vector() for _ in range(num_points)]
+        self.deleted_per_vector[vector_name] = np.ones(num_points, dtype=bool)
+        self._all_vectors_keys.append(vector_name)
+
+        if self.config.sparse_vectors is None:
+            self.config.sparse_vectors = {}
+        self.config.sparse_vectors[vector_name] = params
+
+    def delete_vector_name(self, vector_name: str) -> None:
+        if vector_name not in self._all_vectors_keys:
+            raise ValueError(f"Vector {vector_name} does not exist in the collection")
+
+        self._all_vectors_keys.remove(vector_name)
+        self.deleted_per_vector.pop(vector_name, None)
+
+        if vector_name in self.vectors:
+            del self.vectors[vector_name]
+            del self.vectors_config[vector_name]
+            if isinstance(self.config.vectors, dict):
+                self.config.vectors.pop(vector_name, None)
+        elif vector_name in self.sparse_vectors:
+            if vector_name in self.sparse_vectors_idf:
+                del self.sparse_vectors_idf[vector_name]
+            del self.sparse_vectors[vector_name]
+            if self.config.sparse_vectors is not None:
+                self.config.sparse_vectors.pop(vector_name, None)
+        elif vector_name in self.multivectors:
+            del self.multivectors[vector_name]
+            del self.multivectors_config[vector_name]
+            if isinstance(self.config.vectors, dict):
+                self.config.vectors.pop(vector_name, None)
 
     def info(self) -> models.CollectionInfo:
         return models.CollectionInfo(

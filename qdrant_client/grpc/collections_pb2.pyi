@@ -199,6 +199,25 @@ TwoBits: BinaryQuantizationEncoding.ValueType  # 1
 OneAndHalfBits: BinaryQuantizationEncoding.ValueType  # 2
 global___BinaryQuantizationEncoding = BinaryQuantizationEncoding
 
+class _TurboQuantBitSize:
+    ValueType = typing.NewType("ValueType", builtins.int)
+    V: typing_extensions.TypeAlias = ValueType
+
+class _TurboQuantBitSizeEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[_TurboQuantBitSize.ValueType], builtins.type):  # noqa: F821
+    DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
+    Bits1: _TurboQuantBitSize.ValueType  # 0
+    Bits1_5: _TurboQuantBitSize.ValueType  # 1
+    Bits2: _TurboQuantBitSize.ValueType  # 2
+    Bits4: _TurboQuantBitSize.ValueType  # 3
+
+class TurboQuantBitSize(_TurboQuantBitSize, metaclass=_TurboQuantBitSizeEnumTypeWrapper): ...
+
+Bits1: TurboQuantBitSize.ValueType  # 0
+Bits1_5: TurboQuantBitSize.ValueType  # 1
+Bits2: TurboQuantBitSize.ValueType  # 2
+Bits4: TurboQuantBitSize.ValueType  # 3
+global___TurboQuantBitSize = TurboQuantBitSize
+
 class _ShardingMethod:
     ValueType = typing.NewType("ValueType", builtins.int)
     V: typing_extensions.TypeAlias = ValueType
@@ -1201,28 +1220,60 @@ class BinaryQuantization(google.protobuf.message.Message):
 
 global___BinaryQuantization = BinaryQuantization
 
+class TurboQuantization(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    ALWAYS_RAM_FIELD_NUMBER: builtins.int
+    BITS_FIELD_NUMBER: builtins.int
+    PLUS_FIELD_NUMBER: builtins.int
+    always_ram: builtins.bool
+    bits: global___TurboQuantBitSize.ValueType
+    plus: builtins.bool
+    """TODO(turbo): Remove before release"""
+    def __init__(
+        self,
+        *,
+        always_ram: builtins.bool | None = ...,
+        bits: global___TurboQuantBitSize.ValueType | None = ...,
+        plus: builtins.bool | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_always_ram", b"_always_ram", "_bits", b"_bits", "_plus", b"_plus", "always_ram", b"always_ram", "bits", b"bits", "plus", b"plus"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_always_ram", b"_always_ram", "_bits", b"_bits", "_plus", b"_plus", "always_ram", b"always_ram", "bits", b"bits", "plus", b"plus"]) -> None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_always_ram", b"_always_ram"]) -> typing_extensions.Literal["always_ram"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_bits", b"_bits"]) -> typing_extensions.Literal["bits"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_plus", b"_plus"]) -> typing_extensions.Literal["plus"] | None: ...
+
+global___TurboQuantization = TurboQuantization
+
 class QuantizationConfig(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
     SCALAR_FIELD_NUMBER: builtins.int
     PRODUCT_FIELD_NUMBER: builtins.int
     BINARY_FIELD_NUMBER: builtins.int
+    TURBOQUANT_FIELD_NUMBER: builtins.int
     @property
     def scalar(self) -> global___ScalarQuantization: ...
     @property
     def product(self) -> global___ProductQuantization: ...
     @property
     def binary(self) -> global___BinaryQuantization: ...
+    @property
+    def turboquant(self) -> global___TurboQuantization: ...
     def __init__(
         self,
         *,
         scalar: global___ScalarQuantization | None = ...,
         product: global___ProductQuantization | None = ...,
         binary: global___BinaryQuantization | None = ...,
+        turboquant: global___TurboQuantization | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["binary", b"binary", "product", b"product", "quantization", b"quantization", "scalar", b"scalar"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["binary", b"binary", "product", b"product", "quantization", b"quantization", "scalar", b"scalar"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["quantization", b"quantization"]) -> typing_extensions.Literal["scalar", "product", "binary"] | None: ...
+    def HasField(self, field_name: typing_extensions.Literal["binary", b"binary", "product", b"product", "quantization", b"quantization", "scalar", b"scalar", "turboquant", b"turboquant"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["binary", b"binary", "product", b"product", "quantization", b"quantization", "scalar", b"scalar", "turboquant", b"turboquant"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["quantization", b"quantization"]) -> typing_extensions.Literal["scalar", "product", "binary", "turboquant"] | None: ...
 
 global___QuantizationConfig = QuantizationConfig
 
@@ -1242,6 +1293,7 @@ class QuantizationConfigDiff(google.protobuf.message.Message):
     PRODUCT_FIELD_NUMBER: builtins.int
     DISABLED_FIELD_NUMBER: builtins.int
     BINARY_FIELD_NUMBER: builtins.int
+    TURBOQUANT_FIELD_NUMBER: builtins.int
     @property
     def scalar(self) -> global___ScalarQuantization: ...
     @property
@@ -1250,6 +1302,8 @@ class QuantizationConfigDiff(google.protobuf.message.Message):
     def disabled(self) -> global___Disabled: ...
     @property
     def binary(self) -> global___BinaryQuantization: ...
+    @property
+    def turboquant(self) -> global___TurboQuantization: ...
     def __init__(
         self,
         *,
@@ -1257,10 +1311,11 @@ class QuantizationConfigDiff(google.protobuf.message.Message):
         product: global___ProductQuantization | None = ...,
         disabled: global___Disabled | None = ...,
         binary: global___BinaryQuantization | None = ...,
+        turboquant: global___TurboQuantization | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["binary", b"binary", "disabled", b"disabled", "product", b"product", "quantization", b"quantization", "scalar", b"scalar"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["binary", b"binary", "disabled", b"disabled", "product", b"product", "quantization", b"quantization", "scalar", b"scalar"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["quantization", b"quantization"]) -> typing_extensions.Literal["scalar", "product", "disabled", "binary"] | None: ...
+    def HasField(self, field_name: typing_extensions.Literal["binary", b"binary", "disabled", b"disabled", "product", b"product", "quantization", b"quantization", "scalar", b"scalar", "turboquant", b"turboquant"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["binary", b"binary", "disabled", b"disabled", "product", b"product", "quantization", b"quantization", "scalar", b"scalar", "turboquant", b"turboquant"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["quantization", b"quantization"]) -> typing_extensions.Literal["scalar", "product", "disabled", "binary", "turboquant"] | None: ...
 
 global___QuantizationConfigDiff = QuantizationConfigDiff
 
@@ -1276,6 +1331,7 @@ class StrictModeConfig(google.protobuf.message.Message):
     SEARCH_ALLOW_EXACT_FIELD_NUMBER: builtins.int
     SEARCH_MAX_OVERSAMPLING_FIELD_NUMBER: builtins.int
     UPSERT_MAX_BATCHSIZE_FIELD_NUMBER: builtins.int
+    SEARCH_MAX_BATCHSIZE_FIELD_NUMBER: builtins.int
     MAX_COLLECTION_VECTOR_SIZE_BYTES_FIELD_NUMBER: builtins.int
     READ_RATE_LIMIT_FIELD_NUMBER: builtins.int
     WRITE_RATE_LIMIT_FIELD_NUMBER: builtins.int
@@ -1286,6 +1342,7 @@ class StrictModeConfig(google.protobuf.message.Message):
     SPARSE_CONFIG_FIELD_NUMBER: builtins.int
     MAX_POINTS_COUNT_FIELD_NUMBER: builtins.int
     MAX_PAYLOAD_INDEX_COUNT_FIELD_NUMBER: builtins.int
+    MAX_RESIDENT_MEMORY_PERCENT_FIELD_NUMBER: builtins.int
     enabled: builtins.bool
     """Whether strict mode is enabled for a collection or not."""
     max_query_limit: builtins.int
@@ -1304,6 +1361,8 @@ class StrictModeConfig(google.protobuf.message.Message):
     """Max oversampling value allowed in search"""
     upsert_max_batchsize: builtins.int
     """Max batchsize when upserting"""
+    search_max_batchsize: builtins.int
+    """Max batchsize when searching"""
     max_collection_vector_size_bytes: builtins.int
     """Max size of a collections vector storage in bytes, ignoring replicas."""
     read_rate_limit: builtins.int
@@ -1326,6 +1385,10 @@ class StrictModeConfig(google.protobuf.message.Message):
     """Max number of points estimated in a collection"""
     max_payload_index_count: builtins.int
     """Max number of payload indexes in a collection"""
+    max_resident_memory_percent: builtins.int
+    """Reject memory-consuming update operations when process resident memory exceeds this percentage of total RAM (cgroup-aware, 1-100).
+    Delete-style operations are still allowed so memory can be freed.
+    """
     def __init__(
         self,
         *,
@@ -1338,6 +1401,7 @@ class StrictModeConfig(google.protobuf.message.Message):
         search_allow_exact: builtins.bool | None = ...,
         search_max_oversampling: builtins.float | None = ...,
         upsert_max_batchsize: builtins.int | None = ...,
+        search_max_batchsize: builtins.int | None = ...,
         max_collection_vector_size_bytes: builtins.int | None = ...,
         read_rate_limit: builtins.int | None = ...,
         write_rate_limit: builtins.int | None = ...,
@@ -1348,9 +1412,10 @@ class StrictModeConfig(google.protobuf.message.Message):
         sparse_config: global___StrictModeSparseConfig | None = ...,
         max_points_count: builtins.int | None = ...,
         max_payload_index_count: builtins.int | None = ...,
+        max_resident_memory_percent: builtins.int | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_condition_max_size", b"_condition_max_size", "_enabled", b"_enabled", "_filter_max_conditions", b"_filter_max_conditions", "_max_collection_payload_size_bytes", b"_max_collection_payload_size_bytes", "_max_collection_vector_size_bytes", b"_max_collection_vector_size_bytes", "_max_payload_index_count", b"_max_payload_index_count", "_max_points_count", b"_max_points_count", "_max_query_limit", b"_max_query_limit", "_max_timeout", b"_max_timeout", "_multivector_config", b"_multivector_config", "_read_rate_limit", b"_read_rate_limit", "_search_allow_exact", b"_search_allow_exact", "_search_max_hnsw_ef", b"_search_max_hnsw_ef", "_search_max_oversampling", b"_search_max_oversampling", "_sparse_config", b"_sparse_config", "_unindexed_filtering_retrieve", b"_unindexed_filtering_retrieve", "_unindexed_filtering_update", b"_unindexed_filtering_update", "_upsert_max_batchsize", b"_upsert_max_batchsize", "_write_rate_limit", b"_write_rate_limit", "condition_max_size", b"condition_max_size", "enabled", b"enabled", "filter_max_conditions", b"filter_max_conditions", "max_collection_payload_size_bytes", b"max_collection_payload_size_bytes", "max_collection_vector_size_bytes", b"max_collection_vector_size_bytes", "max_payload_index_count", b"max_payload_index_count", "max_points_count", b"max_points_count", "max_query_limit", b"max_query_limit", "max_timeout", b"max_timeout", "multivector_config", b"multivector_config", "read_rate_limit", b"read_rate_limit", "search_allow_exact", b"search_allow_exact", "search_max_hnsw_ef", b"search_max_hnsw_ef", "search_max_oversampling", b"search_max_oversampling", "sparse_config", b"sparse_config", "unindexed_filtering_retrieve", b"unindexed_filtering_retrieve", "unindexed_filtering_update", b"unindexed_filtering_update", "upsert_max_batchsize", b"upsert_max_batchsize", "write_rate_limit", b"write_rate_limit"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_condition_max_size", b"_condition_max_size", "_enabled", b"_enabled", "_filter_max_conditions", b"_filter_max_conditions", "_max_collection_payload_size_bytes", b"_max_collection_payload_size_bytes", "_max_collection_vector_size_bytes", b"_max_collection_vector_size_bytes", "_max_payload_index_count", b"_max_payload_index_count", "_max_points_count", b"_max_points_count", "_max_query_limit", b"_max_query_limit", "_max_timeout", b"_max_timeout", "_multivector_config", b"_multivector_config", "_read_rate_limit", b"_read_rate_limit", "_search_allow_exact", b"_search_allow_exact", "_search_max_hnsw_ef", b"_search_max_hnsw_ef", "_search_max_oversampling", b"_search_max_oversampling", "_sparse_config", b"_sparse_config", "_unindexed_filtering_retrieve", b"_unindexed_filtering_retrieve", "_unindexed_filtering_update", b"_unindexed_filtering_update", "_upsert_max_batchsize", b"_upsert_max_batchsize", "_write_rate_limit", b"_write_rate_limit", "condition_max_size", b"condition_max_size", "enabled", b"enabled", "filter_max_conditions", b"filter_max_conditions", "max_collection_payload_size_bytes", b"max_collection_payload_size_bytes", "max_collection_vector_size_bytes", b"max_collection_vector_size_bytes", "max_payload_index_count", b"max_payload_index_count", "max_points_count", b"max_points_count", "max_query_limit", b"max_query_limit", "max_timeout", b"max_timeout", "multivector_config", b"multivector_config", "read_rate_limit", b"read_rate_limit", "search_allow_exact", b"search_allow_exact", "search_max_hnsw_ef", b"search_max_hnsw_ef", "search_max_oversampling", b"search_max_oversampling", "sparse_config", b"sparse_config", "unindexed_filtering_retrieve", b"unindexed_filtering_retrieve", "unindexed_filtering_update", b"unindexed_filtering_update", "upsert_max_batchsize", b"upsert_max_batchsize", "write_rate_limit", b"write_rate_limit"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_condition_max_size", b"_condition_max_size", "_enabled", b"_enabled", "_filter_max_conditions", b"_filter_max_conditions", "_max_collection_payload_size_bytes", b"_max_collection_payload_size_bytes", "_max_collection_vector_size_bytes", b"_max_collection_vector_size_bytes", "_max_payload_index_count", b"_max_payload_index_count", "_max_points_count", b"_max_points_count", "_max_query_limit", b"_max_query_limit", "_max_resident_memory_percent", b"_max_resident_memory_percent", "_max_timeout", b"_max_timeout", "_multivector_config", b"_multivector_config", "_read_rate_limit", b"_read_rate_limit", "_search_allow_exact", b"_search_allow_exact", "_search_max_batchsize", b"_search_max_batchsize", "_search_max_hnsw_ef", b"_search_max_hnsw_ef", "_search_max_oversampling", b"_search_max_oversampling", "_sparse_config", b"_sparse_config", "_unindexed_filtering_retrieve", b"_unindexed_filtering_retrieve", "_unindexed_filtering_update", b"_unindexed_filtering_update", "_upsert_max_batchsize", b"_upsert_max_batchsize", "_write_rate_limit", b"_write_rate_limit", "condition_max_size", b"condition_max_size", "enabled", b"enabled", "filter_max_conditions", b"filter_max_conditions", "max_collection_payload_size_bytes", b"max_collection_payload_size_bytes", "max_collection_vector_size_bytes", b"max_collection_vector_size_bytes", "max_payload_index_count", b"max_payload_index_count", "max_points_count", b"max_points_count", "max_query_limit", b"max_query_limit", "max_resident_memory_percent", b"max_resident_memory_percent", "max_timeout", b"max_timeout", "multivector_config", b"multivector_config", "read_rate_limit", b"read_rate_limit", "search_allow_exact", b"search_allow_exact", "search_max_batchsize", b"search_max_batchsize", "search_max_hnsw_ef", b"search_max_hnsw_ef", "search_max_oversampling", b"search_max_oversampling", "sparse_config", b"sparse_config", "unindexed_filtering_retrieve", b"unindexed_filtering_retrieve", "unindexed_filtering_update", b"unindexed_filtering_update", "upsert_max_batchsize", b"upsert_max_batchsize", "write_rate_limit", b"write_rate_limit"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_condition_max_size", b"_condition_max_size", "_enabled", b"_enabled", "_filter_max_conditions", b"_filter_max_conditions", "_max_collection_payload_size_bytes", b"_max_collection_payload_size_bytes", "_max_collection_vector_size_bytes", b"_max_collection_vector_size_bytes", "_max_payload_index_count", b"_max_payload_index_count", "_max_points_count", b"_max_points_count", "_max_query_limit", b"_max_query_limit", "_max_resident_memory_percent", b"_max_resident_memory_percent", "_max_timeout", b"_max_timeout", "_multivector_config", b"_multivector_config", "_read_rate_limit", b"_read_rate_limit", "_search_allow_exact", b"_search_allow_exact", "_search_max_batchsize", b"_search_max_batchsize", "_search_max_hnsw_ef", b"_search_max_hnsw_ef", "_search_max_oversampling", b"_search_max_oversampling", "_sparse_config", b"_sparse_config", "_unindexed_filtering_retrieve", b"_unindexed_filtering_retrieve", "_unindexed_filtering_update", b"_unindexed_filtering_update", "_upsert_max_batchsize", b"_upsert_max_batchsize", "_write_rate_limit", b"_write_rate_limit", "condition_max_size", b"condition_max_size", "enabled", b"enabled", "filter_max_conditions", b"filter_max_conditions", "max_collection_payload_size_bytes", b"max_collection_payload_size_bytes", "max_collection_vector_size_bytes", b"max_collection_vector_size_bytes", "max_payload_index_count", b"max_payload_index_count", "max_points_count", b"max_points_count", "max_query_limit", b"max_query_limit", "max_resident_memory_percent", b"max_resident_memory_percent", "max_timeout", b"max_timeout", "multivector_config", b"multivector_config", "read_rate_limit", b"read_rate_limit", "search_allow_exact", b"search_allow_exact", "search_max_batchsize", b"search_max_batchsize", "search_max_hnsw_ef", b"search_max_hnsw_ef", "search_max_oversampling", b"search_max_oversampling", "sparse_config", b"sparse_config", "unindexed_filtering_retrieve", b"unindexed_filtering_retrieve", "unindexed_filtering_update", b"unindexed_filtering_update", "upsert_max_batchsize", b"upsert_max_batchsize", "write_rate_limit", b"write_rate_limit"]) -> None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_condition_max_size", b"_condition_max_size"]) -> typing_extensions.Literal["condition_max_size"] | None: ...
     @typing.overload
@@ -1368,6 +1433,8 @@ class StrictModeConfig(google.protobuf.message.Message):
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_max_query_limit", b"_max_query_limit"]) -> typing_extensions.Literal["max_query_limit"] | None: ...
     @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_max_resident_memory_percent", b"_max_resident_memory_percent"]) -> typing_extensions.Literal["max_resident_memory_percent"] | None: ...
+    @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_max_timeout", b"_max_timeout"]) -> typing_extensions.Literal["max_timeout"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_multivector_config", b"_multivector_config"]) -> typing_extensions.Literal["multivector_config"] | None: ...
@@ -1375,6 +1442,8 @@ class StrictModeConfig(google.protobuf.message.Message):
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_read_rate_limit", b"_read_rate_limit"]) -> typing_extensions.Literal["read_rate_limit"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_search_allow_exact", b"_search_allow_exact"]) -> typing_extensions.Literal["search_allow_exact"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_search_max_batchsize", b"_search_max_batchsize"]) -> typing_extensions.Literal["search_max_batchsize"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_search_max_hnsw_ef", b"_search_max_hnsw_ef"]) -> typing_extensions.Literal["search_max_hnsw_ef"] | None: ...
     @typing.overload
@@ -2388,14 +2457,20 @@ class UpdateQueueInfo(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
     LENGTH_FIELD_NUMBER: builtins.int
+    DEFERRED_POINTS_FIELD_NUMBER: builtins.int
     length: builtins.int
     """Number of elements in the queue"""
+    deferred_points: builtins.int
+    """Number of points that are deferred (i.e hidden from search as they're not yet optimized)."""
     def __init__(
         self,
         *,
         length: builtins.int = ...,
+        deferred_points: builtins.int | None = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["length", b"length"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_deferred_points", b"_deferred_points", "deferred_points", b"deferred_points"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_deferred_points", b"_deferred_points", "deferred_points", b"deferred_points", "length", b"length"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_deferred_points", b"_deferred_points"]) -> typing_extensions.Literal["deferred_points"] | None: ...
 
 global___UpdateQueueInfo = UpdateQueueInfo
 

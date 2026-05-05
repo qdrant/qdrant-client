@@ -1796,6 +1796,28 @@ class GrpcToRest:
         )  # pragma: no cover
 
     @classmethod
+    def convert_turbo_quantization_config(
+        cls, model: grpc.TurboQuantization
+    ) -> rest.TurboQuantQuantizationConfig:
+        return rest.TurboQuantQuantizationConfig(
+            always_ram=model.always_ram if model.HasField("always_ram") else None,
+            plus=model.plus if model.HasField("plus") else None,
+            bits=cls.convert_turbo_quant_bit_size(model.bits) if model.HasField("bits") else None,
+        )
+
+    @classmethod
+    def convert_turbo_quant_bit_size(cls, model: grpc.TurboQuantBitSize) -> rest.TurboQuantBitSize:
+        if model == grpc.TurboQuantBitSize.Bits1:
+            return rest.TurboQuantBitSize.BITS1
+        if model == grpc.TurboQuantBitSize.Bits1_5:
+            return rest.TurboQuantBitSize.BITS1_5
+        if model == grpc.TurboQuantBitSize.Bits2:
+            return rest.TurboQuantBitSize.BITS2
+        if model == grpc.TurboQuantBitSize.Bits4:
+            return rest.TurboQuantBitSize.BITS4
+        raise ValueError(f"invalid TurboQuantBitSize model: {model}")  # pragma: no cover
+
+    @classmethod
     def convert_compression_ratio(cls, model: grpc.CompressionRatio) -> rest.CompressionRatio:
         if model == grpc.x4:
             return rest.CompressionRatio.X4
@@ -1823,6 +1845,8 @@ class GrpcToRest:
             return rest.ProductQuantization(product=cls.convert_product_quantization_config(val))
         if name == "binary":
             return rest.BinaryQuantization(binary=cls.convert_binary_quantization_config(val))
+        if name == "turboquant":
+            return rest.TurboQuantization(turbo=cls.convert_turbo_quantization_config(val))
         raise ValueError(f"invalid QuantizationConfig model: {model}")  # pragma: no cover
 
     @classmethod
@@ -1894,6 +1918,8 @@ class GrpcToRest:
             return rest.ProductQuantization(product=cls.convert_product_quantization_config(val))
         if name == "binary":
             return rest.BinaryQuantization(binary=cls.convert_binary_quantization_config(val))
+        if name == "turboquant":
+            return rest.TurboQuantization(turbo=cls.convert_turbo_quantization_config(val))
         if name == "disabled":
             return rest.Disabled.DISABLED
         raise ValueError(f"invalid QuantizationConfigDiff model: {model}")  # pragma: no cover
@@ -4336,6 +4362,30 @@ class RestToGrpc:
         )  # pragma: no cover
 
     @classmethod
+    def convert_turbo_quantization_config(
+        cls, model: rest.TurboQuantQuantizationConfig
+    ) -> grpc.TurboQuantization:
+        return grpc.TurboQuantization(
+            always_ram=model.always_ram,
+            plus=model.plus,
+            bits=(
+                cls.convert_turbo_quant_bit_size(model.bits) if model.bits is not None else None
+            ),
+        )
+
+    @classmethod
+    def convert_turbo_quant_bit_size(cls, model: rest.TurboQuantBitSize) -> grpc.TurboQuantBitSize:
+        if model == rest.TurboQuantBitSize.BITS1:
+            return grpc.TurboQuantBitSize.Bits1
+        if model == rest.TurboQuantBitSize.BITS1_5:
+            return grpc.TurboQuantBitSize.Bits1_5
+        if model == rest.TurboQuantBitSize.BITS2:
+            return grpc.TurboQuantBitSize.Bits2
+        if model == rest.TurboQuantBitSize.BITS4:
+            return grpc.TurboQuantBitSize.Bits4
+        raise ValueError(f"invalid TurboQuantBitSize model: {model}")  # pragma: no cover
+
+    @classmethod
     def convert_compression_ratio(cls, model: rest.CompressionRatio) -> grpc.CompressionRatio:
         if model == rest.CompressionRatio.X4:
             return grpc.CompressionRatio.x4
@@ -4366,8 +4416,11 @@ class RestToGrpc:
             return grpc.QuantizationConfig(
                 binary=cls.convert_binary_quantization_config(model.binary)
             )
-        else:
-            raise ValueError(f"invalid QuantizationConfig model: {model}")  # pragma: no cover
+        if isinstance(model, rest.TurboQuantization):
+            return grpc.QuantizationConfig(
+                turboquant=cls.convert_turbo_quantization_config(model.turbo)
+            )
+        raise ValueError(f"invalid QuantizationConfig model: {model}")  # pragma: no cover
 
     @classmethod
     def convert_quantization_search_params(
@@ -4450,12 +4503,15 @@ class RestToGrpc:
             return grpc.QuantizationConfigDiff(
                 binary=cls.convert_binary_quantization_config(model.binary)
             )
+        if isinstance(model, rest.TurboQuantization):
+            return grpc.QuantizationConfigDiff(
+                turboquant=cls.convert_turbo_quantization_config(model.turbo)
+            )
         if model == rest.Disabled.DISABLED:
             return grpc.QuantizationConfigDiff(
                 disabled=grpc.Disabled(),
             )
-        else:
-            raise ValueError(f"invalid QuantizationConfigDiff model: {model}")  # pragma: no cover
+        raise ValueError(f"invalid QuantizationConfigDiff model: {model}")  # pragma: no cover
 
     @classmethod
     def convert_vector_params_diff(cls, model: rest.VectorParamsDiff) -> grpc.VectorParamsDiff:

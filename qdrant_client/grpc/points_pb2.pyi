@@ -1217,6 +1217,148 @@ class DeleteFieldIndexCollection(google.protobuf.message.Message):
 
 global___DeleteFieldIndexCollection = DeleteFieldIndexCollection
 
+class DenseVectorCreationConfig(google.protobuf.message.Message):
+    """Dense vector creation parameters.
+    Only includes immutable properties that define the vector space.
+    Storage type, index, and quantization are configured separately.
+    """
+
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    SIZE_FIELD_NUMBER: builtins.int
+    DISTANCE_FIELD_NUMBER: builtins.int
+    MULTIVECTOR_CONFIG_FIELD_NUMBER: builtins.int
+    DATATYPE_FIELD_NUMBER: builtins.int
+    size: builtins.int
+    """Size/dimensionality of the vectors"""
+    distance: collections_pb2.Distance.ValueType
+    """Distance function used for comparing vectors"""
+    @property
+    def multivector_config(self) -> collections_pb2.MultiVectorConfig:
+        """Configuration for multi-vector search (e.g., ColBERT)"""
+    datatype: collections_pb2.Datatype.ValueType
+    """Data type of the vectors (Float32, Float16, Uint8)"""
+    def __init__(
+        self,
+        *,
+        size: builtins.int = ...,
+        distance: collections_pb2.Distance.ValueType = ...,
+        multivector_config: collections_pb2.MultiVectorConfig | None = ...,
+        datatype: collections_pb2.Datatype.ValueType | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_datatype", b"_datatype", "_multivector_config", b"_multivector_config", "datatype", b"datatype", "multivector_config", b"multivector_config"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_datatype", b"_datatype", "_multivector_config", b"_multivector_config", "datatype", b"datatype", "distance", b"distance", "multivector_config", b"multivector_config", "size", b"size"]) -> None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_datatype", b"_datatype"]) -> typing_extensions.Literal["datatype"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_multivector_config", b"_multivector_config"]) -> typing_extensions.Literal["multivector_config"] | None: ...
+
+global___DenseVectorCreationConfig = DenseVectorCreationConfig
+
+class SparseVectorCreationConfig(google.protobuf.message.Message):
+    """Sparse vector creation parameters.
+    Only includes immutable properties that define the vector space.
+    """
+
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    MODIFIER_FIELD_NUMBER: builtins.int
+    DATATYPE_FIELD_NUMBER: builtins.int
+    modifier: collections_pb2.Modifier.ValueType
+    """If set - apply modifier to the vector values (e.g., IDF)"""
+    datatype: collections_pb2.Datatype.ValueType
+    """Data type used to store weights in the index"""
+    def __init__(
+        self,
+        *,
+        modifier: collections_pb2.Modifier.ValueType | None = ...,
+        datatype: collections_pb2.Datatype.ValueType | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_datatype", b"_datatype", "_modifier", b"_modifier", "datatype", b"datatype", "modifier", b"modifier"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_datatype", b"_datatype", "_modifier", b"_modifier", "datatype", b"datatype", "modifier", b"modifier"]) -> None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_datatype", b"_datatype"]) -> typing_extensions.Literal["datatype"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_modifier", b"_modifier"]) -> typing_extensions.Literal["modifier"] | None: ...
+
+global___SparseVectorCreationConfig = SparseVectorCreationConfig
+
+class CreateVectorNameRequest(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    COLLECTION_NAME_FIELD_NUMBER: builtins.int
+    WAIT_FIELD_NUMBER: builtins.int
+    VECTOR_NAME_FIELD_NUMBER: builtins.int
+    DENSE_CONFIG_FIELD_NUMBER: builtins.int
+    SPARSE_CONFIG_FIELD_NUMBER: builtins.int
+    TIMEOUT_FIELD_NUMBER: builtins.int
+    collection_name: builtins.str
+    """Name of the collection"""
+    wait: builtins.bool
+    """Wait until the changes have been applied?"""
+    vector_name: builtins.str
+    """Name of the new vector"""
+    @property
+    def dense_config(self) -> global___DenseVectorCreationConfig:
+        """Dense vector parameters"""
+    @property
+    def sparse_config(self) -> global___SparseVectorCreationConfig:
+        """Sparse vector parameters"""
+    timeout: builtins.int
+    """If set, overrides global timeout setting for this request. Unit is seconds."""
+    def __init__(
+        self,
+        *,
+        collection_name: builtins.str = ...,
+        wait: builtins.bool | None = ...,
+        vector_name: builtins.str = ...,
+        dense_config: global___DenseVectorCreationConfig | None = ...,
+        sparse_config: global___SparseVectorCreationConfig | None = ...,
+        timeout: builtins.int | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_timeout", b"_timeout", "_wait", b"_wait", "dense_config", b"dense_config", "sparse_config", b"sparse_config", "timeout", b"timeout", "vector_config", b"vector_config", "wait", b"wait"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_timeout", b"_timeout", "_wait", b"_wait", "collection_name", b"collection_name", "dense_config", b"dense_config", "sparse_config", b"sparse_config", "timeout", b"timeout", "vector_config", b"vector_config", "vector_name", b"vector_name", "wait", b"wait"]) -> None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_timeout", b"_timeout"]) -> typing_extensions.Literal["timeout"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_wait", b"_wait"]) -> typing_extensions.Literal["wait"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["vector_config", b"vector_config"]) -> typing_extensions.Literal["dense_config", "sparse_config"] | None: ...
+
+global___CreateVectorNameRequest = CreateVectorNameRequest
+
+class DeleteVectorNameRequest(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    COLLECTION_NAME_FIELD_NUMBER: builtins.int
+    WAIT_FIELD_NUMBER: builtins.int
+    VECTOR_NAME_FIELD_NUMBER: builtins.int
+    TIMEOUT_FIELD_NUMBER: builtins.int
+    collection_name: builtins.str
+    """Name of the collection"""
+    wait: builtins.bool
+    """Wait until the changes have been applied?"""
+    vector_name: builtins.str
+    """Name of the vector to delete"""
+    timeout: builtins.int
+    """If set, overrides global timeout setting for this request. Unit is seconds."""
+    def __init__(
+        self,
+        *,
+        collection_name: builtins.str = ...,
+        wait: builtins.bool | None = ...,
+        vector_name: builtins.str = ...,
+        timeout: builtins.int | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_timeout", b"_timeout", "_wait", b"_wait", "timeout", b"timeout", "wait", b"wait"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_timeout", b"_timeout", "_wait", b"_wait", "collection_name", b"collection_name", "timeout", b"timeout", "vector_name", b"vector_name", "wait", b"wait"]) -> None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_timeout", b"_timeout"]) -> typing_extensions.Literal["timeout"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_wait", b"_wait"]) -> typing_extensions.Literal["wait"] | None: ...
+
+global___DeleteVectorNameRequest = DeleteVectorNameRequest
+
 class PayloadIncludeSelector(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -1433,11 +1575,11 @@ class QuantizationSearchParams(google.protobuf.message.Message):
     oversampling: builtins.float
     """Oversampling factor for quantization.
 
-    Defines how many extra vectors should be pre-selected using quantized index,
+    Defines how many extra vectors should be preselected using quantized index,
     and then re-scored using original vectors.
 
     For example, if `oversampling` is 2.4 and `limit` is 100,
-    then 240 vectors will be pre-selected using quantized index,
+    then 240 vectors will be preselected using quantized index,
     and then top-100 will be returned after re-scoring.
     """
     def __init__(
