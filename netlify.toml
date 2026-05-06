@@ -1,5 +1,5 @@
 [build]
-  command = "echo 'No build needed — redirect only'"
+  command = "mkdir -p public"
   publish = "public"
 
 [[redirects]]
