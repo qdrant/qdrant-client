@@ -1,3 +1,7 @@
+[build]
+  command = "echo 'No build needed — redirect only'"
+  publish = "public"
+
 [[redirects]]
   from = "/*"
   to = "https://qdrant.tech/documentation/"
