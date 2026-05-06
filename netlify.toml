@@ -1,0 +1,5 @@
+[[redirects]]
+  from = "/*"
+  to = "https://qdrant.tech/documentation/"
+  status = 301
+  force = true
