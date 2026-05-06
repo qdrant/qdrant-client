@@ -2877,8 +2877,9 @@ class LocalCollection:
 
         if self.config.vectors is None:
             self.config.vectors = {}
-        if isinstance(self.config.vectors, dict):
-            self.config.vectors[vector_name] = params
+        if isinstance(self.config.vectors, models.VectorParams):
+            self.config.vectors = {DEFAULT_VECTOR_NAME: self.config.vectors}
+        self.config.vectors[vector_name] = params
 
     def create_sparse_vector_name(
         self, vector_name: str, config: models.SparseVectorConfig
@@ -2903,6 +2904,11 @@ class LocalCollection:
     def delete_vector_name(self, vector_name: str) -> None:
         if vector_name not in self._all_vectors_keys:
             raise ValueError(f"Vector {vector_name} does not exist in the collection")
+
+        if isinstance(self.config.vectors, models.VectorParams):
+            raise ValueError(
+                "Cannot delete the unnamed vector when it is the only dense vector in the collection"
+            )
 
         self._all_vectors_keys.remove(vector_name)
         self.deleted_per_vector.pop(vector_name, None)
