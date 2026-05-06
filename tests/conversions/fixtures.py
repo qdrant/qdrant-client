@@ -360,6 +360,7 @@ strict_mode_config = grpc.StrictModeConfig(
     search_allow_exact=False,
     search_max_oversampling=10,
     upsert_max_batchsize=64,
+    search_max_batchsize=128,
     max_collection_vector_size_bytes=1024 * 1024 * 1024,
     # read_rate_limit=model.read_rate_limit, test empty field
     write_rate_limit=2000,
@@ -382,6 +383,7 @@ strict_mode_config = grpc.StrictModeConfig(
         }
     ),
     max_payload_index_count=32,
+    max_resident_memory_percent=80,
 )
 
 strict_mode_config_empty = grpc.StrictModeConfig(

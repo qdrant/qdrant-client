@@ -2537,6 +2537,9 @@ class GrpcToRest:
             upsert_max_batchsize=(
                 model.upsert_max_batchsize if model.HasField("upsert_max_batchsize") else None
             ),
+            search_max_batchsize=(
+                model.search_max_batchsize if model.HasField("search_max_batchsize") else None
+            ),
             max_collection_vector_size_bytes=(
                 model.max_collection_vector_size_bytes
                 if model.HasField("max_collection_vector_size_bytes")
@@ -2573,6 +2576,11 @@ class GrpcToRest:
             max_payload_index_count=model.max_payload_index_count
             if model.HasField("max_payload_index_count")
             else None,
+            max_resident_memory_percent=(
+                model.max_resident_memory_percent
+                if model.HasField("max_resident_memory_percent")
+                else None
+            ),
         )
 
     @classmethod
@@ -2606,6 +2614,9 @@ class GrpcToRest:
             ),
             upsert_max_batchsize=(
                 model.upsert_max_batchsize if model.HasField("upsert_max_batchsize") else None
+            ),
+            search_max_batchsize=(
+                model.search_max_batchsize if model.HasField("search_max_batchsize") else None
             ),
             max_collection_vector_size_bytes=(
                 model.max_collection_vector_size_bytes
@@ -2643,6 +2654,11 @@ class GrpcToRest:
             max_payload_index_count=model.max_payload_index_count
             if model.HasField("max_payload_index_count")
             else None,
+            max_resident_memory_percent=(
+                model.max_resident_memory_percent
+                if model.HasField("max_resident_memory_percent")
+                else None
+            ),
         )
 
     @classmethod
@@ -5097,6 +5113,7 @@ class RestToGrpc:
             search_allow_exact=model.search_allow_exact,
             search_max_oversampling=model.search_max_oversampling,
             upsert_max_batchsize=model.upsert_max_batchsize,
+            search_max_batchsize=model.search_max_batchsize,
             max_collection_vector_size_bytes=model.max_collection_vector_size_bytes,
             read_rate_limit=model.read_rate_limit,
             write_rate_limit=model.write_rate_limit,
@@ -5115,6 +5132,7 @@ class RestToGrpc:
                 else None
             ),
             max_payload_index_count=model.max_payload_index_count,
+            max_resident_memory_percent=model.max_resident_memory_percent,
         )
 
     @classmethod
@@ -5131,6 +5149,7 @@ class RestToGrpc:
             search_allow_exact=model.search_allow_exact,
             search_max_oversampling=model.search_max_oversampling,
             upsert_max_batchsize=model.upsert_max_batchsize,
+            search_max_batchsize=model.search_max_batchsize,
             max_collection_vector_size_bytes=model.max_collection_vector_size_bytes,
             read_rate_limit=model.read_rate_limit,
             write_rate_limit=model.write_rate_limit,
@@ -5149,6 +5168,7 @@ class RestToGrpc:
                 else None
             ),
             max_payload_index_count=model.max_payload_index_count,
+            max_resident_memory_percent=model.max_resident_memory_percent,
         )
 
     @classmethod
