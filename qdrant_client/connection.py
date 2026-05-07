@@ -6,6 +6,7 @@ import grpc
 
 from qdrant_client.common.client_exceptions import ResourceExhaustedResponse
 from qdrant_client.common.client_warnings import show_warning_once
+from qdrant_client.context_headers import get_context_headers
 
 
 # type: ignore # noqa: F401
@@ -172,6 +173,9 @@ def header_adder_interceptor(
             else:
                 raise ValueError("Synchronous channel requires synchronous auth token provider.")
 
+        for key, value in get_context_headers().items():
+            metadata.append((key, value))
+
         client_call_details = _ClientCallDetails(
             client_call_details.method,
             client_call_details.timeout,
@@ -230,6 +234,9 @@ def header_adder_async_interceptor(
             else:
                 token = auth_token_provider()
             metadata.append(("authorization", f"Bearer {token}"))
+
+        for key, value in get_context_headers().items():
+            metadata.append((key, value))
 
         client_call_details = client_call_details._replace(metadata=metadata)
         return client_call_details, request_iterator, process_response
