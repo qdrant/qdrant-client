@@ -2243,6 +2243,11 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                     if cfg.datatype is not None
                     else None,
                 )
+            grpc_ordering = (
+                RestToGrpc.convert_write_ordering(ordering)
+                if isinstance(ordering, models.WriteOrdering)
+                else None
+            )
             request = grpc.CreateVectorNameRequest(
                 collection_name=collection_name,
                 wait=wait,
@@ -2250,6 +2255,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 dense_config=dense_config,
                 sparse_config=sparse_config,
                 timeout=timeout,
+                ordering=grpc_ordering,
             )
             return GrpcToRest.convert_update_result(
                 (await self.grpc_points.CreateVectorName(request, timeout=self._timeout)).result
@@ -2277,11 +2283,17 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         **kwargs: Any,
     ) -> types.UpdateResult:
         if self._prefer_grpc:
+            grpc_ordering = (
+                RestToGrpc.convert_write_ordering(ordering)
+                if isinstance(ordering, models.WriteOrdering)
+                else None
+            )
             request = grpc.DeleteVectorNameRequest(
                 collection_name=collection_name,
                 wait=wait,
                 vector_name=vector_name,
                 timeout=timeout,
+                ordering=grpc_ordering,
             )
             return GrpcToRest.convert_update_result(
                 (await self.grpc_points.DeleteVectorName(request, timeout=self._timeout)).result

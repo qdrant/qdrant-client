@@ -3622,7 +3622,6 @@ class TurboQuantBitSize(str, Enum):
 
 class TurboQuantQuantizationConfig(BaseModel, extra="forbid"):
     always_ram: Optional[bool] = Field(default=None, description="")
-    plus: Optional[bool] = Field(default=None, description="")
     bits: Optional["TurboQuantBitSize"] = Field(default=None, description="")
 
 

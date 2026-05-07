@@ -260,7 +260,6 @@ binary_quantization_w_encodings_3 = grpc.BinaryQuantization(
 turbo_quantization = grpc.TurboQuantization(
     always_ram=True,
     bits=grpc.TurboQuantBitSize.Bits2,
-    plus=True,
 )
 
 turbo_quantization_minimal = grpc.TurboQuantization(

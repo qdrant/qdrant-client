@@ -1292,6 +1292,7 @@ class CreateVectorNameRequest(google.protobuf.message.Message):
     DENSE_CONFIG_FIELD_NUMBER: builtins.int
     SPARSE_CONFIG_FIELD_NUMBER: builtins.int
     TIMEOUT_FIELD_NUMBER: builtins.int
+    ORDERING_FIELD_NUMBER: builtins.int
     collection_name: builtins.str
     """Name of the collection"""
     wait: builtins.bool
@@ -1306,6 +1307,9 @@ class CreateVectorNameRequest(google.protobuf.message.Message):
         """Sparse vector parameters"""
     timeout: builtins.int
     """If set, overrides global timeout setting for this request. Unit is seconds."""
+    @property
+    def ordering(self) -> global___WriteOrdering:
+        """Write ordering guarantees"""
     def __init__(
         self,
         *,
@@ -1315,9 +1319,12 @@ class CreateVectorNameRequest(google.protobuf.message.Message):
         dense_config: global___DenseVectorCreationConfig | None = ...,
         sparse_config: global___SparseVectorCreationConfig | None = ...,
         timeout: builtins.int | None = ...,
+        ordering: global___WriteOrdering | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_timeout", b"_timeout", "_wait", b"_wait", "dense_config", b"dense_config", "sparse_config", b"sparse_config", "timeout", b"timeout", "vector_config", b"vector_config", "wait", b"wait"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_timeout", b"_timeout", "_wait", b"_wait", "collection_name", b"collection_name", "dense_config", b"dense_config", "sparse_config", b"sparse_config", "timeout", b"timeout", "vector_config", b"vector_config", "vector_name", b"vector_name", "wait", b"wait"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_ordering", b"_ordering", "_timeout", b"_timeout", "_wait", b"_wait", "dense_config", b"dense_config", "ordering", b"ordering", "sparse_config", b"sparse_config", "timeout", b"timeout", "vector_config", b"vector_config", "wait", b"wait"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_ordering", b"_ordering", "_timeout", b"_timeout", "_wait", b"_wait", "collection_name", b"collection_name", "dense_config", b"dense_config", "ordering", b"ordering", "sparse_config", b"sparse_config", "timeout", b"timeout", "vector_config", b"vector_config", "vector_name", b"vector_name", "wait", b"wait"]) -> None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_ordering", b"_ordering"]) -> typing_extensions.Literal["ordering"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_timeout", b"_timeout"]) -> typing_extensions.Literal["timeout"] | None: ...
     @typing.overload
@@ -1334,6 +1341,7 @@ class DeleteVectorNameRequest(google.protobuf.message.Message):
     WAIT_FIELD_NUMBER: builtins.int
     VECTOR_NAME_FIELD_NUMBER: builtins.int
     TIMEOUT_FIELD_NUMBER: builtins.int
+    ORDERING_FIELD_NUMBER: builtins.int
     collection_name: builtins.str
     """Name of the collection"""
     wait: builtins.bool
@@ -1342,6 +1350,9 @@ class DeleteVectorNameRequest(google.protobuf.message.Message):
     """Name of the vector to delete"""
     timeout: builtins.int
     """If set, overrides global timeout setting for this request. Unit is seconds."""
+    @property
+    def ordering(self) -> global___WriteOrdering:
+        """Write ordering guarantees"""
     def __init__(
         self,
         *,
@@ -1349,9 +1360,12 @@ class DeleteVectorNameRequest(google.protobuf.message.Message):
         wait: builtins.bool | None = ...,
         vector_name: builtins.str = ...,
         timeout: builtins.int | None = ...,
+        ordering: global___WriteOrdering | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_timeout", b"_timeout", "_wait", b"_wait", "timeout", b"timeout", "wait", b"wait"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_timeout", b"_timeout", "_wait", b"_wait", "collection_name", b"collection_name", "timeout", b"timeout", "vector_name", b"vector_name", "wait", b"wait"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_ordering", b"_ordering", "_timeout", b"_timeout", "_wait", b"_wait", "ordering", b"ordering", "timeout", b"timeout", "wait", b"wait"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_ordering", b"_ordering", "_timeout", b"_timeout", "_wait", b"_wait", "collection_name", b"collection_name", "ordering", b"ordering", "timeout", b"timeout", "vector_name", b"vector_name", "wait", b"wait"]) -> None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_ordering", b"_ordering"]) -> typing_extensions.Literal["ordering"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_timeout", b"_timeout"]) -> typing_extensions.Literal["timeout"] | None: ...
     @typing.overload

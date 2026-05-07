@@ -2420,12 +2420,6 @@ DEFS = {
                 "description": "",
                 "title": "Always Ram",
             },
-            "plus": {
-                "anyOf": [{"type": "boolean"}, {"type": "null"}],
-                "default": None,
-                "description": "",
-                "title": "Plus",
-            },
             "bits": {
                 "anyOf": [{"$ref": "#/$defs/TurboQuantBitSize"}, {"type": "null"}],
                 "default": None,

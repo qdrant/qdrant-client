@@ -1801,7 +1801,6 @@ class GrpcToRest:
     ) -> rest.TurboQuantQuantizationConfig:
         return rest.TurboQuantQuantizationConfig(
             always_ram=model.always_ram if model.HasField("always_ram") else None,
-            plus=model.plus if model.HasField("plus") else None,
             bits=cls.convert_turbo_quant_bit_size(model.bits) if model.HasField("bits") else None,
         )
 
@@ -4383,7 +4382,6 @@ class RestToGrpc:
     ) -> grpc.TurboQuantization:
         return grpc.TurboQuantization(
             always_ram=model.always_ram,
-            plus=model.plus,
             bits=(
                 cls.convert_turbo_quant_bit_size(model.bits) if model.bits is not None else None
             ),

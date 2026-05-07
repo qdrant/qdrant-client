@@ -1225,26 +1225,20 @@ class TurboQuantization(google.protobuf.message.Message):
 
     ALWAYS_RAM_FIELD_NUMBER: builtins.int
     BITS_FIELD_NUMBER: builtins.int
-    PLUS_FIELD_NUMBER: builtins.int
     always_ram: builtins.bool
     bits: global___TurboQuantBitSize.ValueType
-    plus: builtins.bool
-    """TODO(turbo): Remove before release"""
     def __init__(
         self,
         *,
         always_ram: builtins.bool | None = ...,
         bits: global___TurboQuantBitSize.ValueType | None = ...,
-        plus: builtins.bool | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_always_ram", b"_always_ram", "_bits", b"_bits", "_plus", b"_plus", "always_ram", b"always_ram", "bits", b"bits", "plus", b"plus"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_always_ram", b"_always_ram", "_bits", b"_bits", "_plus", b"_plus", "always_ram", b"always_ram", "bits", b"bits", "plus", b"plus"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_always_ram", b"_always_ram", "_bits", b"_bits", "always_ram", b"always_ram", "bits", b"bits"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_always_ram", b"_always_ram", "_bits", b"_bits", "always_ram", b"always_ram", "bits", b"bits"]) -> None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_always_ram", b"_always_ram"]) -> typing_extensions.Literal["always_ram"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_bits", b"_bits"]) -> typing_extensions.Literal["bits"] | None: ...
-    @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_plus", b"_plus"]) -> typing_extensions.Literal["plus"] | None: ...
 
 global___TurboQuantization = TurboQuantization
 
