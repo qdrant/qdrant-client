@@ -2910,6 +2910,8 @@ class LocalCollection:
                 "Cannot delete the unnamed vector when it is the only dense vector in the collection"
             )
 
+        affected_mask = ~self.deleted_per_vector.get(vector_name, np.ones(0, dtype=bool))
+
         self._all_vectors_keys.remove(vector_name)
         self.deleted_per_vector.pop(vector_name, None)
 
@@ -2929,6 +2931,11 @@ class LocalCollection:
             del self.multivectors_config[vector_name]
             if isinstance(self.config.vectors, dict):
                 self.config.vectors.pop(vector_name, None)
+
+        if self.storage is not None:
+            for idx, point_id in enumerate(self.ids_inv):
+                if affected_mask[idx] and not self.deleted[idx]:
+                    self._persist_by_id(point_id)
 
     def info(self) -> models.CollectionInfo:
         return models.CollectionInfo(
