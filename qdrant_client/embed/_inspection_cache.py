@@ -34,6 +34,8 @@ CACHE_STR_PATH = {
     "DeletePayloadOperation": [],
     "DeleteVectors": [],
     "DeleteVectorsOperation": [],
+    "DenseVectorConfig": [],
+    "DenseVectorNameConfig": [],
     "DiscoverInput": ["context.negative", "context.positive", "target"],
     "DiscoverQuery": ["discover.context.negative", "discover.context.positive", "discover.target"],
     "DiscoverRequest": [],
@@ -247,6 +249,8 @@ CACHE_STR_PATH = {
     "SnowballParams": [],
     "SparseIndexParams": [],
     "SparseVector": [],
+    "SparseVectorConfig": [],
+    "SparseVectorNameConfig": [],
     "SparseVectorParams": [],
     "SqrtExpression": [],
     "StartResharding": [],
@@ -257,6 +261,8 @@ CACHE_STR_PATH = {
     "StrictModeSparse": [],
     "SumExpression": [],
     "TextIndexParams": [],
+    "TurboQuantQuantizationConfig": [],
+    "TurboQuantization": [],
     "UpdateCollection": [],
     "UpdateOperations": [
         "operations.update_vectors.points.vector",
@@ -2286,6 +2292,12 @@ DEFS = {
                 "description": "Max batchsize when upserting",
                 "title": "Upsert Max Batchsize",
             },
+            "search_max_batchsize": {
+                "anyOf": [{"type": "integer"}, {"type": "null"}],
+                "default": None,
+                "description": "Max batchsize when searching",
+                "title": "Search Max Batchsize",
+            },
             "max_collection_vector_size_bytes": {
                 "anyOf": [{"type": "integer"}, {"type": "null"}],
                 "default": None,
@@ -2358,6 +2370,12 @@ DEFS = {
                 "description": "Max number of payload indexes in a collection",
                 "title": "Max Payload Index Count",
             },
+            "max_resident_memory_percent": {
+                "anyOf": [{"type": "integer"}, {"type": "null"}],
+                "default": None,
+                "description": "Reject memory-consuming update operations (e.g. upsert, set payload) when the process resident memory exceeds this percentage of total system memory (or cgroup limit). Value in [1, 100]. Applied uniformly to external and internal (replication) traffic — rejection is deterministic so it does not cause replica divergence. Delete operations are not affected, so callers can still free memory.",
+                "title": "Max Resident Memory Percent",
+            },
         },
         "title": "StrictModeConfig",
         "type": "object",
@@ -2388,6 +2406,38 @@ DEFS = {
         "title": "StrictModeSparse",
         "type": "object",
     },
+    "TurboQuantBitSize": {
+        "enum": ["bits1", "bits1_5", "bits2", "bits4"],
+        "title": "TurboQuantBitSize",
+        "type": "string",
+    },
+    "TurboQuantQuantizationConfig": {
+        "additionalProperties": False,
+        "properties": {
+            "always_ram": {
+                "anyOf": [{"type": "boolean"}, {"type": "null"}],
+                "default": None,
+                "description": "",
+                "title": "Always Ram",
+            },
+            "bits": {
+                "anyOf": [{"$ref": "#/$defs/TurboQuantBitSize"}, {"type": "null"}],
+                "default": None,
+                "description": "",
+            },
+        },
+        "title": "TurboQuantQuantizationConfig",
+        "type": "object",
+    },
+    "TurboQuantization": {
+        "additionalProperties": False,
+        "properties": {
+            "turbo": {"$ref": "#/$defs/TurboQuantQuantizationConfig", "description": ""}
+        },
+        "required": ["turbo"],
+        "title": "TurboQuantization",
+        "type": "object",
+    },
     "VectorParams": {
         "additionalProperties": False,
         "description": "Params of single vector data storage",
@@ -2407,6 +2457,7 @@ DEFS = {
                     {"$ref": "#/$defs/ScalarQuantization"},
                     {"$ref": "#/$defs/ProductQuantization"},
                     {"$ref": "#/$defs/BinaryQuantization"},
+                    {"$ref": "#/$defs/TurboQuantization"},
                     {"type": "null"},
                 ],
                 "default": None,
@@ -2891,6 +2942,40 @@ DEFS = {
         "title": "DeleteVectors",
         "type": "object",
     },
+    "VectorStorageDatatype": {
+        "description": "Storage types for vectors",
+        "enum": ["float32", "float16", "uint8"],
+        "title": "VectorStorageDatatype",
+        "type": "string",
+    },
+    "DenseVectorConfig": {
+        "additionalProperties": False,
+        "description": "Configuration for creating a new dense named vector.  Only includes properties that define the vector space and cannot be changed after creation. Storage type, index type, and quantization are inferred.",
+        "properties": {
+            "size": {
+                "description": "Dimensionality of the vectors",
+                "title": "Size",
+                "type": "integer",
+            },
+            "distance": {
+                "$ref": "#/$defs/Distance",
+                "description": "Configuration for creating a new dense named vector.  Only includes properties that define the vector space and cannot be changed after creation. Storage type, index type, and quantization are inferred.",
+            },
+            "multivector_config": {
+                "anyOf": [{"$ref": "#/$defs/MultiVectorConfig"}, {"type": "null"}],
+                "default": None,
+                "description": "Configuration for multi-vector points (e.g., ColBERT)",
+            },
+            "datatype": {
+                "anyOf": [{"$ref": "#/$defs/VectorStorageDatatype"}, {"type": "null"}],
+                "default": None,
+                "description": "Element storage type (Float32, Float16, Uint8)",
+            },
+        },
+        "required": ["size", "distance"],
+        "title": "DenseVectorConfig",
+        "type": "object",
+    },
     "DiscoverInput": {
         "additionalProperties": False,
         "properties": {
@@ -3054,7 +3139,7 @@ DEFS = {
             "oversampling": {
                 "anyOf": [{"type": "number"}, {"type": "null"}],
                 "default": None,
-                "description": "Oversampling factor for quantization. Default is 1.0.  Defines how many extra vectors should be pre-selected using quantized index, and then re-scored using original vectors.  For example, if `oversampling` is 2.4 and `limit` is 100, then 240 vectors will be pre-selected using quantized index, and then top-100 will be returned after re-scoring.",
+                "description": "Oversampling factor for quantization. Default is 1.0.  Defines how many extra vectors should be preselected using quantized index, and then re-scored using original vectors.  For example, if `oversampling` is 2.4 and `limit` is 100, then 240 vectors will be preselected using quantized index, and then top-100 will be returned after re-scoring.",
                 "title": "Oversampling",
             },
         },
@@ -4318,6 +4403,24 @@ DEFS = {
         "title": "SnapshotPriority",
         "type": "string",
     },
+    "SparseVectorConfig": {
+        "additionalProperties": False,
+        "description": "Configuration for creating a new sparse named vector.  Only includes properties that define the vector space and cannot be changed after creation.",
+        "properties": {
+            "modifier": {
+                "anyOf": [{"$ref": "#/$defs/Modifier"}, {"type": "null"}],
+                "default": None,
+                "description": "Value modifier for sparse vectors (e.g., IDF)",
+            },
+            "datatype": {
+                "anyOf": [{"$ref": "#/$defs/VectorStorageDatatype"}, {"type": "null"}],
+                "default": None,
+                "description": "Datatype used to store weights in the index",
+            },
+        },
+        "title": "SparseVectorConfig",
+        "type": "object",
+    },
     "ReshardingDirection": {
         "description": "Resharding direction, scale up or down in number of shards  - `up` - Scale up, add a new shard  - `down` - Scale down, remove a shard",
         "enum": ["up", "down"],
@@ -4396,6 +4499,7 @@ DEFS = {
                     {"$ref": "#/$defs/ScalarQuantization"},
                     {"$ref": "#/$defs/ProductQuantization"},
                     {"$ref": "#/$defs/BinaryQuantization"},
+                    {"$ref": "#/$defs/TurboQuantization"},
                     {"$ref": "#/$defs/Disabled"},
                     {"type": "null"},
                 ],

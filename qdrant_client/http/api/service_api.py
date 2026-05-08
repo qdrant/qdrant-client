@@ -83,6 +83,7 @@ class _ServiceApi:
     def _build_for_metrics(
         self,
         anonymize: bool = None,
+        per_collection: bool = None,
         timeout: int = None,
     ):
         """
@@ -91,6 +92,8 @@ class _ServiceApi:
         query_params = {}
         if anonymize is not None:
             query_params["anonymize"] = str(anonymize).lower()
+        if per_collection is not None:
+            query_params["per_collection"] = str(per_collection).lower()
         if timeout is not None:
             query_params["timeout"] = str(timeout)
 
@@ -135,6 +138,7 @@ class _ServiceApi:
         self,
         anonymize: bool = None,
         details_level: int = None,
+        per_collection: bool = None,
         timeout: int = None,
     ):
         """
@@ -145,6 +149,8 @@ class _ServiceApi:
             query_params["anonymize"] = str(anonymize).lower()
         if details_level is not None:
             query_params["details_level"] = str(details_level)
+        if per_collection is not None:
+            query_params["per_collection"] = str(per_collection).lower()
         if timeout is not None:
             query_params["timeout"] = str(timeout)
 
@@ -178,6 +184,7 @@ class AsyncServiceApi(_ServiceApi):
     async def metrics(
         self,
         anonymize: bool = None,
+        per_collection: bool = None,
         timeout: int = None,
     ) -> str:
         """
@@ -185,6 +192,7 @@ class AsyncServiceApi(_ServiceApi):
         """
         return await self._build_for_metrics(
             anonymize=anonymize,
+            per_collection=per_collection,
             timeout=timeout,
         )
 
@@ -208,6 +216,7 @@ class AsyncServiceApi(_ServiceApi):
         self,
         anonymize: bool = None,
         details_level: int = None,
+        per_collection: bool = None,
         timeout: int = None,
     ) -> m.InlineResponse2002:
         """
@@ -216,6 +225,7 @@ class AsyncServiceApi(_ServiceApi):
         return await self._build_for_telemetry(
             anonymize=anonymize,
             details_level=details_level,
+            per_collection=per_collection,
             timeout=timeout,
         )
 
@@ -240,6 +250,7 @@ class SyncServiceApi(_ServiceApi):
     def metrics(
         self,
         anonymize: bool = None,
+        per_collection: bool = None,
         timeout: int = None,
     ) -> str:
         """
@@ -247,6 +258,7 @@ class SyncServiceApi(_ServiceApi):
         """
         return self._build_for_metrics(
             anonymize=anonymize,
+            per_collection=per_collection,
             timeout=timeout,
         )
 
@@ -270,6 +282,7 @@ class SyncServiceApi(_ServiceApi):
         self,
         anonymize: bool = None,
         details_level: int = None,
+        per_collection: bool = None,
         timeout: int = None,
     ) -> m.InlineResponse2002:
         """
@@ -278,5 +291,6 @@ class SyncServiceApi(_ServiceApi):
         return self._build_for_telemetry(
             anonymize=anonymize,
             details_level=details_level,
+            per_collection=per_collection,
             timeout=timeout,
         )

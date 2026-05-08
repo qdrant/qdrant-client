@@ -69,6 +69,16 @@ class PointsStub(object):
                 request_serializer=points__pb2.DeleteFieldIndexCollection.SerializeToString,
                 response_deserializer=points__pb2.PointsOperationResponse.FromString,
                 )
+        self.CreateVectorName = channel.unary_unary(
+                '/qdrant.Points/CreateVectorName',
+                request_serializer=points__pb2.CreateVectorNameRequest.SerializeToString,
+                response_deserializer=points__pb2.PointsOperationResponse.FromString,
+                )
+        self.DeleteVectorName = channel.unary_unary(
+                '/qdrant.Points/DeleteVectorName',
+                request_serializer=points__pb2.DeleteVectorNameRequest.SerializeToString,
+                response_deserializer=points__pb2.PointsOperationResponse.FromString,
+                )
         self.Search = channel.unary_unary(
                 '/qdrant.Points/Search',
                 request_serializer=points__pb2.SearchPoints.SerializeToString,
@@ -232,6 +242,20 @@ class PointsServicer(object):
 
     def DeleteFieldIndex(self, request, context):
         """Delete field index for collection
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def CreateVectorName(self, request, context):
+        """Create a new named vector on the collection
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def DeleteVectorName(self, request, context):
+        """Delete a named vector from the collection
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -444,6 +468,16 @@ def add_PointsServicer_to_server(servicer, server):
             'DeleteFieldIndex': grpc.unary_unary_rpc_method_handler(
                     servicer.DeleteFieldIndex,
                     request_deserializer=points__pb2.DeleteFieldIndexCollection.FromString,
+                    response_serializer=points__pb2.PointsOperationResponse.SerializeToString,
+            ),
+            'CreateVectorName': grpc.unary_unary_rpc_method_handler(
+                    servicer.CreateVectorName,
+                    request_deserializer=points__pb2.CreateVectorNameRequest.FromString,
+                    response_serializer=points__pb2.PointsOperationResponse.SerializeToString,
+            ),
+            'DeleteVectorName': grpc.unary_unary_rpc_method_handler(
+                    servicer.DeleteVectorName,
+                    request_deserializer=points__pb2.DeleteVectorNameRequest.FromString,
                     response_serializer=points__pb2.PointsOperationResponse.SerializeToString,
             ),
             'Search': grpc.unary_unary_rpc_method_handler(
@@ -724,6 +758,40 @@ class Points(object):
             metadata=None):
         return grpc.experimental.unary_unary(request, target, '/qdrant.Points/DeleteFieldIndex',
             points__pb2.DeleteFieldIndexCollection.SerializeToString,
+            points__pb2.PointsOperationResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def CreateVectorName(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/qdrant.Points/CreateVectorName',
+            points__pb2.CreateVectorNameRequest.SerializeToString,
+            points__pb2.PointsOperationResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def DeleteVectorName(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/qdrant.Points/DeleteVectorName',
+            points__pb2.DeleteVectorNameRequest.SerializeToString,
             points__pb2.PointsOperationResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

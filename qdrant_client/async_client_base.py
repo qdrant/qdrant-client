@@ -282,6 +282,20 @@ class AsyncQdrantBase:
     ) -> types.UpdateResult:
         raise NotImplementedError()
 
+    async def create_vector_name(
+        self,
+        collection_name: str,
+        vector_name: str,
+        vector_name_config: types.VectorNameConfig,
+        **kwargs: Any,
+    ) -> types.UpdateResult:
+        raise NotImplementedError()
+
+    async def delete_vector_name(
+        self, collection_name: str, vector_name: str, **kwargs: Any
+    ) -> types.UpdateResult:
+        raise NotImplementedError()
+
     async def list_snapshots(
         self, collection_name: str, **kwargs: Any
     ) -> list[types.SnapshotDescription]:

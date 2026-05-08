@@ -257,6 +257,27 @@ binary_quantization_w_encodings_3 = grpc.BinaryQuantization(
     ),
 )
 
+turbo_quantization = grpc.TurboQuantization(
+    always_ram=True,
+    bits=grpc.TurboQuantBitSize.Bits2,
+)
+
+turbo_quantization_minimal = grpc.TurboQuantization(
+    always_ram=False,
+)
+
+turbo_quantization_bits1 = grpc.TurboQuantization(
+    bits=grpc.TurboQuantBitSize.Bits1,
+)
+
+turbo_quantization_bits1_5 = grpc.TurboQuantization(
+    bits=grpc.TurboQuantBitSize.Bits1_5,
+)
+
+turbo_quantization_bits4 = grpc.TurboQuantization(
+    bits=grpc.TurboQuantBitSize.Bits4,
+)
+
 vector_param_with_quant = grpc.VectorParams(
     size=100,
     distance=grpc.Distance.Cosine,
@@ -338,6 +359,7 @@ strict_mode_config = grpc.StrictModeConfig(
     search_allow_exact=False,
     search_max_oversampling=10,
     upsert_max_batchsize=64,
+    search_max_batchsize=128,
     max_collection_vector_size_bytes=1024 * 1024 * 1024,
     # read_rate_limit=model.read_rate_limit, test empty field
     write_rate_limit=2000,
@@ -360,6 +382,7 @@ strict_mode_config = grpc.StrictModeConfig(
         }
     ),
     max_payload_index_count=32,
+    max_resident_memory_percent=80,
 )
 
 strict_mode_config_empty = grpc.StrictModeConfig(
@@ -830,6 +853,26 @@ binary_quantization_config_3 = grpc.QuantizationConfig(
     binary=binary_quantization_w_encodings_3,
 )
 
+turbo_quantization_config = grpc.QuantizationConfig(
+    turboquant=turbo_quantization,
+)
+
+turbo_quantization_config_minimal = grpc.QuantizationConfig(
+    turboquant=turbo_quantization_minimal,
+)
+
+turbo_quantization_config_bits1 = grpc.QuantizationConfig(
+    turboquant=turbo_quantization_bits1,
+)
+
+turbo_quantization_config_bits1_5 = grpc.QuantizationConfig(
+    turboquant=turbo_quantization_bits1_5,
+)
+
+turbo_quantization_config_bits4 = grpc.QuantizationConfig(
+    turboquant=turbo_quantization_bits4,
+)
+
 sparse_vector_params = grpc.SparseVectorParams(
     index=grpc.SparseIndexConfig(
         full_scan_threshold=1000,
@@ -936,6 +979,14 @@ quantization_config_diff_scalar = grpc.QuantizationConfigDiff(scalar=scalar_quan
 
 quantization_config_diff_product = grpc.QuantizationConfigDiff(
     product=product_quantizations[0].product
+)
+
+quantization_config_diff_turbo = grpc.QuantizationConfigDiff(
+    turboquant=turbo_quantization,
+)
+
+quantization_config_diff_binary = grpc.QuantizationConfigDiff(
+    binary=binary_quantization,
 )
 
 update_collection = grpc.UpdateCollection(
@@ -1717,8 +1768,20 @@ fixtures = {
         binary_quantization_config_1,
         binary_quantization_config_2,
         binary_quantization_config_3,
+        turbo_quantization_config,
+        turbo_quantization_config_minimal,
+        turbo_quantization_config_bits1,
+        turbo_quantization_config_bits1_5,
+        turbo_quantization_config_bits4,
     ]
     + product_quantizations,
+    "QuantizationConfigDiff": [
+        quantization_config_diff_disabled,
+        quantization_config_diff_scalar,
+        quantization_config_diff_product,
+        quantization_config_diff_turbo,
+        quantization_config_diff_binary,
+    ],
     "QuantizationSearchParams": [quantization_search_params],
     "PointVectors": [
         point_vector_1,

@@ -927,6 +927,34 @@ class QdrantLocal(QdrantBase):
         )
         return self._default_update_result()
 
+    def create_vector_name(
+        self,
+        collection_name: str,
+        vector_name: str,
+        vector_name_config: types.VectorNameConfig,
+        **kwargs: Any,
+    ) -> types.UpdateResult:
+        collection = self._get_collection(collection_name)
+        if isinstance(vector_name_config, rest_models.DenseVectorNameConfig):
+            collection.create_dense_vector_name(vector_name, vector_name_config.dense)
+        elif isinstance(vector_name_config, rest_models.SparseVectorNameConfig):
+            collection.create_sparse_vector_name(vector_name, vector_name_config.sparse)
+        else:
+            raise ValueError(f"Unsupported vector name config type: {type(vector_name_config)}")
+        self._save()
+        return self._default_update_result()
+
+    def delete_vector_name(
+        self,
+        collection_name: str,
+        vector_name: str,
+        **kwargs: Any,
+    ) -> types.UpdateResult:
+        collection = self._get_collection(collection_name)
+        collection.delete_vector_name(vector_name)
+        self._save()
+        return self._default_update_result()
+
     def list_snapshots(
         self, collection_name: str, **kwargs: Any
     ) -> list[types.SnapshotDescription]:
