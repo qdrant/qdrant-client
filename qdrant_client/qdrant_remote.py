@@ -2413,6 +2413,114 @@ class QdrantRemote(QdrantBase):
         assert result is not None, "Delete field index returned None"
         return result
 
+    def create_vector_name(
+        self,
+        collection_name: str,
+        vector_name: str,
+        vector_name_config: types.VectorNameConfig,
+        wait: bool = True,
+        ordering: types.WriteOrdering | None = None,
+        timeout: int | None = None,
+        **kwargs: Any,
+    ) -> types.UpdateResult:
+        if self._prefer_grpc:
+            dense_config = None
+            sparse_config = None
+            if isinstance(vector_name_config, models.DenseVectorNameConfig):
+                cfg = vector_name_config.dense
+                dense_config = grpc.DenseVectorCreationConfig(
+                    size=cfg.size,
+                    distance=RestToGrpc.convert_distance(cfg.distance),
+                    multivector_config=(
+                        RestToGrpc.convert_multivector_config(cfg.multivector_config)
+                        if cfg.multivector_config is not None
+                        else None
+                    ),
+                    datatype=(
+                        RestToGrpc.convert_datatype(cfg.datatype)
+                        if cfg.datatype is not None
+                        else None
+                    ),
+                )
+            elif isinstance(vector_name_config, models.SparseVectorNameConfig):
+                cfg = vector_name_config.sparse
+                sparse_config = grpc.SparseVectorCreationConfig(
+                    modifier=(
+                        RestToGrpc.convert_modifier(cfg.modifier)
+                        if cfg.modifier is not None
+                        else None
+                    ),
+                    datatype=(
+                        RestToGrpc.convert_datatype(cfg.datatype)
+                        if cfg.datatype is not None
+                        else None
+                    ),
+                )
+            grpc_ordering = (
+                RestToGrpc.convert_write_ordering(ordering)
+                if isinstance(ordering, models.WriteOrdering)
+                else None
+            )
+            request = grpc.CreateVectorNameRequest(
+                collection_name=collection_name,
+                wait=wait,
+                vector_name=vector_name,
+                dense_config=dense_config,
+                sparse_config=sparse_config,
+                timeout=timeout,
+                ordering=grpc_ordering,
+            )
+            return GrpcToRest.convert_update_result(
+                self.grpc_points.CreateVectorName(request, timeout=self._timeout).result
+            )
+
+        result: types.UpdateResult | None = self.http.collections_api.create_vector_name(
+            collection_name=collection_name,
+            vector_name=vector_name,
+            wait=wait,
+            ordering=ordering,
+            timeout=timeout,
+            vector_name_config=vector_name_config,
+        ).result
+        assert result is not None, "Create vector name returned None"
+        return result
+
+    def delete_vector_name(
+        self,
+        collection_name: str,
+        vector_name: str,
+        wait: bool = True,
+        ordering: types.WriteOrdering | None = None,
+        timeout: int | None = None,
+        **kwargs: Any,
+    ) -> types.UpdateResult:
+        if self._prefer_grpc:
+            grpc_ordering = (
+                RestToGrpc.convert_write_ordering(ordering)
+                if isinstance(ordering, models.WriteOrdering)
+                else None
+            )
+            request = grpc.DeleteVectorNameRequest(
+                collection_name=collection_name,
+                wait=wait,
+                vector_name=vector_name,
+                timeout=timeout,
+                ordering=grpc_ordering,
+            )
+            return GrpcToRest.convert_update_result(
+                self.grpc_points.DeleteVectorName(request, timeout=self._timeout).result
+            )
+
+        result: types.UpdateResult | None = self.openapi_client.collections_api.delete_vector_name(
+            collection_name=collection_name,
+            vector_name=vector_name,
+            wait=wait,
+            ordering=ordering,
+            timeout=timeout,
+        ).result
+        assert result is not None, "Delete vector name returned None"
+        return result
+
     def list_snapshots(
         self, collection_name: str, **kwargs: Any
     ) -> list[types.SnapshotDescription]:

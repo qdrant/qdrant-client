@@ -103,6 +103,45 @@ class _CollectionsApi:
             content=body,
         )
 
+    def _build_for_create_vector_name(
+        self,
+        collection_name: str,
+        vector_name: str,
+        wait: bool = None,
+        ordering: WriteOrdering = None,
+        timeout: int = None,
+        vector_name_config: m.VectorNameConfig = None,
+    ):
+        """
+        Create a new named vector on an existing collection
+        """
+        path_params = {
+            "collection_name": str(collection_name),
+            "vector_name": str(vector_name),
+        }
+
+        query_params = {}
+        if wait is not None:
+            query_params["wait"] = str(wait).lower()
+        if ordering is not None:
+            query_params["ordering"] = str(ordering)
+        if timeout is not None:
+            query_params["timeout"] = str(timeout)
+
+        headers = {}
+        body = jsonable_encoder(vector_name_config)
+        if "Content-Type" not in headers:
+            headers["Content-Type"] = "application/json"
+        return self.api_client.request(
+            type_=m.InlineResponse2007,
+            method="PUT",
+            url="/collections/{collection_name}/vectors/{vector_name}",
+            headers=headers if headers else None,
+            path_params=path_params,
+            params=query_params,
+            content=body,
+        )
+
     def _build_for_delete_collection(
         self,
         collection_name: str,
@@ -124,6 +163,40 @@ class _CollectionsApi:
             type_=m.InlineResponse2001,
             method="DELETE",
             url="/collections/{collection_name}",
+            headers=headers if headers else None,
+            path_params=path_params,
+            params=query_params,
+        )
+
+    def _build_for_delete_vector_name(
+        self,
+        collection_name: str,
+        vector_name: str,
+        wait: bool = None,
+        ordering: WriteOrdering = None,
+        timeout: int = None,
+    ):
+        """
+        Delete a named vector from a collection
+        """
+        path_params = {
+            "collection_name": str(collection_name),
+            "vector_name": str(vector_name),
+        }
+
+        query_params = {}
+        if wait is not None:
+            query_params["wait"] = str(wait).lower()
+        if ordering is not None:
+            query_params["ordering"] = str(ordering)
+        if timeout is not None:
+            query_params["timeout"] = str(timeout)
+
+        headers = {}
+        return self.api_client.request(
+            type_=m.InlineResponse2007,
+            method="DELETE",
+            url="/collections/{collection_name}/vectors/{vector_name}",
             headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
@@ -251,6 +324,27 @@ class AsyncCollectionsApi(_CollectionsApi):
             create_collection=create_collection,
         )
 
+    async def create_vector_name(
+        self,
+        collection_name: str,
+        vector_name: str,
+        wait: bool = None,
+        ordering: WriteOrdering = None,
+        timeout: int = None,
+        vector_name_config: m.VectorNameConfig = None,
+    ) -> m.InlineResponse2007:
+        """
+        Create a new named vector on an existing collection
+        """
+        return await self._build_for_create_vector_name(
+            collection_name=collection_name,
+            vector_name=vector_name,
+            wait=wait,
+            ordering=ordering,
+            timeout=timeout,
+            vector_name_config=vector_name_config,
+        )
+
     async def delete_collection(
         self,
         collection_name: str,
@@ -261,6 +355,25 @@ class AsyncCollectionsApi(_CollectionsApi):
         """
         return await self._build_for_delete_collection(
             collection_name=collection_name,
+            timeout=timeout,
+        )
+
+    async def delete_vector_name(
+        self,
+        collection_name: str,
+        vector_name: str,
+        wait: bool = None,
+        ordering: WriteOrdering = None,
+        timeout: int = None,
+    ) -> m.InlineResponse2007:
+        """
+        Delete a named vector from a collection
+        """
+        return await self._build_for_delete_vector_name(
+            collection_name=collection_name,
+            vector_name=vector_name,
+            wait=wait,
+            ordering=ordering,
             timeout=timeout,
         )
 
@@ -341,6 +454,27 @@ class SyncCollectionsApi(_CollectionsApi):
             create_collection=create_collection,
         )
 
+    def create_vector_name(
+        self,
+        collection_name: str,
+        vector_name: str,
+        wait: bool = None,
+        ordering: WriteOrdering = None,
+        timeout: int = None,
+        vector_name_config: m.VectorNameConfig = None,
+    ) -> m.InlineResponse2007:
+        """
+        Create a new named vector on an existing collection
+        """
+        return self._build_for_create_vector_name(
+            collection_name=collection_name,
+            vector_name=vector_name,
+            wait=wait,
+            ordering=ordering,
+            timeout=timeout,
+            vector_name_config=vector_name_config,
+        )
+
     def delete_collection(
         self,
         collection_name: str,
@@ -351,6 +485,25 @@ class SyncCollectionsApi(_CollectionsApi):
         """
         return self._build_for_delete_collection(
             collection_name=collection_name,
+            timeout=timeout,
+        )
+
+    def delete_vector_name(
+        self,
+        collection_name: str,
+        vector_name: str,
+        wait: bool = None,
+        ordering: WriteOrdering = None,
+        timeout: int = None,
+    ) -> m.InlineResponse2007:
+        """
+        Delete a named vector from a collection
+        """
+        return self._build_for_delete_vector_name(
+            collection_name=collection_name,
+            vector_name=vector_name,
+            wait=wait,
+            ordering=ordering,
             timeout=timeout,
         )
 

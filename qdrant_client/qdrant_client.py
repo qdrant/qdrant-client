@@ -2108,6 +2108,93 @@ class QdrantClient(QdrantFastembedMixin):
             **kwargs,
         )
 
+    def create_vector_name(
+        self,
+        collection_name: str,
+        vector_name: str,
+        vector_name_config: types.VectorNameConfig,
+        wait: bool = True,
+        ordering: types.WriteOrdering | None = None,
+        timeout: int | None = None,
+        **kwargs: Any,
+    ) -> types.UpdateResult:
+        """Create a new named vector on an existing collection.
+
+        Args:
+            collection_name: Name of the collection
+            vector_name: Name of the new vector
+            vector_name_config: Configuration for the new vector - either dense or sparse
+            wait: Await for the results to be processed.
+
+                - If `true`, result will be returned only when all changes are applied
+                - If `false`, result will be returned immediately after the confirmation of receiving.
+            ordering (Optional[WriteOrdering]): Define strategy for ordering of the points. Possible values:
+
+                - `weak` (default) - write operations may be reordered, works faster
+                - `medium` - write operations go through dynamically selected leader, may be inconsistent for a short period of time in case of leader change
+                - `strong` - Write operations go through the permanent leader, consistent, but may be unavailable if leader is down
+
+            timeout:
+                Wait for operation commit timeout in seconds.
+                If timeout is reached, server will return `WAIT_TIMEOUT` status, meaning that operation was accepted but not yet applied
+
+        Returns:
+            Operation Result
+        """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
+        return self._client.create_vector_name(
+            collection_name=collection_name,
+            vector_name=vector_name,
+            vector_name_config=vector_name_config,
+            wait=wait,
+            ordering=ordering,
+            timeout=timeout,
+            **kwargs,
+        )
+
+    def delete_vector_name(
+        self,
+        collection_name: str,
+        vector_name: str,
+        wait: bool = True,
+        ordering: types.WriteOrdering | None = None,
+        timeout: int | None = None,
+        **kwargs: Any,
+    ) -> types.UpdateResult:
+        """Delete a named vector from a collection.
+
+        Args:
+            collection_name: Name of the collection
+            vector_name: Name of the vector to delete
+            wait: Await for the results to be processed.
+
+                - If `true`, result will be returned only when all changes are applied
+                - If `false`, result will be returned immediately after the confirmation of receiving.
+            ordering (Optional[WriteOrdering]): Define strategy for ordering of the points. Possible values:
+
+                - `weak` (default) - write operations may be reordered, works faster
+                - `medium` - write operations go through dynamically selected leader, may be inconsistent for a short period of time in case of leader change
+                - `strong` - Write operations go through the permanent leader, consistent, but may be unavailable if leader is down
+
+            timeout:
+                Wait for operation commit timeout in seconds.
+                If timeout is reached, server will return `WAIT_TIMEOUT` status, meaning that operation was accepted but not yet applied
+
+        Returns:
+            Operation Result
+        """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
+        return self._client.delete_vector_name(
+            collection_name=collection_name,
+            vector_name=vector_name,
+            wait=wait,
+            ordering=ordering,
+            timeout=timeout,
+            **kwargs,
+        )
+
     def list_snapshots(
         self, collection_name: str, **kwargs: Any
     ) -> list[types.SnapshotDescription]:

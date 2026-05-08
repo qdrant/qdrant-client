@@ -48,6 +48,7 @@ rm -f $CLIENT_DIR/shard_snapshots_service.proto
 rm -f $CLIENT_DIR/telemetry_internal.proto
 rm -f $CLIENT_DIR/raft_service.proto
 rm -f $CLIENT_DIR/health_check.proto
+rm -f $CLIENT_DIR/storage_read_service.proto
 
 # Clean qdrant.proto references to those removed files
 cat $CLIENT_DIR/qdrant.proto \
@@ -57,6 +58,7 @@ cat $CLIENT_DIR/qdrant.proto \
  | grep -v 'shard_snapshots_service.proto' \
  | grep -v 'raft_service.proto' \
  | grep -v 'health_check.proto' \
+ | grep -v 'storage_read_service.proto' \
   > $CLIENT_DIR/qdrant_tmp.proto
 mv "$CLIENT_DIR/qdrant_tmp.proto" "$CLIENT_DIR/qdrant.proto"
 
