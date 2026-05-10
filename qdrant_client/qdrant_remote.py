@@ -46,6 +46,13 @@ class QdrantRemote(QdrantBase):
     DEFAULT_GRPC_TIMEOUT = 5  # seconds
     DEFAULT_GRPC_POOL_SIZE = 3
 
+    @staticmethod
+    def _validate_port(value: int, name: str) -> None:
+        if not isinstance(value, int) or isinstance(value, bool):
+            raise ValueError(f"`{name}` must be an integer, got {type(value).__name__}: {value!r}")
+        if not 1 <= value <= 65535:
+            raise ValueError(f"`{name}` must be between 1 and 65535, got {value}")
+
     def __init__(
         self,
         url: str | None = None,
@@ -65,6 +72,11 @@ class QdrantRemote(QdrantBase):
         **kwargs: Any,
     ):
         super().__init__(**kwargs)
+
+        if port is not None:
+            self._validate_port(port, "port")
+        self._validate_port(grpc_port, "grpc_port")
+
         self._prefer_grpc = prefer_grpc
         self._grpc_port = grpc_port
         self._grpc_options = grpc_options or {}
@@ -98,6 +110,8 @@ class QdrantRemote(QdrantBase):
                 url = f"//{url}"
 
             parsed_url: Url = parse_url(url)
+            if parsed_url.port is not None:
+                self._validate_port(parsed_url.port, "port (parsed from url)")
             self._host, self._port = parsed_url.host, parsed_url.port
 
             if parsed_url.scheme:
