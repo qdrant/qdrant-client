@@ -1,1 +1,1 @@
-from .migrate import migrate
+from .migrate import migrate as migrate
