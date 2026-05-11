@@ -67,7 +67,7 @@ jobs:
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          QDRANT_VERSION='v1.16.3' ./tests/integration-tests.sh
+          QDRANT_VERSION='v1.17.1' ./tests/integration-tests.sh
         shell: bash
       - name: Upload failed snapshot if tests fail
         if: failure()
