@@ -17,7 +17,7 @@ try:
         INCLUDED_RECURSIVE_REFS,
         NAME_RECURSIVE_REF_MAPPING,
     )
-except ImportError as e:
+except ImportError:
     DEFS = {}
     CACHE_STR_PATH = {}
     RECURSIVE_REFS = set()  # type: ignore

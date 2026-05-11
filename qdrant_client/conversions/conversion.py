@@ -1,6 +1,6 @@
 import uuid
 from datetime import date, datetime, timezone
-from typing import Any, Mapping, Sequence, get_args
+from typing import Any, Mapping, get_args
 
 from google.protobuf.internal.containers import MessageMap
 from google.protobuf.json_format import MessageToDict
