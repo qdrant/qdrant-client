@@ -5,6 +5,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 from pydantic.types import StrictBool, StrictFloat, StrictInt, StrictStr
+from pydantic.version import VERSION as PYDANTIC_VERSION
 
 Payload = Dict[str, Any]
 SparseVectorsConfig = Dict[str, "SparseVectorParams"]
@@ -13,6 +14,10 @@ StrictModeMultivectorConfigOutput = Dict[str, "StrictModeMultivectorOutput"]
 StrictModeSparseConfig = Dict[str, "StrictModeSparse"]
 StrictModeSparseConfigOutput = Dict[str, "StrictModeSparseOutput"]
 VectorsConfigDiff = Dict[str, "VectorParamsDiff"]
+_PYDANTIC_V2 = PYDANTIC_VERSION.startswith("2.")
+_POPULATE_BY_NAME_CONFIG = (
+    {"populate_by_name": True} if _PYDANTIC_V2 else {"allow_population_by_field_name": True}
+)
 
 
 class AbortReshardingOperation(BaseModel, extra="forbid"):
@@ -3629,7 +3634,7 @@ class TurboQuantization(BaseModel, extra="forbid"):
     turbo: "TurboQuantQuantizationConfig" = Field(..., description="")
 
 
-class UpdateCollection(BaseModel, extra="forbid"):
+class UpdateCollection(BaseModel, extra="forbid", **_POPULATE_BY_NAME_CONFIG):
     """
     Operation for updating parameters of the existing collection
     """
@@ -3652,7 +3657,9 @@ class UpdateCollection(BaseModel, extra="forbid"):
         default=None, description="Quantization parameters to update. If none - it is left unchanged."
     )
     sparse_vectors: Optional["SparseVectorsConfig"] = Field(
-        default=None, description="Map of sparse vector data parameters to update for each sparse vector."
+        default=None,
+        alias="sparse_vectors_config",
+        description="Map of sparse vector data parameters to update for each sparse vector.",
     )
     strict_mode_config: Optional["StrictModeConfig"] = Field(
         default=None, description="Operation for updating parameters of the existing collection"
