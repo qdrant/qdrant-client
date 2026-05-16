@@ -112,14 +112,17 @@ class RestBatchUploader(BaseUploader):
         return cls(uri=uri, collection_name=collection_name, max_retries=max_retries, **kwargs)
 
     def process(self, items: Iterable[Any]) -> Iterable[bool]:
-        for batch in items:
-            yield upload_batch(
-                self.openapi_client,
-                self.collection_name,
-                batch,
-                shard_key_selector=self._shard_key_selector,
-                max_retries=self.max_retries,
-                update_filter=self._update_filter,
-                update_mode=self._update_mode,
-                wait=self._wait,
-            )
+        try:
+            for batch in items:
+                yield upload_batch(
+                    self.openapi_client,
+                    self.collection_name,
+                    batch,
+                    shard_key_selector=self._shard_key_selector,
+                    max_retries=self.max_retries,
+                    update_filter=self._update_filter,
+                    update_mode=self._update_mode,
+                    wait=self._wait,
+                )
+        finally:
+            self.openapi_client.close()
