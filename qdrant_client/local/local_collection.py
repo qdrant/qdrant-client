@@ -2860,6 +2860,7 @@ class LocalCollection:
         params = models.VectorParams(
             size=config.size,
             distance=config.distance,
+            datatype=config.datatype,
             multivector_config=config.multivector_config,
         )
 
