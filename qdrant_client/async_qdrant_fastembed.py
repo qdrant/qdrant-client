@@ -745,7 +745,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
     def _resolve_query(
         cls,
         query: types.PointId
-        | list[float]
+        | Sequence[float]
         | list[list[float]]
         | types.SparseVector
         | types.Query
@@ -774,6 +774,9 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
             return models.NearestQuery(nearest=query.tolist())
         if isinstance(query, list):
             return models.NearestQuery(nearest=query)
+        if isinstance(query, tuple):
+            # Convert tuple to list for compatibility
+            return models.NearestQuery(nearest=list(query))
         if isinstance(query, get_args(types.PointId)):
             query = (
                 GrpcToRest.convert_point_id(query) if isinstance(query, grpc.PointId) else query
@@ -783,6 +786,13 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
             return models.NearestQuery(nearest=query)
         if query is None:
             return None
+
+        if isinstance(query, (bytes, bytearray, range)):
+            raise ValueError(f"Unsupported query type: {type(query)}")
+
+        if isinstance(query, Sequence):
+            # Generic Sequence fallback - convert any Sequence[float] to list
+            return models.NearestQuery(nearest=list(query))
         raise ValueError(f"Unsupported query type: {type(query)}")
 
     def _resolve_query_request(self, query: models.QueryRequest) -> models.QueryRequest:
