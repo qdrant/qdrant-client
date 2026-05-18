@@ -3,6 +3,7 @@ import random
 import time
 
 import grpc.aio._call
+import httpx
 import numpy as np
 import pytest
 
@@ -20,7 +21,9 @@ COLLECTION_NAME = "async_test_collection"
 @pytest.mark.asyncio
 @pytest.mark.parametrize("prefer_grpc", [True, False])
 async def test_async_qdrant_client(prefer_grpc):
-    client = AsyncQdrantClient(prefer_grpc=prefer_grpc, timeout=15)
+    major, minor, patch, dev = read_version()
+
+    client = AsyncQdrantClient(prefer_grpc=prefer_grpc, timeout=60)
     collection_params = dict(
         collection_name=COLLECTION_NAME,
         vectors_config=models.VectorParams(size=10, distance=models.Distance.EUCLID),
@@ -173,15 +176,25 @@ async def test_async_qdrant_client(prefer_grpc):
     await client.delete_payload_index(COLLECTION_NAME, field_name="random_dig")
     assert "random_dig" not in (await client.get_collection(COLLECTION_NAME)).payload_schema
 
+    assert not (await client.lock_storage(reason="test")).write
+    assert (await client.get_locks()).write
+    assert (await client.unlock_storage()).write
+    assert not (await client.get_locks()).write
+
+    # Clean up any stale snapshots left by previous failed runs
+    for snap in await client.list_snapshots(COLLECTION_NAME):
+        await client.delete_snapshot(COLLECTION_NAME, snapshot_name=snap.name, wait=True)
+    for snap in await client.list_full_snapshots():
+        await client.delete_full_snapshot(snapshot_name=snap.name, wait=True)
+    for snap in await client.list_shard_snapshots(COLLECTION_NAME, shard_id=0):
+        await client.delete_shard_snapshot(
+            COLLECTION_NAME, snapshot_name=snap.name, shard_id=0
+        )
+        time.sleep(0.5)  # https://github.com/qdrant/qdrant-client/issues/254
+
     assert isinstance(await client.create_snapshot(COLLECTION_NAME), models.SnapshotDescription)
     snapshots = await client.list_snapshots(COLLECTION_NAME)
     assert len(snapshots) == 1
-
-    # recover snapshot location is unknown
-    # await client.upsert(COLLECTION_NAME, points=[models.PointStruct(id=101, vector=np.random.rand(10).tolist())])
-    # assert (await client.get_collection(COLLECTION_NAME)).vectors_count == 101
-    # await client.recover_snapshot(collection_name=COLLECTION_NAME, location=...)
-    # assert (await client.get_collection(COLLECTION_NAME)).vectors_count == 100
 
     await client.delete_snapshot(COLLECTION_NAME, snapshot_name=snapshots[0].name, wait=True)
 
@@ -201,12 +214,6 @@ async def test_async_qdrant_client(prefer_grpc):
     )
     snapshots = await client.list_shard_snapshots(COLLECTION_NAME, shard_id=0)
     assert len(snapshots) == 1
-
-    # recover snapshot location is unknown
-    # await client.upsert(COLLECTION_NAME, points=[models.PointStruct(id=101, vector=np.random.rand(10).tolist())])
-    # assert (await client.get_collection(COLLECTION_NAME)).vectors_count == 101
-    # await client.recover_shard_snapshot(collection_name=COLLECTION_NAME, location=..., shard_id=0)
-    # assert (await client.get_collection(COLLECTION_NAME)).vectors_count == 100
 
     await client.delete_shard_snapshot(
         COLLECTION_NAME, snapshot_name=snapshots[0].name, shard_id=0
@@ -567,6 +574,10 @@ async def test_async_auth():
 @pytest.mark.asyncio
 @pytest.mark.parametrize("prefer_grpc", [False, True])
 async def test_custom_sharding(prefer_grpc):
+    resp = httpx.get("http://localhost:6333/cluster")
+    if resp.json().get("result", {}).get("status") == "disabled":
+        pytest.skip("Requires distributed mode")
+
     client = AsyncQdrantClient(prefer_grpc=prefer_grpc)
 
     if await client.collection_exists(COLLECTION_NAME):
