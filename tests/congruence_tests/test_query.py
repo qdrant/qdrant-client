@@ -1583,9 +1583,8 @@ def test_query_with_nan():
     with pytest.raises(UnexpectedResponse):
         http_client.query_points(COLLECTION_NAME, query=query, using="text")
 
-    # TODO: this doesn't fail, instead it returns points with `nan` score
-    # with pytest.raises(UnexpectedResponse):
-    # print(grpc_client.query_points(COLLECTION_NAME, query=query, using="text"))
+    with pytest.raises(UnexpectedResponse):
+        grpc_client.query_points(COLLECTION_NAME, query=query, using="text")
 
     single_vector_config = models.VectorParams(
         size=text_vector_size, distance=models.Distance.COSINE
@@ -1607,9 +1606,8 @@ def test_query_with_nan():
     with pytest.raises(UnexpectedResponse):
         http_client.query_points(COLLECTION_NAME, query=query)
 
-    # TODO: this doesn't fail, instead it returns points with `nan` score
-    # with pytest.raises(UnexpectedResponse):
-    #     print(grpc_client.query_points(COLLECTION_NAME, query=query))
+    with pytest.raises(UnexpectedResponse):
+        grpc_client.query_points(COLLECTION_NAME, query=query)
 
 
 def test_flat_query_dense_interface():
