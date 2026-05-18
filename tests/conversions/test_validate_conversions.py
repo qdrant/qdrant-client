@@ -594,3 +594,63 @@ def test_optimizers_config_diff_max_threads():
     assert restored_grpc_opt_conf.max_optimization_threads == q_grpc.MaxOptimizationThreads(
         value=value
     )
+
+
+def test_convert_vector_params_accepts_dict():
+    from qdrant_client import models
+    from qdrant_client.conversions.conversion import RestToGrpc
+
+    raw = {
+        "size": 1024,
+        "distance": "Cosine",
+        "on_disk": True,
+        "datatype": "float16",
+    }
+    from_dict = RestToGrpc.convert_vector_params(raw)
+    from_model = RestToGrpc.convert_vector_params(models.VectorParams(**raw))
+
+    assert from_dict == from_model
+
+
+def test_convert_vectors_config_named_dict_values():
+    from qdrant_client import models
+    from qdrant_client.conversions.conversion import RestToGrpc
+
+    raw = {
+        "vector1": {
+            "size": 1024,
+            "distance": "Cosine",
+            "on_disk": True,
+            "datatype": "float16",
+        },
+        "vector2": {"size": 768, "distance": "Dot"},
+    }
+    from_dict = RestToGrpc.convert_vectors_config(raw)
+    from_models = RestToGrpc.convert_vectors_config(
+        {name: models.VectorParams(**params) for name, params in raw.items()}
+    )
+
+    assert from_dict == from_models
+
+
+def test_convert_vector_params_diff_accepts_dict():
+    from qdrant_client import models
+    from qdrant_client.conversions.conversion import RestToGrpc
+
+    raw = {"on_disk": True}
+    assert RestToGrpc.convert_vector_params_diff(raw) == RestToGrpc.convert_vector_params_diff(
+        models.VectorParamsDiff(**raw)
+    )
+
+
+def test_convert_sparse_vector_config_dict_values():
+    from qdrant_client import models
+    from qdrant_client.conversions.conversion import RestToGrpc
+
+    raw = {"sparse1": {"modifier": "idf"}, "sparse2": {}}
+    from_dict = RestToGrpc.convert_sparse_vector_config(raw)
+    from_models = RestToGrpc.convert_sparse_vector_config(
+        {name: models.SparseVectorParams(**params) for name, params in raw.items()}
+    )
+
+    assert from_dict == from_models
