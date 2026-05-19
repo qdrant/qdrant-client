@@ -52,15 +52,7 @@ if __name__ == "__main__":
     generator = FastembedGenerator(
         keep_sync=[
             "__init__",
-            "set_model",
-            "set_sparse_model",
-            "get_vector_field_name",
-            "get_sparse_vector_field_name",
             "get_embedding_size",
-            "get_fastembed_vector_params",
-            "get_fastembed_sparse_vector_params",
-            "embedding_model_name",
-            "sparse_embedding_model_name",
         ],
         class_replace_map={
             "QdrantBase": "AsyncQdrantBase",
