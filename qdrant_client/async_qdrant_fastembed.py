@@ -587,7 +587,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         """
         Search for documents in a collection.
         This method automatically embeds the query text using the specified embedding model.
-        If you want to use your own query vector, use `search` method instead.
+        If you want to use your own query vector, use `query_points` method instead.
 
         Args:
             collection_name: Collection to search in
