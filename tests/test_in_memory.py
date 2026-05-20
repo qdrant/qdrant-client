@@ -54,6 +54,29 @@ def test_dense_in_memory_key_filter_returns_results(qdrant: QdrantClient):
     assert [r.id for r in search_result] == [4, 2]
 
 
+def test_create_vector_name_preserves_dense_datatype_in_collection_metadata(
+    qdrant: QdrantClient,
+):
+    qdrant.create_collection(collection_name="test_collection", vectors_config={})
+
+    qdrant.create_vector_name(
+        collection_name="test_collection",
+        vector_name="half",
+        vector_name_config=models.DenseVectorNameConfig(
+            dense=models.DenseVectorConfig(
+                size=4,
+                distance=models.Distance.DOT,
+                datatype=models.VectorStorageDatatype.FLOAT16,
+            )
+        ),
+    )
+
+    collection_info = qdrant.get_collection(collection_name="test_collection")
+
+    assert isinstance(collection_info.config.params.vectors, dict)
+    assert collection_info.config.params.vectors["half"].datatype == models.Datatype.FLOAT16
+
+
 def test_sparse_in_memory_key_filter_returns_results(qdrant: QdrantClient):
     qdrant.create_collection(
         collection_name="test_collection",
@@ -294,5 +317,3 @@ def test_fusion_dbsf_score_threshold(qdrant: QdrantClient):
         f"Expected 3 points after filtering (threshold 1.0), got {len(result_with_threshold.points)}. "
         f"Scores: {[p.score for p in result_no_threshold.points]}"
     )
-
-
