@@ -12,12 +12,12 @@ import pytest
 import qdrant_client.embed.embedder
 from qdrant_client import QdrantClient, models
 from qdrant_client.client_base import QdrantBase
-from qdrant_client.qdrant_fastembed import IDF_EMBEDDING_MODELS
 from qdrant_client.fastembed_common import (
     TextEmbedding,
     SparseTextEmbedding,
     LateInteractionTextEmbedding,
     ImageEmbedding,
+    IDF_EMBEDDING_MODELS,
 )
 
 COLLECTION_NAME = "inference_collection"
@@ -262,7 +262,7 @@ def test_upsert(cached_embeddings):
 
 
 def test_upload(cached_embeddings):
-    def recreate_collection(client, collection_name):
+    def recreate_collection(client: QdrantBase, collection_name: str):
         if client.collection_exists(collection_name):
             client.delete_collection(collection_name)
         vector_params = {
