@@ -187,6 +187,19 @@ def test_client_init():
     assert client._client.rest_uri == "http://localhost:6333/custom"
     assert client._client._prefix == "/custom"
 
+    # URL with a path but no explicit port (reverse-proxy setup): the default port 6333
+    # must NOT be appended — the proxy already owns the port (typically 80/443).
+    client = QdrantClient(url="https://proxy.example.com/qdrant/v1", check_compatibility=False)
+    assert isinstance(client._client, QdrantRemote)
+    assert client._client._port is None
+    assert client._client.rest_uri == "https://proxy.example.com/qdrant/v1"
+
+    # URL with explicit port + path: explicit port wins regardless of path.
+    client = QdrantClient(url="https://proxy.example.com:8443/qdrant/v1", check_compatibility=False)
+    assert isinstance(client._client, QdrantRemote)
+    assert client._client._port == 8443
+    assert client._client.rest_uri == "https://proxy.example.com:8443/qdrant/v1"
+
     client = QdrantClient("my-domain.com", check_compatibility=False)
     assert isinstance(client._client, QdrantRemote)
     assert client._client.rest_uri == "http://my-domain.com:6333"

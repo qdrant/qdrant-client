@@ -104,7 +104,13 @@ class QdrantRemote(QdrantBase):
                 self._https = parsed_url.scheme == "https"
                 self._scheme = parsed_url.scheme
 
-            self._port = self._port if self._port else port
+            # When the URL contains a path (e.g. https://proxy.example.com/qdrant) the user
+            # is connecting through a reverse proxy that already handles the port.  Forcing the
+            # default Qdrant port (6333) onto such a URL produces an incorrect address like
+            # https://proxy.example.com:6333/qdrant.  Only apply the default port when the URL
+            # has no path component, which is the plain "host-only" form where the default port
+            # is meaningful.
+            self._port = self._port if self._port else (None if parsed_url.path else port)
 
             if self._prefix and parsed_url.path:
                 raise ValueError(
