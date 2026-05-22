@@ -146,6 +146,21 @@ def check_datetime_range(condition: models.DatetimeRange, value: Any) -> bool:
     )
 
 
+def check_phrase_match(phrase: str, value: str) -> bool:
+    phrase_tokens = phrase.split()
+    value_tokens = value.split()
+
+    if not phrase_tokens:
+        return True
+    if len(phrase_tokens) > len(value_tokens):
+        return False
+
+    for start in range(len(value_tokens) - len(phrase_tokens) + 1):
+        if value_tokens[start : start + len(phrase_tokens)] == phrase_tokens:
+            return True
+    return False
+
+
 def check_match(condition: models.Match, value: Any) -> bool:
     if isinstance(condition, models.MatchValue):
         return value == condition.value
@@ -153,6 +168,8 @@ def check_match(condition: models.Match, value: Any) -> bool:
         return value is not None and condition.text in value
     if isinstance(condition, models.MatchTextAny):
         return value is not None and any(word in value for word in condition.text_any.split())
+    if isinstance(condition, models.MatchPhrase):
+        return value is not None and check_phrase_match(condition.phrase, value)
     if isinstance(condition, models.MatchAny):
         return value in condition.any
     if isinstance(condition, models.MatchExcept):
