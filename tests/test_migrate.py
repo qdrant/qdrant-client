@@ -516,3 +516,40 @@ def test_recreate_collection(remote_client: QdrantClient):
     collection_before_migrate = remote_client.get_collection(collection_name)
     remote_client.migrate(remote_client, recreate_on_collision=True)
     assert collection_before_migrate == remote_client.get_collection(collection_name)
+
+
+def test_migrate_collection_first_page_uses_batch_size() -> None:
+    """Regression test: _migrate_collection must use batch_size for the first scroll call.
+
+    A historical bug caused the first page to always use ``limit=2`` regardless of the
+    ``batch_size`` argument, resulting in needlessly small first batches for large
+    collections and inconsistent behaviour when callers relied on a specific batch size.
+    """
+    from unittest.mock import MagicMock
+    from qdrant_client.migrate.migrate import _migrate_collection
+
+    # Simulate a 5-point collection with batch_size=3:
+    # first scroll  -> [pt0, pt1, pt2], next_offset="pt2"
+    # second scroll -> [pt3, pt4],      next_offset=None
+    source = MagicMock()
+    source.scroll.side_effect = [
+        ([MagicMock()] * 3, "pt2"),
+        ([MagicMock()] * 2, None),
+    ]
+    source.count.return_value = MagicMock(count=5)
+
+    dest = MagicMock()
+    dest.count.return_value = MagicMock(count=5)
+
+    _migrate_collection(source, dest, collection_name="test_col", batch_size=3)
+
+    # The first scroll call must use limit=batch_size (3), not the old hard-coded limit=2.
+    all_scroll_calls = source.scroll.call_args_list
+    assert all_scroll_calls, "scroll was never called"
+
+    first_limit = all_scroll_calls[0].kwargs.get("limit")
+
+    assert first_limit == 3, (
+        f"First scroll call should use limit=batch_size (3), but got limit={first_limit!r}. "
+        "The first batch was hard-coded to limit=2 in a previous version of _migrate_collection."
+    )

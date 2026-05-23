@@ -168,7 +168,7 @@ def _migrate_collection(
         dest_client (QdrantBase): Destination client
         batch_size (int, optional): Batch size for scrolling and uploading vectors. Defaults to 100.
     """
-    records, next_offset = source_client.scroll(collection_name, limit=2, with_vectors=True)
+    records, next_offset = source_client.scroll(collection_name, limit=batch_size, with_vectors=True)
     upload_with_retry(client=dest_client, collection_name=collection_name, points=records)  # type: ignore
     while next_offset is not None:
         records, next_offset = source_client.scroll(
