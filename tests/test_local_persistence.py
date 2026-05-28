@@ -200,3 +200,45 @@ def test_update_persisence():
             "important": "meta information",
             "not_important": "missing",
         }
+
+
+def test_delete_collection_removes_storage_files():
+    """Test that delete_collection properly closes the SQLite connection
+    and removes the storage files from disk.
+
+    Regression test for https://github.com/qdrant/qdrant-client/issues/1067
+    """
+    import os
+
+    collection_name = "delete_test"
+    with tempfile.TemporaryDirectory() as tmpdir:
+        client = qdrant_client.QdrantClient(path=tmpdir)
+
+        client.create_collection(
+            collection_name,
+            vectors_config=rest.VectorParams(
+                size=4,
+                distance=rest.Distance.COSINE,
+            ),
+        )
+
+        client.upsert(
+            collection_name=collection_name,
+            points=[
+                rest.PointStruct(id=1, vector=[1.0, 0.0, 0.0, 0.0], payload={"text": "hello"}),
+                rest.PointStruct(id=2, vector=[0.0, 1.0, 0.0, 0.0], payload={"text": "world"}),
+            ],
+        )
+
+        collection_path = os.path.join(tmpdir, "collection", collection_name)
+        storage_file = os.path.join(collection_path, "storage.sqlite")
+        assert os.path.exists(storage_file), "Storage file should exist before deletion"
+
+        client.delete_collection(collection_name)
+
+        assert not os.path.exists(storage_file), "Storage file should be removed after deletion"
+        assert not os.path.exists(collection_path), (
+            "Collection directory should be removed after deletion"
+        )
+
+        client.close()
