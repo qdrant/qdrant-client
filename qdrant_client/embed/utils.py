@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 class FieldPath(BaseModel):
     current: str
     tail: list["FieldPath"] | None = Field(default=None)
+    is_terminal: bool = Field(default=False)
 
     def as_str_list(self) -> list[str]:
         """
@@ -21,6 +22,8 @@ class FieldPath(BaseModel):
                 return [current_path]
             else:
                 paths = []
+                if path.is_terminal:
+                    paths.append(current_path)
                 for sub_path in path.tail:
                     paths.extend(collect_paths(sub_path, current_path + "."))
                 return paths
@@ -64,6 +67,10 @@ def convert_paths(paths: list[str]) -> list[FieldPath]:
                 assert current.tail is not None
                 current.tail.append(new_tail)
                 current = new_tail
+        # Mark this node as a terminal path endpoint so that paths which are a
+        # prefix of another path (e.g. 'a.b' alongside 'a.b.c') are preserved
+        # when the node is later promoted to an interior node.
+        current.is_terminal = True
     return converted_paths
 
 
