@@ -296,3 +296,26 @@ def test_fusion_dbsf_score_threshold(qdrant: QdrantClient):
     )
 
 
+def test_match_text_on_non_string_field_does_not_crash(qdrant: QdrantClient):
+    """MatchText applied to a numeric field should not raise TypeError."""
+    qdrant.create_collection(
+        collection_name="test_match_text_numeric",
+        vectors_config=models.VectorParams(size=2, distance=models.Distance.DOT),
+    )
+    qdrant.upsert(
+        collection_name="test_match_text_numeric",
+        points=[
+            models.PointStruct(id=1, vector=[1.0, 0.0], payload={"count": 42}),
+            models.PointStruct(id=2, vector=[0.0, 1.0], payload={"count": "hello world"}),
+        ],
+    )
+    result = qdrant.query_points(
+        collection_name="test_match_text_numeric",
+        query=[1.0, 0.0],
+        query_filter=models.Filter(
+            must=[models.FieldCondition(key="count", match=models.MatchText(text="hello"))]
+        ),
+        limit=10,
+    ).points
+    assert len(result) == 1
+    assert result[0].id == 2
