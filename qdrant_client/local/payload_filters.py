@@ -150,9 +150,9 @@ def check_match(condition: models.Match, value: Any) -> bool:
     if isinstance(condition, models.MatchValue):
         return value == condition.value
     if isinstance(condition, models.MatchText):
-        return value is not None and condition.text in value
+        return isinstance(value, str) and condition.text in value
     if isinstance(condition, models.MatchTextAny):
-        return value is not None and any(word in value for word in condition.text_any.split())
+        return isinstance(value, str) and any(word in value for word in condition.text_any.split())
     if isinstance(condition, models.MatchAny):
         return value in condition.any
     if isinstance(condition, models.MatchExcept):

@@ -296,3 +296,38 @@ def test_fusion_dbsf_score_threshold(qdrant: QdrantClient):
     )
 
 
+def test_match_text_ignores_non_string_payload_values(qdrant: QdrantClient):
+    qdrant.create_collection(
+        collection_name="test_collection",
+        vectors_config=models.VectorParams(size=4, distance=models.Distance.DOT),
+    )
+
+    qdrant.upsert(
+        collection_name="test_collection",
+        wait=True,
+        points=[
+            models.PointStruct(id=1, vector=[1.0, 0.0, 0.0, 0.0], payload={"count": 42}),
+            models.PointStruct(id=2, vector=[0.0, 1.0, 0.0, 0.0], payload={"active": True}),
+            models.PointStruct(id=3, vector=[0.0, 0.0, 1.0, 0.0], payload={"tags": [1, 2, 3]}),
+            models.PointStruct(
+                id=4,
+                vector=[0.0, 0.0, 0.0, 1.0],
+                payload={"label": "hello world"},
+            ),
+        ],
+    )
+
+    def query_with_match(key: str, match: models.Match) -> list[models.ScoredPoint]:
+        return qdrant.query_points(
+            collection_name="test_collection",
+            query=[1.0, 0.0, 0.0, 0.0],
+            query_filter=models.Filter(must=[models.FieldCondition(key=key, match=match)]),
+            limit=10,
+        ).points
+
+    for key in ("count", "active", "tags"):
+        assert query_with_match(key, models.MatchText(text="hello")) == []
+        assert query_with_match(key, models.MatchTextAny(text_any="hello world")) == []
+
+    assert [point.id for point in query_with_match("label", models.MatchText(text="hello"))] == [4]
+
