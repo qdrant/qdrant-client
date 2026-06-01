@@ -33,6 +33,11 @@ jobs:
         poetry install
     - name: Build package
       run: poetry build
+    - name: Smoke-test built package
+      run: |
+        python -m venv /tmp/smoke-venv
+        /tmp/smoke-venv/bin/pip install --quiet dist/*.whl
+        /tmp/smoke-venv/bin/python -c "from qdrant_client import QdrantClient; print('Import OK')"
     - name: Publish package
       uses: pypa/gh-action-pypi-publish@27b31702a0e7fc50959f5ad993c78deac1bdfc29
       with:
