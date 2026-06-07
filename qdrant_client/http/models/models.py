@@ -1188,6 +1188,11 @@ class HardwareUsage(BaseModel):
     vector_io_write: int = Field(..., description="Usage of the hardware resources, spent to process the request")
 
 
+_HARDWARE_USAGE_FIELDS = frozenset(
+    HardwareUsage.model_fields if hasattr(HardwareUsage, "model_fields") else HardwareUsage.__fields__
+)
+
+
 class HasIdCondition(BaseModel, extra="forbid"):
     """
     ID-based filtering condition
@@ -3724,6 +3729,18 @@ class Usage(BaseModel):
     """
     Usage of the hardware resources, spent to process the request
     """
+
+    def __init__(self, **data: Any) -> None:
+        if "hardware" not in data:
+            hardware = {
+                field_name: data.pop(field_name)
+                for field_name in _HARDWARE_USAGE_FIELDS
+                if field_name in data
+            }
+            if hardware:
+                data["hardware"] = hardware
+
+        super().__init__(**data)
 
     hardware: Optional["HardwareUsage"] = Field(
         default=None, description="Usage of the hardware resources, spent to process the request"
