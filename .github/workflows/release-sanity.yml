@@ -1,0 +1,40 @@
+name: Release sanity check
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+
+jobs:
+  release-sanity:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # v2.7.0
+
+      - name: Set up Python
+        uses: actions/setup-python@e9aba2c848f5ebd159c070c61ea2c4e2b122355e # v2.3.4
+        with:
+          python-version: '3.10.x'
+
+      - name: Build wheel
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install poetry
+          poetry build --format wheel
+
+      - name: Sanity check wheel install
+        run: |
+          python -m venv /tmp/qdrant-client-release-check
+          source /tmp/qdrant-client-release-check/bin/activate
+          python -m pip install --upgrade pip
+          python -m pip install dist/*.whl
+          cd /tmp
+          python - <<'PY'
+          import qdrant_client
+          from qdrant_client import QdrantClient
+
+          print("qdrant-client import ok:", qdrant_client.__version__)
+          print("QdrantClient import ok:", QdrantClient.__name__)
+          PY
