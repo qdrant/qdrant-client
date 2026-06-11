@@ -187,3 +187,19 @@ def test_geo_polygon_filter_query():
 
     res = check_filter(query, payload, 0, has_vector={})
     assert res is False
+
+
+def test_text_match_ignores_non_string_values():
+    payload = {"count": 42}
+
+    query = models.Filter(
+        must=[models.FieldCondition(key="count", match=models.MatchText(text="42"))]
+    )
+    res = check_filter(query, payload, 0, has_vector={})
+    assert res is False
+
+    query = models.Filter(
+        must=[models.FieldCondition(key="count", match=models.MatchTextAny(text_any="4 42"))]
+    )
+    res = check_filter(query, payload, 0, has_vector={})
+    assert res is False
