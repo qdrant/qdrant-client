@@ -186,6 +186,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         return collection.search(
             query_vector=query_vector,
             query_filter=query_filter,
+            search_params=search_params,
             limit=limit,
             offset=offset,
             with_payload=with_payload,
@@ -376,6 +377,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
             prefetch=prefetch,
             query_filter=query_filter,
             using=using,
+            search_params=search_params,
             score_threshold=score_threshold,
             limit=limit,
             offset=offset or 0,
@@ -447,6 +449,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
             query_filter=query_filter,
             using=using,
             prefetch=prefetch,
+            search_params=search_params,
             limit=limit,
             group_by=group_by,
             group_size=group_size,
