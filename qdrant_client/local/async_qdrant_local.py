@@ -86,7 +86,8 @@ class AsyncQdrantLocal(AsyncQdrantBase):
 
                 portalocker.unlock(self._flock_file)
                 self._flock_file.close()
-        except TypeError:
+        except (TypeError, ImportError):  # TypeError: portalocker garbage collected early.
+            # ImportError: sys.meta_path is None during Python shutdown.
             pass
 
     def _load(self) -> None:

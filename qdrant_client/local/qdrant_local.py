@@ -87,8 +87,9 @@ class QdrantLocal(QdrantBase):
 
                 portalocker.unlock(self._flock_file)
                 self._flock_file.close()
-        except TypeError:  # sometimes portalocker module can be garbage collected before
-            # QdrantLocal instance
+        except (TypeError, ImportError):  # TypeError: sometimes portalocker module can be
+            # garbage collected before QdrantLocal instance.
+            # ImportError: sys.meta_path is None during Python shutdown.
             pass
 
     def _load(self) -> None:
