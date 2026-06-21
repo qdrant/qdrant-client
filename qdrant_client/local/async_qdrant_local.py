@@ -137,7 +137,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
             self._flock_file = None
             raise RuntimeError(
                 f"Storage folder {self.location} is already accessed by another instance of Qdrant client. If you require concurrent access, use Qdrant server instead."
-            )
+            ) from None
         except Exception:
             self._flock_file.close()
             self._flock_file = None
