@@ -1,12 +1,13 @@
 import base64
 from pathlib import Path
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, PrivateAttr
 
 
 class FieldPath(BaseModel):
     current: str
     tail: list["FieldPath"] | None = Field(default=None)
+    _is_endpoint: bool = PrivateAttr(default=False)
 
     def as_str_list(self) -> list[str]:
         """
@@ -17,13 +18,13 @@ class FieldPath(BaseModel):
         # Recursive function to collect all paths
         def collect_paths(path: FieldPath, prefix: str = "") -> list[str]:
             current_path = prefix + path.current
+            paths = [current_path] if path._is_endpoint or not path.tail else []
             if not path.tail:
-                return [current_path]
-            else:
-                paths = []
-                for sub_path in path.tail:
-                    paths.extend(collect_paths(sub_path, current_path + "."))
                 return paths
+
+            for sub_path in path.tail:
+                paths.extend(collect_paths(sub_path, current_path + "."))
+            return paths
 
         # Collect all paths starting from this object
         return collect_paths(self)
@@ -64,6 +65,7 @@ def convert_paths(paths: list[str]) -> list[FieldPath]:
                 assert current.tail is not None
                 current.tail.append(new_tail)
                 current = new_tail
+        current._is_endpoint = True
     return converted_paths
 
 
