@@ -10,13 +10,15 @@ class FieldPath(BaseModel):
     _is_endpoint: bool = PrivateAttr(default=False)
 
     def as_str_list(self) -> list[str]:
-        """
+        """Flatten this field path tree into dot-separated endpoint paths.
+
         >>> FieldPath(current='a', tail=[FieldPath(current='b', tail=[FieldPath(current='c'), FieldPath(current='d')])]).as_str_list()
         ['a.b.c', 'a.b.d']
         """
 
         # Recursive function to collect all paths
         def collect_paths(path: FieldPath, prefix: str = "") -> list[str]:
+            """Collect endpoint paths below the current tree node."""
             current_path = prefix + path.current
             paths = [current_path] if path._is_endpoint or not path.tail else []
             if not path.tail:
