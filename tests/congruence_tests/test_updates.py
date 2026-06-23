@@ -508,6 +508,41 @@ def test_update_vectors():
     # endregion
 
 
+def test_update_vectors_filter_skips_only_non_matching_points():
+    local_client = init_local()
+    local_client.create_collection(
+        collection_name=COLLECTION_NAME,
+        vectors_config=models.VectorParams(size=4, distance=models.Distance.DOT),
+    )
+    local_client.upsert(
+        COLLECTION_NAME,
+        points=[
+            models.PointStruct(id=1, vector=[1, 0, 0, 0], payload={"type": "a"}),
+            models.PointStruct(id=2, vector=[0, 1, 0, 0], payload={"type": "b"}),
+            models.PointStruct(id=3, vector=[0, 0, 1, 0], payload={"type": "a"}),
+        ],
+    )
+
+    local_client.update_vectors(
+        COLLECTION_NAME,
+        points=[
+            models.PointVectors(id=1, vector=[0.5, 0.5, 0, 0]),
+            models.PointVectors(id=2, vector=[0, 0, 0.5, 0.5]),
+            models.PointVectors(id=3, vector=[0, 0, 0, 1]),
+        ],
+        update_filter=models.Filter(
+            must=[models.FieldCondition(key="type", match=models.MatchValue(value="a"))]
+        ),
+    )
+
+    retrieved_points = local_client.retrieve(
+        collection_name=COLLECTION_NAME, ids=[1, 2, 3], with_vectors=True
+    )
+    assert retrieved_points[0].vector == [0.5, 0.5, 0.0, 0.0]
+    assert retrieved_points[1].vector == [0.0, 1.0, 0.0, 0.0]
+    assert retrieved_points[2].vector == [0.0, 0.0, 0.0, 1.0]
+
+
 @pytest.mark.parametrize("prefer_grpc", [False, True])
 def test_update_filter(prefer_grpc):
     local_client = init_local()
