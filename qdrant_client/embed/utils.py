@@ -1,3 +1,5 @@
+"""Utility helpers for embed inputs and path conversion."""
+
 import base64
 from pathlib import Path
 
@@ -5,6 +7,8 @@ from pydantic import BaseModel, Field, PrivateAttr
 
 
 class FieldPath(BaseModel):
+    """Tree node representing one segment of a nested field path."""
+
     current: str
     tail: list["FieldPath"] | None = Field(default=None)
     _is_endpoint: bool = PrivateAttr(default=False)
