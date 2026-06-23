@@ -1,4 +1,5 @@
 import asyncio
+import builtins
 import concurrent.futures
 import importlib.metadata
 import os
@@ -20,6 +21,7 @@ from qdrant_client._pydantic_compat import to_dict
 from qdrant_client.conversions.common_types import PointVectors, StrictModeConfig
 from qdrant_client.common.client_exceptions import ResourceExhaustedResponse
 from qdrant_client.conversions.conversion import grpc_to_payload, json_to_value
+from qdrant_client.local.async_qdrant_local import AsyncQdrantLocal
 from qdrant_client.local.qdrant_local import QdrantLocal
 from qdrant_client.models import (
     Batch,
@@ -246,6 +248,33 @@ def test_client_init():
         # it's just a mock to check creation of `init_options` with unpickleable objects like ssl context
     )
     assert client.init_options["verify"] is ssl_context
+
+
+@pytest.mark.parametrize("local_cls", [QdrantLocal, AsyncQdrantLocal])
+def test_local_lock_failure_closes_lock_file(tmp_path, monkeypatch, local_cls):
+    import portalocker
+
+    captured_lock_file = None
+    original_open = builtins.open
+
+    def tracking_open(file, mode="r", *args, **kwargs):
+        nonlocal captured_lock_file
+        opened_file = original_open(file, mode, *args, **kwargs)
+        if os.fspath(file).endswith(".lock") and mode == "r+":
+            captured_lock_file = opened_file
+        return opened_file
+
+    def raise_lock_exception(*args, **kwargs):
+        raise portalocker.exceptions.LockException("locked")
+
+    monkeypatch.setattr(builtins, "open", tracking_open)
+    monkeypatch.setattr(portalocker, "lock", raise_lock_exception)
+
+    with pytest.raises(RuntimeError, match="already accessed by another instance"):
+        local_cls(str(tmp_path))
+
+    assert captured_lock_file is not None
+    assert captured_lock_file.closed
 
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])
