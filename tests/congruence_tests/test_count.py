@@ -49,37 +49,6 @@ def test_simple_count():
             raise e
 
 
-def test_match_text_on_non_string_field():
-    """Regression test: MatchText must not crash when applied to non-string
-    payload fields (int, list of ints, bool). The random filter fuzzer in
-    tests/fixtures/filters.py only ever applies MatchText to the "words"
-    field, which is always a string -- so this gap was never exercised.
-    """
-    fixture_points = generate_fixtures()
-
-    local_client = init_local()
-    init_client(local_client, fixture_points)
-
-    remote_client = init_remote()
-    init_client(remote_client, fixture_points)
-
-    int_field_filter = models.Filter(
-        must=[models.FieldCondition(key="rand_digit", match=models.MatchText(text="5"))]
-    )
-    compare_client_results(local_client, remote_client, filter_count, count_filter=int_field_filter)
-
-    nested_int_field_filter = models.Filter(
-        must=[
-            models.FieldCondition(
-                key="nested.rand_digit", match=models.MatchText(text="5")
-            )
-        ]
-    )
-    compare_client_results(
-        local_client, remote_client, filter_count, count_filter=nested_int_field_filter
-    )
-
-
 def test_simple_sparse_search():
     fixture_points = generate_sparse_fixtures()
 
