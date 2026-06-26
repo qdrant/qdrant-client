@@ -3,7 +3,6 @@ import random
 import time
 
 import grpc.aio._call
-import httpx
 import numpy as np
 import pytest
 
@@ -21,8 +20,6 @@ COLLECTION_NAME = "async_test_collection"
 @pytest.mark.asyncio
 @pytest.mark.parametrize("prefer_grpc", [True, False])
 async def test_async_qdrant_client(prefer_grpc):
-    major, minor, patch, dev = read_version()
-
     client = AsyncQdrantClient(prefer_grpc=prefer_grpc, timeout=60)
     collection_params = dict(
         collection_name=COLLECTION_NAME,
