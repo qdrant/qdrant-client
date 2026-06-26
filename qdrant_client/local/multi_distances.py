@@ -191,7 +191,7 @@ def calculate_multi_discovery_scores(
     # Get distances to target
     distances_to_target = calculate_multi_distance_core(query.target, matrices, distance_type)
 
-    sigmoided_distances = np.fromiter(
+    sigmoided_distances: types.NumpyArray = np.fromiter(
         (scaled_fast_sigmoid(xi) for xi in distances_to_target), np.float32
     )
 
@@ -208,7 +208,7 @@ def calculate_multi_context_scores(
         neg = calculate_multi_distance_core(pair.negative, matrices, distance_type)
 
         difference = pos - neg - EPSILON
-        pair_scores = np.fromiter(
+        pair_scores: types.NumpyArray = np.fromiter(
             (fast_sigmoid(xi) for xi in np.minimum(difference, 0.0)), np.float32
         )
         overall_scores += pair_scores

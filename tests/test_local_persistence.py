@@ -4,7 +4,7 @@ import tempfile
 import numpy as np
 import pytest
 
-import qdrant_client
+from qdrant_client import QdrantClient
 import qdrant_client.http.models as rest
 from qdrant_client._pydantic_compat import construct
 from tests.fixtures.points import generate_random_sparse_vector_list
@@ -20,7 +20,7 @@ def ingest_dense_vector_data(
     lines = [x for x in range(10)]
 
     embeddings = np.random.randn(len(lines), vector_size).tolist()
-    client = qdrant_client.QdrantClient(path=path)
+    client = QdrantClient(path=path)
 
     if client.collection_exists(collection_name):
         client.delete_collection(collection_name)
@@ -40,6 +40,7 @@ def ingest_dense_vector_data(
             vectors=embeddings,
         ),
     )
+    return client
 
 
 def ingest_sparse_vector_data(
@@ -50,7 +51,7 @@ def ingest_sparse_vector_data(
     add_dense_to_config: bool = False,
 ):
     sparse_vectors = generate_random_sparse_vector_list(vector_count, max_vector_size, 0.2)
-    client = qdrant_client.QdrantClient(path=path)
+    client = QdrantClient(path=path)
 
     if client.collection_exists(collection_name):
         client.delete_collection(collection_name)
@@ -80,31 +81,32 @@ def ingest_sparse_vector_data(
 
 def test_prevent_parallel_access():
     with tempfile.TemporaryDirectory() as tmpdir:
-        _client = qdrant_client.QdrantClient(path=tmpdir)
+        _client = QdrantClient(path=tmpdir)
 
         with pytest.raises(Exception) as e:
-            _client2 = qdrant_client.QdrantClient(path=tmpdir)
+            _client2 = QdrantClient(path=tmpdir)
 
         assert "already accessed by another instance" in str(e)
 
 
 def test_local_dense_persistence():
     with tempfile.TemporaryDirectory() as tmpdir:
-        ingest_dense_vector_data(path=tmpdir)
-        client = qdrant_client.QdrantClient(path=tmpdir)
+        client = ingest_dense_vector_data(path=tmpdir)
         assert client.count(default_collection_name).count == 10
-        del client
+        client.close()
 
-        ingest_dense_vector_data(path=tmpdir)
-        client = qdrant_client.QdrantClient(path=tmpdir)
+        client = ingest_dense_vector_data(path=tmpdir)
         assert client.count(default_collection_name).count == 10
-        del client
+        client.close()
 
-        ingest_dense_vector_data(path=tmpdir)
-        ingest_dense_vector_data(path=tmpdir, collection_name="example_2")
-        client = qdrant_client.QdrantClient(path=tmpdir)
+        client = ingest_dense_vector_data(path=tmpdir)
+        client.close()
+
+        client = ingest_dense_vector_data(path=tmpdir, collection_name="example_2")
         assert client.count(default_collection_name).count == 10
         assert client.count("example_2").count == 10
+
+        client.close()
 
 
 @pytest.mark.parametrize("add_dense_to_config", [True, False])
@@ -118,10 +120,9 @@ def test_local_sparse_persistence(add_dense_to_config):
             limit=10,
             with_vectors=True,
         )
+        client.close()
 
-        del client
-
-        client = qdrant_client.QdrantClient(path=tmpdir)
+        client = QdrantClient(path=tmpdir)
 
         (pre_result, _) = client.scroll(
             collection_name=default_collection_name,
@@ -136,25 +137,24 @@ def test_local_sparse_persistence(add_dense_to_config):
             assert len(pre_result[i].vector["text"].indices) == len(
                 pre_result[i].vector["text"].values
             )
+        client.close()
 
-        del client
-
-        ingest_sparse_vector_data(path=tmpdir)
-        client = qdrant_client.QdrantClient(path=tmpdir)
+        client = ingest_sparse_vector_data(path=tmpdir)
         assert client.count(default_collection_name).count == 10
-        del client
+        client.close()
 
-        ingest_sparse_vector_data(path=tmpdir)
-        ingest_sparse_vector_data(path=tmpdir, collection_name="example_2")
-        client = qdrant_client.QdrantClient(path=tmpdir)
+        client = ingest_sparse_vector_data(path=tmpdir)
+        client.close()
+        client = ingest_sparse_vector_data(path=tmpdir, collection_name="example_2")
         assert client.count(default_collection_name).count == 10
         assert client.count("example_2").count == 10
+        client.close()
 
 
-def test_update_persisence():
-    collection_name = "update_persisence"
+def test_update_persistence():
+    collection_name = "update_persistence"
     with tempfile.TemporaryDirectory() as tmpdir:
-        client = qdrant_client.QdrantClient(path=tmpdir)
+        client = QdrantClient(path=tmpdir)
 
         if client.collection_exists(collection_name):
             client.delete_collection(collection_name)
@@ -187,10 +187,10 @@ def test_update_persisence():
             "important": "meta information",
             "not_important": "missing",
         }
-        client.close()
-        del client
 
-        client = qdrant_client.QdrantClient(path=tmpdir)
+        client.close()
+
+        client = QdrantClient(path=tmpdir)
         persisted_collection_info = client.get_collection(collection_name)
         assert (
             persisted_collection_info.config.params.sparse_vectors["text"].modifier
@@ -200,3 +200,4 @@ def test_update_persisence():
             "important": "meta information",
             "not_important": "missing",
         }
+        client.close()
