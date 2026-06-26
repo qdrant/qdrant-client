@@ -24,6 +24,12 @@ from qdrant_client import grpc as grpc
 from qdrant_client._pydantic_compat import construct
 from qdrant_client.auth import BearerAuth
 from qdrant_client.async_client_base import AsyncQdrantBase
+from qdrant_client.common.retry import (
+    RetryConfig,
+    coerce_retry_config,
+    async_retry_middleware,
+    retry_to_grpc_options,
+)
 from qdrant_client.common.version_check import is_compatible, get_server_version
 from qdrant_client.connection import get_async_channel as get_channel
 from qdrant_client.conversions import common_types as types
@@ -61,12 +67,14 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         check_compatibility: bool = True,
         pool_size: int | None = None,
         headers: dict[str, str] | None = None,
+        retry: RetryConfig | dict[str, Any] | None = None,
         **kwargs: Any,
     ):
         super().__init__(**kwargs)
         self._prefer_grpc = prefer_grpc
         self._grpc_port = grpc_port
         self._grpc_options = grpc_options or {}
+        self._retry = coerce_retry_config(retry)
         self._https = https if https is not None else api_key is not None
         self._scheme = "https" if self._https else "http"
         self._pool_size: int | None = None
@@ -155,6 +163,16 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             )
         self._rest_headers["User-Agent"] = user_agent
         self._grpc_options["grpc.primary_user_agent"] = user_agent
+        if self._retry is not None:
+            for option_name, option_value in retry_to_grpc_options(self._retry).items():
+                if option_name in self._grpc_options:
+                    show_warning_once(
+                        message=f"`{option_name}` has been passed in `grpc_options`, the value derived from `retry` will be ignored.",
+                        category=UserWarning,
+                        stacklevel=4,
+                    )
+                    continue
+                self._grpc_options[option_name] = option_value
         grpc_compression: Compression | None = kwargs.pop("grpc_compression", None)
         if grpc_compression is not None and (not isinstance(grpc_compression, Compression)):
             raise TypeError(
@@ -189,6 +207,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             host=self.rest_uri, **self._rest_args
         )
         self.openapi_client.client.add_middleware(async_rest_headers_middleware)
+        if self._retry is not None:
+            self.openapi_client.client.add_middleware(async_retry_middleware(self._retry))
         self._grpc_channel_pool: list[grpc.Channel] = []
         self._grpc_points_client_pool: list[grpc.PointsStub] | None = None
         self._grpc_collections_client_pool: list[grpc.CollectionsStub] | None = None
