@@ -953,9 +953,7 @@ class TestSimpleSearcher:
             limit=10,
         )
 
-    def relevance_feedback_query(
-            self, client: QdrantBase
-    ) -> models.QueryResponse:
+    def relevance_feedback_query(self, client: QdrantBase) -> models.QueryResponse:
         return client.query_points(
             collection_name=COLLECTION_NAME,
             query=models.RelevanceFeedbackQuery(
@@ -969,7 +967,7 @@ class TestSimpleSearcher:
                     ],
                     strategy=models.NaiveFeedbackStrategy(
                         naive=models.NaiveFeedbackStrategyParams(a=0.5, b=1.0, c=0.7)
-                    )
+                    ),
                 )
             ),
             using="text",
@@ -1472,7 +1470,7 @@ def test_search_with_persistence():
         payload_update_filter = one_random_filter_please()
         local_client.set_payload(COLLECTION_NAME, {"test": f"test"}, payload_update_filter)
 
-        del local_client
+        local_client.close()
         local_client_2 = init_local(tmpdir)
 
         http_client = init_remote()
@@ -1497,7 +1495,9 @@ def test_search_with_persistence():
                 )
             except AssertionError as e:
                 print(f"\nFailed with filter {query_filter}")
+                local_client_2.close()
                 raise e
+        local_client_2.close()
 
 
 def test_search_with_persistence_and_skipped_vectors():
@@ -1513,7 +1513,7 @@ def test_search_with_persistence_and_skipped_vectors():
         local_client.set_payload(COLLECTION_NAME, {"test": f"test"}, payload_update_filter)
 
         count_before_load = local_client.count(COLLECTION_NAME)
-        del local_client
+        local_client.close()
         local_client_2 = init_local(tmpdir)
 
         count_after_load = local_client_2.count(COLLECTION_NAME)
@@ -1542,7 +1542,9 @@ def test_search_with_persistence_and_skipped_vectors():
                 )
             except AssertionError as e:
                 print(f"\nFailed with filter {query_filter}")
+                local_client_2.close()
                 raise e
+        local_client_2.close()
 
 
 def test_query_invalid_vector_type():
