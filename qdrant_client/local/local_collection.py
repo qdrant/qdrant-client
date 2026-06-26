@@ -2645,7 +2645,7 @@ class LocalCollection:
                 if not check_filter(
                     update_filter, self.payload[idx], self.ids_inv[idx], has_vector
                 ):
-                    return None
+                    continue
             self._update_named_vectors(idx, fixed_vectors)
             self._persist_by_id(point_id)
 

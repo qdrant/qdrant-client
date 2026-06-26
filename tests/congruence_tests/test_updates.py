@@ -713,6 +713,55 @@ def test_update_filter(prefer_grpc):
 
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])
+def test_update_vectors_filter_skips_non_matching_points(prefer_grpc):
+    # a non-matching point must not abort processing of the
+    # whole batch. A point that does not satisfy `update_filter` should be
+    # skipped, while subsequent matching points must still be updated.
+    local_client = init_local()
+    remote_client = init_remote(prefer_grpc=prefer_grpc)
+
+    vectors_config = models.VectorParams(size=2, distance=models.Distance.DOT)
+    local_client.create_collection(collection_name=COLLECTION_NAME, vectors_config=vectors_config)
+    if remote_client.collection_exists(collection_name=COLLECTION_NAME):
+        remote_client.delete_collection(collection_name=COLLECTION_NAME)
+    remote_client.create_collection(collection_name=COLLECTION_NAME, vectors_config=vectors_config)
+
+    original_vector = [random.random(), random.random()]
+    original_points = [
+        models.PointStruct(id=1, vector=original_vector[:], payload={"digit": 1}),
+        models.PointStruct(id=2, vector=original_vector[:], payload={"digit": 2}),
+    ]
+    local_client.upsert(COLLECTION_NAME, points=original_points)
+    remote_client.upsert(COLLECTION_NAME, points=original_points)
+
+    new_vector = (-np.array(original_vector[:])).tolist()
+    # id=1 does NOT match the filter and comes first, id=2 matches and comes after.
+    new_point_vectors = [
+        models.PointVectors(id=1, vector=new_vector[:]),
+        models.PointVectors(id=2, vector=new_vector[:]),
+    ]
+    update_filter = models.Filter(
+        must=models.FieldCondition(key="digit", match=models.MatchValue(value=2))
+    )
+    local_client.update_vectors(
+        COLLECTION_NAME, points=new_point_vectors, update_filter=update_filter
+    )
+    remote_client.update_vectors(
+        COLLECTION_NAME, points=new_point_vectors, update_filter=update_filter
+    )
+    # collection points:
+    # id=1, vector=original_vector (skipped, does not match filter)
+    # id=2, vector=-original_vector (updated, matches filter)
+    compare_collections(local_client, remote_client, 10, collection_name=COLLECTION_NAME)
+
+    retrieved_points = local_client.retrieve(
+        collection_name=COLLECTION_NAME, ids=[1, 2], with_vectors=True
+    )
+    assert np.allclose(retrieved_points[0].vector, original_vector)  # not updated
+    assert np.allclose(retrieved_points[1].vector, new_vector)  # updated
+
+
+@pytest.mark.parametrize("prefer_grpc", [False, True])
 def test_update_mode(prefer_grpc: bool) -> None:
     def upload(
         client: QdrantBase,
