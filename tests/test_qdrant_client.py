@@ -1116,6 +1116,8 @@ def test_quantization_config(prefer_grpc):
 @pytest.mark.parametrize("prefer_grpc", [False, True])
 def test_custom_sharding(prefer_grpc):
     client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
+    if client.cluster_status().status == "disabled":
+        pytest.skip("Requires distributed mode")
 
     def init_collection():
         if client.collection_exists(COLLECTION_NAME):
@@ -2282,6 +2284,9 @@ def test_cluster_collection_update(prefer_grpc):
             pytest.skip("Cluster collection update is supported as of qdrant 1.16.0")
 
     client = QdrantClient(prefer_grpc=prefer_grpc)
+    if client.cluster_status().status == "disabled":
+        pytest.skip("Requires distributed mode")
+
     if client.collection_exists(COLLECTION_NAME):
         client.delete_collection(COLLECTION_NAME, timeout=TIMEOUT)
     client.create_collection(
@@ -2354,6 +2359,9 @@ def test_cluster_methods(prefer_grpc):
             pytest.skip("Cluster collection update is supported as of qdrant 1.16.0")
 
     client = QdrantClient(prefer_grpc=prefer_grpc)
+    if client.cluster_status().status == "disabled":
+        pytest.skip("You need a cluster to test cluster methods")
+
     if client.collection_exists(COLLECTION_NAME):
         client.delete_collection(COLLECTION_NAME, timeout=TIMEOUT)
     client.create_collection(
