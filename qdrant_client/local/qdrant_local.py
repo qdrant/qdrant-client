@@ -406,6 +406,19 @@ class QdrantLocal(QdrantBase):
     ) -> types.QueryResponse:
         collection = self._get_collection(collection_name)
 
+        if search_params is not None:
+            # Local mode has no ANN index — search is always exact (brute-force) — so
+            # `search_params` (exact, hnsw_ef, quantization, indexed_only, ...) cannot change
+            # results. Warn instead of silently dropping it, which surprised users. See #1083.
+            show_warning_once(
+                message=(
+                    "Local mode performs exact (brute-force) search, so `search_params` "
+                    "(`exact`, `hnsw_ef`, `quantization`, `indexed_only`, ...) has no effect "
+                    "and is ignored; results are always exact."
+                ),
+                idx="local_query_points_search_params_ignored",
+            )
+
         if query is not None:
             query, mentioned_ids = self._resolve_query_input(
                 collection_name, query, using, lookup_from
