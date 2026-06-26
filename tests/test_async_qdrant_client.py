@@ -180,7 +180,7 @@ async def test_async_qdrant_client(prefer_grpc):
         await client.delete_full_snapshot(snapshot_name=snap.name, wait=True)
     for snap in await client.list_shard_snapshots(COLLECTION_NAME, shard_id=0):
         await client.delete_shard_snapshot(COLLECTION_NAME, snapshot_name=snap.name, shard_id=0)
-        time.sleep(0.5)  # https://github.com/qdrant/qdrant-client/issues/254
+    time.sleep(0.5)  # https://github.com/qdrant/qdrant-client/issues/254
 
     assert isinstance(await client.create_snapshot(COLLECTION_NAME), models.SnapshotDescription)
     snapshots = await client.list_snapshots(COLLECTION_NAME)
