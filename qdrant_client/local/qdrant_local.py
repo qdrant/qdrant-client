@@ -417,6 +417,7 @@ class QdrantLocal(QdrantBase):
                     "and is ignored; results are always exact."
                 ),
                 idx="local_query_points_search_params_ignored",
+                stacklevel=5,
             )
 
         if query is not None:
@@ -451,6 +452,7 @@ class QdrantLocal(QdrantBase):
                 query=request.query,
                 prefetch=request.prefetch,
                 query_filter=request.filter,
+                search_params=request.params,
                 limit=request.limit or 10,
                 offset=request.offset,
                 with_payload=request.with_payload,
