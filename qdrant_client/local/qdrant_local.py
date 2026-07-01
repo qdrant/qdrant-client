@@ -492,6 +492,19 @@ class QdrantLocal(QdrantBase):
         **kwargs: Any,
     ) -> types.GroupsResult:
         collection = self._get_collection(collection_name)
+
+        if search_params is not None:
+            # Same as query_points(): local search is always exact, see #1083.
+            show_warning_once(
+                message=(
+                    "Local mode performs exact (brute-force) search, so `search_params` "
+                    "(`exact`, `hnsw_ef`, `quantization`, `indexed_only`, ...) has no effect "
+                    "and is ignored; results are always exact."
+                ),
+                idx="local_query_points_search_params_ignored",
+                stacklevel=5,
+            )
+
         if query is not None:
             query, mentioned_ids = self._resolve_query_input(
                 collection_name, query, using, lookup_from

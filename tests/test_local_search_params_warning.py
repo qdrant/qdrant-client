@@ -37,7 +37,10 @@ def _client_with_points() -> QdrantClient:
     )
     client.upsert(
         "c",
-        points=[models.PointStruct(id=i, vector=[float(i), 0.0, 0.0, 1.0]) for i in range(5)],
+        points=[
+            models.PointStruct(id=i, vector=[float(i), 0.0, 0.0, 1.0], payload={"group": i % 2})
+            for i in range(5)
+        ],
     )
     return client
 
@@ -72,6 +75,22 @@ def test_query_batch_points_warns_when_search_params_passed_in_local_mode():
         )
     assert any("has no effect" in str(w.message) for w in caught)
     assert len(res) == 1 and len(res[0].points) == 3
+
+
+def test_query_points_groups_warns_when_search_params_passed_in_local_mode():
+    client = _client_with_points()
+    with _fresh_warning(_WARN_IDX), warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        res = client.query_points_groups(
+            "c",
+            group_by="group",
+            query=[1.0, 0.0, 0.0, 1.0],
+            search_params=models.SearchParams(exact=True),
+            limit=2,
+            group_size=1,
+        )
+    assert any("has no effect" in str(w.message) for w in caught)
+    assert len(res.groups) == 2
 
 
 def test_query_points_no_warning_without_search_params():
