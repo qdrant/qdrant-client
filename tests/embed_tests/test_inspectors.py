@@ -710,3 +710,169 @@ def test_inspect_update_operations():
     paths = inspector_embed.inspect([mixed_point_vectors_update_op])
     assert len(paths) == 1 and paths[0].as_str_list() == ["update_vectors.points.vector"]
     # endregion
+
+
+def test_inspect_formula_query_types():
+    # expressions can't contain objects requiring inference
+    # https://github.com/qdrant/qdrant-client/issues/963
+    inspector = Inspector()
+    inspector_embed = InspectorEmbed()
+
+    # region negative cases
+    constant_formula_query = models.FormulaQuery(formula=0.5)
+    assert not inspector.inspect(constant_formula_query)
+    assert inspector_embed.inspect(constant_formula_query) == []
+
+    payload_key_formula_query = models.FormulaQuery(formula="payload_key")
+    assert not inspector.inspect(payload_key_formula_query)
+    assert inspector_embed.inspect(payload_key_formula_query) == []
+
+    condition_formula_query = models.FormulaQuery(
+        formula=models.FieldCondition(key="key", range=models.Range(gt=0.5))
+    )
+    assert not inspector.inspect(condition_formula_query)
+    assert inspector_embed.inspect(condition_formula_query) == []
+
+    geo_distance_formula_query = models.FormulaQuery(
+        formula=models.GeoDistance(
+            geo_distance=models.GeoDistanceParams(
+                origin=models.GeoPoint(lon=13.4, lat=52.5), to="geo_key"
+            )
+        )
+    )
+    assert not inspector.inspect(geo_distance_formula_query)
+    assert inspector_embed.inspect(geo_distance_formula_query) == []
+
+    datetime_formula_query = models.FormulaQuery(
+        formula=models.DatetimeExpression(datetime="2024-01-01T00:00:00Z")
+    )
+    assert not inspector.inspect(datetime_formula_query)
+    assert inspector_embed.inspect(datetime_formula_query) == []
+
+    datetime_key_formula_query = models.FormulaQuery(
+        formula=models.DatetimeKeyExpression(datetime_key="datetime_key")
+    )
+    assert not inspector.inspect(datetime_key_formula_query)
+    assert inspector_embed.inspect(datetime_key_formula_query) == []
+
+    unary_expressions = [
+        models.NegExpression(neg="payload_key"),
+        models.AbsExpression(abs="payload_key"),
+        models.SqrtExpression(sqrt="payload_key"),
+        models.ExpExpression(exp="payload_key"),
+        models.Log10Expression(log10="payload_key"),
+        models.LnExpression(ln="payload_key"),
+    ]
+    for expression in unary_expressions:
+        unary_formula_query = models.FormulaQuery(formula=expression)
+        assert not inspector.inspect(unary_formula_query)
+        assert inspector_embed.inspect(unary_formula_query) == []
+
+    sum_formula_query = models.FormulaQuery(formula=models.SumExpression(sum=[0.5, "payload_key"]))
+    assert not inspector.inspect(sum_formula_query)
+    assert inspector_embed.inspect(sum_formula_query) == []
+
+    mult_formula_query = models.FormulaQuery(
+        formula=models.MultExpression(mult=[0.5, "payload_key"])
+    )
+    assert not inspector.inspect(mult_formula_query)
+    assert inspector_embed.inspect(mult_formula_query) == []
+
+    div_formula_query = models.FormulaQuery(
+        formula=models.DivExpression(
+            div=models.DivParams(left="payload_key", right=0.5, by_zero_default=0.0)
+        )
+    )
+    assert not inspector.inspect(div_formula_query)
+    assert inspector_embed.inspect(div_formula_query) == []
+
+    pow_formula_query = models.FormulaQuery(
+        formula=models.PowExpression(pow=models.PowParams(base="payload_key", exponent=2.0))
+    )
+    assert not inspector.inspect(pow_formula_query)
+    assert inspector_embed.inspect(pow_formula_query) == []
+
+    decay_params = models.DecayParamsExpression(
+        x=models.DatetimeKeyExpression(datetime_key="datetime_key"),
+        target=models.DatetimeExpression(datetime="2024-01-01T00:00:00Z"),
+        scale=86400.0,
+        midpoint=0.5,
+    )
+    decay_expressions = [
+        models.LinDecayExpression(lin_decay=decay_params),
+        models.ExpDecayExpression(exp_decay=decay_params),
+        models.GaussDecayExpression(gauss_decay=decay_params),
+    ]
+    for expression in decay_expressions:
+        decay_formula_query = models.FormulaQuery(formula=expression)
+        assert not inspector.inspect(decay_formula_query)
+        assert inspector_embed.inspect(decay_formula_query) == []
+
+    deep_nested_formula_query = models.FormulaQuery(
+        formula=models.SumExpression(
+            sum=[
+                0.5,
+                models.MultExpression(
+                    mult=[
+                        "payload_key",
+                        models.NegExpression(
+                            neg=models.AbsExpression(
+                                abs=models.DivExpression(
+                                    div=models.DivParams(
+                                        left=models.SqrtExpression(sqrt="payload_key"),
+                                        right=models.PowExpression(
+                                            pow=models.PowParams(base=2.0, exponent="payload_key")
+                                        ),
+                                    )
+                                )
+                            )
+                        ),
+                    ]
+                ),
+            ]
+        ),
+        defaults={"payload_key": 0.5},
+    )
+    assert not inspector.inspect(deep_nested_formula_query)
+    assert inspector_embed.inspect(deep_nested_formula_query) == []
+
+    formula_prefetch = models.Prefetch(query=deep_nested_formula_query)
+    assert not inspector.inspect(formula_prefetch)
+    assert inspector_embed.inspect(formula_prefetch) == []
+
+    formula_query_request = models.QueryRequest(query=deep_nested_formula_query)
+    assert not inspector.inspect(formula_query_request)
+    assert inspector_embed.inspect(formula_query_request) == []
+
+    formula_prefetch_request = models.QueryRequest(prefetch=formula_prefetch)
+    assert not inspector.inspect(formula_prefetch_request)
+    assert inspector_embed.inspect(formula_prefetch_request) == []
+
+    formula_query_groups_request = models.QueryGroupsRequest(
+        query=deep_nested_formula_query, group_by="k"
+    )
+    assert not inspector.inspect(formula_query_groups_request)
+    assert inspector_embed.inspect(formula_query_groups_request) == []
+
+    formula_query_batch_request = models.QueryRequestBatch(searches=[formula_query_request])
+    assert not inspector.inspect(formula_query_batch_request)
+    assert inspector_embed.inspect(formula_query_batch_request) == []
+    # endregion
+
+    # region positive cases
+    doc = models.Document(text="123", model="Qdrant/bm25")
+
+    formula_query_doc_prefetch_request = models.QueryRequest(
+        query=deep_nested_formula_query, prefetch=models.Prefetch(query=doc)
+    )
+    assert inspector.inspect(formula_query_doc_prefetch_request)
+    paths = inspector_embed.inspect(formula_query_doc_prefetch_request)
+    assert len(paths) == 1 and paths[0].as_str_list() == ["prefetch.query"]
+
+    formula_and_doc_query_batch_request = models.QueryRequestBatch(
+        searches=[formula_query_request, models.QueryRequest(query=doc)]
+    )
+    assert inspector.inspect(formula_and_doc_query_batch_request)
+    paths = inspector_embed.inspect(formula_and_doc_query_batch_request)
+    assert len(paths) == 1 and paths[0].as_str_list() == ["searches.query"]
+    # endregion
