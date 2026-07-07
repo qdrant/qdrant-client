@@ -52,8 +52,14 @@ class ModelEmbedder:
         self._embed_storage: dict[str, list[NumericVector] | list[models.Document]] = {}
         self._embed_inspector = InspectorEmbed(parser=parser)
         self._is_builtin_embedder_available = not is_local_mode
-        self._fastembed_available = FastEmbedMisc.is_installed()
+        self._fastembed_available: bool | None = None
         self.embedder = Embedder(use_core_bm25=self._is_builtin_embedder_available, **kwargs)
+
+    @property
+    def fastembed_available(self) -> bool:
+        if self._fastembed_available is None:
+            self._fastembed_available = FastEmbedMisc.is_installed()
+        return self._fastembed_available
 
     def embed_models(
         self,

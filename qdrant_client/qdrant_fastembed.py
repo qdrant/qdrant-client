@@ -1,6 +1,6 @@
 import uuid
 from itertools import tee
-from typing import Any, Iterable, Sequence, get_args
+from typing import Any, Iterable, Sequence, TYPE_CHECKING, get_args
 from copy import deepcopy
 
 import numpy as np
@@ -17,16 +17,10 @@ from qdrant_client.conversions.conversion import GrpcToRest
 from qdrant_client.embed.common import INFERENCE_OBJECT_TYPES
 from qdrant_client.embed.schema_parser import ModelSchemaParser
 from qdrant_client.hybrid.fusion import reciprocal_rank_fusion
-from qdrant_client.fastembed_common import FastEmbedMisc, OnnxProvider
+from qdrant_client.fastembed_common import FastEmbedMisc, QueryResponse
 
-# region imports used in deprecated methods
-from qdrant_client.fastembed_common import (
-    QueryResponse,
-    TextEmbedding,
-    SparseTextEmbedding,
-    IDF_EMBEDDING_MODELS,
-)
-# endregion
+if TYPE_CHECKING:
+    from qdrant_client.fastembed_common import OnnxProvider, SparseTextEmbedding, TextEmbedding
 
 
 class QdrantFastembedMixin(QdrantBase):
@@ -34,8 +28,13 @@ class QdrantFastembedMixin(QdrantBase):
     DEFAULT_BATCH_SIZE = 8
     _FASTEMBED_INSTALLED: bool
 
+    @staticmethod
+    def _idf_embedding_models() -> set[str]:
+        from qdrant_client.fastembed_common import IDF_EMBEDDING_MODELS
+
+        return IDF_EMBEDDING_MODELS
+
     def __init__(self, parser: ModelSchemaParser, is_local_mode: bool):
-        self.__class__._FASTEMBED_INSTALLED = FastEmbedMisc.is_installed()
         self._embedding_model_name: str | None = None
         self._sparse_embedding_model_name: str | None = None
 
@@ -430,7 +429,7 @@ class QdrantFastembedMixin(QdrantBase):
             assert (
                 sparse_vector_field_name in collection_info.config.params.sparse_vectors
             ), f"Collection have incompatible vector params: {collection_info.config.params.vectors}"
-            if self.sparse_embedding_model_name in IDF_EMBEDDING_MODELS:
+            if self.sparse_embedding_model_name in self._idf_embedding_models():
                 modifier = collection_info.config.params.sparse_vectors[
                     sparse_vector_field_name
                 ].modifier
@@ -502,7 +501,7 @@ class QdrantFastembedMixin(QdrantBase):
             Configuration for `vectors_config` argument in `create_collection` method.
         """
         vector_field_name = self.get_sparse_vector_field_name()
-        if self.sparse_embedding_model_name in IDF_EMBEDDING_MODELS:
+        if self.sparse_embedding_model_name in self._idf_embedding_models():
             modifier = models.Modifier.IDF if modifier is None else modifier
 
         if vector_field_name is None:
