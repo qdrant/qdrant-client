@@ -10,15 +10,36 @@ from tests.congruence_tests.test_common import (
     init_local,
     init_remote,
 )
+from tests.utils import read_version
+
+
+def qdrant_version_gte(required: tuple[int, int, int]) -> bool:
+    major, minor, patch, dev = read_version()
+
+    # Treat dev as latest / compatible
+    if dev:
+        return True
+
+    # Do not skip when QDRANT_VERSION is not set
+    if major is None or minor is None or patch is None:
+        return True
+
+    return (major, minor, patch) >= required
+
+
+skip_absent_key_values_count = pytest.mark.skipif(
+    not qdrant_version_gte((1, 18, 3)),  # replace with actual required version
+    reason="values_count for absent payload key requires Qdrant >= 1.18.3",
+)
 
 
 @pytest.mark.parametrize(
     "payloads,filter_params,payload_key",
     [
         # key is absent
-        ([{}], {"lte": 1}, "city"),
-        ([{}], {"lt": 1}, "city"),
-        ([None], {"lte": 1}, "city"),
+        pytest.param([{}], {"lte": 1}, "city", marks=skip_absent_key_values_count),
+        pytest.param([{}], {"lt": 1}, "city", marks=skip_absent_key_values_count),
+        pytest.param([None], {"lte": 1}, "city", marks=skip_absent_key_values_count),
         # key is present, but value is None
         ([{"city": None}], {"lt": 1}, "city"),
         ([{"city": None}], {"gte": 1}, "city"),

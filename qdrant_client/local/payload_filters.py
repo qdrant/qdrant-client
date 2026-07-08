@@ -29,7 +29,7 @@ def get_value_counts(values: list[Any]) -> list[int]:
 
 def check_values_count(condition: models.ValuesCount, values: list[Any] | None) -> bool:
     if values is None:
-        return False
+        values = []
 
     counts = get_value_counts(values)
 
