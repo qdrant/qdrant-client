@@ -327,4 +327,9 @@ def test_bool_and_int_filters_do_not_cross_match(qdrant: QdrantClient):
     assert matched_ids(models.FieldCondition(key="n", match=models.MatchValue(value=0))) == [3]
     assert matched_ids(models.FieldCondition(key="n", match=models.MatchValue(value=False))) == [4]
     assert matched_ids(models.FieldCondition(key="n", match=models.MatchAny(any=[1, 0]))) == [1, 3]
+    # MatchExcept(except=[1]) must not exclude the True payload (id 2): a bool is not
+    # the integer 1, so it stays in the result even though True == 1 in Python.
+    assert matched_ids(
+        models.FieldCondition(key="n", match=models.MatchExcept(**{"except": [1]}))
+    ) == [2, 3, 4]
     assert matched_ids(models.FieldCondition(key="n", range=models.Range(gte=1, lte=1))) == [1]
