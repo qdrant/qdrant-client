@@ -1594,8 +1594,8 @@ class GrpcToRest:
     ) -> rest.IntegerIndexParams:
         return rest.IntegerIndexParams(
             type=rest.IntegerIndexType.INTEGER,
-            range=model.range,
-            lookup=model.lookup,
+            range=model.range if model.HasField("range") else None,
+            lookup=model.lookup if model.HasField("lookup") else None,
             is_principal=model.is_principal if model.HasField("is_principal") else None,
             on_disk=model.on_disk if model.HasField("on_disk") else None,
             enable_hnsw=model.enable_hnsw if model.HasField("enable_hnsw") else None,
@@ -2155,9 +2155,7 @@ class GrpcToRest:
     ) -> rest.SparseVectorParams:
         return rest.SparseVectorParams(
             index=(
-                cls.convert_sparse_index_config(model.index)
-                if model.HasField("index") is not None
-                else None
+                cls.convert_sparse_index_config(model.index) if model.HasField("index") else None
             ),
             modifier=(
                 cls.convert_modifier(model.modifier) if model.HasField("modifier") else None
@@ -3092,8 +3090,14 @@ class RestToGrpc:
                 else None
             ),
             version=model.version,
-            shard_key=cls.convert_shard_key(model.shard_key) if model.shard_key else None,
-            order_value=cls.convert_order_value(model.order_value) if model.order_value else None,
+            shard_key=(
+                cls.convert_shard_key(model.shard_key) if model.shard_key is not None else None
+            ),
+            order_value=(
+                cls.convert_order_value(model.order_value)
+                if model.order_value is not None
+                else None
+            ),
         )
 
     @classmethod
@@ -3558,8 +3562,14 @@ class RestToGrpc:
                 if model.vector is not None
                 else None
             ),
-            shard_key=cls.convert_shard_key(model.shard_key) if model.shard_key else None,
-            order_value=cls.convert_order_value(model.order_value) if model.order_value else None,
+            shard_key=(
+                cls.convert_shard_key(model.shard_key) if model.shard_key is not None else None
+            ),
+            order_value=(
+                cls.convert_order_value(model.order_value)
+                if model.order_value is not None
+                else None
+            ),
         )
 
     @classmethod
