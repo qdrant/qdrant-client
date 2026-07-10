@@ -6,6 +6,13 @@ authors = ["Andrey Vasnetsov <andrey@qdrant.tech>"]
 packages = [
     {include = "qdrant_client"}
 ]
+# Test-only code must not ship in the published wheel/sdist. It stays in the
+# source tree (and is still collected by pytest), but importing the client in a
+# clean environment must never pull in pytest. See tools/check_package_contents.py.
+exclude = [
+    "qdrant_client/**/tests",
+    "qdrant_client/**/test_*.py",
+]
 license = "Apache-2.0"
 readme = "README.md"
 homepage = "https://github.com/qdrant/qdrant-client"
