@@ -294,3 +294,37 @@ def test_fusion_dbsf_score_threshold(qdrant: QdrantClient):
         f"Expected 3 points after filtering (threshold 1.0), got {len(result_with_threshold.points)}. "
         f"Scores: {[p.score for p in result_no_threshold.points]}"
     )
+
+
+def test_bool_and_int_filters_do_not_cross_match(qdrant: QdrantClient):
+    # bool is a subclass of int in Python (True == 1), but Qdrant treats booleans
+    # and integers as distinct payload value types, so a filter on one must not
+    # match a payload value of the other.
+    qdrant.create_collection(
+        collection_name="bool_int",
+        vectors_config=models.VectorParams(size=2, distance=models.Distance.COSINE),
+    )
+    qdrant.upsert(
+        collection_name="bool_int",
+        points=[
+            models.PointStruct(id=1, vector=[0.1, 0.2], payload={"n": 1}),
+            models.PointStruct(id=2, vector=[0.1, 0.2], payload={"n": True}),
+            models.PointStruct(id=3, vector=[0.1, 0.2], payload={"n": 0}),
+            models.PointStruct(id=4, vector=[0.1, 0.2], payload={"n": False}),
+        ],
+    )
+
+    def matched_ids(condition: models.FieldCondition) -> list:
+        points, _ = qdrant.scroll(
+            collection_name="bool_int",
+            scroll_filter=models.Filter(must=[condition]),
+            limit=10,
+        )
+        return sorted(point.id for point in points)
+
+    assert matched_ids(models.FieldCondition(key="n", match=models.MatchValue(value=1))) == [1]
+    assert matched_ids(models.FieldCondition(key="n", match=models.MatchValue(value=True))) == [2]
+    assert matched_ids(models.FieldCondition(key="n", match=models.MatchValue(value=0))) == [3]
+    assert matched_ids(models.FieldCondition(key="n", match=models.MatchValue(value=False))) == [4]
+    assert matched_ids(models.FieldCondition(key="n", match=models.MatchAny(any=[1, 0]))) == [1, 3]
+    assert matched_ids(models.FieldCondition(key="n", range=models.Range(gte=1, lte=1))) == [1]

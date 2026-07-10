@@ -104,7 +104,9 @@ def check_range_interface(condition: models.RangeInterface, value: Any) -> bool:
 
 
 def check_range(condition: models.Range, value: Any) -> bool:
-    if not isinstance(value, (int, float)):
+    # bool is a subclass of int in Python, but booleans are not numeric values
+    # in Qdrant and must not be matched by a range condition.
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
         return False
     return (
         (condition.lt is None or value < condition.lt)
@@ -146,17 +148,25 @@ def check_datetime_range(condition: models.DatetimeRange, value: Any) -> bool:
     )
 
 
+def values_match(value: Any, other: Any) -> bool:
+    # bool is a subclass of int in Python (True == 1), but Qdrant treats booleans
+    # and integers as distinct payload value types, so they must not cross-match.
+    if isinstance(value, bool) != isinstance(other, bool):
+        return False
+    return value == other
+
+
 def check_match(condition: models.Match, value: Any) -> bool:
     if isinstance(condition, models.MatchValue):
-        return value == condition.value
+        return values_match(value, condition.value)
     if isinstance(condition, models.MatchText):
         return isinstance(value, str) and condition.text in value
     if isinstance(condition, models.MatchTextAny):
         return isinstance(value, str) and any(word in value for word in condition.text_any.split())
     if isinstance(condition, models.MatchAny):
-        return value in condition.any
+        return any(values_match(value, v) for v in condition.any)
     if isinstance(condition, models.MatchExcept):
-        return value not in condition.except_
+        return not any(values_match(value, v) for v in condition.except_)
     raise ValueError(f"Unknown match condition: {condition}")
 
 
