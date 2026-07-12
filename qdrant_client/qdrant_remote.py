@@ -39,7 +39,7 @@ from qdrant_client.context_headers import rest_headers_middleware
 from qdrant_client.parallel_processor import ParallelWorkerPool
 from qdrant_client.uploader.grpc_uploader import GrpcBatchUploader
 from qdrant_client.uploader.rest_uploader import RestBatchUploader
-from qdrant_client.uploader.uploader import BaseUploader
+from qdrant_client.uploader.uploader import BaseUploader, UploadProgress
 
 
 class QdrantRemote(QdrantBase):
@@ -2171,6 +2171,7 @@ class QdrantRemote(QdrantBase):
         shard_key_selector: types.ShardKeySelector | None = None,
         update_filter: types.Filter | None = None,
         update_mode: types.UpdateMode | None = None,
+        progress_callback: Callable[[UploadProgress], None] | None = None,
     ) -> None:
         if method is not None:
             if method in get_all_start_methods():
@@ -2209,14 +2210,56 @@ class QdrantRemote(QdrantBase):
                 **self._rest_args,
             }
 
+        if progress_callback is None:
+            if parallel == 1:
+                updater = self._updater_class.start(**updater_kwargs)
+                for _ in updater.process(batches_iterator):
+                    pass
+            else:
+                pool = ParallelWorkerPool(parallel, self._updater_class, start_method=start_method)
+                for _ in pool.unordered_map(batches_iterator, **updater_kwargs):
+                    pass
+            return
+
+        # When a callback is provided, materialize batch sizes once so we can pair each
+        # worker result with the corresponding batch size without re-iterating an
+        # iterator that may be single-pass or shared with worker processes.
+        # batches are (ids_batch, vectors_batch, payload_batch); size is rows in the batch.
+        sized_batches: list[tuple[int, tuple]] = []
+        for batch in batches_iterator:
+            ids_batch, vectors_batch, _payload_batch = batch
+            size = len(ids_batch) if ids_batch is not None else len(vectors_batch)
+            sized_batches.append((size, batch))
+
+        batch_sizes = [size for size, _batch in sized_batches]
+        raw_batches = [batch for _size, batch in sized_batches]
+
         if parallel == 1:
             updater = self._updater_class.start(**updater_kwargs)
-            for _ in updater.process(batches_iterator):
-                pass
+            total_uploaded = 0
+            batch_count = 0
+            for size, result in zip(
+                batch_sizes, updater.process(raw_batches)
+            ):
+                if result:
+                    total_uploaded += size
+                    batch_count += 1
+                    progress_callback(
+                        UploadProgress(total_uploaded=total_uploaded, batch_count=batch_count)
+                    )
         else:
             pool = ParallelWorkerPool(parallel, self._updater_class, start_method=start_method)
-            for _ in pool.unordered_map(batches_iterator, **updater_kwargs):
-                pass
+            total_uploaded = 0
+            batch_count = 0
+            for size, result in zip(
+                batch_sizes, pool.unordered_map(raw_batches, **updater_kwargs)
+            ):
+                if result:
+                    total_uploaded += size
+                    batch_count += 1
+                    progress_callback(
+                        UploadProgress(total_uploaded=total_uploaded, batch_count=batch_count)
+                    )
 
     def upload_points(
         self,
@@ -2230,6 +2273,7 @@ class QdrantRemote(QdrantBase):
         shard_key_selector: types.ShardKeySelector | None = None,
         update_filter: types.Filter | None = None,
         update_mode: types.UpdateMode | None = None,
+        progress_callback: Callable[[UploadProgress], None] | None = None,
         **kwargs: Any,
     ) -> None:
         batches_iterator = self._updater_class.iterate_records_batches(
@@ -2246,6 +2290,7 @@ class QdrantRemote(QdrantBase):
             shard_key_selector=shard_key_selector,
             update_filter=update_filter,
             update_mode=update_mode,
+            progress_callback=progress_callback,
         )
 
     def upload_collection(
@@ -2262,6 +2307,7 @@ class QdrantRemote(QdrantBase):
         shard_key_selector: types.ShardKeySelector | None = None,
         update_filter: types.Filter | None = None,
         update_mode: types.UpdateMode | None = None,
+        progress_callback: Callable[[UploadProgress], None] | None = None,
         **kwargs: Any,
     ) -> None:
         batches_iterator = self._updater_class.iterate_batches(
@@ -2281,6 +2327,7 @@ class QdrantRemote(QdrantBase):
             shard_key_selector=shard_key_selector,
             update_filter=update_filter,
             update_mode=update_mode,
+            progress_callback=progress_callback,
         )
 
     def create_payload_index(
