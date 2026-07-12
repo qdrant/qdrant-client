@@ -20,6 +20,7 @@ from qdrant_client.local.qdrant_local import QdrantLocal
 from qdrant_client.migrate import migrate
 from qdrant_client.qdrant_fastembed import QdrantFastembedMixin
 from qdrant_client.qdrant_remote import QdrantRemote
+from qdrant_client.uploader.uploader import UploadProgress
 
 
 class QdrantClient(QdrantFastembedMixin):
@@ -1875,6 +1876,7 @@ class QdrantClient(QdrantFastembedMixin):
         shard_key_selector: types.ShardKeySelector | None = None,
         update_filter: types.Filter | None = None,
         update_mode: types.UpdateMode | None = None,
+        progress_callback: Callable[[UploadProgress], None] | None = None,
         **kwargs: Any,
     ) -> None:
         """Upload points to the collection
@@ -1900,6 +1902,10 @@ class QdrantClient(QdrantFastembedMixin):
                 This parameter overwrites shard keys written in the records.
             update_filter: If specified, only points that match this filter will be updated, others will be inserted
             update_mode: Allows to alter default upsert behavior, instead of inserting a point if it does not exist, or updating it if it does, can be set to insert-only or update-only strategies.
+            progress_callback: Optional callable invoked from the main process once per
+                successfully-uploaded batch with a `UploadProgress` snapshot carrying
+                `total_uploaded` (cumulative points) and `batch_count`. When `None`
+                (default), no callback runs. Invoked once per batch regardless of `parallel`.
 
         """
 
@@ -1935,6 +1941,7 @@ class QdrantClient(QdrantFastembedMixin):
             shard_key_selector=shard_key_selector,
             update_filter=update_filter,
             update_mode=update_mode,
+            progress_callback=progress_callback,
         )
 
     def upload_collection(
@@ -1951,6 +1958,7 @@ class QdrantClient(QdrantFastembedMixin):
         shard_key_selector: types.ShardKeySelector | None = None,
         update_filter: types.Filter | None = None,
         update_mode: types.UpdateMode | None = None,
+        progress_callback: Callable[[UploadProgress], None] | None = None,
         **kwargs: Any,
     ) -> None:
         """Upload vectors and payload to the collection.
@@ -1978,6 +1986,10 @@ class QdrantClient(QdrantFastembedMixin):
                 Only works for collections with `custom` sharding method.
             update_filter: If specified, only points that match this filter will be updated, others will be inserted
             update_mode: Allows to alter default upsert behavior, instead of inserting a point if it does not exist, or updating it if it does, can be set to insert-only or update-only strategies.
+            progress_callback: Optional callable invoked from the main process once per
+                successfully-uploaded batch with a `UploadProgress` snapshot carrying
+                `total_uploaded` (cumulative points) and `batch_count`. When `None`
+                (default), no callback runs. Invoked once per batch regardless of `parallel`.
         """
 
         def chain(*iterables: Iterable) -> Iterable:
@@ -2015,6 +2027,7 @@ class QdrantClient(QdrantFastembedMixin):
             shard_key_selector=shard_key_selector,
             update_filter=update_filter,
             update_mode=update_mode,
+            progress_callback=progress_callback,
         )
 
     def create_payload_index(
