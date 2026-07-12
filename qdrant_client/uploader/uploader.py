@@ -1,4 +1,5 @@
 from abc import ABC
+from dataclasses import dataclass
 from itertools import count, islice
 from typing import Any, Generator, Iterable
 
@@ -8,6 +9,19 @@ from qdrant_client.conversions import common_types as types
 from qdrant_client.conversions.common_types import Record
 from qdrant_client.http.models import ExtendedPointId
 from qdrant_client.parallel_processor import Worker
+
+
+@dataclass(frozen=True, slots=True)
+class UploadProgress:
+    """Snapshot of upload progress reported to an optional progress callback.
+
+    Attributes:
+        total_uploaded: cumulative number of points accepted by the server.
+        batch_count: number of batches that have completed so far.
+    """
+
+    total_uploaded: int
+    batch_count: int
 
 
 def iter_batch(iterable: Iterable | Generator, size: int) -> Iterable:
