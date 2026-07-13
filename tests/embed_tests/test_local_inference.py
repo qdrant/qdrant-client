@@ -1793,7 +1793,7 @@ def _client_with_plain_collection(num_points: int = 0) -> QdrantClient:
     return local_client
 
 
-def _inspect_spy(client: QdrantBase):
+def _inspect_spy(client: QdrantClient):
     return patch.object(
         client._inference_inspector, "inspect", wraps=client._inference_inspector.inspect
     )

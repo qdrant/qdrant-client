@@ -875,4 +875,13 @@ def test_inspect_formula_query_types():
     assert inspector.inspect(formula_and_doc_query_batch_request)
     paths = inspector_embed.inspect(formula_and_doc_query_batch_request)
     assert len(paths) == 1 and paths[0].as_str_list() == ["searches.query"]
+
+    formula_query_groups_doc_prefetch_request = models.QueryGroupsRequest(
+        query=deep_nested_formula_query,
+        group_by="k",
+        prefetch=models.Prefetch(query=doc),
+    )
+    assert inspector.inspect(formula_query_groups_doc_prefetch_request)
+    paths = inspector_embed.inspect(formula_query_groups_doc_prefetch_request)
+    assert len(paths) == 1 and paths[0].as_str_list() == ["prefetch.query"]
     # endregion
