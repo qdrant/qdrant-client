@@ -333,3 +333,7 @@ def test_bool_and_int_filters_do_not_cross_match(qdrant: QdrantClient):
         models.FieldCondition(key="n", match=models.MatchExcept(**{"except": [1]}))
     ) == [2, 3, 4]
     assert matched_ids(models.FieldCondition(key="n", range=models.Range(gte=1, lte=1))) == [1]
+    # A single-value MatchAny and a numeric range that True would satisfy must exclude the
+    # bool payload too, locking in the isolated MatchAny and check_range paths.
+    assert matched_ids(models.FieldCondition(key="n", match=models.MatchAny(any=[1]))) == [1]
+    assert matched_ids(models.FieldCondition(key="n", range=models.Range(gt=0))) == [1]
