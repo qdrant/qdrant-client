@@ -223,6 +223,16 @@ def test_value_by_key() -> None:
     assert value_by_key(payload, "double-nest-array[0][0]") == [1]
     assert value_by_key(payload, "double-nest-array[0][0]") == [1]
     assert value_by_key(payload, "double-nest-array[][1]") == [2, 4, 6]
+
+    # Out-of-range indices return None instead of raising, in both directions.
+    # A negative index that is out of range previously raised IndexError while
+    # a positive one already returned None (see location[2] above).
+    assert value_by_key(payload, "counts[-1]") == [3]
+    assert value_by_key(payload, "counts[-3]") == [1]
+    assert value_by_key(payload, "counts[-4]") is None
+    assert value_by_key(payload, "counts[-100]") is None
+    assert value_by_key(payload, "location[-1].name") == ["work"]
+    assert value_by_key(payload, "location[-5].name") is None
     # endregion
 
     # region flat=False

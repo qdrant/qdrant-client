@@ -50,7 +50,7 @@ def value_by_key(payload: dict[str, Any], key: str, flat: bool = True) -> list[A
                 elif current_key.item_type == JsonPathItemType.INDEX:
                     assert current_key.index is not None
 
-                    if current_key.index < len(data):
+                    if -len(data) <= current_key.index < len(data):
                         result.append(data[current_key.index])
 
         elif current_key.item_type == JsonPathItemType.KEY:
@@ -66,7 +66,7 @@ def value_by_key(payload: dict[str, Any], key: str, flat: bool = True) -> list[A
             if not isinstance(data, list):
                 return
 
-            if current_key.index < len(data):
+            if -len(data) <= current_key.index < len(data):
                 _get_value(data[current_key.index], k_list.copy())
 
         elif current_key.item_type == JsonPathItemType.WILDCARD_INDEX:
