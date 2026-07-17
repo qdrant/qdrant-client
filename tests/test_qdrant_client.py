@@ -2477,3 +2477,40 @@ def test_create_payload_index_enable_hnsw(prefer_grpc: bool):
         "datetime_field",
     ]:
         assert info.payload_schema[field_name].params.enable_hnsw is False, field_name
+
+
+def test_local_set_payload_does_not_leak_across_points():
+    """Regression test: a single set_payload(..., points=[...]) call with a nested payload
+    must not leave sibling points sharing the same nested dict object. A later, differently
+    scoped set_payload(key=...) call on one point must not silently mutate the others."""
+    client = QdrantClient(":memory:")
+    collection_name = "test_set_payload_leak"
+    client.create_collection(
+        collection_name,
+        vectors_config=models.VectorParams(size=4, distance=models.Distance.COSINE),
+    )
+    client.upsert(
+        collection_name,
+        points=[
+            models.PointStruct(id=1, vector=[0.1, 0.2, 0.3, 0.4], payload={}),
+            models.PointStruct(id=2, vector=[0.1, 0.2, 0.3, 0.4], payload={}),
+            models.PointStruct(id=3, vector=[0.1, 0.2, 0.3, 0.4], payload={}),
+        ],
+    )
+
+    client.set_payload(
+        collection_name=collection_name,
+        payload={"category": {"name": "invoice", "reviewed": False}},
+        points=[1, 2, 3],
+    )
+
+    client.set_payload(
+        collection_name=collection_name, payload={"reviewed": True}, points=[1], key="category"
+    )
+
+    points = client.retrieve(collection_name, ids=[1, 2, 3], with_payload=True)
+    by_id = {p.id: p.payload for p in points}
+
+    assert by_id[1]["category"]["reviewed"] is True
+    assert by_id[2]["category"]["reviewed"] is False, "point 2 was never selected by the key-scoped call"
+    assert by_id[3]["category"]["reviewed"] is False, "point 3 was never selected by the key-scoped call"
