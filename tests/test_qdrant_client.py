@@ -2512,5 +2512,9 @@ def test_local_set_payload_does_not_leak_across_points():
     by_id = {p.id: p.payload for p in points}
 
     assert by_id[1]["category"]["reviewed"] is True
-    assert by_id[2]["category"]["reviewed"] is False, "point 2 was never selected by the key-scoped call"
-    assert by_id[3]["category"]["reviewed"] is False, "point 3 was never selected by the key-scoped call"
+    assert by_id[2]["category"]["reviewed"] is False, (
+        "point 2 was never selected by the key-scoped call"
+    )
+    assert by_id[3]["category"]["reviewed"] is False, (
+        "point 3 was never selected by the key-scoped call"
+    )
