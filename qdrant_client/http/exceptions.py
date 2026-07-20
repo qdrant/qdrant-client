@@ -1,7 +1,7 @@
-import json
 from typing import Any, Dict, Optional
 
 from httpx import Headers, Response
+from qdrant_client._json_backend import loads as json_loads
 
 MAX_CONTENT = 200
 
@@ -38,7 +38,7 @@ class UnexpectedResponse(ApiException):
         return f"Unexpected Response: {status_str}\n{raw_content_str}"
 
     def structured(self) -> Dict[str, Any]:
-        return json.loads(self.content)
+        return json_loads(self.content)
 
 
 class ResponseHandlingException(ApiException):
