@@ -1,19 +1,28 @@
 from typing import Any
 
-try:
-    import orjson
 
-    BACKEND = "orjson"
+try:
+    import msgspec
+
+    BACKEND = "msgspec"
+    _decoder = msgspec.json.Decoder()
 
     def loads(data: bytes | str) -> Any:
-        if isinstance(data, str):
-            data = data.encode("utf-8")
-        return orjson.loads(data)
+        return _decoder.decode(data)
 
 except ImportError:
-    import json
+    try:
+        import orjson
 
-    BACKEND = "json"
+        BACKEND = "orjson"
 
-    def loads(data: bytes | str) -> Any:
-        return json.loads(data)
+        def loads(data: bytes | str) -> Any:
+            return orjson.loads(data)
+
+    except ImportError:
+        import json
+
+        BACKEND = "json"
+
+        def loads(data: bytes | str) -> Any:
+            return json.loads(data)
