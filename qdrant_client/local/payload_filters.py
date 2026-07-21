@@ -149,9 +149,13 @@ def check_datetime_range(condition: models.DatetimeRange, value: Any) -> bool:
 
 
 def values_match(value: Any, other: Any) -> bool:
-    # bool is a subclass of int in Python (True == 1), but Qdrant treats booleans
-    # and integers as distinct payload value types, so they must not cross-match.
+    # Qdrant keeps bool, integer and float as distinct payload value types for exact
+    # match, but Python cross-matches them (bool is a subclass of int, and 1 == 1.0).
+    # Match condition operands are only ever bool / int / str (never float), so a float
+    # payload value can never be matched by an exact-match condition on the server.
     if isinstance(value, bool) != isinstance(other, bool):
+        return False
+    if isinstance(value, float) != isinstance(other, float):
         return False
     return value == other
 
