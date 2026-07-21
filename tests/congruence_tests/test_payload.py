@@ -668,3 +668,32 @@ def test_set_or_overwrite_payload_operation(prefer_grpc):
         collection_name=COLLECTION_NAME, update_operations=[overwrite_payload_op_points_no_key]
     )
     compare_collections(local_client, remote_client, num_vectors)
+
+
+@pytest.mark.parametrize("prefer_grpc", [True, False])
+def test_local_set_payload_does_not_leak_across_points(prefer_grpc):
+    """Regression test: a single set_payload(..., points=[...]) call with a nested payload
+    must not leave sibling points sharing the same nested dict object. A later, differently
+    scoped set_payload(key=...) call on one point must not silently mutate the others."""
+    local_client: QdrantClient = init_local()
+    initialize_fixture_collection(local_client)
+    remote_client: QdrantClient = init_remote(prefer_grpc=prefer_grpc)
+    initialize_fixture_collection(remote_client)
+    num_vectors = 10
+    upload(local_client, remote_client, num_vectors)
+
+    payload = {"category": {"name": "invoice", "reviewed": False}}
+    for client in (local_client, remote_client):
+        client.set_payload(
+            collection_name=COLLECTION_NAME,
+            payload=payload,
+            points=[1, 2, 3],
+        )
+
+    new_payload = {"reviewed": True}
+    for client in (local_client, remote_client):
+        client.set_payload(
+            collection_name=COLLECTION_NAME, payload=new_payload, points=[1], key="category"
+        )
+
+    compare_collections(local_client, remote_client, num_vectors)

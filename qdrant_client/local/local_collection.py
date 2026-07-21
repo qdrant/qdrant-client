@@ -2736,12 +2736,16 @@ class LocalCollection:
         key: str | None = None,
     ) -> None:
         ids = self._selector_to_ids(selector)
-        jsonable_payload = deepcopy(to_jsonable_python(payload))
+        base_payload = to_jsonable_python(payload)
 
         keys: list[JsonPathItem] | None = parse_json_path(key) if key is not None else None
 
         for point_id in ids:
             idx = self.ids[point_id]
+            # Deep-copy per point: a shared object graph here would let a later,
+            # differently-scoped set_payload(key=...) call mutate other points'
+            # payloads in place via set_value_by_key's dict.update().
+            jsonable_payload = deepcopy(base_payload)
             if keys is None:
                 self.payload[idx] = {**self.payload[idx], **jsonable_payload}
             else:
