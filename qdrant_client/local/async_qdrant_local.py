@@ -367,7 +367,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         collection = self._get_collection(collection_name)
         if search_params is not None:
             show_warning_once(
-                message="Local mode performs exact (brute-force) search, so `search_params` (`exact`, `hnsw_ef`, `quantization`, `indexed_only`, ...) has no effect and is ignored; results are always exact.",
+                message="Local mode performs exact (brute-force) search, `search_params` has no effect.",
                 idx="local_query_points_search_params_ignored",
                 stacklevel=5,
             )
@@ -440,7 +440,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         collection = self._get_collection(collection_name)
         if search_params is not None:
             show_warning_once(
-                message="Local mode performs exact (brute-force) search, so `search_params` (`exact`, `hnsw_ef`, `quantization`, `indexed_only`, ...) has no effect and is ignored; results are always exact.",
+                message="Local mode performs exact (brute-force) search, `search_params` has no effect.",
                 idx="local_query_points_search_params_ignored",
                 stacklevel=5,
             )
