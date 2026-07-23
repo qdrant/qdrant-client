@@ -531,24 +531,24 @@ retrieved_point_shard_key_order_value_falsy_value = grpc.RetrievedPoint(
     shard_key=grpc.ShardKey(number=0),
     order_value=grpc.OrderValue(int=0),
 )
-retrieved_point = grpc.ScoredPoint(
+retrieved_point = grpc.RetrievedPoint(
     id=point_id,
     payload=payload,
     vectors=single_vector_output,
 )
-retrieved_point_order_value_int = grpc.ScoredPoint(
+retrieved_point_order_value_int = grpc.RetrievedPoint(
     id=point_id,
     payload=payload,
     vectors=single_vector_output,
     order_value=order_value_int,
 )
-retrieved_point_order_value_float = grpc.ScoredPoint(
+retrieved_point_order_value_float = grpc.RetrievedPoint(
     id=point_id,
     # payload=payload,
     vectors=named_vectors_output,
     # order_value=order_value_float,
 )
-retrieved_point_multivector = grpc.ScoredPoint(
+retrieved_point_multivector = grpc.RetrievedPoint(
     id=point_id,
     payload=payload,
     vectors=multi_vector_output,
