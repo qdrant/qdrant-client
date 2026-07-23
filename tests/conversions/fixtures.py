@@ -515,6 +515,45 @@ scored_point_multivector = grpc.ScoredPoint(
     version=12,
     order_value=order_value_float,
 )
+scored_point_shard_key_order_value_falsy_value = grpc.ScoredPoint(
+    id=point_id,
+    payload=payload,
+    score=0.99,
+    vectors=single_vector_output,
+    version=12,
+    shard_key=grpc.ShardKey(number=0),
+    order_value=grpc.OrderValue(int=0),
+)
+retrieved_point_shard_key_order_value_falsy_value = grpc.RetrievedPoint(
+    id=point_id,
+    payload=payload,
+    vectors=single_vector_output,
+    shard_key=grpc.ShardKey(number=0),
+    order_value=grpc.OrderValue(int=0),
+)
+retrieved_point = grpc.RetrievedPoint(
+    id=point_id,
+    payload=payload,
+    vectors=single_vector_output,
+)
+retrieved_point_order_value_int = grpc.RetrievedPoint(
+    id=point_id,
+    payload=payload,
+    vectors=single_vector_output,
+    order_value=order_value_int,
+)
+retrieved_point_order_value_float = grpc.RetrievedPoint(
+    id=point_id,
+    # payload=payload,
+    vectors=named_vectors_output,
+    # order_value=order_value_float,
+)
+retrieved_point_multivector = grpc.RetrievedPoint(
+    id=point_id,
+    payload=payload,
+    vectors=multi_vector_output,
+    order_value=order_value_float,
+)
 create_alias = grpc.CreateAlias(collection_name="col1", alias_name="col2")
 
 quantization_search_params = grpc.QuantizationSearchParams(
@@ -591,6 +630,7 @@ integer_index_params_0 = grpc.IntegerIndexParams(lookup=False, range=False)
 integer_index_params_1 = grpc.IntegerIndexParams(
     lookup=True, range=True, on_disk=True, is_principal=True, enable_hnsw=True
 )
+integer_index_params_2 = grpc.IntegerIndexParams()
 
 keyword_index_params_0 = grpc.KeywordIndexParams()
 keyword_index_params_1 = grpc.KeywordIndexParams(is_tenant=True, on_disk=True, enable_hnsw=True)
@@ -634,6 +674,7 @@ payload_schema_text_multilingual = grpc.PayloadSchemaInfo(
     points=0,
 )
 
+
 payload_schema_integer_no_disk_not_principal = grpc.PayloadSchemaInfo(
     data_type=grpc.PayloadSchemaType.Integer,
     params=grpc.PayloadIndexParams(integer_index_params=integer_index_params_0),
@@ -643,6 +684,12 @@ payload_schema_integer_no_disk_not_principal = grpc.PayloadSchemaInfo(
 payload_schema_integer_on_disk_is_principal = grpc.PayloadSchemaInfo(
     data_type=grpc.PayloadSchemaType.Integer,
     params=grpc.PayloadIndexParams(integer_index_params=integer_index_params_1),
+    points=0,
+)
+
+payload_schema_integer_default = grpc.PayloadSchemaInfo(
+    data_type=grpc.PayloadSchemaType.Integer,
+    params=grpc.PayloadIndexParams(integer_index_params=integer_index_params_2),
     points=0,
 )
 
@@ -748,6 +795,7 @@ collection_info_ok = grpc.CollectionInfo(
         "text_field_multilingual": payload_schema_text_multilingual,
         "integer_no_disk_not_principal": payload_schema_integer_no_disk_not_principal,
         "integer_on_disk_is_principal": payload_schema_integer_on_disk_is_principal,
+        "integer_default": payload_schema_integer_default,
         "keyword_no_disk_not_tenant": payload_schema_keyword_no_disk_not_tenant,
         "keyword_on_disk_is_tenant": payload_schema_keyword_on_disk_is_tenant,
         "float_no_disk_not_principal": payload_schema_float_no_disk_not_principal,
@@ -888,6 +936,8 @@ sparse_vector_params_none_modifier = grpc.SparseVectorParams(
     ),
     modifier=getattr(grpc.Modifier, "None"),
 )
+
+sparse_vector_params_empty = grpc.SparseVectorParams()
 
 sparse_vector_params_datatype = grpc.SparseVectorParams(
     index=grpc.SparseIndexConfig(
@@ -1056,20 +1106,6 @@ with_payload_include = grpc.WithPayloadSelector(
 with_payload_exclude = grpc.WithPayloadSelector(
     exclude=grpc.PayloadExcludeSelector(fields=["color", "price"])
 )
-
-retrieved_point = grpc.RetrievedPoint(
-    id=point_id_1,
-    payload=payload_to_grpc({"key": payload_value}),
-    vectors=single_vector_output,
-)
-
-retrieved_point_with_order_value = grpc.RetrievedPoint(
-    id=point_id_1,
-    payload=payload_to_grpc({"key": payload_value}),
-    vectors=single_vector_output,
-    order_value=order_value_int,
-)
-
 
 count_result = grpc.CountResult(count=5)
 
@@ -1664,6 +1700,7 @@ fixtures = {
         scored_point_order_value_int,
         scored_point_order_value_float,
         scored_point_multivector,
+        scored_point_shard_key_order_value_falsy_value,
     ],
     "CreateAlias": [create_alias],
     "GeoBoundingBox": [geo_bounding_box],
@@ -1726,7 +1763,13 @@ fixtures = {
         with_payload_include,
         with_payload_exclude,
     ],
-    "RetrievedPoint": [retrieved_point, retrieved_point_with_order_value],
+    "RetrievedPoint": [
+        retrieved_point,
+        retrieved_point_order_value_int,
+        retrieved_point_order_value_float,
+        retrieved_point_multivector,
+        retrieved_point_shard_key_order_value_falsy_value,
+    ],
     "CountResult": [count_result],
     "SnapshotDescription": [snapshot_description],
     "VectorParams": [
@@ -1811,7 +1854,11 @@ fixtures = {
         delete_vectors_operation,
         delete_vectors_operation_2,
     ],
-    "SparseVectorParams": [sparse_vector_params, sparse_vector_params_datatype],
+    "SparseVectorParams": [
+        sparse_vector_params,
+        sparse_vector_params_datatype,
+        sparse_vector_params_empty,
+    ],
     "SparseVectorConfig": [sparse_vector_config],
     "ShardKeySelector": [shard_key_selector, shard_key_selector_2],
     "ShardingMethod": [sharding_method_1, sharding_method_2],
