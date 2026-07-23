@@ -689,7 +689,7 @@ payload_schema_integer_on_disk_is_principal = grpc.PayloadSchemaInfo(
 
 payload_schema_integer_default = grpc.PayloadSchemaInfo(
     data_type=grpc.PayloadSchemaType.Integer,
-    params=grpc.PayloadIndexParams(integer_index_params=integer_index_params_0),
+    params=grpc.PayloadIndexParams(integer_index_params=integer_index_params_2),
     points=0,
 )
 
