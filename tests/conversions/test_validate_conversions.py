@@ -594,3 +594,52 @@ def test_optimizers_config_diff_max_threads():
     assert restored_grpc_opt_conf.max_optimization_threads == q_grpc.MaxOptimizationThreads(
         value=value
     )
+
+
+def test_convert_points_update_operation_falsy_shard_key():
+    from qdrant_client import models
+    from qdrant_client.conversions.conversion import GrpcToRest, RestToGrpc
+
+    point = models.PointStruct(id=1, vector=[1.0, 2.0], payload={"my_payload": 1})
+    point_vector = models.PointVectors(id=1, vector=[1.0, 2.0])
+
+    for shard_key in (0, ""):
+        operations = [
+            models.UpsertOperation(upsert=models.PointsList(points=[point], shard_key=shard_key)),
+            models.DeleteOperation(delete=models.PointIdsList(points=[1], shard_key=shard_key)),
+            models.SetPayloadOperation(
+                set_payload=models.SetPayload(
+                    payload={"my_payload": 1}, points=[1], shard_key=shard_key
+                )
+            ),
+            models.OverwritePayloadOperation(
+                overwrite_payload=models.SetPayload(
+                    payload={"my_payload": 1}, points=[1], shard_key=shard_key
+                )
+            ),
+            models.DeletePayloadOperation(
+                delete_payload=models.DeletePayload(
+                    keys=["my_payload"], points=[1], shard_key=shard_key
+                )
+            ),
+            models.ClearPayloadOperation(
+                clear_payload=models.PointIdsList(points=[1], shard_key=shard_key)
+            ),
+            models.UpdateVectorsOperation(
+                update_vectors=models.UpdateVectors(points=[point_vector], shard_key=shard_key)
+            ),
+            models.DeleteVectorsOperation(
+                delete_vectors=models.DeleteVectors(
+                    points=[1], vector=["image"], shard_key=shard_key
+                )
+            ),
+        ]
+
+        for operation in operations:
+            grpc_operation = RestToGrpc.convert_update_operation(operation)
+            inner = getattr(grpc_operation, grpc_operation.WhichOneof("operation"))
+
+            assert inner.HasField(
+                "shard_key_selector"
+            ), f"{type(operation).__name__} dropped shard_key={shard_key!r}"
+            assert GrpcToRest.convert_shard_key_selector(inner.shard_key_selector) == shard_key
