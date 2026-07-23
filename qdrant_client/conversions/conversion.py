@@ -4595,7 +4595,7 @@ class RestToGrpc:
         if isinstance(model, rest.UpsertOperation):
             shard_key_selector = (
                 cls.convert_shard_key_selector(model.upsert.shard_key)
-                if model.upsert.shard_key
+                if model.upsert.shard_key is not None
                 else None
             )
             update_filter = (
@@ -4619,7 +4619,7 @@ class RestToGrpc:
         elif isinstance(model, rest.DeleteOperation):
             shard_key_selector = (
                 cls.convert_shard_key_selector(model.delete.shard_key)
-                if model.delete.shard_key
+                if model.delete.shard_key is not None
                 else None
             )
             points_selector = cls.convert_points_selector(model.delete)
@@ -4640,7 +4640,7 @@ class RestToGrpc:
 
             shard_key_selector = (
                 cls.convert_shard_key_selector(model.set_payload.shard_key)
-                if model.set_payload.shard_key
+                if model.set_payload.shard_key is not None
                 else None
             )
 
@@ -4664,7 +4664,7 @@ class RestToGrpc:
 
             shard_key_selector = (
                 cls.convert_shard_key_selector(model.overwrite_payload.shard_key)
-                if model.overwrite_payload.shard_key
+                if model.overwrite_payload.shard_key is not None
                 else None
             )
 
@@ -4688,7 +4688,7 @@ class RestToGrpc:
 
             shard_key_selector = (
                 cls.convert_shard_key_selector(model.delete_payload.shard_key)
-                if model.delete_payload.shard_key
+                if model.delete_payload.shard_key is not None
                 else None
             )
 
@@ -4702,7 +4702,7 @@ class RestToGrpc:
         elif isinstance(model, rest.ClearPayloadOperation):
             shard_key_selector = (
                 cls.convert_shard_key_selector(model.clear_payload.shard_key)
-                if model.clear_payload.shard_key
+                if model.clear_payload.shard_key is not None
                 else None
             )
             points_selector = cls.convert_points_selector(model.clear_payload)
@@ -4716,7 +4716,7 @@ class RestToGrpc:
         elif isinstance(model, rest.UpdateVectorsOperation):
             shard_key_selector = (
                 cls.convert_shard_key_selector(model.update_vectors.shard_key)
-                if model.update_vectors.shard_key
+                if model.update_vectors.shard_key is not None
                 else None
             )
             update_filter = (
@@ -4745,7 +4745,7 @@ class RestToGrpc:
 
             shard_key_selector = (
                 cls.convert_shard_key_selector(model.delete_vectors.shard_key)
-                if model.delete_vectors.shard_key
+                if model.delete_vectors.shard_key is not None
                 else None
             )
 
