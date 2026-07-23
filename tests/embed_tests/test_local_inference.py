@@ -857,6 +857,34 @@ def test_query_batch_points(cached_embeddings):
         current_requests[0].query.nearest.values,
         atol=1e-3,
     )
+
+    # Mix a Document directly in `prefetch.query` with one nested under NearestQuery
+    # (`prefetch.query.nearest`). Both must be embedded when processed in one batch.
+    mixed_prefix_requests = [
+        models.QueryRequest(
+            query=sparse_doc_1,
+            prefetch=[models.Prefetch(query=sparse_doc_2, limit=3, using="sparse-text")],
+            using="sparse-text",
+        ),
+        models.QueryRequest(
+            query=models.NearestQuery(nearest=sparse_doc_3),
+            prefetch=[
+                models.Prefetch(
+                    query=models.NearestQuery(nearest=sparse_doc_4),
+                    limit=3,
+                    using="sparse-text",
+                )
+            ],
+            using="sparse-text",
+        ),
+    ]
+    local_client.query_batch_points(COLLECTION_NAME, mixed_prefix_requests)
+    current_requests = local_kwargs["requests"]
+    assert isinstance(current_requests[0].query.nearest, models.SparseVector)
+    assert isinstance(current_requests[0].prefetch[0].query, models.SparseVector)
+    assert isinstance(current_requests[1].query.nearest, models.SparseVector)
+    assert isinstance(current_requests[1].prefetch[0].query.nearest, models.SparseVector)
+
     local_client.delete_collection(COLLECTION_NAME)
 
 

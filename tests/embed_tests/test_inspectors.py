@@ -391,6 +391,22 @@ def test_inspect_query_requests():
     paths = inspector_embed.inspect([document_only_prefetch_request])
     assert len(paths) == 1 and paths[0].as_str_list() == ["prefetch.query"]
 
+    # mixed direct Document and nested NearestQuery — both prefix paths must be kept
+    mixed_prefix_prefetch_request = models.QueryRequest(
+        query=doc,
+        prefetch=[
+            models.Prefetch(query=doc),
+            models.Prefetch(query=models.NearestQuery(nearest=doc)),
+        ],
+    )
+    assert inspector.inspect(mixed_prefix_prefetch_request)
+    paths = inspector_embed.inspect(mixed_prefix_prefetch_request)
+    assert {path for field_path in paths for path in field_path.as_str_list()} == {
+        "query",
+        "prefetch.query",
+        "prefetch.query.nearest",
+    }
+
     assert inspector.inspect([query_request_vector, document_only_query_request])
     paths = inspector_embed.inspect([query_request_vector, document_only_query_request])
     assert len(paths) == 1 and paths[0].as_str_list() == ["query"]
