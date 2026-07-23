@@ -199,6 +199,8 @@ class QdrantLocal(QdrantBase):
         score_threshold: float | None = None,
         **kwargs: Any,
     ) -> list[types.ScoredPoint]:
+        if limit < 1:
+            raise ValueError(f"limit value {limit} is invalid. Must be 1 or larger.")
         collection = self._get_collection(collection_name)
         return collection.search(
             query_vector=query_vector,
@@ -233,6 +235,8 @@ class QdrantLocal(QdrantBase):
         using: str | None = None,
         **kwargs: Any,
     ) -> types.SearchMatrixPairsResponse:
+        if limit < 1:
+            raise ValueError(f"limit value {limit} is invalid. Must be 1 or larger.")
         collection = self._get_collection(collection_name)
         return collection.search_matrix_pairs(
             query_filter=query_filter, limit=limit, sample=sample, using=using
@@ -404,6 +408,9 @@ class QdrantLocal(QdrantBase):
         lookup_from: types.LookupLocation | None = None,
         **kwargs: Any,
     ) -> types.QueryResponse:
+        if limit < 1:
+            raise ValueError(f"limit value {limit} is invalid. Must be 1 or larger.")
+
         collection = self._get_collection(collection_name)
 
         if search_params is not None:
@@ -446,7 +453,7 @@ class QdrantLocal(QdrantBase):
                 prefetch=request.prefetch,
                 query_filter=request.filter,
                 search_params=request.params,
-                limit=request.limit or 10,
+                limit=request.limit if request.limit is not None else 10,
                 offset=request.offset,
                 with_payload=request.with_payload,
                 with_vectors=request.with_vector,
@@ -484,6 +491,9 @@ class QdrantLocal(QdrantBase):
         lookup_from: types.LookupLocation | None = None,
         **kwargs: Any,
     ) -> types.GroupsResult:
+        if limit < 1:
+            raise ValueError(f"limit value {limit} is invalid. Must be 1 or larger.")
+
         collection = self._get_collection(collection_name)
 
         if search_params is not None:
@@ -531,6 +541,8 @@ class QdrantLocal(QdrantBase):
         with_vectors: bool | Sequence[str] = False,
         **kwargs: Any,
     ) -> tuple[list[types.Record], types.PointId | None]:
+        if limit < 1:
+            raise ValueError(f"limit value {limit} is invalid. Must be 1 or larger.")
         collection = self._get_collection(collection_name)
         return collection.scroll(
             scroll_filter=scroll_filter,
@@ -560,6 +572,8 @@ class QdrantLocal(QdrantBase):
         exact: bool = False,
         **kwargs: Any,
     ) -> types.FacetResponse:
+        if limit < 1:
+            raise ValueError(f"limit value {limit} is invalid. Must be 1 or larger.")
         collection = self._get_collection(collection_name)
         return collection.facet(key=key, facet_filter=facet_filter, limit=limit)
 
