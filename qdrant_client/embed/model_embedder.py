@@ -235,7 +235,11 @@ class ModelEmbedder:
                 current_model = getattr(item, path.current, None)
                 if current_model is None:
                     continue
-                if path.tail:
+                # a node with a tail can still hold an inference object itself,
+                # e.g. `prefetch.query` can be a Document, while `prefetch.query.nearest`
+                # can be a Document as well. If an inference object is found at the current
+                # node, treat it as a leaf, otherwise continue traversing the tail.
+                if path.tail and not isinstance(current_model, get_args(INFERENCE_OBJECT_TYPES)):
                     self._process_model(
                         current_model,
                         path.tail,
