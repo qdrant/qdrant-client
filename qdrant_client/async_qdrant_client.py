@@ -63,7 +63,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             Default: `None`
         timeout:
             Timeout for REST and gRPC API requests.
-            Default: 5 seconds for REST and unlimited for gRPC
+            Default: 5 seconds for both REST and gRPC (when timeout is None)
         host: Host name of Qdrant service. If url and host are None, set to 'localhost'.
             Default: `None`
         path: Persistence path for QdrantLocal. Default: `None`
