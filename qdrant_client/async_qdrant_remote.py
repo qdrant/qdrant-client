@@ -188,15 +188,19 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             self._rest_args["auth"] = bearer_auth
 
         if http_client is not None:
-            # Caller supplied a pre-built httpx.AsyncClient. Use it as-is so
-            # they keep full control over transport, middleware, and event
-            # hooks; the qdrant-client kwargs above (limits, http2, timeout,
-            # auth) are only applied when this class builds its own
-            # httpx.AsyncClient.
-            self._rest_args["http_client"] = http_client
+            # Caller supplied a pre-built httpx.AsyncClient. Use it only for
+            # the main openapi_client; do not place it in self._rest_args,
+            # because that dict is also forwarded to per-process upload
+            # workers where a shared client would be fork-unsafe and would
+            # serialize the workers' connection pool.
+            main_client_kwargs: dict[str, Any] = {"http_client": http_client}
+        else:
+            main_client_kwargs = {}
 
         self.openapi_client: AsyncApis[AsyncApiClient] = AsyncApis(
-            host=self.rest_uri, **self._rest_args
+            host=self.rest_uri,
+            **self._rest_args,
+            **main_client_kwargs,
         )
         self.openapi_client.client.add_middleware(async_rest_headers_middleware)
         self._grpc_channel_pool: list[grpc.Channel] = []

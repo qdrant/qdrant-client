@@ -106,10 +106,14 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         http_client: httpx.AsyncClient | None = None,
         **kwargs: Any,
     ):
+        # http_client is excluded from init_options: an async httpx.AsyncClient
+        # must not be passed into the sync constructor and vice versa. Callers
+        # that want an http_client on both sides need to pass it to each
+        # constructor explicitly.
         self._init_options = {
             key: value
             for (key, value) in locals().items()
-            if key not in ("self", "__class__", "kwargs")
+            if key not in ("self", "__class__", "kwargs", "http_client")
         }
         self._init_options.update({k: v for (k, v) in kwargs.items()})
         if sum([param is not None for param in (location, url, host, path)]) > 1:

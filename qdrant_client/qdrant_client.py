@@ -107,10 +107,13 @@ class QdrantClient(QdrantFastembedMixin):
     ):
         # Saving the init options to facilitate building AsyncQdrantClient from QdrantClient and vice versa.
         # Eg. AsyncQdrantClient(**sync_client.init_options) or QdrantClient(**async_client.init_options)
+        # http_client is excluded: a sync httpx.Client must not be passed into the
+        # async constructor and vice versa. Callers that want an http_client on both
+        # sides need to pass it to each constructor explicitly.
         self._init_options = {
             key: value
             for key, value in locals().items()
-            if key not in ("self", "__class__", "kwargs")
+            if key not in ("self", "__class__", "kwargs", "http_client")
         }
         self._init_options.update({k: v for k, v in kwargs.items()})
 
