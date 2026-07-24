@@ -61,6 +61,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         check_compatibility: bool = True,
         pool_size: int | None = None,
         headers: dict[str, str] | None = None,
+        http_client: httpx.AsyncClient | None = None,
         **kwargs: Any,
     ):
         super().__init__(**kwargs)
@@ -185,6 +186,15 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 )
             bearer_auth = BearerAuth(self._auth_token_provider)
             self._rest_args["auth"] = bearer_auth
+
+        if http_client is not None:
+            # Caller supplied a pre-built httpx.AsyncClient. Use it as-is so
+            # they keep full control over transport, middleware, and event
+            # hooks; the qdrant-client kwargs above (limits, http2, timeout,
+            # auth) are only applied when this class builds its own
+            # httpx.AsyncClient.
+            self._rest_args["http_client"] = http_client
+
         self.openapi_client: AsyncApis[AsyncApiClient] = AsyncApis(
             host=self.rest_uri, **self._rest_args
         )

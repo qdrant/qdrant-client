@@ -62,6 +62,7 @@ class QdrantRemote(QdrantBase):
         check_compatibility: bool = True,
         pool_size: int | None = None,
         headers: dict[str, str] | None = None,
+        http_client: httpx.Client | None = None,
         **kwargs: Any,
     ):
         super().__init__(**kwargs)
@@ -229,6 +230,13 @@ class QdrantRemote(QdrantBase):
 
             bearer_auth = BearerAuth(self._auth_token_provider)
             self._rest_args["auth"] = bearer_auth
+
+        if http_client is not None:
+            # Caller supplied a pre-built httpx.Client. Use it as-is so they
+            # keep full control over transport, middleware, and event hooks;
+            # the qdrant-client kwargs above (limits, http2, timeout, auth)
+            # are only applied when this class builds its own httpx.Client.
+            self._rest_args["http_client"] = http_client
 
         self.openapi_client: SyncApis[ApiClient] = SyncApis(
             host=self.rest_uri,

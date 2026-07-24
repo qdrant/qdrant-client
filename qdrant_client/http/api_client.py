@@ -65,10 +65,20 @@ AsyncMiddlewareT = Callable[[Request, SendAsync], Awaitable[Response]]
 
 
 class ApiClient:
-    def __init__(self, host: str, **kwargs: Any) -> None:
+    def __init__(
+        self,
+        host: str,
+        http_client: Client | None = None,
+        **kwargs: Any,
+    ) -> None:
         self.host = host
         self.middleware: MiddlewareT = BaseMiddleware()
-        self._client = Client(**kwargs)
+        if http_client is not None:
+            # Caller supplied a pre-built httpx.Client. Use it as-is so they
+            # keep full control over transport, middleware, and event hooks.
+            self._client = http_client
+        else:
+            self._client = Client(**kwargs)
 
     @overload
     def request(self, *, type_: Type[T], method: str, url: str, path_params: Dict[str, Any] = None, **kwargs: Any) -> T:
@@ -152,10 +162,21 @@ class ApiClient:
 
 
 class AsyncApiClient:
-    def __init__(self, host: str = None, **kwargs: Any) -> None:
+    def __init__(
+        self,
+        host: str = None,
+        http_client: AsyncClient | None = None,
+        **kwargs: Any,
+    ) -> None:
         self.host = host
         self.middleware: AsyncMiddlewareT = BaseAsyncMiddleware()
-        self._async_client = AsyncClient(**kwargs)
+        if http_client is not None:
+            # Caller supplied a pre-built httpx.AsyncClient. Use it as-is so
+            # they keep full control over transport, middleware, and event
+            # hooks.
+            self._async_client = http_client
+        else:
+            self._async_client = AsyncClient(**kwargs)
 
     @overload
     async def request(

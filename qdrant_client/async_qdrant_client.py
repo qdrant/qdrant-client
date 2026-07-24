@@ -12,6 +12,7 @@
 import warnings
 from typing import Any, Awaitable, Callable, Iterable, Mapping, Sequence
 import numpy as np
+import httpx
 from qdrant_client import grpc as grpc
 from qdrant_client.async_client_base import AsyncQdrantBase
 from qdrant_client.common.client_warnings import show_warning_once
@@ -102,6 +103,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         check_compatibility: bool = True,
         pool_size: int | None = None,
         headers: dict[str, str] | None = None,
+        http_client: httpx.AsyncClient | None = None,
         **kwargs: Any,
     ):
         self._init_options = {
@@ -141,6 +143,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
                 check_compatibility=check_compatibility,
                 pool_size=pool_size,
                 headers=headers,
+                http_client=http_client,
                 **kwargs,
             )
         if isinstance(self._client, AsyncQdrantLocal) and cloud_inference:
