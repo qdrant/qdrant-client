@@ -87,37 +87,27 @@ class TestSyncHttpClientInjection:
     def test_close_does_not_close_injected_client(self):
         # ApiClient.close() must not close a caller-supplied httpx.Client;
         # the caller owns its lifecycle and may keep using it after
-        # QdrantClient is closed.
+        # QdrantClient is closed. Direct ownership check, not behavior-by-
+        # exception-swallow.
         injected = httpx.Client()
         client = QdrantClient(check_compatibility=False, http_client=injected)
-        client.close()  # should be a no-op for the injected client
-        try:
-            # The injected client is still usable: dispatch through it. Any
-            # transport error is fine; the point is that the client itself
-            # is still open and method dispatch works (i.e. it wasn't
-            # silently closed by QdrantClient.close()).
-            injected.get("http://localhost:1/nope")
-        except Exception:
-            pass
-        finally:
-            injected.close()
+        # Constructor must have flagged the injected client as not-owned.
+        assert client._client.openapi_client.client._owns_client is False
+        client.close()
+        assert not injected.is_closed
+        injected.close()
 
     def test_close_does_close_built_client(self):
-        # Regression: the default path still closes the client it builds.
+        # Regression: the default path (no http_client) builds and owns
+        # the httpx.Client, so closing the qdrant client closes the
+        # underlying httpx.Client too. No monkey-patching the flag.
         client = QdrantClient(check_compatibility=False)
         api_client = client._client.openapi_client.client
-        # Replace the inner client with one we can spy on.
-        sentinel = httpx.Client()
-        original = api_client._client
-        api_client._client = sentinel
-        api_client._owns_client = True
-        try:
-            api_client.close()
-            assert sentinel.is_closed
-        finally:
-            # We forced the swap, so don't double-close sentinel.
-            api_client._client = original
-            original.close()
+        # Constructor must have flagged the built client as owned.
+        assert api_client._owns_client is True
+        assert not api_client._client.is_closed
+        api_client.close()
+        assert api_client._client.is_closed
 
 
 class TestAsyncHttpClientInjection:
@@ -139,9 +129,14 @@ class TestAsyncHttpClientInjection:
     async def test_default_path_still_builds_its_own_async_client(self):
         client = AsyncQdrantClient(check_compatibility=False)
         api_client = client._client.openapi_client.client
-        # Sanity: the default branch ran and wired up a real httpx.AsyncClient.
+        # Sanity: the default branch ran, wired up a real httpx.AsyncClient,
+        # and flagged it as owned by us.
         assert isinstance(api_client._async_client, httpx.AsyncClient)
-        await api_client._async_client.aclose()
+        assert api_client._owns_client is True
+        # Closing the qdrant client must close the built httpx.AsyncClient.
+        assert not api_client._async_client.is_closed
+        await client.close()
+        assert api_client._async_client.is_closed
 
     @pytest.mark.asyncio
     async def test_injected_async_client_keeps_rest_headers_middleware(self):
@@ -163,15 +158,15 @@ class TestAsyncHttpClientInjection:
     @pytest.mark.asyncio
     async def test_aclose_does_not_close_injected_client(self):
         # AsyncApiClient.aclose() must not close a caller-supplied
-        # httpx.AsyncClient; the caller owns its lifecycle.
+        # httpx.AsyncClient; the caller owns its lifecycle. Direct
+        # ownership check, not behavior-by-exception-swallow.
         injected = httpx.AsyncClient()
         client = AsyncQdrantClient(check_compatibility=False, http_client=injected)
-        await client.close()  # should be a no-op for the injected client
-        try:
-            # The injected client is still usable.
-            assert not injected.is_closed
-        finally:
-            await injected.aclose()
+        # Constructor must have flagged the injected client as not-owned.
+        assert client._client.openapi_client.client._owns_client is False
+        await client.close()
+        assert not injected.is_closed
+        await injected.aclose()
 
     @pytest.mark.asyncio
     async def test_init_options_round_trip_excludes_http_client(self):
