@@ -1,20 +1,28 @@
 from collections import defaultdict
-from typing import Sequence, Any, TypeVar, Generic
+from typing import TYPE_CHECKING, Any, Generic, Sequence, TypeVar
 
 from pydantic import BaseModel
 
 from qdrant_client.http import models
 from qdrant_client.embed.models import NumericVector
-from qdrant_client.fastembed_common import (
-    OnnxProvider,
-    ImageInput,
-    TextEmbedding,
-    SparseTextEmbedding,
-    LateInteractionTextEmbedding,
-    LateInteractionMultimodalEmbedding,
-    ImageEmbedding,
-    FastEmbedMisc,
-)
+from qdrant_client.fastembed_common import FastEmbedMisc
+
+if TYPE_CHECKING:
+    from qdrant_client.fastembed_common import (
+        ImageEmbedding,
+        ImageInput,
+        LateInteractionMultimodalEmbedding,
+        LateInteractionTextEmbedding,
+        OnnxProvider,
+        SparseTextEmbedding,
+        TextEmbedding,
+    )
+
+
+def _fastembed_symbol(name: str) -> Any:
+    from qdrant_client import fastembed_common
+
+    return getattr(fastembed_common, name)
 
 
 T = TypeVar("T")
@@ -30,19 +38,15 @@ class Embedder:
     def __init__(
         self, threads: int | None = None, use_core_bm25: bool = True, **kwargs: Any
     ) -> None:
-        self.embedding_models: dict[str, list[ModelInstance[TextEmbedding]]] = defaultdict(list)
-        self.sparse_embedding_models: dict[str, list[ModelInstance[SparseTextEmbedding]]] = (
-            defaultdict(list)
-        )
-        self.late_interaction_embedding_models: dict[
-            str, list[ModelInstance[LateInteractionTextEmbedding]]
-        ] = defaultdict(list)
-        self.image_embedding_models: dict[str, list[ModelInstance[ImageEmbedding]]] = defaultdict(
+        self.embedding_models: dict[str, list[ModelInstance[Any]]] = defaultdict(list)
+        self.sparse_embedding_models: dict[str, list[ModelInstance[Any]]] = defaultdict(list)
+        self.late_interaction_embedding_models: dict[str, list[ModelInstance[Any]]] = defaultdict(
             list
         )
-        self.late_interaction_multimodal_embedding_models: dict[
-            str, list[ModelInstance[LateInteractionMultimodalEmbedding]]
-        ] = defaultdict(list)
+        self.image_embedding_models: dict[str, list[ModelInstance[Any]]] = defaultdict(list)
+        self.late_interaction_multimodal_embedding_models: dict[str, list[ModelInstance[Any]]] = (
+            defaultdict(list)
+        )
         self._threads = threads
         self._use_core_bm25 = use_core_bm25
 
@@ -56,7 +60,7 @@ class Embedder:
         device_ids: list[int] | None = None,
         deprecated: bool = False,
         **kwargs: Any,
-    ) -> TextEmbedding:
+    ) -> "TextEmbedding":
         if not FastEmbedMisc.is_supported_text_model(model_name):
             raise ValueError(
                 f"Unsupported embedding model: {model_name}. Supported models: {FastEmbedMisc.list_text_models()}"
@@ -75,8 +79,9 @@ class Embedder:
             ):
                 return instance.model
 
-        model = TextEmbedding(model_name=model_name, **options)
-        model_instance: ModelInstance[TextEmbedding] = ModelInstance(
+        text_embedding = _fastembed_symbol("TextEmbedding")
+        model = text_embedding(model_name=model_name, **options)
+        model_instance: ModelInstance[Any] = ModelInstance(
             model=model, options=options, deprecated=deprecated
         )
         self.embedding_models[model_name].append(model_instance)
@@ -92,7 +97,7 @@ class Embedder:
         device_ids: list[int] | None = None,
         deprecated: bool = False,
         **kwargs: Any,
-    ) -> SparseTextEmbedding:
+    ) -> "SparseTextEmbedding":
         if not FastEmbedMisc.is_supported_sparse_model(model_name):
             raise ValueError(
                 f"Unsupported embedding model: {model_name}. Supported models: {FastEmbedMisc.list_sparse_models()}"
@@ -113,8 +118,9 @@ class Embedder:
             ):
                 return instance.model
 
-        model = SparseTextEmbedding(model_name=model_name, **options)
-        model_instance: ModelInstance[SparseTextEmbedding] = ModelInstance(
+        sparse_text_embedding = _fastembed_symbol("SparseTextEmbedding")
+        model = sparse_text_embedding(model_name=model_name, **options)
+        model_instance: ModelInstance[Any] = ModelInstance(
             model=model, options=options, deprecated=deprecated
         )
         self.sparse_embedding_models[model_name].append(model_instance)
@@ -129,7 +135,7 @@ class Embedder:
         cuda: bool = False,
         device_ids: list[int] | None = None,
         **kwargs: Any,
-    ) -> LateInteractionTextEmbedding:
+    ) -> "LateInteractionTextEmbedding":
         if not FastEmbedMisc.is_supported_late_interaction_text_model(model_name):
             raise ValueError(
                 f"Unsupported embedding model: {model_name}. "
@@ -148,8 +154,9 @@ class Embedder:
             if instance.options == options:
                 return instance.model
 
-        model = LateInteractionTextEmbedding(model_name=model_name, **options)
-        model_instance: ModelInstance[LateInteractionTextEmbedding] = ModelInstance(
+        late_interaction_text_embedding = _fastembed_symbol("LateInteractionTextEmbedding")
+        model = late_interaction_text_embedding(model_name=model_name, **options)
+        model_instance: ModelInstance[Any] = ModelInstance(
             model=model, options=options
         )
         self.late_interaction_embedding_models[model_name].append(model_instance)
@@ -164,7 +171,7 @@ class Embedder:
         cuda: bool = False,
         device_ids: list[int] | None = None,
         **kwargs: Any,
-    ) -> LateInteractionMultimodalEmbedding:
+    ) -> "LateInteractionMultimodalEmbedding":
         if not FastEmbedMisc.is_supported_late_interaction_multimodal_model(model_name):
             raise ValueError(
                 f"Unsupported embedding model: {model_name}. "
@@ -183,8 +190,9 @@ class Embedder:
             if instance.options == options:
                 return instance.model
 
-        model = LateInteractionMultimodalEmbedding(model_name=model_name, **options)
-        model_instance: ModelInstance[LateInteractionMultimodalEmbedding] = ModelInstance(
+        late_interaction_multimodal_embedding = _fastembed_symbol("LateInteractionMultimodalEmbedding")
+        model = late_interaction_multimodal_embedding(model_name=model_name, **options)
+        model_instance: ModelInstance[Any] = ModelInstance(
             model=model, options=options
         )
         self.late_interaction_multimodal_embedding_models[model_name].append(model_instance)
@@ -199,7 +207,7 @@ class Embedder:
         cuda: bool = False,
         device_ids: list[int] | None = None,
         **kwargs: Any,
-    ) -> ImageEmbedding:
+    ) -> "ImageEmbedding":
         if not FastEmbedMisc.is_supported_image_model(model_name):
             raise ValueError(
                 f"Unsupported embedding model: {model_name}. Supported models: {FastEmbedMisc.list_image_models()}"
@@ -217,8 +225,9 @@ class Embedder:
             if instance.options == options:
                 return instance.model
 
-        model = ImageEmbedding(model_name=model_name, **options)
-        model_instance: ModelInstance[ImageEmbedding] = ModelInstance(model=model, options=options)
+        image_embedding = _fastembed_symbol("ImageEmbedding")
+        model = image_embedding(model_name=model_name, **options)
+        model_instance: ModelInstance[Any] = ModelInstance(model=model, options=options)
         self.image_embedding_models[model_name].append(model_instance)
         return model
 
@@ -226,7 +235,7 @@ class Embedder:
         self,
         model_name: str,
         texts: list[str] | None = None,
-        images: list[ImageInput] | None = None,
+        images: list[Any] | None = None,
         options: dict[str, Any] | None = None,
         is_query: bool = False,
         batch_size: int = 8,
@@ -367,7 +376,7 @@ class Embedder:
 
     def _embed_late_interaction_multimodal_image(
         self,
-        images: list[ImageInput],
+        images: list[Any],
         model_name: str,
         options: dict[str, Any] | None,
         batch_size: int,
@@ -382,7 +391,7 @@ class Embedder:
 
     def _embed_dense_image(
         self,
-        images: list[ImageInput],
+        images: list[Any],
         model_name: str,
         options: dict[str, Any] | None,
         batch_size: int,
