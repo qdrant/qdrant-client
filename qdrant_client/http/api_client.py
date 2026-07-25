@@ -65,10 +65,23 @@ AsyncMiddlewareT = Callable[[Request, SendAsync], Awaitable[Response]]
 
 
 class ApiClient:
-    def __init__(self, host: str, **kwargs: Any) -> None:
+    def __init__(
+        self,
+        host: str,
+        http_client: Client | None = None,
+        **kwargs: Any,
+    ) -> None:
         self.host = host
         self.middleware: MiddlewareT = BaseMiddleware()
-        self._client = Client(**kwargs)
+        if http_client is not None:
+            # Caller supplied a pre-built httpx.Client. Use it as-is so they
+            # keep full control over transport, middleware, and event hooks;
+            # we must not close it on .close() since they own its lifecycle.
+            self._client = http_client
+            self._owns_client = False
+        else:
+            self._client = Client(**kwargs)
+            self._owns_client = True
 
     @overload
     def request(self, *, type_: Type[T], method: str, url: str, path_params: Dict[str, Any] = None, **kwargs: Any) -> T:
@@ -137,7 +150,8 @@ class ApiClient:
         return response
 
     def close(self) -> None:
-        self._client.close()
+        if self._owns_client:
+            self._client.close()
 
     def add_middleware(self, middleware: MiddlewareT) -> None:
         current_middleware = self.middleware
@@ -152,10 +166,24 @@ class ApiClient:
 
 
 class AsyncApiClient:
-    def __init__(self, host: str = None, **kwargs: Any) -> None:
+    def __init__(
+        self,
+        host: str = None,
+        http_client: AsyncClient | None = None,
+        **kwargs: Any,
+    ) -> None:
         self.host = host
         self.middleware: AsyncMiddlewareT = BaseAsyncMiddleware()
-        self._async_client = AsyncClient(**kwargs)
+        if http_client is not None:
+            # Caller supplied a pre-built httpx.AsyncClient. Use it as-is so
+            # they keep full control over transport, middleware, and event
+            # hooks; we must not close it on .aclose() since they own its
+            # lifecycle.
+            self._async_client = http_client
+            self._owns_client = False
+        else:
+            self._async_client = AsyncClient(**kwargs)
+            self._owns_client = True
 
     @overload
     async def request(
@@ -226,7 +254,8 @@ class AsyncApiClient:
         return response
 
     async def aclose(self) -> None:
-        await self._async_client.aclose()
+        if self._owns_client:
+            await self._async_client.aclose()
 
     def add_middleware(self, middleware: AsyncMiddlewareT) -> None:
         current_middleware = self.middleware

@@ -12,6 +12,7 @@
 import warnings
 from typing import Any, Awaitable, Callable, Iterable, Mapping, Sequence
 import numpy as np
+import httpx
 from qdrant_client import grpc as grpc
 from qdrant_client.async_client_base import AsyncQdrantBase
 from qdrant_client.common.client_warnings import show_warning_once
@@ -102,12 +103,17 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         check_compatibility: bool = True,
         pool_size: int | None = None,
         headers: dict[str, str] | None = None,
+        http_client: httpx.AsyncClient | None = None,
         **kwargs: Any,
     ):
+        # http_client is excluded from init_options: an async httpx.AsyncClient
+        # must not be passed into the sync constructor and vice versa. Callers
+        # that want an http_client on both sides need to pass it to each
+        # constructor explicitly.
         self._init_options = {
             key: value
             for (key, value) in locals().items()
-            if key not in ("self", "__class__", "kwargs")
+            if key not in ("self", "__class__", "kwargs", "http_client")
         }
         self._init_options.update({k: v for (k, v) in kwargs.items()})
         if sum([param is not None for param in (location, url, host, path)]) > 1:
@@ -141,6 +147,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
                 check_compatibility=check_compatibility,
                 pool_size=pool_size,
                 headers=headers,
+                http_client=http_client,
                 **kwargs,
             )
         if isinstance(self._client, AsyncQdrantLocal) and cloud_inference:
