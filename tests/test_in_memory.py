@@ -1,3 +1,7 @@
+import random
+import threading
+import uuid
+
 import pytest
 
 from qdrant_client import QdrantClient, models
@@ -293,6 +297,75 @@ def test_fusion_dbsf_score_threshold(qdrant: QdrantClient):
     assert len(result_with_threshold.points) == 3, (
         f"Expected 3 points after filtering (threshold 1.0), got {len(result_with_threshold.points)}. "
         f"Scores: {[p.score for p in result_no_threshold.points]}"
+    )
+
+
+def test_concurrent_upsert_does_not_corrupt_local_collection() -> None:
+    """Regression test for issue #1193.
+
+    Before the ``threading.RLock`` guard in ``LocalCollection``, two threads
+    calling ``upsert`` concurrently could interleave the mutations of
+    ``self.payload`` (list append) and ``self.deleted`` (numpy concatenate),
+    leaving the arrays at mismatched lengths. A subsequent ``scroll`` /
+    ``search`` would then raise::
+
+        ValueError: operands could not be broadcast together with shapes (N,) (M,)
+
+    Eight threads each upsert 20 batches of 10 points into the same in-memory
+    collection. With the lock, the final state must contain exactly
+    ``8 * 20 * 10 = 1600`` points and no broadcast error.
+    """
+    client = QdrantClient(":memory:")
+    client.create_collection(
+        collection_name="race",
+        vectors_config={
+            "dense": models.VectorParams(size=8, distance=models.Distance.COSINE),
+        },
+        sparse_vectors_config={"bm25": models.SparseVectorParams()},
+    )
+
+    thread_count = 8
+    batches_per_thread = 20
+    batch_size = 10
+    expected_total = thread_count * batches_per_thread * batch_size
+    exceptions: list[BaseException] = []
+
+    def worker(seed: int) -> None:
+        rng = random.Random(seed)
+        try:
+            for _ in range(batches_per_thread):
+                points = [
+                    models.PointStruct(
+                        id=str(uuid.uuid4()),
+                        vector={
+                            "dense": [rng.random() for _ in range(8)],
+                            "bm25": models.SparseVector(
+                                indices=[0, 1, 2], values=[0.5, 0.3, 0.1]
+                            ),
+                        },
+                        payload={"thread": seed},
+                    )
+                    for _ in range(batch_size)
+                ]
+                client.upsert(collection_name="race", points=points)
+        except BaseException as exc:  # noqa: BLE001 — surface any thread failure
+            exceptions.append(exc)
+
+    threads = [
+        threading.Thread(target=worker, args=(seed,)) for seed in range(thread_count)
+    ]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+
+    assert not exceptions, f"worker threads raised: {exceptions}"
+
+    # Scroll across the whole collection — this is the call that used to
+    # surface the shape mismatch via `operands could not be broadcast`.
+    points, _ = client.scroll(collection_name="race", limit=expected_total + 1)
+    assert len(points) == expected_total, (
+        f"expected {expected_total} points after concurrent upserts, got {len(points)}"
     )
 
 
