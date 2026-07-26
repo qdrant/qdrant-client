@@ -44,6 +44,13 @@ from qdrant_client.uploader.uploader import BaseUploader
 
 class QdrantRemote(QdrantBase):
     DEFAULT_GRPC_TIMEOUT = 5  # seconds
+
+    def _effective_timeout(self, timeout: int | None) -> int:
+        # Single source of truth for the per-call / global fallback rule.
+        # Every gRPC call site in this file uses this so a future
+        # method that takes a `timeout=` arg cannot accidentally bypass
+        # `self._timeout` again. See issue #948.
+        return timeout if timeout is not None else self._timeout
     DEFAULT_GRPC_POOL_SIZE = 3
 
     def __init__(
@@ -497,7 +504,7 @@ class QdrantRemote(QdrantBase):
         **kwargs: Any,
     ) -> types.QueryResponse:
         if self._prefer_grpc:
-            effective_timeout = timeout if timeout is not None else self._timeout
+            effective_timeout = self._effective_timeout(timeout)
             if query is not None:
                 query = RestToGrpc.convert_query(query)
 
@@ -603,7 +610,7 @@ class QdrantRemote(QdrantBase):
         **kwargs: Any,
     ) -> list[types.QueryResponse]:
         if self._prefer_grpc:
-            effective_timeout = timeout if timeout is not None else self._timeout
+            effective_timeout = self._effective_timeout(timeout)
             requests = [
                 (
                     RestToGrpc.convert_query_request(r, collection_name)
@@ -673,7 +680,7 @@ class QdrantRemote(QdrantBase):
         **kwargs: Any,
     ) -> types.GroupsResult:
         if self._prefer_grpc:
-            effective_timeout = timeout if timeout is not None else self._timeout
+            effective_timeout = self._effective_timeout(timeout)
             if query is not None:
                 query = RestToGrpc.convert_query(query)
 
@@ -788,7 +795,7 @@ class QdrantRemote(QdrantBase):
         **kwargs: Any,
     ) -> types.SearchMatrixPairsResponse:
         if self._prefer_grpc:
-            effective_timeout = timeout if timeout is not None else self._timeout
+            effective_timeout = self._effective_timeout(timeout)
             if isinstance(query_filter, models.Filter):
                 query_filter = RestToGrpc.convert_filter(model=query_filter)
 
@@ -845,7 +852,7 @@ class QdrantRemote(QdrantBase):
         **kwargs: Any,
     ) -> types.SearchMatrixOffsetsResponse:
         if self._prefer_grpc:
-            effective_timeout = timeout if timeout is not None else self._timeout
+            effective_timeout = self._effective_timeout(timeout)
             if isinstance(query_filter, models.Filter):
                 query_filter = RestToGrpc.convert_filter(model=query_filter)
 
@@ -904,7 +911,7 @@ class QdrantRemote(QdrantBase):
         **kwargs: Any,
     ) -> tuple[list[types.Record], types.PointId | None]:
         if self._prefer_grpc:
-            effective_timeout = timeout if timeout is not None else self._timeout
+            effective_timeout = self._effective_timeout(timeout)
             if isinstance(offset, get_args_subscribed(models.ExtendedPointId)):
                 offset = RestToGrpc.convert_extended_point_id(offset)
 
@@ -991,7 +998,7 @@ class QdrantRemote(QdrantBase):
         **kwargs: Any,
     ) -> types.CountResult:
         if self._prefer_grpc:
-            effective_timeout = timeout if timeout is not None else self._timeout
+            effective_timeout = self._effective_timeout(timeout)
             if isinstance(count_filter, models.Filter):
                 count_filter = RestToGrpc.convert_filter(model=count_filter)
 
@@ -1043,7 +1050,7 @@ class QdrantRemote(QdrantBase):
         **kwargs: Any,
     ) -> types.FacetResponse:
         if self._prefer_grpc:
-            effective_timeout = timeout if timeout is not None else self._timeout
+            effective_timeout = self._effective_timeout(timeout)
             if isinstance(facet_filter, models.Filter):
                 facet_filter = RestToGrpc.convert_filter(model=facet_filter)
 
@@ -1103,7 +1110,7 @@ class QdrantRemote(QdrantBase):
         **kwargs: Any,
     ) -> types.UpdateResult:
         if self._prefer_grpc:
-            effective_timeout = timeout if timeout is not None else self._timeout
+            effective_timeout = self._effective_timeout(timeout)
             if isinstance(points, models.Batch):
                 vectors_batch: list[grpc.Vectors] = RestToGrpc.convert_batch_vector_struct(
                     points.vectors, len(points.ids)
@@ -1209,7 +1216,7 @@ class QdrantRemote(QdrantBase):
         **kwargs: Any,
     ) -> types.UpdateResult:
         if self._prefer_grpc:
-            effective_timeout = timeout if timeout is not None else self._timeout
+            effective_timeout = self._effective_timeout(timeout)
             points = [RestToGrpc.convert_point_vectors(point) for point in points]
 
             if isinstance(ordering, models.WriteOrdering):
@@ -1263,7 +1270,7 @@ class QdrantRemote(QdrantBase):
         **kwargs: Any,
     ) -> types.UpdateResult:
         if self._prefer_grpc:
-            effective_timeout = timeout if timeout is not None else self._timeout
+            effective_timeout = self._effective_timeout(timeout)
             points_selector, opt_shard_key_selector = self._try_argument_to_grpc_selector(points)
             shard_key_selector = shard_key_selector or opt_shard_key_selector
 
@@ -1319,7 +1326,7 @@ class QdrantRemote(QdrantBase):
         **kwargs: Any,
     ) -> list[types.Record]:
         if self._prefer_grpc:
-            effective_timeout = timeout if timeout is not None else self._timeout
+            effective_timeout = self._effective_timeout(timeout)
             if isinstance(with_payload, get_args_subscribed(models.WithPayloadInterface)):
                 with_payload = RestToGrpc.convert_with_payload_interface(with_payload)
 
@@ -1505,7 +1512,7 @@ class QdrantRemote(QdrantBase):
         **kwargs: Any,
     ) -> types.UpdateResult:
         if self._prefer_grpc:
-            effective_timeout = timeout if timeout is not None else self._timeout
+            effective_timeout = self._effective_timeout(timeout)
             points_selector, opt_shard_key_selector = self._try_argument_to_grpc_selector(
                 points_selector
             )
@@ -1557,7 +1564,7 @@ class QdrantRemote(QdrantBase):
         **kwargs: Any,
     ) -> types.UpdateResult:
         if self._prefer_grpc:
-            effective_timeout = timeout if timeout is not None else self._timeout
+            effective_timeout = self._effective_timeout(timeout)
             points_selector, opt_shard_key_selector = self._try_argument_to_grpc_selector(points)
             shard_key_selector = shard_key_selector or opt_shard_key_selector
 
@@ -1612,7 +1619,7 @@ class QdrantRemote(QdrantBase):
         **kwargs: Any,
     ) -> types.UpdateResult:
         if self._prefer_grpc:
-            effective_timeout = timeout if timeout is not None else self._timeout
+            effective_timeout = self._effective_timeout(timeout)
             points_selector, opt_shard_key_selector = self._try_argument_to_grpc_selector(points)
             shard_key_selector = shard_key_selector or opt_shard_key_selector
 
@@ -1665,7 +1672,7 @@ class QdrantRemote(QdrantBase):
         **kwargs: Any,
     ) -> types.UpdateResult:
         if self._prefer_grpc:
-            effective_timeout = timeout if timeout is not None else self._timeout
+            effective_timeout = self._effective_timeout(timeout)
             points_selector, opt_shard_key_selector = self._try_argument_to_grpc_selector(points)
             shard_key_selector = shard_key_selector or opt_shard_key_selector
             if isinstance(ordering, models.WriteOrdering):
@@ -1716,7 +1723,7 @@ class QdrantRemote(QdrantBase):
         **kwargs: Any,
     ) -> types.UpdateResult:
         if self._prefer_grpc:
-            effective_timeout = timeout if timeout is not None else self._timeout
+            effective_timeout = self._effective_timeout(timeout)
             points_selector, opt_shard_key_selector = self._try_argument_to_grpc_selector(
                 points_selector
             )
@@ -1765,7 +1772,7 @@ class QdrantRemote(QdrantBase):
         **kwargs: Any,
     ) -> list[types.UpdateResult]:
         if self._prefer_grpc:
-            effective_timeout = timeout if timeout is not None else self._timeout
+            effective_timeout = self._effective_timeout(timeout)
             update_operations = [
                 RestToGrpc.convert_update_operation(operation) for operation in update_operations
             ]
@@ -1804,7 +1811,7 @@ class QdrantRemote(QdrantBase):
         **kwargs: Any,
     ) -> bool:
         if self._prefer_grpc:
-            effective_timeout = timeout if timeout is not None else self._timeout
+            effective_timeout = self._effective_timeout(timeout)
             change_aliases_operation = [
                 (
                     RestToGrpc.convert_alias_operations(operation)
@@ -1842,7 +1849,7 @@ class QdrantRemote(QdrantBase):
         self, collection_name: str, **kwargs: Any
     ) -> types.CollectionsAliasesResponse:
         if self._prefer_grpc:
-            effective_timeout = self._timeout
+            effective_timeout = self._effective_timeout(None)
             response = self.grpc_collections.ListCollectionAliases(
                 grpc.ListCollectionAliasesRequest(collection_name=collection_name),
                 timeout=effective_timeout,
@@ -1895,7 +1902,7 @@ class QdrantRemote(QdrantBase):
 
     def get_collection(self, collection_name: str, **kwargs: Any) -> types.CollectionInfo:
         if self._prefer_grpc:
-            effective_timeout = self._timeout
+            effective_timeout = self._effective_timeout(None)
             return GrpcToRest.convert_collection_info(
                 self.grpc_collections.Get(
                     grpc.GetCollectionInfoRequest(collection_name=collection_name),
@@ -1910,7 +1917,7 @@ class QdrantRemote(QdrantBase):
 
     def collection_exists(self, collection_name: str, **kwargs: Any) -> bool:
         if self._prefer_grpc:
-            effective_timeout = self._timeout
+            effective_timeout = self._effective_timeout(None)
             return self.grpc_collections.CollectionExists(
                 grpc.CollectionExistsRequest(collection_name=collection_name),
                 timeout=effective_timeout,
@@ -1937,7 +1944,7 @@ class QdrantRemote(QdrantBase):
         **kwargs: Any,
     ) -> bool:
         if self._prefer_grpc:
-            effective_timeout = timeout if timeout is not None else self._timeout
+            effective_timeout = self._effective_timeout(timeout)
             if isinstance(optimizers_config, models.OptimizersConfigDiff):
                 optimizers_config = RestToGrpc.convert_optimizers_config_diff(optimizers_config)
 
@@ -2018,7 +2025,7 @@ class QdrantRemote(QdrantBase):
         self, collection_name: str, timeout: int | None = None, **kwargs: Any
     ) -> bool:
         if self._prefer_grpc:
-            effective_timeout = timeout if timeout is not None else self._timeout
+            effective_timeout = self._effective_timeout(timeout)
             return self.grpc_collections.Delete(
                 grpc.DeleteCollection(collection_name=collection_name, timeout=effective_timeout),
                 timeout=effective_timeout,
@@ -2050,6 +2057,7 @@ class QdrantRemote(QdrantBase):
         **kwargs: Any,
     ) -> bool:
         if self._prefer_grpc:
+            effective_timeout = self._effective_timeout(timeout)
             if isinstance(vectors_config, (models.VectorParams, dict)):
                 vectors_config = RestToGrpc.convert_vectors_config(vectors_config)
 
@@ -2089,7 +2097,7 @@ class QdrantRemote(QdrantBase):
                 optimizers_config=optimizers_config,
                 shard_number=shard_number,
                 on_disk_payload=on_disk_payload,
-                timeout=timeout,
+                timeout=effective_timeout,
                 vectors_config=vectors_config,
                 replication_factor=replication_factor,
                 write_consistency_factor=write_consistency_factor,
@@ -2099,7 +2107,7 @@ class QdrantRemote(QdrantBase):
                 strict_mode_config=strict_mode_config,
                 metadata=metadata,
             )
-            return self.grpc_collections.Create(create_collection, timeout=self._timeout).result
+            return self.grpc_collections.Create(create_collection, timeout=effective_timeout).result
 
         if isinstance(hnsw_config, grpc.HnswConfigDiff):
             hnsw_config = GrpcToRest.convert_hnsw_config_diff(hnsw_config)
@@ -2328,6 +2336,7 @@ class QdrantRemote(QdrantBase):
             field_schema = field_type
 
         if self._prefer_grpc:
+            effective_timeout = self._effective_timeout(timeout)
             field_index_params = None
             if isinstance(field_schema, models.PayloadSchemaType):
                 field_schema = RestToGrpc.convert_payload_schema_type(field_schema)
@@ -2382,10 +2391,10 @@ class QdrantRemote(QdrantBase):
                 field_index_params=field_index_params,
                 wait=wait,
                 ordering=ordering,
-                timeout=timeout,
+                timeout=effective_timeout,
             )
             return GrpcToRest.convert_update_result(
-                self.grpc_points.CreateFieldIndex(request, timeout=self._timeout).result
+                self.grpc_points.CreateFieldIndex(request, timeout=effective_timeout).result
             )
 
         if isinstance(field_schema, int):  # type(grpc.PayloadSchemaType) == int
@@ -2416,15 +2425,16 @@ class QdrantRemote(QdrantBase):
         **kwargs: Any,
     ) -> types.UpdateResult:
         if self._prefer_grpc:
+            effective_timeout = self._effective_timeout(timeout)
             request = grpc.DeleteFieldIndexCollection(
                 collection_name=collection_name,
                 field_name=field_name,
                 wait=wait,
                 ordering=ordering,
-                timeout=timeout,
+                timeout=effective_timeout,
             )
             return GrpcToRest.convert_update_result(
-                self.grpc_points.DeleteFieldIndex(request, timeout=self._timeout).result
+                self.grpc_points.DeleteFieldIndex(request, timeout=effective_timeout).result
             )
 
         result: types.UpdateResult | None = self.openapi_client.indexes_api.delete_field_index(
@@ -2448,6 +2458,7 @@ class QdrantRemote(QdrantBase):
         **kwargs: Any,
     ) -> types.UpdateResult:
         if self._prefer_grpc:
+            effective_timeout = self._effective_timeout(timeout)
             dense_config = None
             sparse_config = None
             if isinstance(vector_name_config, models.DenseVectorNameConfig):
@@ -2491,11 +2502,11 @@ class QdrantRemote(QdrantBase):
                 vector_name=vector_name,
                 dense_config=dense_config,
                 sparse_config=sparse_config,
-                timeout=timeout,
+                timeout=effective_timeout,
                 ordering=grpc_ordering,
             )
             return GrpcToRest.convert_update_result(
-                self.grpc_points.CreateVectorName(request, timeout=self._timeout).result
+                self.grpc_points.CreateVectorName(request, timeout=effective_timeout).result
             )
 
         result: types.UpdateResult | None = self.http.collections_api.create_vector_name(
@@ -2519,6 +2530,7 @@ class QdrantRemote(QdrantBase):
         **kwargs: Any,
     ) -> types.UpdateResult:
         if self._prefer_grpc:
+            effective_timeout = self._effective_timeout(timeout)
             grpc_ordering = (
                 RestToGrpc.convert_write_ordering(ordering)
                 if isinstance(ordering, models.WriteOrdering)
@@ -2528,11 +2540,11 @@ class QdrantRemote(QdrantBase):
                 collection_name=collection_name,
                 wait=wait,
                 vector_name=vector_name,
-                timeout=timeout,
+                timeout=effective_timeout,
                 ordering=grpc_ordering,
             )
             return GrpcToRest.convert_update_result(
-                self.grpc_points.DeleteVectorName(request, timeout=self._timeout).result
+                self.grpc_points.DeleteVectorName(request, timeout=effective_timeout).result
             )
 
         result: types.UpdateResult | None = self.openapi_client.collections_api.delete_vector_name(
@@ -2577,7 +2589,7 @@ class QdrantRemote(QdrantBase):
         self, collection_name: str, snapshot_name: str, wait: bool = True, **kwargs: Any
     ) -> bool | None:
         if self._prefer_grpc:
-            effective_timeout = self._timeout
+            effective_timeout = self._effective_timeout(None)
             self.grpc_snapshots.Delete(
                 grpc.DeleteSnapshotRequest(
                     collection_name=collection_name, snapshot_name=snapshot_name
@@ -2594,7 +2606,7 @@ class QdrantRemote(QdrantBase):
 
     def list_full_snapshots(self, **kwargs: Any) -> list[types.SnapshotDescription]:
         if self._prefer_grpc:
-            effective_timeout = self._timeout
+            effective_timeout = self._effective_timeout(None)
             snapshots = self.grpc_snapshots.ListFull(
                 grpc.ListFullSnapshotsRequest(),
                 timeout=effective_timeout,
@@ -2618,7 +2630,7 @@ class QdrantRemote(QdrantBase):
         self, snapshot_name: str, wait: bool = True, **kwargs: Any
     ) -> bool | None:
         if self._prefer_grpc:
-            effective_timeout = self._timeout
+            effective_timeout = self._effective_timeout(None)
             self.grpc_snapshots.DeleteFull(
                 grpc.DeleteFullSnapshotRequest(snapshot_name=snapshot_name),
                 timeout=effective_timeout,
@@ -2719,7 +2731,7 @@ class QdrantRemote(QdrantBase):
         **kwargs: Any,
     ) -> bool:
         if self._prefer_grpc:
-            effective_timeout = timeout if timeout is not None else self._timeout
+            effective_timeout = self._effective_timeout(timeout)
             if isinstance(shard_key, get_args_subscribed(models.ShardKey)):
                 shard_key = RestToGrpc.convert_shard_key(shard_key)
 
@@ -2763,7 +2775,7 @@ class QdrantRemote(QdrantBase):
         **kwargs: Any,
     ) -> bool:
         if self._prefer_grpc:
-            effective_timeout = timeout if timeout is not None else self._timeout
+            effective_timeout = self._effective_timeout(timeout)
             if isinstance(shard_key, get_args_subscribed(models.ShardKey)):
                 shard_key = RestToGrpc.convert_shard_key(shard_key)
 
@@ -2806,7 +2818,7 @@ class QdrantRemote(QdrantBase):
         **kwargs: Any,
     ) -> bool:
         if self._prefer_grpc:
-            effective_timeout = timeout if timeout is not None else self._timeout
+            effective_timeout = self._effective_timeout(timeout)
             cluster_operation = RestToGrpc.convert_cluster_operations(cluster_operation)
             grpc_operation = {}
 
@@ -2871,7 +2883,7 @@ class QdrantRemote(QdrantBase):
 
     def collection_cluster_info(self, collection_name: str) -> types.CollectionClusterInfo:
         if self._prefer_grpc:
-            effective_timeout = self._timeout
+            effective_timeout = self._effective_timeout(None)
             collection_info = self.grpc_collections.CollectionClusterInfo(
                 grpc.CollectionClusterInfoRequest(collection_name=collection_name),
                 timeout=effective_timeout,
@@ -2903,7 +2915,7 @@ class QdrantRemote(QdrantBase):
         **kwargs: Any,
     ) -> types.ShardKeysResponse:
         if self._prefer_grpc:
-            effective_timeout = self._timeout
+            effective_timeout = self._effective_timeout(None)
             response = self.grpc_collections.ListShardKeys(
                 grpc.ListShardKeysRequest(collection_name=collection_name),
                 timeout=effective_timeout,

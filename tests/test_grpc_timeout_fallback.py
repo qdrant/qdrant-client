@@ -213,6 +213,76 @@ class TestSyncGrpcTimeoutFallback:
             f"expected at least one gRPC deadline == 55, got {deadlines}"
         )
 
+    def test_create_collection_propagates_global_timeout(self):
+        # create_collection was missed in the first round of the fix
+        # (CodeRabbit review). The per-call timeout was being ignored:
+        # the protobuf field got the raw (possibly None) `timeout` while
+        # the gRPC deadline always used `self._timeout`. Verify the
+        # effective timeout now flows through to both.
+        from qdrant_client import models
+
+        client = QdrantClient(prefer_grpc=True, check_compatibility=False, timeout=77)
+        remote = client._client
+        captured = _patch_stub_pool(remote, async_mode=False)
+
+        try:
+            client.create_collection(
+                collection_name="test",
+                vectors_config=models.VectorParams(
+                    size=4, distance=models.Distance.COSINE
+                ),
+            )
+        except Exception:
+            pass
+
+        create_calls = [c for c in captured if c[0] == "Create"]
+        assert create_calls, f"expected Create call, got {[c[0] for c in captured]}"
+        _method, request, deadline = create_calls[0]
+        assert request.timeout == 77
+        assert deadline == 77
+
+    def test_create_payload_index_propagates_global_timeout(self):
+        client = QdrantClient(prefer_grpc=True, check_compatibility=False, timeout=88)
+        remote = client._client
+        captured = _patch_stub_pool(remote, async_mode=False)
+
+        try:
+            client.create_payload_index(
+                collection_name="test",
+                field_name="my_field",
+                field_schema="keyword",
+            )
+        except Exception:
+            pass
+
+        create_calls = [c for c in captured if c[0] == "CreateFieldIndex"]
+        assert create_calls, f"expected CreateFieldIndex call, got {[c[0] for c in captured]}"
+        _method, request, deadline = create_calls[0]
+        assert request.timeout == 88
+        assert deadline == 88
+
+    def test_create_vector_name_propagates_global_timeout(self):
+        from qdrant_client import models
+
+        client = QdrantClient(prefer_grpc=True, check_compatibility=False, timeout=66)
+        remote = client._client
+        captured = _patch_stub_pool(remote, async_mode=False)
+
+        try:
+            client.create_vector_name(
+                collection_name="test",
+                vector_name="my_vec",
+                vector_name_config=models.VectorParams(size=4, distance=models.Distance.COSINE),
+            )
+        except Exception:
+            pass
+
+        create_calls = [c for c in captured if c[0] == "CreateVectorName"]
+        assert create_calls, f"expected CreateVectorName call, got {[c[0] for c in captured]}"
+        _method, request, deadline = create_calls[0]
+        assert request.timeout == 66
+        assert deadline == 66
+
 
 # ---------------------------------------------------------------------------
 # async
@@ -300,3 +370,52 @@ class TestAsyncGrpcTimeoutFallback:
         _method, request, deadline = upsert_calls[0]
         assert request.timeout == 33
         assert deadline == 33
+
+    @pytest.mark.asyncio
+    async def test_create_collection_propagates_global_timeout(self):
+        from qdrant_client import models
+
+        client = AsyncQdrantClient(
+            prefer_grpc=True, check_compatibility=False, timeout=77
+        )
+        remote = client._client
+        captured = _patch_stub_pool(remote, async_mode=True)
+
+        try:
+            await client.create_collection(
+                collection_name="test",
+                vectors_config=models.VectorParams(
+                    size=4, distance=models.Distance.COSINE
+                ),
+            )
+        except Exception:
+            pass
+
+        create_calls = [c for c in captured if c[0] == "Create"]
+        assert create_calls, f"expected Create call, got {[c[0] for c in captured]}"
+        _method, request, deadline = create_calls[0]
+        assert request.timeout == 77
+        assert deadline == 77
+
+    @pytest.mark.asyncio
+    async def test_create_payload_index_propagates_global_timeout(self):
+        client = AsyncQdrantClient(
+            prefer_grpc=True, check_compatibility=False, timeout=88
+        )
+        remote = client._client
+        captured = _patch_stub_pool(remote, async_mode=True)
+
+        try:
+            await client.create_payload_index(
+                collection_name="test",
+                field_name="my_field",
+                field_schema="keyword",
+            )
+        except Exception:
+            pass
+
+        create_calls = [c for c in captured if c[0] == "CreateFieldIndex"]
+        assert create_calls, f"expected CreateFieldIndex call, got {[c[0] for c in captured]}"
+        _method, request, deadline = create_calls[0]
+        assert request.timeout == 88
+        assert deadline == 88
