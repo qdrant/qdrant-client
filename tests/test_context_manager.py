@@ -50,6 +50,17 @@ class TestSyncContextManagerLocal:
             client.close()
         assert client._client.closed is True
 
+    def test_pre_closed_client_safe_through_context(self):
+        """close() before the with block is idempotent through __enter__ and __exit__."""
+        client = QdrantClient(":memory:")
+        client.close()
+        assert client._client.closed is True
+        with client:
+            pass
+        assert client._client.closed is True
+        # close() after the block must still be a no-op.
+        client.close()
+
 
 class TestSyncContextManagerRemote:
     """`with QdrantRemote(...) as c:` with the gRPC + REST close paths stubbed."""
@@ -120,6 +131,18 @@ class TestAsyncContextManagerLocal:
             assert client._client.closed is True
             await client.close()
         assert client._client.closed is True
+
+    @pytest.mark.asyncio
+    async def test_pre_closed_client_safe_through_context(self):
+        """await close() before the async with block is idempotent through __aenter__ and __aexit__."""
+        client = AsyncQdrantClient(":memory:")
+        await client.close()
+        assert client._client.closed is True
+        async with client:
+            pass
+        assert client._client.closed is True
+        # close() after the block must still be a no-op.
+        await client.close()
 
 
 class TestAsyncContextManagerRemote:

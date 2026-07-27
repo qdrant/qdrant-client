@@ -34,6 +34,7 @@ if grep -q "async def close(self, grpc_grace: float | None = None, \*\*kwargs: A
     if ! grep -q "async def __aenter__" async_qdrant_client.py; then
         python3 - <<'PY'
 import pathlib
+import sys
 p = pathlib.Path("async_qdrant_client.py")
 text = p.read_text()
 needle = '    async def close(self, grpc_grace: float | None = None, **kwargs: Any) -> None:\n        """Closes the connection to Qdrant\n\n        Args:\n            grpc_grace: Grace period for gRPC connection close. Default: None\n        """\n        if hasattr(self, "_client"):\n            await self._client.close(grpc_grace=grpc_grace, **kwargs)\n'
@@ -42,7 +43,10 @@ if needle in text:
     p.write_text(text.replace(needle, inject, 1))
     print("regen: injected __aenter__/__aexit__ into async_qdrant_client.py")
 else:
-    print("regen: async_qdrant_client.py close() signature changed; __aenter__/__aexit__ not re-injected (manual fix required)")
+    # Fail loudly so the regenerated async client is never shipped
+    # without __aenter__/__aexit__ after a close() signature change.
+    print("regen: async_qdrant_client.py close() signature changed; __aenter__/__aexit__ not re-injected (manual fix required)", file=sys.stderr)
+    sys.exit(1)
 PY
     fi
 fi
