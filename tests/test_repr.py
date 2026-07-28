@@ -19,10 +19,10 @@ class TestQdrantClientRepr:
         r = repr(client)
         assert r.startswith("<QdrantClient mode=local location=':memory:'>")
 
-    def test_local_path(self):
-        client = QdrantClient(path="/tmp/qdrant")
+    def test_local_path(self, tmp_path):
+        client = QdrantClient(path=str(tmp_path / "qdrant"))
         r = repr(client)
-        assert r.startswith("<QdrantClient mode=local location='/tmp/qdrant'>")
+        assert r.startswith(f"<QdrantClient mode=local location='{tmp_path / 'qdrant'}'>")
 
     def test_remote_default(self):
         client = QdrantClient("localhost", port=6333, prefer_grpc=True)
@@ -82,12 +82,12 @@ class TestQdrantLocalRepr:
         r = repr(local)
         assert r == "<QdrantLocal location=':memory:'>"
 
-    def test_path(self):
+    def test_path(self, tmp_path):
         from qdrant_client.local.qdrant_local import QdrantLocal
 
-        local = QdrantLocal("/tmp/qdrant_storage")
+        local = QdrantLocal(str(tmp_path / "qdrant_storage"))
         r = repr(local)
-        assert r == "<QdrantLocal location='/tmp/qdrant_storage'>"
+        assert r == f"<QdrantLocal location='{tmp_path / 'qdrant_storage'}'>"
 
 
 class TestAsyncQdrantClientRepr:
@@ -98,10 +98,10 @@ class TestAsyncQdrantClientRepr:
         r = repr(client)
         assert r.startswith("<AsyncQdrantClient mode=local location=':memory:'>")
 
-    def test_local_path(self):
-        client = AsyncQdrantClient(path="/tmp/qdrant")
+    def test_local_path(self, tmp_path):
+        client = AsyncQdrantClient(path=str(tmp_path / "qdrant"))
         r = repr(client)
-        assert r.startswith("<AsyncQdrantClient mode=local location='/tmp/qdrant'>")
+        assert r.startswith(f"<AsyncQdrantClient mode=local location='{tmp_path / 'qdrant'}'>")
 
     def test_remote(self):
         client = AsyncQdrantClient("localhost", port=6333, prefer_grpc=True)
@@ -147,12 +147,12 @@ class TestAsyncQdrantLocalRepr:
         r = repr(local)
         assert r == "<AsyncQdrantLocal location=':memory:'>"
 
-    def test_path(self):
+    def test_path(self, tmp_path):
         from qdrant_client.local.async_qdrant_local import AsyncQdrantLocal
 
-        local = AsyncQdrantLocal("/tmp/qdrant_storage")
+        local = AsyncQdrantLocal(str(tmp_path / "qdrant_storage"))
         r = repr(local)
-        assert r == "<AsyncQdrantLocal location='/tmp/qdrant_storage'>"
+        assert r == f"<AsyncQdrantLocal location='{tmp_path / 'qdrant_storage'}'>"
 
 
 class TestReprIsStr:
