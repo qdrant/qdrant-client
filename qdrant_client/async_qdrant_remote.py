@@ -261,6 +261,12 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             )
         self._closed = True
 
+    def __repr__(self) -> str:
+        return (
+            f"<AsyncQdrantRemote scheme={self._scheme} host={self._host!r} "
+            f"port={self._port} prefer_grpc={self._prefer_grpc}>"
+        )
+
     @staticmethod
     def _parse_url(url: str) -> tuple[str | None, str, int | None, str | None]:
         parse_result: Url = parse_url(url)
