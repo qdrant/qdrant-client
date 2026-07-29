@@ -89,6 +89,11 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         except TypeError:
             pass
 
+    def health_check(self) -> bool:
+        """Local mode is in-process. ``health_check`` returns True while the
+        client is open and False after :py:meth:`close` has been called."""
+        return not self._closed
+
     def _load(self) -> None:
         deprecated_config_fields = ("init_from",)
         if not self.persistent:
