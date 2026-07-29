@@ -261,6 +261,17 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             )
         self._closed = True
 
+    async def qdrant_version(self) -> str:
+        """Return the Qdrant server's version string (e.g. ``"1.10.0"``).
+        Awaits the REST ``/`` endpoint via the existing async service
+        API binding. On any failure (timeout, connection refused, non-2xx,
+        API error), returns ``"<unknown>"`` rather than raising."""
+        try:
+            root = await self.http.service_api.root()
+            return root.version
+        except Exception:
+            return "<unknown>"
+
     @staticmethod
     def _parse_url(url: str) -> tuple[str | None, str, int | None, str | None]:
         parse_result: Url = parse_url(url)

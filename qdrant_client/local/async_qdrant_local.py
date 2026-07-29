@@ -89,6 +89,15 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         except TypeError:
             pass
 
+    def qdrant_version(self) -> str:
+        """Local mode has no server, so return the qdrant-client library
+        version. On any failure (e.g. metadata missing in an unusual
+        install), returns ``"<unknown>"``."""
+        try:
+            return importlib.metadata.version("qdrant-client")
+        except Exception:
+            return "<unknown>"
+
     def _load(self) -> None:
         deprecated_config_fields = ("init_from",)
         if not self.persistent:
