@@ -91,6 +91,16 @@ class QdrantLocal(QdrantBase):
             # QdrantLocal instance
             pass
 
+    def server_info(self) -> rest_models.VersionInfo:
+        """Local mode has no server, so return a synthetic ``VersionInfo``
+        with ``title="qdrant-client (local mode)"`` and the
+        qdrant-client library version. Never fails."""
+        return rest_models.VersionInfo(
+            title="qdrant-client (local mode)",
+            version=importlib.metadata.version("qdrant-client"),
+            commit=None,
+        )
+
     def _load(self) -> None:
         deprecated_config_fields = ("init_from",)
 

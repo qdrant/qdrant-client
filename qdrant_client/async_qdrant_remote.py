@@ -261,6 +261,18 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             )
         self._closed = True
 
+    async def server_info(self) -> types.VersionInfo | None:
+        """Return the Qdrant server's full ``VersionInfo`` model (with
+        ``title``, ``version``, and ``commit``). Awaits the REST ``/``
+        endpoint via the existing async service API binding.
+
+        On any failure (timeout, connection refused, non-2xx, API
+        error), returns ``None`` rather than raising."""
+        try:
+            return await self.http.service_api.root()
+        except Exception:
+            return None
+
     @staticmethod
     def _parse_url(url: str) -> tuple[str | None, str, int | None, str | None]:
         parse_result: Url = parse_url(url)
