@@ -1695,6 +1695,7 @@ class QdrantClient(QdrantFastembedMixin):
         timeout: int | None = None,
         strict_mode_config: types.StrictModeConfig | None = None,
         metadata: types.Payload | None = None,
+        payload: types.PayloadStorageParams | None = None,
         **kwargs: Any,
     ) -> bool:
         """Create empty collection with given parameters
@@ -1741,6 +1742,9 @@ class QdrantClient(QdrantFastembedMixin):
                 If timeout is reached - request will return with service error.
             strict_mode_config: Configure limitations for the collection, such as max size, rate limits, etc.
             metadata: Arbitrary JSON-like metadata for the collection
+            payload:
+                Configuration of the payload storage, e.g. the memory placement of the payload.
+                Overrides the deprecated `on_disk_payload` flag if both are set.
 
         Returns:
             Operation result
@@ -1763,6 +1767,7 @@ class QdrantClient(QdrantFastembedMixin):
             sparse_vectors_config=sparse_vectors_config,
             strict_mode_config=strict_mode_config,
             metadata=metadata,
+            payload=payload,
             **kwargs,
         )
 
@@ -1785,6 +1790,7 @@ class QdrantClient(QdrantFastembedMixin):
         timeout: int | None = None,
         strict_mode_config: types.StrictModeConfig | None = None,
         metadata: types.Payload | None = None,
+        payload: types.PayloadStorageParams | None = None,
         **kwargs: Any,
     ) -> bool:
         """Delete and create empty collection with given parameters
@@ -1831,6 +1837,9 @@ class QdrantClient(QdrantFastembedMixin):
                 If timeout is reached - request will return with service error.
             strict_mode_config: Configure limitations for the collection, such as max size, rate limits, etc.
             metadata: Arbitrary JSON metadata for the collection
+            payload:
+                Configuration of the payload storage, e.g. the memory placement of the payload.
+                Overrides the deprecated `on_disk_payload` flag if both are set.
 
         Returns:
             Operation result
@@ -1860,6 +1869,7 @@ class QdrantClient(QdrantFastembedMixin):
             sparse_vectors_config=sparse_vectors_config,
             strict_mode_config=strict_mode_config,
             metadata=metadata,
+            payload=payload,
             **kwargs,
         )
 

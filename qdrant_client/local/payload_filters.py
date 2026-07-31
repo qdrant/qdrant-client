@@ -8,6 +8,7 @@ from qdrant_client.http import models
 from qdrant_client.local import datetime_utils
 from qdrant_client.local.geo import boolean_point_in_polygon, geo_distance
 from qdrant_client.local.payload_value_extractor import value_by_key
+from qdrant_client.local.siphash import point_id_slice
 from qdrant_client.conversions import common_types as types
 
 
@@ -167,6 +168,16 @@ def check_match(condition: models.Match, value: Any) -> bool:
         return isinstance(value, str) and condition.text in value
     if isinstance(condition, models.MatchTextAny):
         return isinstance(value, str) and any(word in value for word in condition.text_any.split())
+    if isinstance(condition, models.MatchPhrase):
+        # Same approximation as `MatchText` above: on a field without a text index the server
+        # falls back to a substring scan, which this reproduces exactly. A phrase-enabled text
+        # index makes the server tokenize and lowercase instead, and local mode builds no
+        # indexes, so it cannot reproduce that.
+        return isinstance(value, str) and condition.phrase in value
+    if isinstance(condition, models.MatchPrefix):
+        # byte-wise and case-sensitive, like exact keyword matching. Non-string values never
+        # match, not even against an empty prefix.
+        return isinstance(value, str) and value.startswith(condition.prefix)
     if isinstance(condition, models.MatchAny):
         return any(values_match(value, v) for v in condition.any)
     if isinstance(condition, models.MatchExcept):
@@ -202,6 +213,16 @@ def check_condition(
         ids = [str(id_) if isinstance(id_, UUID) else id_ for id_ in condition.has_id]
         if point_id in ids:
             return True
+    elif isinstance(condition, models.SliceCondition):
+        total, index = condition.slice.total, condition.slice.index
+        if total < 1:
+            raise ValueError(f"Slice total must be >= 1, got {total}")
+        if not 0 <= index < total:
+            raise ValueError(f"Slice index must be in 0..{total}, got {index}")
+        if isinstance(point_id, int) and point_id < 0:
+            # sentinel id used while evaluating nested filters, it belongs to no slice
+            return False
+        return point_id_slice(point_id, total) == index
     elif isinstance(condition, models.HasVectorCondition):
         if condition.has_vector in has_vector and has_vector[condition.has_vector]:
             return True

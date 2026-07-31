@@ -96,7 +96,11 @@ class BinaryQuantization(BaseModel, extra="forbid"):
 
 
 class BinaryQuantizationConfig(BaseModel, extra="forbid"):
-    always_ram: Optional[bool] = Field(default=None, description="")
+    always_ram: Optional[bool] = Field(default=None, description="Deprecated: use `memory` instead.")
+    memory: Optional["Memory"] = Field(
+        default=None,
+        description="Memory placement of quantized vectors. Overrides the deprecated `always_ram` flag if both are set. Default: follow the memory placement of the original vector storage.",
+    )
     encoding: Optional["BinaryQuantizationEncoding"] = Field(default=None, description="")
     query_encoding: Optional["BinaryQuantizationQueryEncoding"] = Field(
         default=None,
@@ -136,7 +140,7 @@ class Bm25Config(BaseModel, extra="forbid"):
     tokenizer: Optional["TokenizerType"] = Field(default=None, description="Configuration of the local bm25 models.")
     language: Optional[str] = Field(
         default=None,
-        description="Defines which language to use for text preprocessing. This parameter is used to construct default stopwords filter and stemmer. To disable language-specific processing, set this to `'language': 'none'`. If not specified, English is assumed.",
+        description="Defines which language to use for text preprocessing. This parameter is used to construct default stopwords filter and stemmer. To disable language-specific processing, set `stemmer` to `{'type': 'none'}` and configure an empty stopword set. The legacy `'language': 'none'` hack is deprecated and may be rejected in a future release. If not specified, English is assumed.",
     )
     lowercase: Optional[bool] = Field(
         default=None, description="Lowercase the text before tokenization. Default is `true`."
@@ -165,7 +169,13 @@ class Bm25Config(BaseModel, extra="forbid"):
 
 class BoolIndexParams(BaseModel, extra="forbid"):
     type: "BoolIndexType" = Field(..., description="")
-    on_disk: Optional[bool] = Field(default=None, description="If true, store the index on disk. Default: false.")
+    on_disk: Optional[bool] = Field(
+        default=None, description="Deprecated: use `memory` instead. If true, store the index on disk. Default: false."
+    )
+    memory: Optional["Memory"] = Field(
+        default=None,
+        description="Memory placement of the index. Overrides the deprecated `on_disk` flag if both are set. Default: `pinned` (`cold` if `on_disk` is set to true).",
+    )
     enable_hnsw: Optional[bool] = Field(
         default=None,
         description="Enable HNSW graph building for this payload field. If true, builds additional HNSW links (Need payload_m &gt; 0). Default: true.",
@@ -351,8 +361,9 @@ class CollectionParams(BaseModel):
     )
     on_disk_payload: Optional[bool] = Field(
         default=True,
-        description="If true - point&#x27;s payload will not be stored in memory. It will be read from the disk every time it is requested. This setting saves RAM by (slightly) increasing the response time. Note: those payload values that are involved in filtering and are indexed - remain in RAM.  Default: true",
+        description="Deprecated: use `payload.memory` instead. If true - point&#x27;s payload will not be stored in memory. It will be read from the disk every time it is requested. This setting saves RAM by (slightly) increasing the response time. Note: those payload values that are involved in filtering and are indexed - remain in RAM.  Default: true",
     )
+    payload: Optional["PayloadStorageParams"] = Field(default=None, description="Configuration of the payload storage")
     sparse_vectors: Optional[Dict[str, "SparseVectorParams"]] = Field(
         default=None, description="Configuration of the sparse vector storage"
     )
@@ -372,7 +383,10 @@ class CollectionParamsDiff(BaseModel, extra="forbid"):
     )
     on_disk_payload: Optional[bool] = Field(
         default=None,
-        description="If true - point&#x27;s payload will not be stored in memory. It will be read from the disk every time it is requested. This setting saves RAM by (slightly) increasing the response time. Note: those payload values that are involved in filtering and are indexed - remain in RAM.",
+        description="Deprecated: use `payload.memory` instead. If true - point&#x27;s payload will not be stored in memory. It will be read from the disk every time it is requested. This setting saves RAM by (slightly) increasing the response time. Note: those payload values that are involved in filtering and are indexed - remain in RAM.",
+    )
+    payload: Optional["PayloadStorageParams"] = Field(
+        default=None, description="Update params of the payload storage. If none - it is left unchanged."
     )
 
 
@@ -466,11 +480,6 @@ class ConsensusThreadStatusOneOf2(BaseModel):
     err: str = Field(..., description="")
 
 
-class ContextExamplePair(BaseModel, extra="forbid"):
-    positive: "RecommendExample" = Field(..., description="")
-    negative: "RecommendExample" = Field(..., description="")
-
-
 class ContextPair(BaseModel, extra="forbid"):
     positive: "VectorInput" = Field(..., description="")
     negative: "VectorInput" = Field(..., description="")
@@ -550,8 +559,9 @@ class CreateCollection(BaseModel, extra="forbid"):
     )
     on_disk_payload: Optional[bool] = Field(
         default=None,
-        description="If true - point&#x27;s payload will not be stored in memory. It will be read from the disk every time it is requested. This setting saves RAM by (slightly) increasing the response time. Note: those payload values that are involved in filtering and are indexed - remain in RAM.  Default: true",
+        description="Deprecated: use `payload.memory` instead. If true - point&#x27;s payload will not be stored in memory. It will be read from the disk every time it is requested. This setting saves RAM by (slightly) increasing the response time. Note: those payload values that are involved in filtering and are indexed - remain in RAM.  Default: true",
     )
+    payload: Optional["PayloadStorageParams"] = Field(default=None, description="Configuration of the payload storage")
     hnsw_config: Optional["HnswConfigDiff"] = Field(
         default=None,
         description="Custom params for HNSW index. If none - values from service configuration file are used.",
@@ -609,6 +619,7 @@ class Datatype(str, Enum):
     FLOAT32 = "float32"
     UINT8 = "uint8"
     FLOAT16 = "float16"
+    TURBO4 = "turbo4"
 
 
 class DatetimeExpression(BaseModel, extra="forbid"):
@@ -621,7 +632,13 @@ class DatetimeIndexParams(BaseModel, extra="forbid"):
         default=None,
         description="If true - use this key to organize storage of the collection data. This option assumes that this key will be used in majority of filtered requests.",
     )
-    on_disk: Optional[bool] = Field(default=None, description="If true, store the index on disk. Default: false.")
+    on_disk: Optional[bool] = Field(
+        default=None, description="Deprecated: use `memory` instead. If true, store the index on disk. Default: false."
+    )
+    memory: Optional["Memory"] = Field(
+        default=None,
+        description="Memory placement of the index. Overrides the deprecated `on_disk` flag if both are set. Default: `pinned` (`cold` if `on_disk` is set to true).",
+    )
     enable_hnsw: Optional[bool] = Field(
         default=None,
         description="Enable HNSW graph building for this payload field. If true, builds additional HNSW links (Need payload_m &gt; 0). Default: true.",
@@ -732,7 +749,7 @@ class DenseVectorConfig(BaseModel, extra="forbid"):
         default=None, description="Configuration for multi-vector points (e.g., ColBERT)"
     )
     datatype: Optional["VectorStorageDatatype"] = Field(
-        default=None, description="Element storage type (Float32, Float16, Uint8)"
+        default=None, description="Element storage type (Float32, Float16, Uint8, Turbo4)"
     )
 
 
@@ -753,6 +770,10 @@ class Disabled(str, Enum):
     DISABLED = "Disabled"
 
 
+class DisabledStemmerParams(BaseModel, extra="forbid"):
+    type: "NoStemmer" = Field(..., description="")
+
+
 class DiscoverInput(BaseModel, extra="forbid"):
     target: "VectorInput" = Field(..., description="")
     context: Union[List["ContextPair"], "ContextPair"] = Field(
@@ -762,50 +783,6 @@ class DiscoverInput(BaseModel, extra="forbid"):
 
 class DiscoverQuery(BaseModel, extra="forbid"):
     discover: "DiscoverInput" = Field(..., description="")
-
-
-class DiscoverRequest(BaseModel, extra="forbid"):
-    """
-    Use context and a target to find the most similar points, constrained by the context.
-    """
-
-    shard_key: Optional["ShardKeySelector"] = Field(
-        default=None,
-        description="Specify in which shards to look for the points, if not specified - look in all shards",
-    )
-    target: Optional["RecommendExample"] = Field(
-        default=None,
-        description="Look for vectors closest to this.  When using the target (with or without context), the integer part of the score represents the rank with respect to the context, while the decimal part of the score relates to the distance to the target.",
-    )
-    context: Optional[List["ContextExamplePair"]] = Field(
-        default=None,
-        description="Pairs of { positive, negative } examples to constrain the search.  When using only the context (without a target), a special search - called context search - is performed where pairs of points are used to generate a loss that guides the search towards the zone where most positive examples overlap. This means that the score minimizes the scenario of finding a point closer to a negative than to a positive part of a pair.  Since the score of a context relates to loss, the maximum score a point can get is 0.0, and it becomes normal that many points can have a score of 0.0.  For discovery search (when including a target), the context part of the score for each pair is calculated +1 if the point is closer to a positive than to a negative part of a pair, and -1 otherwise.",
-    )
-    filter: Optional["Filter"] = Field(default=None, description="Look only for points which satisfies this conditions")
-    params: Optional["SearchParams"] = Field(default=None, description="Additional search params")
-    limit: int = Field(..., description="Max number of result to return")
-    offset: Optional[int] = Field(
-        default=None,
-        description="Offset of the first result to return. May be used to paginate results. Note: large offset values may cause performance issues.",
-    )
-    with_payload: Optional["WithPayloadInterface"] = Field(
-        default=None, description="Select which payload to return with the response. Default is false."
-    )
-    with_vector: Optional["WithVector"] = Field(
-        default=None, description="Options for specifying which vectors to include into response. Default is false."
-    )
-    using: Optional["UsingVector"] = Field(
-        default=None,
-        description="Define which vector to use for recommendation, if not specified - try to use default vector",
-    )
-    lookup_from: Optional["LookupLocation"] = Field(
-        default=None,
-        description="The location used to lookup vectors. If not specified - use current collection. Note: the other collection should have the same vector size as the current collection",
-    )
-
-
-class DiscoverRequestBatch(BaseModel, extra="forbid"):
-    searches: List["DiscoverRequest"] = Field(..., description="")
 
 
 class Distance(str, Enum):
@@ -978,8 +955,28 @@ class FeatureFlags(BaseModel):
         description="Use appendable quantization in appendable plain segments.  Enabled by default in Qdrant 1.16.0.",
     )
     single_file_mmap_vector_storage: Optional[bool] = Field(
+        default=True,
+        description="Use single-file mmap in-ram vector storage (InRamMmap)  Enabled by default in Qdrant 1.18.3+",
+    )
+    async_payload_storage: Optional[bool] = Field(
+        default=True,
+        description="Allow the io_uring-based payload storage implementation. When disabled, io_uring payload storage is *never* used. When enabled, payload storage backend is decided based on `storage.performance.io_uring` option and payload storage type.",
+    )
+    write_segment_manifest: Optional[bool] = Field(
         default=False,
-        description="Use single-file mmap in-ram vector storage (InRamMmap)  Enabled by default in Qdrant 1.17.1+",
+        description="Write a segment manifest (`segments_manifest.json`, next to the `segments/` directory) listing the shard&#x27;s segments and their state, so out-of-process readers can discover segments without scanning the filesystem.",
+    )
+    append_only_mutations: Optional[bool] = Field(
+        default=False,
+        description="Build new segments in append-only mode: in-place point mutations become clone-and-tombstone appends instead. Intended for testing the append-only storage path.",
+    )
+    compact_bitmask: Optional[bool] = Field(
+        default=False,
+        description="Persist write-once bitmasks in the compact `StoredBitmask` format instead of raw dense bitslices. Only gates writing: both formats are always readable.",
+    )
+    serverless_compatible: Optional[bool] = Field(
+        default=False,
+        description="Serverless-compatible deployment mode. Automatically enables [`Self::write_segment_manifest`], [`Self::append_only_mutations`] and [`Self::compact_bitmask`].  Note that this will only be applied when passed into [`init_feature_flags`].",
     )
 
 
@@ -1036,7 +1033,13 @@ class FloatIndexParams(BaseModel, extra="forbid"):
         default=None,
         description="If true - use this key to organize storage of the collection data. This option assumes that this key will be used in majority of filtered requests.",
     )
-    on_disk: Optional[bool] = Field(default=None, description="If true, store the index on disk. Default: false.")
+    on_disk: Optional[bool] = Field(
+        default=None, description="Deprecated: use `memory` instead. If true, store the index on disk. Default: false."
+    )
+    memory: Optional["Memory"] = Field(
+        default=None,
+        description="Memory placement of the index. Overrides the deprecated `on_disk` flag if both are set. Default: `pinned` (`cold` if `on_disk` is set to true).",
+    )
     enable_hnsw: Optional[bool] = Field(
         default=None,
         description="Enable HNSW graph building for this payload field. If true, builds additional HNSW links (Need payload_m &gt; 0). Default: true.",
@@ -1098,7 +1101,13 @@ class GeoDistanceParams(BaseModel, extra="forbid"):
 
 class GeoIndexParams(BaseModel, extra="forbid"):
     type: "GeoIndexType" = Field(..., description="")
-    on_disk: Optional[bool] = Field(default=None, description="If true, store the index on disk. Default: false.")
+    on_disk: Optional[bool] = Field(
+        default=None, description="Deprecated: use `memory` instead. If true, store the index on disk. Default: false."
+    )
+    memory: Optional["Memory"] = Field(
+        default=None,
+        description="Memory placement of the index. Overrides the deprecated `on_disk` flag if both are set. Default: `pinned` (`cold` if `on_disk` is set to true).",
+    )
     enable_hnsw: Optional[bool] = Field(
         default=None,
         description="Enable HNSW graph building for this payload field. If true, builds additional HNSW links (Need payload_m &gt; 0). Default: true.",
@@ -1227,7 +1236,11 @@ class HnswConfig(BaseModel):
     )
     on_disk: Optional[bool] = Field(
         default=None,
-        description="Store HNSW index on disk. If set to false, index will be stored in RAM. Default: false",
+        description="Deprecated: use `memory` instead. Store HNSW index on disk. If set to false, index will be stored in RAM. Default: false",
+    )
+    memory: Optional["Memory"] = Field(
+        default=None,
+        description="Memory placement of the HNSW graph. Overrides the deprecated `on_disk` flag if both are set. Default: `cached` (`cold` if `on_disk` is set to true).",
     )
     payload_m: Optional[int] = Field(
         default=None,
@@ -1258,7 +1271,11 @@ class HnswConfigDiff(BaseModel, extra="forbid"):
     )
     on_disk: Optional[bool] = Field(
         default=None,
-        description="Store HNSW index on disk. If set to false, the index will be stored in RAM. Default: false",
+        description="Deprecated: use `memory` instead. Store HNSW index on disk. If set to false, the index will be stored in RAM. Default: false",
+    )
+    memory: Optional["Memory"] = Field(
+        default=None,
+        description="Memory placement of the HNSW graph. Overrides the deprecated `on_disk` flag if both are set. Default: `cached` (`cold` if `on_disk` is set to true).",
     )
     payload_m: Optional[int] = Field(
         default=None,
@@ -1275,6 +1292,25 @@ class HnswGlobalConfig(BaseModel):
         default=0.3,
         description="Enable HNSW healing if the ratio of missing points is no more than this value. To disable healing completely, set this value to `0.0`.",
     )
+
+
+class IdfCorpusParams(BaseModel, extra="forbid"):
+    """
+    IDF statistics computed over the points matching a corpus filter.
+    """
+
+    corpus: "Filter" = Field(..., description="IDF statistics computed over the points matching a corpus filter.")
+
+
+class IdfScope(str, Enum):
+    """
+    Named IDF scope without a corpus filter.
+    """
+
+    def __str__(self) -> str:
+        return str(self.value)
+
+    GLOBAL = "global"
 
 
 class Image(BaseModel, extra="forbid"):
@@ -1423,7 +1459,7 @@ class InlineResponse20019(BaseModel):
     usage: Optional["Usage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
-    result: Optional[List["ScoredPoint"]] = Field(default=None, description="")
+    result: Optional["CountResult"] = Field(default=None, description="")
 
 
 class InlineResponse2002(BaseModel):
@@ -1437,52 +1473,38 @@ class InlineResponse20020(BaseModel):
     usage: Optional["Usage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
-    result: Optional[List[List["ScoredPoint"]]] = Field(default=None, description="")
+    result: Optional["FacetResponse"] = Field(default=None, description="")
 
 
 class InlineResponse20021(BaseModel):
     usage: Optional["Usage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
-    result: Optional["GroupsResult"] = Field(default=None, description="")
+    result: Optional["QueryResponse"] = Field(default=None, description="")
 
 
 class InlineResponse20022(BaseModel):
     usage: Optional["Usage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
-    result: Optional["CountResult"] = Field(default=None, description="")
+    result: Optional[List["QueryResponse"]] = Field(default=None, description="")
 
 
 class InlineResponse20023(BaseModel):
     usage: Optional["Usage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
-    result: Optional["FacetResponse"] = Field(default=None, description="")
+    result: Optional["GroupsResult"] = Field(default=None, description="")
 
 
 class InlineResponse20024(BaseModel):
     usage: Optional["Usage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
-    result: Optional["QueryResponse"] = Field(default=None, description="")
-
-
-class InlineResponse20025(BaseModel):
-    usage: Optional["Usage"] = Field(default=None, description="")
-    time: Optional[float] = Field(default=None, description="Time spent to process this request")
-    status: Optional[str] = Field(default=None, description="")
-    result: Optional[List["QueryResponse"]] = Field(default=None, description="")
-
-
-class InlineResponse20026(BaseModel):
-    usage: Optional["Usage"] = Field(default=None, description="")
-    time: Optional[float] = Field(default=None, description="Time spent to process this request")
-    status: Optional[str] = Field(default=None, description="")
     result: Optional["SearchMatrixPairsResponse"] = Field(default=None, description="")
 
 
-class InlineResponse20027(BaseModel):
+class InlineResponse20025(BaseModel):
     usage: Optional["Usage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
@@ -1552,7 +1574,11 @@ class IntegerIndexParams(BaseModel, extra="forbid"):
         description="If true - use this key to organize storage of the collection data. This option assumes that this key will be used in majority of filtered requests. Default is false.",
     )
     on_disk: Optional[bool] = Field(
-        default=None, description="If true, store the index on disk. Default: false. Default is false."
+        default=None, description="Deprecated: use `memory` instead. If true, store the index on disk. Default: false."
+    )
+    memory: Optional["Memory"] = Field(
+        default=None,
+        description="Memory placement of the index. Overrides the deprecated `on_disk` flag if both are set. Default: `pinned` (`cold` if `on_disk` is set to true).",
     )
     enable_hnsw: Optional[bool] = Field(
         default=None,
@@ -1562,6 +1588,18 @@ class IntegerIndexParams(BaseModel, extra="forbid"):
 
 class IntegerIndexType(str, Enum):
     INTEGER = "integer"
+
+
+class IoBackend(str, Enum):
+    """
+    Universal I/O backend that is used to read files.  Decided when the component is opened based on `storage.performance.io_uring` option, component memory placement and kernel io_uring support.  Options:  * `Mmap` - Reads are served by the page cache through a memory mapping.  * `IoUring` - Reads are submitted to the kernel with io_uring.
+    """
+
+    def __str__(self) -> str:
+        return str(self.value)
+
+    MMAP = "mmap"
+    IO_URING = "io_uring"
 
 
 class IsEmptyCondition(BaseModel, extra="forbid"):
@@ -1585,10 +1623,20 @@ class KeywordIndexParams(BaseModel, extra="forbid"):
     is_tenant: Optional[bool] = Field(
         default=None, description="If true - used for tenant optimization. Default: false."
     )
-    on_disk: Optional[bool] = Field(default=None, description="If true, store the index on disk. Default: false.")
+    on_disk: Optional[bool] = Field(
+        default=None, description="Deprecated: use `memory` instead. If true, store the index on disk. Default: false."
+    )
+    memory: Optional["Memory"] = Field(
+        default=None,
+        description="Memory placement of the index. Overrides the deprecated `on_disk` flag if both are set. Default: `pinned` (`cold` if `on_disk` is set to true).",
+    )
     enable_hnsw: Optional[bool] = Field(
         default=None,
         description="Enable HNSW graph building for this payload field. If true, builds additional HNSW links (Need payload_m &gt; 0). Default: true.",
+    )
+    prefix: Optional[bool] = Field(
+        default=None,
+        description="If true, enable prefix matching (`match: { 'prefix': ... }`) on this field. Default: false.",
     )
 
 
@@ -1754,6 +1802,17 @@ class MatchPhrase(BaseModel, extra="forbid"):
     phrase: str = Field(..., description="Full-text phrase match of the string.")
 
 
+class MatchPrefix(BaseModel, extra="forbid"):
+    """
+    Match keyword values that start with the given string.  Byte-wise (hence, for valid UTF-8, character-wise) and case-sensitive, consistent with exact keyword matching. Served efficiently by a keyword index created with the `prefix` option.
+    """
+
+    prefix: str = Field(
+        ...,
+        description="Match keyword values that start with the given string.  Byte-wise (hence, for valid UTF-8, character-wise) and case-sensitive, consistent with exact keyword matching. Served efficiently by a keyword index created with the `prefix` option.",
+    )
+
+
 class MatchText(BaseModel, extra="forbid"):
     """
     Full-text match of the strings.
@@ -1780,6 +1839,19 @@ class MatchValue(BaseModel, extra="forbid"):
 
 class MaxOptimizationThreadsSetting(str, Enum):
     AUTO = "auto"
+
+
+class Memory(str, Enum):
+    """
+    Memory placement of a component&#x27;s data.  Data is always persisted on disk regardless of this setting; it only controls how the data is held in RAM.  Options:  * `Cold` - Data is not pre-loaded from disk to RAM. Preferred for rarely queried components or components larger than RAM size. First request might be slow, but data is cached with usage.  * `Cached` - Data is pre-loaded into disk-cache RAM on start. First request is fast, but data may be evicted if there is not enough memory and some other component&#x27;s data is used more frequently.  * `Pinned` - Data is loaded in RAM and never evicted. First request is fast, but the component must fit in RAM at all times. Recommended for frequently queried small components like quantized vectors or primary indexes.
+    """
+
+    def __str__(self) -> str:
+        return str(self.value)
+
+    COLD = "cold"
+    CACHED = "cached"
+    PINNED = "pinned"
 
 
 class MemoryTelemetry(BaseModel):
@@ -1873,24 +1945,6 @@ class NaiveFeedbackStrategyParams(BaseModel, extra="forbid"):
     c: float = Field(..., description="")
 
 
-class NamedSparseVector(BaseModel, extra="forbid"):
-    """
-    Sparse vector data with name
-    """
-
-    name: str = Field(..., description="Name of vector data")
-    vector: "SparseVector" = Field(..., description="Sparse vector data with name")
-
-
-class NamedVector(BaseModel, extra="forbid"):
-    """
-    Dense vector data with name
-    """
-
-    name: str = Field(..., description="Name of vector data")
-    vector: List[float] = Field(..., description="Vector data")
-
-
 class NearestQuery(BaseModel, extra="forbid"):
     nearest: "VectorInput" = Field(..., description="")
     mmr: Optional["Mmr"] = Field(
@@ -1914,6 +1968,17 @@ class Nested(BaseModel, extra="forbid"):
 
 class NestedCondition(BaseModel, extra="forbid"):
     nested: "Nested" = Field(..., description="")
+
+
+class NoStemmer(str, Enum):
+    """
+    Tag selecting the explicit 'no stemming' algorithm.
+    """
+
+    def __str__(self) -> str:
+        return str(self.value)
+
+    NONE = "none"
 
 
 class OperationDurationStatistics(BaseModel):
@@ -2019,7 +2084,7 @@ class OptimizersConfig(BaseModel):
     )
     prevent_unoptimized: Optional[bool] = Field(
         default=None,
-        description="If this option is set, service will try to prevent creation of large unoptimized segments. When enabled, updates may be blocked at request level if there are unoptimized segments larger than indexing threshold. Updates will be resumed when optimization is completed and segments are optimized below the threshold. Using this option may lead to increased delay between submitting an update and its application. Default is disabled.",
+        description="If enabled, the service will try to prevent the creation of large unoptimized segments. When enabled, new points written to segments larger than the indexing threshold are stored as 'deferred points': they are persisted in the WAL and segments, but excluded from read/search results until the corresponding segments are optimized (e.g. indexed, quantized, or moved to mmap storage). Update requests with `wait=true` will only return after the deferred points become visible, which may significantly increase the perceived latency between submitting an update and its completion. Update requests with `wait=false` are not affected. Default is disabled.",
     )
 
 
@@ -2054,7 +2119,7 @@ class OptimizersConfigDiff(BaseModel, extra="forbid"):
     )
     prevent_unoptimized: Optional[bool] = Field(
         default=None,
-        description="If this option is set, service will try to prevent creation of large unoptimized segments. When enabled, updates may be blocked at request level if there are unoptimized segments larger than indexing threshold. Updates will be resumed when optimization is completed and segments are optimized below the threshold. Using this option may lead to increased delay between submitting an update and its application. Default is disabled.",
+        description="If enabled, the service will try to prevent the creation of large unoptimized segments. When enabled, new points written to segments larger than the indexing threshold are stored as 'deferred points': they are persisted in the WAL and segments, but excluded from read/search results until the corresponding segments are optimized (e.g. indexed, quantized, or moved to mmap storage). Update requests with `wait=true` will only return after the deferred points become visible, which may significantly increase the perceived latency between submitting an update and its completion. Update requests with `wait=false` are not affected. Default is disabled.",
     )
 
 
@@ -2158,6 +2223,17 @@ class PayloadSelectorExclude(BaseModel, extra="forbid"):
 
 class PayloadSelectorInclude(BaseModel, extra="forbid"):
     include: List[str] = Field(..., description="Only include this payload keys")
+
+
+class PayloadStorageParams(BaseModel, extra="forbid"):
+    """
+    Params of the payload storage
+    """
+
+    memory: Optional["Memory"] = Field(
+        default=None,
+        description="Memory placement of the payload storage. Overrides the deprecated `on_disk_payload` flag if both are set. `pinned` is not supported for payload storage. Default: `cold` (`cached` if `on_disk_payload` is set to false).",
+    )
 
 
 class PayloadStorageTypeOneOf(BaseModel):
@@ -2293,7 +2369,11 @@ class ProductQuantization(BaseModel, extra="forbid"):
 
 class ProductQuantizationConfig(BaseModel, extra="forbid"):
     compression: "CompressionRatio" = Field(..., description="")
-    always_ram: Optional[bool] = Field(default=None, description="")
+    always_ram: Optional[bool] = Field(default=None, description="Deprecated: use `memory` instead.")
+    memory: Optional["Memory"] = Field(
+        default=None,
+        description="Memory placement of quantized vectors. Overrides the deprecated `always_ram` flag if both are set. Default: follow the memory placement of the original vector storage.",
+    )
 
 
 class ProgressTree(BaseModel):
@@ -2457,47 +2537,6 @@ class ReadConsistencyType(str, Enum):
     ALL = "all"
 
 
-class RecommendGroupsRequest(BaseModel, extra="forbid"):
-    shard_key: Optional["ShardKeySelector"] = Field(
-        default=None,
-        description="Specify in which shards to look for the points, if not specified - look in all shards",
-    )
-    positive: Optional[List["RecommendExample"]] = Field(default=[], description="Look for vectors closest to those")
-    negative: Optional[List["RecommendExample"]] = Field(default=[], description="Try to avoid vectors like this")
-    strategy: Optional["RecommendStrategy"] = Field(
-        default=None, description="How to use positive and negative examples to find the results"
-    )
-    filter: Optional["Filter"] = Field(default=None, description="Look only for points which satisfies this conditions")
-    params: Optional["SearchParams"] = Field(default=None, description="Additional search params")
-    with_payload: Optional["WithPayloadInterface"] = Field(
-        default=None, description="Select which payload to return with the response. Default is false."
-    )
-    with_vector: Optional["WithVector"] = Field(
-        default=None, description="Options for specifying which vectors to include into response. Default is false."
-    )
-    score_threshold: Optional[float] = Field(
-        default=None,
-        description="Define a minimal score threshold for the result. If defined, less similar results will not be returned. Score of the returned result might be higher or smaller than the threshold depending on the Distance function used. E.g. for cosine similarity only higher scores will be returned.",
-    )
-    using: Optional["UsingVector"] = Field(
-        default=None,
-        description="Define which vector to use for recommendation, if not specified - try to use default vector",
-    )
-    lookup_from: Optional["LookupLocation"] = Field(
-        default=None,
-        description="The location used to lookup vectors. If not specified - use current collection. Note: the other collection should have the same vector size as the current collection",
-    )
-    group_by: str = Field(
-        ...,
-        description="Payload field to group by, must be a string or number field. If the field contains more than 1 value, all values will be used for grouping. One point can be in multiple groups.",
-    )
-    group_size: int = Field(..., description="Maximum amount of points to return per group")
-    limit: int = Field(..., description="Maximum amount of groups to return")
-    with_lookup: Optional["WithLookupInterface"] = Field(
-        default=None, description="Look for points in another collection using the group ids"
-    )
-
-
 class RecommendInput(BaseModel, extra="forbid"):
     positive: Optional[List["VectorInput"]] = Field(
         default=None, description="Look for vectors closest to the vectors from these points"
@@ -2512,51 +2551,6 @@ class RecommendInput(BaseModel, extra="forbid"):
 
 class RecommendQuery(BaseModel, extra="forbid"):
     recommend: "RecommendInput" = Field(..., description="")
-
-
-class RecommendRequest(BaseModel, extra="forbid"):
-    """
-    Recommendation request. Provides positive and negative examples of the vectors, which can be ids of points that are already stored in the collection, raw vectors, or even ids and vectors combined.  Service should look for the points which are closer to positive examples and at the same time further to negative examples. The concrete way of how to compare negative and positive distances is up to the `strategy` chosen.
-    """
-
-    shard_key: Optional["ShardKeySelector"] = Field(
-        default=None,
-        description="Specify in which shards to look for the points, if not specified - look in all shards",
-    )
-    positive: Optional[List["RecommendExample"]] = Field(default=[], description="Look for vectors closest to those")
-    negative: Optional[List["RecommendExample"]] = Field(default=[], description="Try to avoid vectors like this")
-    strategy: Optional["RecommendStrategy"] = Field(
-        default=None, description="How to use positive and negative examples to find the results"
-    )
-    filter: Optional["Filter"] = Field(default=None, description="Look only for points which satisfies this conditions")
-    params: Optional["SearchParams"] = Field(default=None, description="Additional search params")
-    limit: int = Field(..., description="Max number of result to return")
-    offset: Optional[int] = Field(
-        default=None,
-        description="Offset of the first result to return. May be used to paginate results. Note: large offset values may cause performance issues.",
-    )
-    with_payload: Optional["WithPayloadInterface"] = Field(
-        default=None, description="Select which payload to return with the response. Default is false."
-    )
-    with_vector: Optional["WithVector"] = Field(
-        default=None, description="Options for specifying which vectors to include into response. Default is false."
-    )
-    score_threshold: Optional[float] = Field(
-        default=None,
-        description="Define a minimal score threshold for the result. If defined, less similar results will not be returned. Score of the returned result might be higher or smaller than the threshold depending on the Distance function used. E.g. for cosine similarity only higher scores will be returned.",
-    )
-    using: Optional["UsingVector"] = Field(
-        default=None,
-        description="Define which vector to use for recommendation, if not specified - try to use default vector",
-    )
-    lookup_from: Optional["LookupLocation"] = Field(
-        default=None,
-        description="The location used to lookup vectors. If not specified - use current collection. Note: the other collection should have the same vector size as the current collection",
-    )
-
-
-class RecommendRequestBatch(BaseModel, extra="forbid"):
-    searches: List["RecommendRequest"] = Field(..., description="")
 
 
 class RecommendStrategy(str, Enum):
@@ -2770,7 +2764,11 @@ class ScalarQuantizationConfig(BaseModel, extra="forbid"):
     )
     always_ram: Optional[bool] = Field(
         default=None,
-        description="If true - quantized vectors always will be stored in RAM, ignoring the config of main storage",
+        description="Deprecated: use `memory` instead. If true - quantized vectors always will be stored in RAM, ignoring the config of main storage",
+    )
+    memory: Optional["Memory"] = Field(
+        default=None,
+        description="Memory placement of quantized vectors. Overrides the deprecated `always_ram` flag if both are set. Default: follow the memory placement of the original vector storage.",
     )
 
 
@@ -2823,35 +2821,6 @@ class ScrollResult(BaseModel):
     points: List["Record"] = Field(..., description="List of retrieved points")
     next_page_offset: Optional["ExtendedPointId"] = Field(
         default=None, description="Offset which should be used to retrieve a next page result"
-    )
-
-
-class SearchGroupsRequest(BaseModel, extra="forbid"):
-    shard_key: Optional["ShardKeySelector"] = Field(
-        default=None,
-        description="Specify in which shards to look for the points, if not specified - look in all shards",
-    )
-    vector: "NamedVectorStruct" = Field(..., description="")
-    filter: Optional["Filter"] = Field(default=None, description="Look only for points which satisfies this conditions")
-    params: Optional["SearchParams"] = Field(default=None, description="Additional search params")
-    with_payload: Optional["WithPayloadInterface"] = Field(
-        default=None, description="Select which payload to return with the response. Default is false."
-    )
-    with_vector: Optional["WithVector"] = Field(
-        default=None, description="Options for specifying which vectors to include into response. Default is false."
-    )
-    score_threshold: Optional[float] = Field(
-        default=None,
-        description="Define a minimal score threshold for the result. If defined, less similar results will not be returned. Score of the returned result might be higher or smaller than the threshold depending on the Distance function used. E.g. for cosine similarity only higher scores will be returned.",
-    )
-    group_by: str = Field(
-        ...,
-        description="Payload field to group by, must be a string or number field. If the field contains more than 1 value, all values will be used for grouping. One point can be in multiple groups.",
-    )
-    group_size: int = Field(..., description="Maximum amount of points to return per group")
-    limit: int = Field(..., description="Maximum amount of groups to return")
-    with_lookup: Optional["WithLookupInterface"] = Field(
-        default=None, description="Look for points in another collection using the group ids"
     )
 
 
@@ -2911,42 +2880,10 @@ class SearchParams(BaseModel, extra="forbid"):
         description="If enabled, the engine will only perform search among indexed or small segments. Using this option prevents slow searches in case of delayed index, but does not guarantee that all uploaded vectors will be included in search results",
     )
     acorn: Optional["AcornSearchParams"] = Field(default=None, description="ACORN search params")
-
-
-class SearchRequest(BaseModel, extra="forbid"):
-    """
-    Search request. Holds all conditions and parameters for the search of most similar points by vector similarity given the filtering restrictions.
-    """
-
-    shard_key: Optional["ShardKeySelector"] = Field(
+    idf: Optional["IdfParams"] = Field(
         default=None,
-        description="Specify in which shards to look for the points, if not specified - look in all shards",
+        description="Which population sparse vector IDF statistics are computed over. By default (or with explicit `&quot;global&quot;`) statistics are collection-wide. Only applicable to sparse vectors with the IDF modifier enabled.",
     )
-    vector: "NamedVectorStruct" = Field(
-        ...,
-        description="Search request. Holds all conditions and parameters for the search of most similar points by vector similarity given the filtering restrictions.",
-    )
-    filter: Optional["Filter"] = Field(default=None, description="Look only for points which satisfies this conditions")
-    params: Optional["SearchParams"] = Field(default=None, description="Additional search params")
-    limit: int = Field(..., description="Max number of result to return")
-    offset: Optional[int] = Field(
-        default=None,
-        description="Offset of the first result to return. May be used to paginate results. Note: large offset values may cause performance issues.",
-    )
-    with_payload: Optional["WithPayloadInterface"] = Field(
-        default=None, description="Select which payload to return with the response. Default is false."
-    )
-    with_vector: Optional["WithVector"] = Field(
-        default=None, description="Options for specifying which vectors to include into response. Default is false."
-    )
-    score_threshold: Optional[float] = Field(
-        default=None,
-        description="Define a minimal score threshold for the result. If defined, less similar results will not be returned. Score of the returned result might be higher or smaller than the threshold depending on the Distance function used. E.g. for cosine similarity only higher scores will be returned.",
-    )
-
-
-class SearchRequestBatch(BaseModel, extra="forbid"):
-    searches: List["SearchRequest"] = Field(..., description="")
 
 
 class SearchThreadPoolTelemetry(BaseModel):
@@ -2990,6 +2927,10 @@ class SegmentInfo(BaseModel):
     is_appendable: bool = Field(..., description="Aggregated information about segment")
     index_schema: Dict[str, "PayloadIndexInfo"] = Field(..., description="Aggregated information about segment")
     vector_data: Dict[str, "VectorDataInfo"] = Field(..., description="Aggregated information about segment")
+    payload_storage_io_backend: Optional["IoBackend"] = Field(
+        default=None,
+        description="Universal I/O backend that payload storage reads files with. Absent if payload storage does not support configurable backends or only supports a single backend type.",
+    )
     deferred_internal_id: Optional[int] = Field(
         default=None,
         description="Internal ID from which points are deferred (hidden from reads). Only set for appendable segments.",
@@ -3150,6 +3091,26 @@ class ShardingMethod(str, Enum):
     CUSTOM = "custom"
 
 
+class Slice(BaseModel, extra="forbid"):
+    """
+    One of `total` disjoint deterministic slices of the id space.  A point belongs to the slice iff `hash(id) % total == index`, where `hash` is SipHash-2-4 with a zero key over the canonical id bytes: 8 little-endian bytes for numeric ids, the 16 RFC 4122 bytes for UUIDs. For a fixed `total`, slices `0..total` are disjoint and together cover all points; membership is uniform regardless of the id scheme and stable across queries, segments, platforms and Qdrant versions.  Slices with different `total` values are correlated (same hash, no salt): e.g. slice `0` of `total: 4` is a strict subset of slice `0` of `total: 2`. This keeps a smaller sample contained in a larger one.
+    """
+
+    total: int = Field(..., description="Total number of disjoint slices the id space is split into")
+    index: int = Field(..., description="Which slice to select, must be in `0..total`")
+
+
+class SliceCondition(BaseModel, extra="forbid"):
+    """
+    Select points that fall into one of `total` disjoint deterministic slices of the id space, for parallel scans and reproducible sampling.
+    """
+
+    slice: "Slice" = Field(
+        ...,
+        description="Select points that fall into one of `total` disjoint deterministic slices of the id space, for parallel scans and reproducible sampling.",
+    )
+
+
 class SnapshotDescription(BaseModel):
     name: str = Field(..., description="")
     creation_time: Optional[str] = Field(default=None, description="")
@@ -3238,6 +3199,10 @@ class SparseIndexConfig(BaseModel):
     datatype: Optional["VectorStorageDatatype"] = Field(
         default=None, description="Datatype used to store weights in the index."
     )
+    memory: Optional["Memory"] = Field(
+        default=None,
+        description="Requested memory placement of the index.  The structural decision is carried by `index_type`; this field additionally distinguishes `cold` from `cached` for the mmap index variant.",
+    )
 
 
 class SparseIndexParams(BaseModel, extra="forbid"):
@@ -3251,7 +3216,11 @@ class SparseIndexParams(BaseModel, extra="forbid"):
     )
     on_disk: Optional[bool] = Field(
         default=None,
-        description="Store index on disk. If set to false, the index will be stored in RAM. Default: false",
+        description="Deprecated: use `memory` instead. Store index on disk. If set to false, the index will be stored in RAM. Default: false",
+    )
+    memory: Optional["Memory"] = Field(
+        default=None,
+        description="Memory placement of the index. Overrides the deprecated `on_disk` flag if both are set. Default: `pinned` (`cold` if `on_disk` is set to true).",
     )
     datatype: Optional["Datatype"] = Field(
         default=None,
@@ -3375,8 +3344,14 @@ class SqrtExpression(BaseModel, extra="forbid"):
 
 class StartResharding(BaseModel, extra="forbid"):
     direction: "ReshardingDirection" = Field(..., description="")
-    peer_id: Optional[int] = Field(default=None, description="")
-    shard_key: Optional["ShardKey"] = Field(default=None, description="")
+    peer_id: Optional[int] = Field(
+        default=None,
+        description="Peer to create the new shard on, or to migrate points away from when scaling down. If not specified, the least loaded peer is picked when scaling up, a peer holding the removed shard when scaling down.",
+    )
+    shard_key: Optional["ShardKey"] = Field(
+        default=None,
+        description="Custom shard key to reshard, must already exist. If not specified, shards without a shard key are resharded.",
+    )
 
 
 class StartReshardingOperation(BaseModel, extra="forbid"):
@@ -3458,6 +3433,10 @@ class StrictModeConfig(BaseModel, extra="forbid"):
         default=None,
         description="Reject memory-consuming update operations (e.g. upsert, set payload) when the process resident memory exceeds this percentage of total system memory (or cgroup limit). Value in [1, 100]. Applied uniformly to external and internal (replication) traffic — rejection is deterministic so it does not cause replica divergence. Delete operations are not affected, so callers can still free memory.",
     )
+    max_disk_usage_percent: Optional[int] = Field(
+        default=None,
+        description="Reject disk-consuming update operations (e.g. upsert, set payload) when the filesystem hosting Qdrant storage is filled above this percentage of its total capacity. Value in [1, 100]. Applied uniformly to external and internal (replication) traffic — rejection is deterministic so it does not cause replica divergence. Delete operations are not affected, so callers can still free disk space. Free space is sampled with a small TTL cache; the gate may take a few seconds to react.",
+    )
 
 
 class StrictModeConfigOutput(BaseModel):
@@ -3509,6 +3488,10 @@ class StrictModeConfigOutput(BaseModel):
         default=None,
         description="Reject memory-consuming update operations when resident memory exceeds this percentage of total RAM (1-100)",
     )
+    max_disk_usage_percent: Optional[int] = Field(
+        default=None,
+        description="Reject disk-consuming update operations when the storage filesystem exceeds this percentage of total capacity (1-100)",
+    )
 
 
 class StrictModeMultivector(BaseModel, extra="forbid"):
@@ -3559,7 +3542,13 @@ class TextIndexParams(BaseModel, extra="forbid"):
         default=None,
         description="Ignore this set of tokens. Can select from predefined languages and/or provide a custom set.",
     )
-    on_disk: Optional[bool] = Field(default=None, description="If true, store the index on disk. Default: false.")
+    on_disk: Optional[bool] = Field(
+        default=None, description="Deprecated: use `memory` instead. If true, store the index on disk. Default: false."
+    )
+    memory: Optional["Memory"] = Field(
+        default=None,
+        description="Memory placement of the index. Overrides the deprecated `on_disk` flag if both are set. Default: `pinned` (`cold` if `on_disk` is set to true).",
+    )
     stemmer: Optional["StemmingAlgorithm"] = Field(
         default=None, description="Algorithm for stemming. Default: disabled."
     )
@@ -3621,7 +3610,11 @@ class TurboQuantBitSize(str, Enum):
 
 
 class TurboQuantQuantizationConfig(BaseModel, extra="forbid"):
-    always_ram: Optional[bool] = Field(default=None, description="")
+    always_ram: Optional[bool] = Field(default=None, description="Deprecated: use `memory` instead.")
+    memory: Optional["Memory"] = Field(
+        default=None,
+        description="Memory placement of quantized vectors. Overrides the deprecated `always_ram` flag if both are set. Default: follow the memory placement of the original vector storage.",
+    )
     bits: Optional["TurboQuantBitSize"] = Field(default=None, description="")
 
 
@@ -3659,7 +3652,7 @@ class UpdateCollection(BaseModel, extra="forbid"):
     )
     metadata: Optional["Payload"] = Field(
         default=None,
-        description="Metadata to update for the collection. If provided, this will merge with existing metadata. To remove metadata, set it to an empty object.",
+        description="Metadata to update for the collection. If provided, this will merge with existing metadata. Individual keys can be removed by setting their value to `null`.",
     )
 
 
@@ -3736,7 +3729,13 @@ class Usage(BaseModel):
 class UuidIndexParams(BaseModel, extra="forbid"):
     type: "UuidIndexType" = Field(..., description="")
     is_tenant: Optional[bool] = Field(default=None, description="If true - used for tenant optimization.")
-    on_disk: Optional[bool] = Field(default=None, description="If true, store the index on disk. Default: false.")
+    on_disk: Optional[bool] = Field(
+        default=None, description="Deprecated: use `memory` instead. If true, store the index on disk. Default: false."
+    )
+    memory: Optional["Memory"] = Field(
+        default=None,
+        description="Memory placement of the index. Overrides the deprecated `on_disk` flag if both are set. Default: `pinned` (`cold` if `on_disk` is set to true).",
+    )
     enable_hnsw: Optional[bool] = Field(
         default=None,
         description="Enable HNSW graph building for this payload field. If true, builds additional HNSW links (Need payload_m &gt; 0). Default: true.",
@@ -3782,6 +3781,10 @@ class VectorDataInfo(BaseModel):
     num_vectors: int = Field(..., description="")
     num_indexed_vectors: int = Field(..., description="")
     num_deleted_vectors: int = Field(..., description="")
+    io_backend: Optional["IoBackend"] = Field(
+        default=None,
+        description="Universal I/O backend that this vector storage reads files with. Absent if vector storage does not support configurable backends or only supports a single backend type.",
+    )
 
 
 class VectorIndexSearchesTelemetry(BaseModel):
@@ -3814,11 +3817,15 @@ class VectorParams(BaseModel, extra="forbid"):
     )
     on_disk: Optional[bool] = Field(
         default=None,
-        description="If true, vectors are served from disk, improving RAM usage at the cost of latency Default: false",
+        description="Deprecated: use `memory` instead. If true, vectors are served from disk, improving RAM usage at the cost of latency Default: false",
+    )
+    memory: Optional["Memory"] = Field(
+        default=None,
+        description="Memory placement of the original vector storage. Overrides the deprecated `on_disk` flag if both are set. `pinned` is not supported for dense vector storage. Default: `cached` (`cold` if `on_disk` is set to true).",
     )
     datatype: Optional["Datatype"] = Field(
         default=None,
-        description="Defines which datatype should be used to represent vectors in the storage. Choosing different datatypes allows to optimize memory usage and performance vs accuracy.  - For `float32` datatype - vectors are stored as single-precision floating point numbers, 4 bytes. - For `float16` datatype - vectors are stored as half-precision floating point numbers, 2 bytes. - For `uint8` datatype - vectors are stored as unsigned 8-bit integers, 1 byte. It expects vector elements to be in range `[0, 255]`.",
+        description="Defines which datatype should be used to represent vectors in the storage. Choosing different datatypes allows to optimize memory usage and performance vs accuracy.  - For `float32` datatype - vectors are stored as single-precision floating point numbers, 4 bytes. - For `float16` datatype - vectors are stored as half-precision floating point numbers, 2 bytes. - For `uint8` datatype - vectors are stored as unsigned 8-bit integers, 1 byte. It expects vector elements to be in range `[0, 255]`. - For `turbo4` datatype - vectors are quantized to 4 bits per element using the TurboQuant algorithm.",
     )
     multivector_config: Optional["MultiVectorConfig"] = Field(
         default=None, description="Params of single vector data storage"
@@ -3833,7 +3840,12 @@ class VectorParamsDiff(BaseModel, extra="forbid"):
         default=None, description="Update params for quantization. If none - it is left unchanged."
     )
     on_disk: Optional[bool] = Field(
-        default=None, description="If true, vectors are served from disk, improving RAM usage at the cost of latency"
+        default=None,
+        description="Deprecated: use `memory` instead. If true, vectors are served from disk, improving RAM usage at the cost of latency",
+    )
+    memory: Optional["Memory"] = Field(
+        default=None,
+        description="Memory placement of the original vector storage. Overrides the deprecated `on_disk` flag if both are set. `pinned` is not supported for dense vector storage.",
     )
 
 
@@ -3848,6 +3860,7 @@ class VectorStorageDatatype(str, Enum):
     FLOAT32 = "float32"
     FLOAT16 = "float16"
     UINT8 = "uint8"
+    TURBO4 = "turbo4"
 
 
 class VectorStorageTypeOneOf(str, Enum):
@@ -4001,6 +4014,7 @@ Condition = Union[
     IsNullCondition,
     HasIdCondition,
     HasVectorCondition,
+    SliceCondition,
     NestedCondition,
     Filter,
 ]
@@ -4033,6 +4047,10 @@ GroupId = Union[
     StrictInt,
     StrictStr,
 ]
+IdfParams = Union[
+    IdfScope,
+    IdfCorpusParams,
+]
 Indexes = Union[
     IndexesOneOf,
     IndexesOneOf1,
@@ -4047,17 +4065,13 @@ Match = Union[
     MatchText,
     MatchTextAny,
     MatchPhrase,
+    MatchPrefix,
     MatchAny,
     MatchExcept,
 ]
 MaxOptimizationThreads = Union[
     StrictInt,
     MaxOptimizationThreadsSetting,
-]
-NamedVectorStruct = Union[
-    List[StrictFloat],
-    NamedVector,
-    NamedSparseVector,
 ]
 OptimizersStatus = Union[
     OptimizersStatusOneOf,
@@ -4159,6 +4173,7 @@ StartFrom = Union[
 ]
 StemmingAlgorithm = Union[
     SnowballParams,
+    DisabledStemmerParams,
 ]
 StopwordsInterface = Union[
     Language,
@@ -4178,9 +4193,6 @@ UpdateOperation = Union[
     ClearPayloadOperation,
     UpdateVectorsOperation,
     DeleteVectorsOperation,
-]
-UsingVector = Union[
-    StrictStr,
 ]
 ValueVariants = Union[
     StrictBool,
@@ -4256,11 +4268,6 @@ Expression = Union[
 PayloadFieldSchema = Union[
     PayloadSchemaType,
     PayloadSchemaParams,
-]
-RecommendExample = Union[
-    ExtendedPointId,
-    List[StrictFloat],
-    SparseVector,
 ]
 ShardKeySelector = Union[
     ShardKey,
