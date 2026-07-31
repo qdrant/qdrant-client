@@ -2094,6 +2094,15 @@ def test_strict_mode(prefer_grpc):
         strict_mode_config = collection_info.config.strict_mode_config
         assert strict_mode_config.max_points_count == 100
 
+    if major is None or dev or (major, minor, patch) >= (1, 18, 0):
+        strict_mode_config = StrictModeConfig(
+            max_disk_usage_percent=90,
+        )
+        client.update_collection(COLLECTION_NAME, strict_mode_config=strict_mode_config)
+        collection_info = client.get_collection(COLLECTION_NAME)
+        strict_mode_config = collection_info.config.strict_mode_config
+        assert strict_mode_config.max_disk_usage_percent == 90
+
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])
 def test_upsert_hits_large_request_limit(prefer_grpc):
@@ -2485,3 +2494,93 @@ def test_create_payload_index_enable_hnsw(prefer_grpc: bool):
         "datetime_field",
     ]:
         assert info.payload_schema[field_name].params.enable_hnsw is False, field_name
+
+
+@pytest.mark.parametrize("prefer_grpc", [False, True])
+def test_memory_placement(prefer_grpc):
+    """Memory placement can be set on every component that accepts it.
+
+    `payload` supersedes the deprecated `on_disk_payload` flag, and `memory` supersedes
+    `on_disk` / `always_ram` on the storage components.
+    """
+    major, minor, patch, dev = read_version()
+    if not (major is None or dev):
+        if (major, minor, patch) < (1, 19, 0):
+            pytest.skip("Memory placement is supported as of qdrant 1.19.0")
+
+    client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
+    if client.collection_exists(COLLECTION_NAME):
+        client.delete_collection(COLLECTION_NAME)
+
+    client.create_collection(
+        COLLECTION_NAME,
+        # `Pinned` is not supported for dense vector storage nor for the payload storage,
+        # only for the smaller components like the quantized copy or an index
+        payload=models.PayloadStorageParams(memory=models.Memory.CACHED),
+        vectors_config=models.VectorParams(
+            size=DIM,
+            distance=models.Distance.DOT,
+            memory=models.Memory.CACHED,
+            quantization_config=models.ScalarQuantization(
+                scalar=models.ScalarQuantizationConfig(
+                    type=models.ScalarType.INT8, memory=models.Memory.PINNED
+                )
+            ),
+        ),
+        hnsw_config=models.HnswConfigDiff(memory=models.Memory.PINNED),
+        sparse_vectors_config={
+            "sparse": models.SparseVectorParams(
+                index=models.SparseIndexParams(memory=models.Memory.COLD),
+            )
+        },
+    )
+
+    config = client.get_collection(COLLECTION_NAME).config
+    assert config.params.payload.memory == models.Memory.CACHED
+    assert config.params.vectors.memory == models.Memory.CACHED
+    assert config.params.vectors.quantization_config.scalar.memory == models.Memory.PINNED
+    assert config.hnsw_config.memory == models.Memory.PINNED
+    assert config.params.sparse_vectors["sparse"].index.memory == models.Memory.COLD
+
+    # payload storage placement can also be updated through the collection params diff
+    client.update_collection(
+        COLLECTION_NAME,
+        collection_params=models.CollectionParamsDiff(
+            payload=models.PayloadStorageParams(memory=models.Memory.COLD)
+        ),
+    )
+    config = client.get_collection(COLLECTION_NAME).config
+    assert config.params.payload.memory == models.Memory.COLD
+
+
+@pytest.mark.parametrize("prefer_grpc", [False, True])
+def test_keyword_index_prefix(prefer_grpc):
+    major, minor, patch, dev = read_version()
+    if not (major is None or dev):
+        if (major, minor, patch) < (1, 19, 0):
+            pytest.skip("Keyword index prefix matching is supported as of qdrant 1.19.0")
+
+    client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
+    if client.collection_exists(COLLECTION_NAME):
+        client.delete_collection(COLLECTION_NAME)
+    client.create_collection(
+        COLLECTION_NAME,
+        vectors_config=models.VectorParams(size=DIM, distance=models.Distance.DOT),
+    )
+
+    client.create_payload_index(
+        COLLECTION_NAME,
+        "keyword_field",
+        field_schema=models.KeywordIndexParams(type=models.KeywordIndexType.KEYWORD, prefix=True),
+        wait=True,
+    )
+    assert client.get_collection(COLLECTION_NAME).payload_schema["keyword_field"].params.prefix
+
+    client.create_payload_index(
+        COLLECTION_NAME,
+        "keyword_no_prefix",
+        field_schema=models.KeywordIndexParams(type=models.KeywordIndexType.KEYWORD),
+        wait=True,
+    )
+    schema = client.get_collection(COLLECTION_NAME).payload_schema["keyword_no_prefix"]
+    assert not schema.params.prefix

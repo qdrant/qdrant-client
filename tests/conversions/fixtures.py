@@ -36,6 +36,7 @@ match_except_keywords = grpc.Match(
 match_except_integers = grpc.Match(except_integers=grpc.RepeatedIntegers(integers=[1, 2, 3]))
 match_phrase = grpc.Match(phrase="hello")
 match_text_any = grpc.Match(text_any="hello what's up")
+match_prefix = grpc.Match(prefix="hel")
 
 field_condition_match = grpc.FieldCondition(key="match_field", match=match_keyword)
 
@@ -50,6 +51,7 @@ field_condition_match_except_integers = grpc.FieldCondition(
 )
 field_condition_match_phrase = grpc.FieldCondition(key="match_field", match=match_phrase)
 field_condition_match_text_any = grpc.FieldCondition(key="match_field", match=match_text_any)
+field_condition_match_prefix = grpc.FieldCondition(key="match_field", match=match_prefix)
 
 range_ = grpc.Range(
     lt=1.0,
@@ -127,12 +129,15 @@ condition_except_integers = grpc.Condition(field=field_condition_match_except_in
 
 condition_phrase = grpc.Condition(field=field_condition_match_phrase)
 condition_text_any = grpc.Condition(field=field_condition_match_text_any)
+condition_prefix = grpc.Condition(field=field_condition_match_prefix)
 
 nested = grpc.NestedCondition(
     key="a.b.c", filter=grpc.Filter(must=[grpc.Condition(field=field_condition_range)])
 )
 
 condition_nested = grpc.Condition(nested=nested)
+slice_condition = grpc.SliceCondition(total=16, index=3)
+condition_slice = grpc.Condition(slice=slice_condition)
 
 filter_nested = grpc.Filter(must=[condition_nested])
 
@@ -148,6 +153,8 @@ filter_ = grpc.Filter(
         condition_except_integers,
         condition_phrase,
         condition_text_any,
+        condition_prefix,
+        condition_slice,
     ],
     should=[
         condition_field_match,
@@ -209,6 +216,13 @@ vector_param_with_multivector = grpc.VectorParams(
     multivector_config=grpc.MultiVectorConfig(comparator=grpc.MultiVectorComparator.MaxSim),
 )
 
+vector_param_with_memory = grpc.VectorParams(
+    size=100,
+    distance=grpc.Distance.Cosine,
+    memory=grpc.Memory.Cached,
+    datatype=grpc.Datatype.Turbo4,
+)
+
 product_quantizations = [
     grpc.QuantizationConfig(product=grpc.ProductQuantization(compression=ratio, always_ram=False))
     for ratio in [
@@ -224,6 +238,12 @@ scalar_quantization = grpc.ScalarQuantization(
     type=grpc.QuantizationType.Int8,
     quantile=0.99,
     always_ram=True,
+)
+
+scalar_quantization_memory = grpc.ScalarQuantization(
+    type=grpc.QuantizationType.Int8,
+    quantile=0.95,
+    memory=grpc.Memory.Pinned,
 )
 
 binary_quantization = grpc.BinaryQuantization(
@@ -256,6 +276,10 @@ binary_quantization_w_encodings_3 = grpc.BinaryQuantization(
         setting=grpc.BinaryQuantizationQueryEncoding.Setting.Scalar8Bits
     ),
 )
+binary_quantization_memory = grpc.BinaryQuantization(
+    encoding=grpc.BinaryQuantizationEncoding.OneBit,
+    memory=grpc.Memory.Pinned,
+)
 
 turbo_quantization = grpc.TurboQuantization(
     always_ram=True,
@@ -276,6 +300,11 @@ turbo_quantization_bits1_5 = grpc.TurboQuantization(
 
 turbo_quantization_bits4 = grpc.TurboQuantization(
     bits=grpc.TurboQuantBitSize.Bits4,
+)
+
+turbo_quantization_memory = grpc.TurboQuantization(
+    bits=grpc.TurboQuantBitSize.Bits2,
+    memory=grpc.Memory.Pinned,
 )
 
 vector_param_with_quant = grpc.VectorParams(
@@ -310,6 +339,16 @@ collection_params_2 = grpc.CollectionParams(
     sparse_vectors_config=sparse_vector_config,
 )
 
+payload_storage_params_cold = grpc.PayloadStorageParams(memory=grpc.Memory.Cold)
+payload_storage_params_cached = grpc.PayloadStorageParams(memory=grpc.Memory.Cached)
+payload_storage_params_pinned = grpc.PayloadStorageParams(memory=grpc.Memory.Pinned)
+
+collection_params_3 = grpc.CollectionParams(
+    vectors_config=single_vector_config,
+    payload=payload_storage_params_cached,
+    sparse_vectors_config=sparse_vector_config,
+)
+
 hnsw_config = grpc.HnswConfigDiff(
     m=16,
     ef_construct=100,
@@ -326,6 +365,12 @@ hnsw_config_2 = grpc.HnswConfigDiff(
     max_indexing_threads=2,
     on_disk=True,
     payload_m=32,
+)
+
+hnsw_config_3 = grpc.HnswConfigDiff(
+    m=32,
+    ef_construct=256,
+    memory=grpc.Memory.Cached,
 )
 
 optimizer_config = grpc.OptimizersConfigDiff(
@@ -349,6 +394,9 @@ optimizer_config_half = grpc.OptimizersConfigDiff(
 )
 
 wal_config = grpc.WalConfigDiff(wal_capacity_mb=32, wal_segments_ahead=2)
+wal_config_retain_closed = grpc.WalConfigDiff(
+    wal_capacity_mb=32, wal_segments_ahead=2, wal_retain_closed=4
+)
 strict_mode_config = grpc.StrictModeConfig(
     enabled=True,
     max_query_limit=100,
@@ -383,6 +431,7 @@ strict_mode_config = grpc.StrictModeConfig(
     ),
     max_payload_index_count=32,
     max_resident_memory_percent=80,
+    max_disk_usage_percent=90,
 )
 
 strict_mode_config_empty = grpc.StrictModeConfig(
@@ -574,6 +623,9 @@ search_params_3 = grpc.SearchParams(
     exact=True, quantization=quantization_search_params, acorn=grpc.AcornSearchParams(enable=True)
 )
 
+search_params_4 = grpc.SearchParams(idf=grpc.IdfParams())
+search_params_5 = grpc.SearchParams(idf=grpc.IdfParams(corpus=filter_nested))
+
 rename_alias = grpc.RenameAlias(old_alias_name="col2", new_alias_name="col3")
 
 collection_status = grpc.CollectionStatus.Yellow
@@ -626,31 +678,48 @@ text_index_params_5 = grpc.TextIndexParams(
 
 text_index_params_6 = grpc.TextIndexParams(phrase_matching=False, on_disk=False, enable_hnsw=True)
 
+text_index_params_7 = grpc.TextIndexParams(
+    phrase_matching=True,
+    memory=grpc.Memory.Cached,
+    stemmer=grpc.StemmingAlgorithm(disabled=grpc.DisabledStemmer()),
+)
+
 integer_index_params_0 = grpc.IntegerIndexParams(lookup=False, range=False)
 integer_index_params_1 = grpc.IntegerIndexParams(
     lookup=True, range=True, on_disk=True, is_principal=True, enable_hnsw=True
 )
 integer_index_params_2 = grpc.IntegerIndexParams()
+integer_index_params_3 = grpc.IntegerIndexParams(memory=grpc.Memory.Pinned, enable_hnsw=False)
 
 keyword_index_params_0 = grpc.KeywordIndexParams()
 keyword_index_params_1 = grpc.KeywordIndexParams(is_tenant=True, on_disk=True, enable_hnsw=True)
+keyword_index_params_2 = grpc.KeywordIndexParams(
+    is_tenant=False,
+    prefix=grpc.KeywordPrefixParams(),
+    memory=grpc.Memory.Cached,
+)
 
 float_index_params_0 = grpc.FloatIndexParams()
 float_index_params_1 = grpc.FloatIndexParams(on_disk=True, is_principal=True, enable_hnsw=True)
+float_index_params_2 = grpc.FloatIndexParams(memory=grpc.Memory.Pinned)
 
 bool_index_params = grpc.BoolIndexParams()
 bool_index_params_1 = grpc.BoolIndexParams(on_disk=True, enable_hnsw=True)
+bool_index_params_2 = grpc.BoolIndexParams(memory=grpc.Memory.Cached)
 
 geo_index_params_0 = grpc.GeoIndexParams()
 geo_index_params_1 = grpc.GeoIndexParams(on_disk=True, enable_hnsw=True)
+geo_index_params_2 = grpc.GeoIndexParams(memory=grpc.Memory.Cached)
 
 datetime_index_params_0 = grpc.DatetimeIndexParams()
 datetime_index_params_1 = grpc.DatetimeIndexParams(
     on_disk=True, is_principal=True, enable_hnsw=True
 )
+datetime_index_params_2 = grpc.DatetimeIndexParams(memory=grpc.Memory.Cached)
 
 uuid_index_params_0 = grpc.UuidIndexParams()
 uuid_index_params_1 = grpc.UuidIndexParams(on_disk=True, is_tenant=True, enable_hnsw=True)
+uuid_index_params_2 = grpc.UuidIndexParams(memory=grpc.Memory.Cached)
 
 payload_schema_text_prefix = grpc.PayloadSchemaInfo(
     data_type=grpc.PayloadSchemaType.Text,
@@ -763,12 +832,42 @@ payload_schema_uuid_on_disk_is_tenant = grpc.PayloadSchemaInfo(
 )
 
 update_queue_info = grpc.UpdateQueueInfo(length=42)
+update_queue_info_deferred = grpc.UpdateQueueInfo(length=42, deferred_points=7)
 
 collection_info_grey = grpc.CollectionInfo(
     status=collection_status_grey,
     optimizer_status=optimizer_status_error,
     # vectors_count=100000,
     points_count=100000,
+    segments_count=6,
+    config=collection_config,
+    payload_schema={},
+)
+
+collection_warning = grpc.CollectionWarning(message="Collection is in a degraded state")
+
+collection_info_with_warnings = grpc.CollectionInfo(
+    status=collection_status_grey,
+    optimizer_status=optimizer_status_error,
+    points_count=100000,
+    indexed_vectors_count=99999,
+    segments_count=6,
+    config=collection_config,
+    payload_schema={},
+    warnings=[
+        collection_warning,
+        grpc.CollectionWarning(message="Payload index is missing"),
+    ],
+    update_queue=update_queue_info_deferred,
+)
+
+# `indexed_vectors_count` is an optional field: an explicit 0 must survive the round trip
+# distinctly from the field being unset (as in `collection_info_grey` above).
+collection_info_zero_indexed_vectors = grpc.CollectionInfo(
+    status=collection_status_green,
+    optimizer_status=optimizer_status,
+    points_count=100000,
+    indexed_vectors_count=0,
     segments_count=6,
     config=collection_config,
     payload_schema={},
@@ -884,6 +983,15 @@ collection_info_red = grpc.CollectionInfo(
 quantization_config = grpc.QuantizationConfig(
     scalar=scalar_quantization,
 )
+scalar_quantization_config_memory = grpc.QuantizationConfig(
+    scalar=scalar_quantization_memory,
+)
+product_quantization_config_memory = grpc.QuantizationConfig(
+    product=grpc.ProductQuantization(
+        compression=grpc.CompressionRatio.x8,
+        memory=grpc.Memory.Cached,
+    ),
+)
 
 binary_quantization_config = grpc.QuantizationConfig(
     binary=binary_quantization,
@@ -899,6 +1007,9 @@ binary_quantization_config_2 = grpc.QuantizationConfig(
 )
 binary_quantization_config_3 = grpc.QuantizationConfig(
     binary=binary_quantization_w_encodings_3,
+)
+binary_quantization_config_memory = grpc.QuantizationConfig(
+    binary=binary_quantization_memory,
 )
 
 turbo_quantization_config = grpc.QuantizationConfig(
@@ -919,6 +1030,10 @@ turbo_quantization_config_bits1_5 = grpc.QuantizationConfig(
 
 turbo_quantization_config_bits4 = grpc.QuantizationConfig(
     turboquant=turbo_quantization_bits4,
+)
+
+turbo_quantization_config_memory = grpc.QuantizationConfig(
+    turboquant=turbo_quantization_memory,
 )
 
 sparse_vector_params = grpc.SparseVectorParams(
@@ -944,6 +1059,15 @@ sparse_vector_params_datatype = grpc.SparseVectorParams(
         full_scan_threshold=1000,
         on_disk=True,
         datatype=grpc.Datatype.Float16,
+    ),
+    modifier=grpc.Modifier.Idf,
+)
+
+sparse_vector_params_memory_turbo = grpc.SparseVectorParams(
+    index=grpc.SparseIndexConfig(
+        full_scan_threshold=500,
+        memory=grpc.Memory.Cached,
+        datatype=grpc.Datatype.Turbo4,
     ),
     modifier=grpc.Modifier.Idf,
 )
@@ -1053,11 +1177,25 @@ collections_params_diff = grpc.CollectionParamsDiff(
     read_fan_out_delay_ms=50,
 )
 
+collections_params_diff_2 = grpc.CollectionParamsDiff(
+    read_fan_out_factor=3,
+    payload=payload_storage_params_cold,
+)
+
 vector_params_diff = grpc.VectorParamsDiff(
     hnsw_config=hnsw_config,
     quantization_config=quantization_config_diff_product,
     on_disk=True,
 )
+
+vector_params_diff_2 = grpc.VectorParamsDiff(
+    hnsw_config=hnsw_config_3,
+    memory=grpc.Memory.Cached,
+)
+
+memory_cold = grpc.Memory.Cold
+memory_cached = grpc.Memory.Cached
+memory_pinned = grpc.Memory.Pinned
 
 vector_config_diff_map = grpc.VectorsConfigDiff(
     params_map=grpc.VectorParamsDiffMap(
@@ -1089,6 +1227,12 @@ update_collection_3 = grpc.UpdateCollection(
     metadata={"new_metadata": grpc.Value(integer_value=2)},
 )
 
+update_collection_4 = grpc.UpdateCollection(
+    collection_name="my_col3",
+    sparse_vectors_config=sparse_vector_config,
+    strict_mode_config=strict_mode_config,
+)
+
 points_ids_list = grpc.PointsIdsList(ids=[point_id, point_id_2, point_id_2])
 
 points_selector_list = grpc.PointsSelector(points=points_ids_list)
@@ -1114,6 +1258,12 @@ timestamp.FromDatetime(datetime.datetime.now())
 
 snapshot_description = grpc.SnapshotDescription(
     name="my_snapshot", creation_time=timestamp, size=100500
+)
+snapshot_description_checksum = grpc.SnapshotDescription(
+    name="my_snapshot",
+    creation_time=timestamp,
+    size=100500,
+    checksum="e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
 )
 
 vector_config = grpc.VectorsConfig(
@@ -1156,6 +1306,17 @@ lookup_location_1 = grpc.LookupLocation(
 lookup_location_2 = grpc.LookupLocation(
     collection_name="collection-123",
     vector_name="vector-123",
+)
+
+lookup_location_3 = grpc.LookupLocation(
+    collection_name="collection-123",
+    vector_name="vector-123",
+    shard_key_selector=shard_key_selector_2,
+)
+
+lookup_location_4 = grpc.LookupLocation(
+    collection_name="collection-123",
+    shard_key_selector=shard_key_selector_3,
 )
 
 query_points = grpc.QueryPoints(
@@ -1558,6 +1719,11 @@ facet_integer_hit = grpc.FacetHit(
     count=123,
 )
 
+facet_bool_hit = grpc.FacetHit(
+    value=grpc.FacetValue(bool_value=True),
+    count=123,
+)
+
 health_check_reply = grpc.HealthCheckReply(
     title="qdrant - vector search engine",
     version="1.10.0",
@@ -1704,7 +1870,13 @@ fixtures = {
     ],
     "CreateAlias": [create_alias],
     "GeoBoundingBox": [geo_bounding_box],
-    "SearchParams": [search_params, search_params_2, search_params_3],
+    "SearchParams": [
+        search_params,
+        search_params_2,
+        search_params_3,
+        search_params_4,
+        search_params_5,
+    ],
     "HasIdCondition": [has_id],
     "RenameAlias": [rename_alias],
     "ValuesCount": [values_count],
@@ -1714,7 +1886,10 @@ fixtures = {
         collection_info_ok,
         collection_info_red,
         collection_info_grey,
+        collection_info_with_warnings,
+        collection_info_zero_indexed_vectors,
     ],
+    "CollectionWarning": [collection_warning],
     "FieldCondition": [
         field_condition_match,
         field_condition_range,
@@ -1739,9 +1914,14 @@ fixtures = {
     "CollectionDescription": [collection_description],
     "GeoPoint": [geo_point],
     "GeoPolygon": [geo_polygon, geo_polygon_2],
-    "WalConfigDiff": [wal_config],
-    "HnswConfigDiff": [hnsw_config, hnsw_config_2],
-    "UpdateCollection": [update_collection, update_collection_2, update_collection_3],
+    "WalConfigDiff": [wal_config, wal_config_retain_closed],
+    "HnswConfigDiff": [hnsw_config, hnsw_config_2, hnsw_config_3],
+    "UpdateCollection": [
+        update_collection,
+        update_collection_2,
+        update_collection_3,
+        update_collection_4,
+    ],
     "Condition": [
         condition_field_match,
         condition_range,
@@ -1749,7 +1929,10 @@ fixtures = {
         condition_geo_polygon,
         condition_geo_bounding_box,
         condition_values_count,
+        condition_prefix,
+        condition_slice,
     ],
+    "SliceCondition": [slice_condition],
     "PointsSelector": [points_selector_list, points_selector_filter],
     "AliasDescription": [alias_description],
     "AliasOperations": [
@@ -1757,7 +1940,19 @@ fixtures = {
         alias_operations_rename,
         alias_operations_delete,
     ],
-    "Match": [match_keyword, match_integer, match_bool, match_text],
+    "Match": [
+        match_keyword,
+        match_integer,
+        match_bool,
+        match_text,
+        match_keywords,
+        match_integers,
+        match_except_keywords,
+        match_except_integers,
+        match_phrase,
+        match_text_any,
+        match_prefix,
+    ],
     "WithPayloadSelector": [
         with_payload_bool,
         with_payload_include,
@@ -1771,7 +1966,7 @@ fixtures = {
         retrieved_point_shard_key_order_value_falsy_value,
     ],
     "CountResult": [count_result],
-    "SnapshotDescription": [snapshot_description],
+    "SnapshotDescription": [snapshot_description, snapshot_description_checksum],
     "VectorParams": [
         vector_param,
         vector_param_with_hnsw,
@@ -1779,6 +1974,7 @@ fixtures = {
         vector_param_1,
         vector_param_2,
         vector_param_with_multivector,
+        vector_param_with_memory,
     ],
     "VectorsConfig": [single_vector_config, vector_config],
     "QueryPoints": [query_points],
@@ -1790,13 +1986,38 @@ fixtures = {
         text_index_params_4,
         text_index_params_5,
         text_index_params_6,
+        text_index_params_7,
     ],
     "IntegerIndexParams": [
         integer_index_params_0,
         integer_index_params_1,
+        integer_index_params_3,
     ],
-    "CollectionParamsDiff": [collections_params_diff],
-    "LookupLocation": [lookup_location_1, lookup_location_2],
+    "KeywordIndexParams": [keyword_index_params_0, keyword_index_params_1, keyword_index_params_2],
+    "FloatIndexParams": [float_index_params_0, float_index_params_1, float_index_params_2],
+    "BoolIndexParams": [bool_index_params, bool_index_params_1, bool_index_params_2],
+    "GeoIndexParams": [geo_index_params_0, geo_index_params_1, geo_index_params_2],
+    "DatetimeIndexParams": [
+        datetime_index_params_0,
+        datetime_index_params_1,
+        datetime_index_params_2,
+    ],
+    "UuidIndexParams": [uuid_index_params_0, uuid_index_params_1, uuid_index_params_2],
+    "CollectionParams": [collection_params, collection_params_2, collection_params_3],
+    "CollectionParamsDiff": [collections_params_diff, collections_params_diff_2],
+    "PayloadStorageParams": [
+        payload_storage_params_cold,
+        payload_storage_params_cached,
+        payload_storage_params_pinned,
+    ],
+    "Memory": [memory_cold, memory_cached, memory_pinned],
+    "IdfParams": [grpc.IdfParams(), grpc.IdfParams(corpus=filter_nested)],
+    "LookupLocation": [
+        lookup_location_1,
+        lookup_location_2,
+        lookup_location_3,
+        lookup_location_4,
+    ],
     "ReadConsistency": [
         read_consistency,
         read_consistency_0,
@@ -1816,6 +2037,10 @@ fixtures = {
         turbo_quantization_config_bits1,
         turbo_quantization_config_bits1_5,
         turbo_quantization_config_bits4,
+        scalar_quantization_config_memory,
+        product_quantization_config_memory,
+        binary_quantization_config_memory,
+        turbo_quantization_config_memory,
     ]
     + product_quantizations,
     "QuantizationConfigDiff": [
@@ -1858,7 +2083,9 @@ fixtures = {
         sparse_vector_params,
         sparse_vector_params_datatype,
         sparse_vector_params_empty,
+        sparse_vector_params_memory_turbo,
     ],
+    "VectorParamsDiff": [vector_params_diff, vector_params_diff_2],
     "SparseVectorConfig": [sparse_vector_config],
     "ShardKeySelector": [shard_key_selector, shard_key_selector_2],
     "ShardingMethod": [sharding_method_1, sharding_method_2],
@@ -1883,12 +2110,15 @@ fixtures = {
         query_rrf_explicit_none,
         query_relevance_feedback,
     ],
-    "FacetValueHit": [facet_string_hit, facet_integer_hit],
+    "FacetValueHit": [facet_string_hit, facet_integer_hit, facet_bool_hit],
     "PrefetchQuery": [deep_prefetch_query, prefetch_query, prefetch_full_query, prefetch_many],
     "HealthCheckReply": [health_check_reply],
     "SearchMatrixPairs": [search_matrix_pairs],
     "SearchMatrixOffsets": [search_matrix_offsets],
     "StrictModeConfig": [strict_mode_config, strict_mode_config_empty],
+    "UpdateQueueInfo": [update_queue_info, update_queue_info_deferred],
+    "UpdateResult": [update_result, update_result_completed, update_result_wait_timeout],
+    "UpdateMode": [update_mode_upsert, update_mode_insert_only, update_mode_update_only],
     "ReplicaState": [
         replica_state_active,
         replica_state_dead,
