@@ -33,15 +33,18 @@ def check_values_count(condition: models.ValuesCount, values: list[Any] | None) 
 
     counts = get_value_counts(values)
 
-    if condition.lt is not None and all(count >= condition.lt for count in counts):
-        return False
-    if condition.lte is not None and all(count > condition.lte for count in counts):
-        return False
-    if condition.gt is not None and all(count <= condition.gt for count in counts):
-        return False
-    if condition.gte is not None and all(count < condition.gte for count in counts):
-        return False
-    return True
+    def check_count(count: int) -> bool:
+        if condition.lt is not None and count >= condition.lt:
+            return False
+        if condition.lte is not None and count > condition.lte:
+            return False
+        if condition.gt is not None and count <= condition.gt:
+            return False
+        if condition.gte is not None and count < condition.gte:
+            return False
+        return True
+
+    return any(check_count(count) for count in counts)
 
 
 def check_geo_radius(condition: models.GeoRadius, values: Any) -> bool:

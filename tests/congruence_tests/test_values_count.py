@@ -79,3 +79,76 @@ def test_values_count():
                 with_payload=False,
             ),
         )
+
+
+def test_values_count_multivalue():
+    """A multi-value path must satisfy every bound with the *same* count."""
+    vectors_config = models.VectorParams(size=2, distance=models.Distance.COSINE)
+    points = [
+        # counts == [1, 10]: neither count is inside (2, 9)
+        models.PointStruct(
+            id=1,
+            vector=[0.1, 0.2],
+            payload={"nested": [{"field": [1]}, {"field": list(range(10))}]},
+        ),
+        # counts == [3]
+        models.PointStruct(id=2, vector=[0.2, 0.3], payload={"nested": [{"field": [1, 2, 3]}]}),
+        # counts == [1, 5]: 5 is inside (2, 9)
+        models.PointStruct(
+            id=3,
+            vector=[0.3, 0.4],
+            payload={"nested": [{"field": [1]}, {"field": [1, 2, 3, 4, 5]}]},
+        ),
+    ]
+
+    local_client = init_local()
+    init_client(local_client, points, vectors_config=vectors_config)
+
+    remote_client = init_remote()
+    init_client(remote_client, points, vectors_config=vectors_config)
+
+    filters = [
+        models.Filter(
+            must=[
+                models.FieldCondition(
+                    key="nested[].field", values_count=models.ValuesCount(gt=2, lt=9)
+                )
+            ]
+        ),
+        models.Filter(
+            must=[
+                models.FieldCondition(
+                    key="nested[].field", values_count=models.ValuesCount(gte=3, lte=8)
+                )
+            ]
+        ),
+        models.Filter(
+            must=[
+                models.FieldCondition(
+                    key="nested[].field", values_count=models.ValuesCount(gte=2, lte=4)
+                )
+            ]
+        ),
+        models.Filter(
+            must=[
+                models.FieldCondition(key="nested[].field", values_count=models.ValuesCount(gt=2))
+            ]
+        ),
+        models.Filter(
+            must=[
+                models.FieldCondition(key="nested[].field", values_count=models.ValuesCount(lt=9))
+            ]
+        ),
+    ]
+
+    for flt in filters:
+        compare_client_results(
+            local_client,
+            remote_client,
+            lambda c, f=flt: c.scroll(
+                COLLECTION_NAME,
+                scroll_filter=f,
+                limit=100,
+                with_payload=False,
+            ),
+        )
