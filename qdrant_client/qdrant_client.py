@@ -178,6 +178,15 @@ class QdrantClient(QdrantFastembedMixin):
             self._client.close(grpc_grace=grpc_grace, **kwargs)
 
     @property
+    def closed(self) -> bool:
+        """Whether the client has been closed.
+
+        Returns:
+            ``False`` before :meth:`close` is called, ``True`` afterwards.
+        """
+        return self._client.closed
+
+    @property
     def grpc_collections(self) -> grpc.CollectionsStub:
         """gRPC client for collections methods
 
