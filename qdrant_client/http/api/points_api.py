@@ -151,7 +151,7 @@ class _PointsApi:
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse20022,
+            type_=m.InlineResponse20019,
             method="POST",
             url="/collections/{collection_name}/points/count",
             headers=headers if headers else None,
@@ -296,7 +296,7 @@ class _PointsApi:
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse20023,
+            type_=m.InlineResponse20020,
             method="POST",
             url="/collections/{collection_name}/facet",
             headers=headers if headers else None,
@@ -595,7 +595,7 @@ class AsyncPointsApi(_PointsApi):
         consistency: m.ReadConsistency = None,
         timeout: int = None,
         count_request: m.CountRequest = None,
-    ) -> m.InlineResponse20022:
+    ) -> m.InlineResponse20019:
         """
         Count points which matches given filtering condition
         """
@@ -669,7 +669,7 @@ class AsyncPointsApi(_PointsApi):
         consistency: m.ReadConsistency = None,
         timeout: int = None,
         facet_request: m.FacetRequest = None,
-    ) -> m.InlineResponse20023:
+    ) -> m.InlineResponse20020:
         """
         Count points that satisfy the given filter for each unique value of a payload key.
         """
@@ -851,7 +851,7 @@ class SyncPointsApi(_PointsApi):
         consistency: m.ReadConsistency = None,
         timeout: int = None,
         count_request: m.CountRequest = None,
-    ) -> m.InlineResponse20022:
+    ) -> m.InlineResponse20019:
         """
         Count points which matches given filtering condition
         """
@@ -925,7 +925,7 @@ class SyncPointsApi(_PointsApi):
         consistency: m.ReadConsistency = None,
         timeout: int = None,
         facet_request: m.FacetRequest = None,
-    ) -> m.InlineResponse20023:
+    ) -> m.InlineResponse20020:
         """
         Count points that satisfy the given filter for each unique value of a payload key.
         """

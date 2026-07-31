@@ -1237,7 +1237,7 @@ class DenseVectorCreationConfig(google.protobuf.message.Message):
     def multivector_config(self) -> collections_pb2.MultiVectorConfig:
         """Configuration for multi-vector search (e.g., ColBERT)"""
     datatype: collections_pb2.Datatype.ValueType
-    """Data type of the vectors (Float32, Float16, Uint8)"""
+    """Data type of the vectors (Float32, Float16, Uint8, Turbo4)"""
     def __init__(
         self,
         *,
@@ -1650,6 +1650,30 @@ class AcornSearchParams(google.protobuf.message.Message):
 
 global___AcornSearchParams = AcornSearchParams
 
+class IdfParams(google.protobuf.message.Message):
+    """Population over which sparse vector IDF statistics are computed for scoring - the IDF corpus.
+    Only applicable to sparse vectors with the IDF modifier enabled.
+    """
+
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    CORPUS_FIELD_NUMBER: builtins.int
+    @property
+    def corpus(self) -> qdrant_common_pb2.Filter:
+        """Filter defining the corpus: IDF statistics are computed over the points matching this filter.
+        If unset, statistics are collection-wide (global) - same as omitting `idf` entirely.
+        """
+    def __init__(
+        self,
+        *,
+        corpus: qdrant_common_pb2.Filter | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_corpus", b"_corpus", "corpus", b"corpus"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_corpus", b"_corpus", "corpus", b"corpus"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_corpus", b"_corpus"]) -> typing_extensions.Literal["corpus"] | None: ...
+
+global___IdfParams = IdfParams
+
 class SearchParams(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -1658,6 +1682,7 @@ class SearchParams(google.protobuf.message.Message):
     QUANTIZATION_FIELD_NUMBER: builtins.int
     INDEXED_ONLY_FIELD_NUMBER: builtins.int
     ACORN_FIELD_NUMBER: builtins.int
+    IDF_FIELD_NUMBER: builtins.int
     hnsw_ef: builtins.int
     """Params relevant to HNSW index. Size of the beam in a beam-search.
     Larger the value - more accurate the result, more time required for search.
@@ -1675,6 +1700,11 @@ class SearchParams(google.protobuf.message.Message):
     @property
     def acorn(self) -> global___AcornSearchParams:
         """ACORN search params"""
+    @property
+    def idf(self) -> global___IdfParams:
+        """Which population sparse vector IDF statistics are computed over.
+        If unset, statistics are collection-wide (global).
+        """
     def __init__(
         self,
         *,
@@ -1683,15 +1713,18 @@ class SearchParams(google.protobuf.message.Message):
         quantization: global___QuantizationSearchParams | None = ...,
         indexed_only: builtins.bool | None = ...,
         acorn: global___AcornSearchParams | None = ...,
+        idf: global___IdfParams | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_acorn", b"_acorn", "_exact", b"_exact", "_hnsw_ef", b"_hnsw_ef", "_indexed_only", b"_indexed_only", "_quantization", b"_quantization", "acorn", b"acorn", "exact", b"exact", "hnsw_ef", b"hnsw_ef", "indexed_only", b"indexed_only", "quantization", b"quantization"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_acorn", b"_acorn", "_exact", b"_exact", "_hnsw_ef", b"_hnsw_ef", "_indexed_only", b"_indexed_only", "_quantization", b"_quantization", "acorn", b"acorn", "exact", b"exact", "hnsw_ef", b"hnsw_ef", "indexed_only", b"indexed_only", "quantization", b"quantization"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_acorn", b"_acorn", "_exact", b"_exact", "_hnsw_ef", b"_hnsw_ef", "_idf", b"_idf", "_indexed_only", b"_indexed_only", "_quantization", b"_quantization", "acorn", b"acorn", "exact", b"exact", "hnsw_ef", b"hnsw_ef", "idf", b"idf", "indexed_only", b"indexed_only", "quantization", b"quantization"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_acorn", b"_acorn", "_exact", b"_exact", "_hnsw_ef", b"_hnsw_ef", "_idf", b"_idf", "_indexed_only", b"_indexed_only", "_quantization", b"_quantization", "acorn", b"acorn", "exact", b"exact", "hnsw_ef", b"hnsw_ef", "idf", b"idf", "indexed_only", b"indexed_only", "quantization", b"quantization"]) -> None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_acorn", b"_acorn"]) -> typing_extensions.Literal["acorn"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_exact", b"_exact"]) -> typing_extensions.Literal["exact"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_hnsw_ef", b"_hnsw_ef"]) -> typing_extensions.Literal["hnsw_ef"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_idf", b"_idf"]) -> typing_extensions.Literal["idf"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_indexed_only", b"_indexed_only"]) -> typing_extensions.Literal["indexed_only"] | None: ...
     @typing.overload

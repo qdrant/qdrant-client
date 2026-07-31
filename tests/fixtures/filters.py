@@ -167,6 +167,43 @@ def match_text_any_field_condition() -> models.FieldCondition:
     return models.FieldCondition(key=field, match=models.MatchTextAny(text_any=text_any))
 
 
+def match_phrase_field_condition() -> models.FieldCondition:
+    field = "words"
+    # `words` holds two space-separated words, so a two-word phrase exercises the
+    # multi-token case while a single word keeps match rates high
+    if random.random() < 0.5:
+        phrase = random_real_word()
+    else:
+        phrase = f"{random_real_word()} {random_real_word()}"
+
+    return models.FieldCondition(
+        key=field,
+        match=models.MatchPhrase(phrase=phrase),
+    )
+
+
+def match_prefix_field_condition() -> models.FieldCondition:
+    # `mixed_type` holds non-string values too, they must never match a prefix
+    field = random.choice(["id_str", "two_words", "words", "mixed_type"])
+
+    if field == "id_str":
+        # values are zero-padded numbers in "01".."30", a single digit keeps match rates high
+        prefix = random.choice(["0", "1", "2", "3"])
+    else:
+        word = random_real_word()
+        prefix = word[: random.randint(1, 3)]
+
+    return models.FieldCondition(
+        key=field,
+        match=models.MatchPrefix(prefix=prefix),
+    )
+
+
+def slice_condition() -> models.SliceCondition:
+    total = random.randint(2, 8)
+    return models.SliceCondition(slice=models.Slice(total=total, index=random.randrange(total)))
+
+
 def match_any_field_condition() -> models.FieldCondition:
     field = "id_str"
     any_vals = [str(random.randint(1, 30)).zfill(2) for _ in range(3)]
@@ -306,6 +343,9 @@ def one_random_condition_please() -> models.Condition:
             match_text_field_condition,
             match_any_field_condition,
             match_text_any_field_condition,
+            match_phrase_field_condition,
+            match_prefix_field_condition,
+            slice_condition,
             match_except_field_condition,
             range_field_condition,
             datetime_range_field_condition,

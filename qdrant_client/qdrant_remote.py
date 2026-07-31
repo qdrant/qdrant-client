@@ -2023,6 +2023,7 @@ class QdrantRemote(QdrantBase):
         sharding_method: types.ShardingMethod | None = None,
         strict_mode_config: types.StrictModeConfig | None = None,
         metadata: types.Payload | None = None,
+        payload: types.PayloadStorageParams | None = None,
         **kwargs: Any,
     ) -> bool:
         if self._prefer_grpc:
@@ -2058,6 +2059,9 @@ class QdrantRemote(QdrantBase):
             if isinstance(metadata, dict):
                 metadata = RestToGrpc.convert_payload(metadata)
 
+            if isinstance(payload, models.PayloadStorageParams):
+                payload = RestToGrpc.convert_payload_storage_params(payload)
+
             create_collection = grpc.CreateCollection(
                 collection_name=collection_name,
                 hnsw_config=hnsw_config,
@@ -2074,6 +2078,7 @@ class QdrantRemote(QdrantBase):
                 sharding_method=sharding_method,
                 strict_mode_config=strict_mode_config,
                 metadata=metadata,
+                payload=payload,
             )
             return self.grpc_collections.Create(create_collection, timeout=self._timeout).result
 
@@ -2103,6 +2108,7 @@ class QdrantRemote(QdrantBase):
             sharding_method=sharding_method,
             strict_mode_config=strict_mode_config,
             metadata=metadata,
+            payload=payload,
         )
 
         result: bool | None = self.http.collections_api.create_collection(
@@ -2131,6 +2137,7 @@ class QdrantRemote(QdrantBase):
         sharding_method: types.ShardingMethod | None = None,
         strict_mode_config: types.StrictModeConfig | None = None,
         metadata: types.Payload | None = None,
+        payload: types.PayloadStorageParams | None = None,
         **kwargs: Any,
     ) -> bool:
         self.delete_collection(collection_name, timeout=timeout)
@@ -2151,6 +2158,7 @@ class QdrantRemote(QdrantBase):
             sharding_method=sharding_method,
             strict_mode_config=strict_mode_config,
             metadata=metadata,
+            payload=payload,
         )
 
     @property

@@ -117,6 +117,7 @@ class Condition(google.protobuf.message.Message):
     IS_NULL_FIELD_NUMBER: builtins.int
     NESTED_FIELD_NUMBER: builtins.int
     HAS_VECTOR_FIELD_NUMBER: builtins.int
+    SLICE_FIELD_NUMBER: builtins.int
     @property
     def field(self) -> global___FieldCondition: ...
     @property
@@ -131,6 +132,8 @@ class Condition(google.protobuf.message.Message):
     def nested(self) -> global___NestedCondition: ...
     @property
     def has_vector(self) -> global___HasVectorCondition: ...
+    @property
+    def slice(self) -> global___SliceCondition: ...
     def __init__(
         self,
         *,
@@ -141,10 +144,11 @@ class Condition(google.protobuf.message.Message):
         is_null: global___IsNullCondition | None = ...,
         nested: global___NestedCondition | None = ...,
         has_vector: global___HasVectorCondition | None = ...,
+        slice: global___SliceCondition | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["condition_one_of", b"condition_one_of", "field", b"field", "filter", b"filter", "has_id", b"has_id", "has_vector", b"has_vector", "is_empty", b"is_empty", "is_null", b"is_null", "nested", b"nested"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["condition_one_of", b"condition_one_of", "field", b"field", "filter", b"filter", "has_id", b"has_id", "has_vector", b"has_vector", "is_empty", b"is_empty", "is_null", b"is_null", "nested", b"nested"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["condition_one_of", b"condition_one_of"]) -> typing_extensions.Literal["field", "is_empty", "has_id", "filter", "is_null", "nested", "has_vector"] | None: ...
+    def HasField(self, field_name: typing_extensions.Literal["condition_one_of", b"condition_one_of", "field", b"field", "filter", b"filter", "has_id", b"has_id", "has_vector", b"has_vector", "is_empty", b"is_empty", "is_null", b"is_null", "nested", b"nested", "slice", b"slice"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["condition_one_of", b"condition_one_of", "field", b"field", "filter", b"filter", "has_id", b"has_id", "has_vector", b"has_vector", "is_empty", b"is_empty", "is_null", b"is_null", "nested", b"nested", "slice", b"slice"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["condition_one_of", b"condition_one_of"]) -> typing_extensions.Literal["field", "is_empty", "has_id", "filter", "is_null", "nested", "has_vector", "slice"] | None: ...
 
 global___Condition = Condition
 
@@ -204,6 +208,25 @@ class HasVectorCondition(google.protobuf.message.Message):
     def ClearField(self, field_name: typing_extensions.Literal["has_vector", b"has_vector"]) -> None: ...
 
 global___HasVectorCondition = HasVectorCondition
+
+class SliceCondition(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    TOTAL_FIELD_NUMBER: builtins.int
+    INDEX_FIELD_NUMBER: builtins.int
+    total: builtins.int
+    """Total number of disjoint deterministic slices the id space is split into, must be >= 1"""
+    index: builtins.int
+    """Which slice to select, must be less than `total`"""
+    def __init__(
+        self,
+        *,
+        total: builtins.int = ...,
+        index: builtins.int = ...,
+    ) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["index", b"index", "total", b"total"]) -> None: ...
+
+global___SliceCondition = SliceCondition
 
 class NestedCondition(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
@@ -301,6 +324,7 @@ class Match(google.protobuf.message.Message):
     EXCEPT_KEYWORDS_FIELD_NUMBER: builtins.int
     PHRASE_FIELD_NUMBER: builtins.int
     TEXT_ANY_FIELD_NUMBER: builtins.int
+    PREFIX_FIELD_NUMBER: builtins.int
     keyword: builtins.str
     """Match string keyword"""
     integer: builtins.int
@@ -325,6 +349,8 @@ class Match(google.protobuf.message.Message):
     """Match phrase text"""
     text_any: builtins.str
     """Match any word in the text"""
+    prefix: builtins.str
+    """Match keywords starting with the given prefix"""
     def __init__(
         self,
         *,
@@ -338,10 +364,11 @@ class Match(google.protobuf.message.Message):
         except_keywords: global___RepeatedStrings | None = ...,
         phrase: builtins.str = ...,
         text_any: builtins.str = ...,
+        prefix: builtins.str = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["boolean", b"boolean", "except_integers", b"except_integers", "except_keywords", b"except_keywords", "integer", b"integer", "integers", b"integers", "keyword", b"keyword", "keywords", b"keywords", "match_value", b"match_value", "phrase", b"phrase", "text", b"text", "text_any", b"text_any"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["boolean", b"boolean", "except_integers", b"except_integers", "except_keywords", b"except_keywords", "integer", b"integer", "integers", b"integers", "keyword", b"keyword", "keywords", b"keywords", "match_value", b"match_value", "phrase", b"phrase", "text", b"text", "text_any", b"text_any"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["match_value", b"match_value"]) -> typing_extensions.Literal["keyword", "integer", "boolean", "text", "keywords", "integers", "except_integers", "except_keywords", "phrase", "text_any"] | None: ...
+    def HasField(self, field_name: typing_extensions.Literal["boolean", b"boolean", "except_integers", b"except_integers", "except_keywords", b"except_keywords", "integer", b"integer", "integers", b"integers", "keyword", b"keyword", "keywords", b"keywords", "match_value", b"match_value", "phrase", b"phrase", "prefix", b"prefix", "text", b"text", "text_any", b"text_any"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["boolean", b"boolean", "except_integers", b"except_integers", "except_keywords", b"except_keywords", "integer", b"integer", "integers", b"integers", "keyword", b"keyword", "keywords", b"keywords", "match_value", b"match_value", "phrase", b"phrase", "prefix", b"prefix", "text", b"text", "text_any", b"text_any"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["match_value", b"match_value"]) -> typing_extensions.Literal["keyword", "integer", "boolean", "text", "keywords", "integers", "except_integers", "except_keywords", "phrase", "text_any", "prefix"] | None: ...
 
 global___Match = Match
 

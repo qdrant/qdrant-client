@@ -1856,6 +1856,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         sharding_method: types.ShardingMethod | None = None,
         strict_mode_config: types.StrictModeConfig | None = None,
         metadata: types.Payload | None = None,
+        payload: types.PayloadStorageParams | None = None,
         **kwargs: Any,
     ) -> bool:
         if self._prefer_grpc:
@@ -1879,6 +1880,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 strict_mode_config = RestToGrpc.convert_strict_mode_config(strict_mode_config)
             if isinstance(metadata, dict):
                 metadata = RestToGrpc.convert_payload(metadata)
+            if isinstance(payload, models.PayloadStorageParams):
+                payload = RestToGrpc.convert_payload_storage_params(payload)
             create_collection = grpc.CreateCollection(
                 collection_name=collection_name,
                 hnsw_config=hnsw_config,
@@ -1895,6 +1898,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 sharding_method=sharding_method,
                 strict_mode_config=strict_mode_config,
                 metadata=metadata,
+                payload=payload,
             )
             return (
                 await self.grpc_collections.Create(create_collection, timeout=self._timeout)
@@ -1921,6 +1925,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             sharding_method=sharding_method,
             strict_mode_config=strict_mode_config,
             metadata=metadata,
+            payload=payload,
         )
         result: bool | None = (
             await self.http.collections_api.create_collection(
@@ -1949,6 +1954,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         sharding_method: types.ShardingMethod | None = None,
         strict_mode_config: types.StrictModeConfig | None = None,
         metadata: types.Payload | None = None,
+        payload: types.PayloadStorageParams | None = None,
         **kwargs: Any,
     ) -> bool:
         await self.delete_collection(collection_name, timeout=timeout)
@@ -1968,6 +1974,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             sharding_method=sharding_method,
             strict_mode_config=strict_mode_config,
             metadata=metadata,
+            payload=payload,
         )
 
     @property
