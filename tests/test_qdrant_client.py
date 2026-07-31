@@ -2555,6 +2555,11 @@ def test_memory_placement(prefer_grpc):
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])
 def test_keyword_index_prefix(prefer_grpc):
+    major, minor, patch, dev = read_version()
+    if not (major is None or dev):
+        if (major, minor, patch) < (1, 19, 0):
+            pytest.skip("Keyword index prefix matching is supported as of qdrant 1.19.0")
+
     client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
     if client.collection_exists(COLLECTION_NAME):
         client.delete_collection(COLLECTION_NAME)
