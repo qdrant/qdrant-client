@@ -32,6 +32,13 @@ from qdrant_client.local.local_collection import (
 META_INFO_FILENAME = "meta.json"
 
 
+def _parse_search_params(search_params: types.SearchParams | None) -> types.SearchParams | None:
+    """Coerce a plain dict, which the public API accepts in place of any REST model."""
+    if isinstance(search_params, dict):
+        return rest_models.SearchParams(**search_params)
+    return search_params
+
+
 def _has_ignored_search_params(search_params: types.SearchParams | None) -> bool:
     """`idf` is the only `SearchParams` field local mode acts on: it scopes the IDF corpus, which
     affects scores rather than the index traversal. Everything else describes index behaviour that
@@ -399,6 +406,7 @@ class QdrantLocal(QdrantBase):
 
         collection = self._get_collection(collection_name)
 
+        search_params = _parse_search_params(search_params)
         if _has_ignored_search_params(search_params):
             show_warning_once(
                 message="Local mode performs exact (brute-force) search, so `search_params` has"
@@ -484,6 +492,7 @@ class QdrantLocal(QdrantBase):
 
         collection = self._get_collection(collection_name)
 
+        search_params = _parse_search_params(search_params)
         if _has_ignored_search_params(search_params):
             show_warning_once(
                 message="Local mode performs exact (brute-force) search, so `search_params` has"
