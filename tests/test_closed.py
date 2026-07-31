@@ -20,7 +20,10 @@ class TestSyncFacadeClosed:
 
     def test_local_in_memory_starts_false(self):
         client = QdrantClient(":memory:")
-        assert client.closed is False
+        try:
+            assert client.closed is False
+        finally:
+            client.close()
 
     def test_local_in_memory_true_after_close(self):
         client = QdrantClient(":memory:")
@@ -30,7 +33,10 @@ class TestSyncFacadeClosed:
     def test_local_path_starts_false(self):
         with tempfile.TemporaryDirectory() as tmp:
             client = QdrantClient(path=str(Path(tmp) / "qdrant_test"))
-            assert client.closed is False
+            try:
+                assert client.closed is False
+            finally:
+                client.close()
 
     def test_local_path_true_after_close(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -40,7 +46,10 @@ class TestSyncFacadeClosed:
 
     def test_remote_starts_false(self):
         client = QdrantClient("http://localhost:6333", prefer_grpc=False)
-        assert client.closed is False
+        try:
+            assert client.closed is False
+        finally:
+            client.close()
 
     def test_remote_true_after_close(self):
         client = QdrantClient("http://localhost:6333", prefer_grpc=False)
@@ -51,9 +60,12 @@ class TestSyncFacadeClosed:
         # closed should be the same value the inner client exposes,
         # not a copy or a stale snapshot.
         client = QdrantClient(":memory:")
-        assert client.closed == client._client.closed
-        client.close()
-        assert client.closed == client._client.closed
+        try:
+            assert client.closed == client._client.closed
+            client.close()
+            assert client.closed == client._client.closed
+        finally:
+            client.close()
 
     def test_double_close_keeps_closed_true(self):
         client = QdrantClient(":memory:")
@@ -69,7 +81,10 @@ class TestAsyncFacadeClosed:
     @pytest.mark.asyncio
     async def test_local_in_memory_starts_false(self):
         client = AsyncQdrantClient(":memory:")
-        assert client.closed is False
+        try:
+            assert client.closed is False
+        finally:
+            await client.close()
 
     @pytest.mark.asyncio
     async def test_local_in_memory_true_after_close(self):
@@ -81,7 +96,10 @@ class TestAsyncFacadeClosed:
     async def test_local_path_starts_false(self):
         with tempfile.TemporaryDirectory() as tmp:
             client = AsyncQdrantClient(path=str(Path(tmp) / "qdrant_test_async"))
-            assert client.closed is False
+            try:
+                assert client.closed is False
+            finally:
+                await client.close()
 
     @pytest.mark.asyncio
     async def test_local_path_true_after_close(self):
@@ -93,7 +111,10 @@ class TestAsyncFacadeClosed:
     @pytest.mark.asyncio
     async def test_remote_starts_false(self):
         client = AsyncQdrantClient("http://localhost:6333", prefer_grpc=False)
-        assert client.closed is False
+        try:
+            assert client.closed is False
+        finally:
+            await client.close()
 
     @pytest.mark.asyncio
     async def test_remote_true_after_close(self):
@@ -104,9 +125,12 @@ class TestAsyncFacadeClosed:
     @pytest.mark.asyncio
     async def test_delegates_to_inner_client(self):
         client = AsyncQdrantClient(":memory:")
-        assert client.closed == client._client.closed
-        await client.close()
-        assert client.closed == client._client.closed
+        try:
+            assert client.closed == client._client.closed
+            await client.close()
+            assert client.closed == client._client.closed
+        finally:
+            await client.close()
 
     @pytest.mark.asyncio
     async def test_double_close_keeps_closed_true(self):
@@ -121,6 +145,9 @@ class TestAsyncFacadeClosed:
         # closed is a synchronous @property — it must not return a coroutine.
         # If a maintainer accidentally makes it async, this test catches it.
         client = AsyncQdrantClient(":memory:")
-        result = client.closed
-        assert not hasattr(result, "__await__")
-        assert isinstance(result, bool)
+        try:
+            result = client.closed
+            assert not hasattr(result, "__await__")
+            assert isinstance(result, bool)
+        finally:
+            await client.close()
