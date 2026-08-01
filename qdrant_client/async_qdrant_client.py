@@ -1517,6 +1517,15 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
         return await self._client.get_collections(**kwargs)
 
+    async def get_collection_names(self, **kwargs: Any) -> list[str]:
+        """Get names of all existing collections
+
+        Returns:
+            List of the collection names
+        """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+        return await self._client.get_collection_names(**kwargs)
+
     async def get_collection(self, collection_name: str, **kwargs: Any) -> types.CollectionInfo:
         """Get detailed information about specified existing collection
 

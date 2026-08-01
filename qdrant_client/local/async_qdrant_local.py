@@ -662,6 +662,11 @@ class AsyncQdrantLocal(AsyncQdrantBase):
             ]
         )
 
+    async def get_collection_names(self, **kwargs: Any) -> list[str]:
+        return [
+            collection.name for collection in (await self.get_collections(**kwargs)).collections
+        ]
+
     async def get_collection(self, collection_name: str, **kwargs: Any) -> types.CollectionInfo:
         collection = self._get_collection(collection_name)
         return collection.info()

@@ -51,6 +51,33 @@ def test_get_collection():
     )
 
 
+def test_get_collection_names():
+    fixture_points = generate_fixtures()
+
+    remote_client = init_remote()
+
+    for collection in remote_client.get_collections().collections:
+        remote_client.delete_collection(collection.name)
+
+    local_client = init_local()
+    init_client(local_client, fixture_points)
+
+    init_client(remote_client, fixture_points)
+
+    local_names = local_client.get_collection_names()
+    remote_names = remote_client.get_collection_names()
+
+    # the shortcut returns exactly the names carried by get_collections()
+    assert local_names == [
+        collection.name for collection in local_client.get_collections().collections
+    ]
+    assert remote_names == [
+        collection.name for collection in remote_client.get_collections().collections
+    ]
+
+    assert sorted(local_names) == sorted(remote_names)
+
+
 def test_recreate_collection():
     # this method has been marked as deprecated and should be removed in qdrant-client v1.12
     local_client = init_local()

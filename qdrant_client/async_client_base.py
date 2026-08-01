@@ -224,6 +224,9 @@ class AsyncQdrantBase:
     async def get_collections(self, **kwargs: Any) -> types.CollectionsResponse:
         raise NotImplementedError()
 
+    async def get_collection_names(self, **kwargs: Any) -> list[str]:
+        raise NotImplementedError()
+
     async def get_collection(self, collection_name: str, **kwargs: Any) -> types.CollectionInfo:
         raise NotImplementedError()
 
