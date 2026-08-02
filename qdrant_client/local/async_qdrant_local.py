@@ -673,6 +673,11 @@ class AsyncQdrantLocal(AsyncQdrantBase):
             ]
         )
 
+    def get_alias_names(self) -> list[str]:
+        if self.closed:
+            raise RuntimeError("AsyncQdrantLocal instance is closed. Please create a new instance.")
+        return list(self.aliases.keys())
+
     async def get_collections(self, **kwargs: Any) -> types.CollectionsResponse:
         if self.closed:
             raise RuntimeError("QdrantLocal instance is closed. Please create a new instance.")
