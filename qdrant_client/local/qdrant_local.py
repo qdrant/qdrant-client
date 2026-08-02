@@ -747,6 +747,11 @@ class QdrantLocal(QdrantBase):
             ]
         )
 
+    def get_collection_names(self) -> list[str]:
+        if self.closed:
+            raise RuntimeError("QdrantLocal instance is closed. Please create a new instance.")
+        return list(self.collections.keys())
+
     def get_collection(self, collection_name: str, **kwargs: Any) -> types.CollectionInfo:
         collection = self._get_collection(collection_name)
         return collection.info()
@@ -908,9 +913,9 @@ class QdrantLocal(QdrantBase):
 
         collection = self._get_collection(collection_name)
         if isinstance(vectors, dict) and any(isinstance(v, np.ndarray) for v in vectors.values()):
-            assert (
-                len(set([arr.shape[0] for arr in vectors.values()])) == 1
-            ), "Each named vector should have the same number of vectors"
+            assert len(set([arr.shape[0] for arr in vectors.values()])) == 1, (
+                "Each named vector should have the same number of vectors"
+            )
 
             num_vectors = next(iter(vectors.values())).shape[0]
             # convert dict[str, np.ndarray] to list[dict[str, list[float]]]
@@ -1126,7 +1131,7 @@ class QdrantLocal(QdrantBase):
         **kwargs: Any,
     ) -> types.OptimizationsResponse:
         raise NotImplementedError(
-            "Get optimizations is not supported in the local Qdrant. " "Please use server Qdrant."
+            "Get optimizations is not supported in the local Qdrant. Please use server Qdrant."
         )
 
     def list_shard_keys(

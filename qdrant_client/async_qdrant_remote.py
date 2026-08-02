@@ -1712,6 +1712,9 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         assert result is not None, "Get collections returned None"
         return result
 
+    async def get_collection_names(self) -> list[str]:
+        return [c.name for c in (await self.get_collections()).collections]
+
     async def get_collection(self, collection_name: str, **kwargs: Any) -> types.CollectionInfo:
         if self._prefer_grpc:
             return GrpcToRest.convert_collection_info(

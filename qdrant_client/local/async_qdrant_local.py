@@ -683,6 +683,11 @@ class AsyncQdrantLocal(AsyncQdrantBase):
             ]
         )
 
+    def get_collection_names(self) -> list[str]:
+        if self.closed:
+            raise RuntimeError("AsyncQdrantLocal instance is closed. Please create a new instance.")
+        return list(self.collections.keys())
+
     async def get_collection(self, collection_name: str, **kwargs: Any) -> types.CollectionInfo:
         collection = self._get_collection(collection_name)
         return collection.info()

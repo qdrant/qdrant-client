@@ -1576,6 +1576,23 @@ class QdrantClient(QdrantFastembedMixin):
 
         return self._client.get_collections(**kwargs)
 
+    def get_collection_names(self, **kwargs: Any) -> list[str]:
+        """Return a list of all collection names.
+
+        A shortcut for ``[c.name for c in self.get_collections().collections]``.
+        For local mode, reads from the in-memory dict directly (no
+        intermediate ``CollectionsResponse`` model). For remote mode,
+        delegates to the existing ``get_collections()`` call.
+
+        Returns:
+            A list of collection names. Order matches the server's
+            response (remote) or insertion order (local). Empty list
+            if no collections exist.
+        """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
+        return self._client.get_collection_names()
+
     def get_collection(self, collection_name: str, **kwargs: Any) -> types.CollectionInfo:
         """Get detailed information about specified existing collection
 
