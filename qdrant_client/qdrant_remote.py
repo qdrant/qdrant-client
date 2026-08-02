@@ -321,6 +321,18 @@ class QdrantRemote(QdrantBase):
 
         self._closed = True
 
+    def health_check(self) -> bool:
+        """Check whether the Qdrant server is reachable via the REST
+        ``/healthz`` endpoint. Returns True on a successful response, False
+        on any exception (timeout, connection refused, non-2xx, API error).
+        The call is best-effort: any exception is folded into a False return
+        rather than raised."""
+        try:
+            self.openapi_client.service_api.healthz()
+            return True
+        except Exception:
+            return False
+
     @staticmethod
     def _parse_url(url: str) -> tuple[str | None, str, int | None, str | None]:
         parse_result: Url = parse_url(url)

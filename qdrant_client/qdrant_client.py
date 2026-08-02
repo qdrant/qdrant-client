@@ -177,6 +177,14 @@ class QdrantClient(QdrantFastembedMixin):
         if hasattr(self, "_client"):
             self._client.close(grpc_grace=grpc_grace, **kwargs)
 
+    def health_check(self) -> bool:
+        """Check whether the Qdrant server is reachable. Returns True on
+        success, False on any failure. The call is best-effort: any
+        exception is folded into a False return rather than raised."""
+        if hasattr(self, "_client"):
+            return self._client.health_check()
+        return False
+
     @property
     def grpc_collections(self) -> grpc.CollectionsStub:
         """gRPC client for collections methods
