@@ -1873,6 +1873,9 @@ class QdrantRemote(QdrantBase):
         assert result is not None, "Get collections returned None"
         return result
 
+    def get_collection_names(self) -> list[str]:
+        return [c.name for c in self.get_collections().collections]
+
     def get_collection(self, collection_name: str, **kwargs: Any) -> types.CollectionInfo:
         if self._prefer_grpc:
             return GrpcToRest.convert_collection_info(
