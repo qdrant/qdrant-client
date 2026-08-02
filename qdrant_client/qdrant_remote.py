@@ -1855,6 +1855,9 @@ class QdrantRemote(QdrantBase):
         assert result is not None, "Get aliases returned None"
         return result
 
+    def get_alias_names(self) -> list[str]:
+        return [a.alias_name for a in self.get_aliases().aliases]
+
     def get_collections(self, **kwargs: Any) -> types.CollectionsResponse:
         if self._prefer_grpc:
             response = self.grpc_collections.List(

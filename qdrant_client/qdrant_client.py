@@ -1566,6 +1566,23 @@ class QdrantClient(QdrantFastembedMixin):
 
         return self._client.get_aliases(**kwargs)
 
+    def get_alias_names(self, **kwargs: Any) -> list[str]:
+        """Return a list of all alias names.
+
+        A shortcut for ``[a.alias_name for a in self.get_aliases().aliases]``.
+        For local mode, reads from the in-memory dict directly (no
+        intermediate ``CollectionsAliasesResponse`` model). For remote
+        mode, delegates to the existing ``get_aliases()`` call.
+
+        Returns:
+            A list of alias names. Order matches the server's
+            response (remote) or insertion order (local). Empty list
+            if no aliases exist.
+        """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
+        return self._client.get_alias_names()
+
     def get_collections(self, **kwargs: Any) -> types.CollectionsResponse:
         """Get list name of all existing collections
 

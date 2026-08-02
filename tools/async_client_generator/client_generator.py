@@ -93,6 +93,7 @@ if __name__ == "__main__":
         exclude_methods=[
             "__del__",
             "migrate",
+            "get_alias_names",
         ],
     )
 
