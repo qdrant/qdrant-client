@@ -112,6 +112,9 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         except TypeError:
             pass
 
+    def __repr__(self) -> str:
+        return f"<AsyncQdrantLocal location={self.location!r}>"
+
     def _load(self) -> None:
         deprecated_config_fields = ("init_from",)
         if not self.persistent:

@@ -114,6 +114,9 @@ class QdrantLocal(QdrantBase):
             # QdrantLocal instance
             pass
 
+    def __repr__(self) -> str:
+        return f"<QdrantLocal location={self.location!r}>"
+
     def _load(self) -> None:
         deprecated_config_fields = ("init_from",)
 

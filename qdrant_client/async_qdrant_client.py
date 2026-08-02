@@ -164,6 +164,15 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         if hasattr(self, "_client"):
             await self._client.close(grpc_grace=grpc_grace, **kwargs)
 
+    def __repr__(self) -> str:
+        if isinstance(self._client, AsyncQdrantRemote):
+            return (
+                f"<AsyncQdrantClient mode=remote scheme={self._client._scheme} "
+                f"host={self._client._host!r} port={self._client._port} "
+                f"prefer_grpc={self._client._prefer_grpc}>"
+            )
+        return f"<AsyncQdrantClient mode=local location={self._client.location!r}>"
+
     @property
     def grpc_collections(self) -> grpc.CollectionsStub:
         """gRPC client for collections methods
