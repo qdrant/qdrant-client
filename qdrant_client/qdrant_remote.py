@@ -321,6 +321,18 @@ class QdrantRemote(QdrantBase):
 
         self._closed = True
 
+    def server_info(self) -> types.VersionInfo | None:
+        """Return the Qdrant server's full ``VersionInfo`` model (with
+        ``title``, ``version``, and ``commit``). Calls the REST ``/``
+        endpoint via the existing service API binding.
+
+        On any failure (timeout, connection refused, non-2xx, API
+        error), returns ``None`` rather than raising."""
+        try:
+            return self.openapi_client.service_api.root()
+        except Exception:
+            return None
+
     @staticmethod
     def _parse_url(url: str) -> tuple[str | None, str, int | None, str | None]:
         parse_result: Url = parse_url(url)

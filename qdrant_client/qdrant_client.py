@@ -177,6 +177,19 @@ class QdrantClient(QdrantFastembedMixin):
         if hasattr(self, "_client"):
             self._client.close(grpc_grace=grpc_grace, **kwargs)
 
+    def server_info(self) -> types.VersionInfo | None:
+        """Return the Qdrant server's full ``VersionInfo`` model (with
+        ``title``, ``version``, and ``commit``). For local mode, returns
+        a synthetic ``VersionInfo`` with
+        ``title="qdrant-client (local mode)"``,
+        ``version=<client library version>``, and ``commit=None``.
+
+        On any remote failure (timeout, connection refused, non-2xx),
+        returns ``None`` rather than raising — the model is best-effort."""
+        if hasattr(self, "_client"):
+            return self._client.server_info()
+        return None
+
     @property
     def grpc_collections(self) -> grpc.CollectionsStub:
         """gRPC client for collections methods
