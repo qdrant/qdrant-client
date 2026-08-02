@@ -177,6 +177,12 @@ class QdrantClient(QdrantFastembedMixin):
         if hasattr(self, "_client"):
             self._client.close(grpc_grace=grpc_grace, **kwargs)
 
+    def __enter__(self) -> "QdrantClient":
+        return self
+
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+        self.close()
+
     @property
     def grpc_collections(self) -> grpc.CollectionsStub:
         """gRPC client for collections methods

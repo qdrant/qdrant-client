@@ -163,6 +163,12 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         """
         if hasattr(self, "_client"):
             await self._client.close(grpc_grace=grpc_grace, **kwargs)
+    async def __aenter__(self) -> "AsyncQdrantClient":
+        return self
+
+    async def __aexit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+        await self.close()
+
 
     @property
     def grpc_collections(self) -> grpc.CollectionsStub:
