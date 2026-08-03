@@ -2677,9 +2677,6 @@ class GrpcToRest:
                 if model.HasField("max_resident_memory_percent")
                 else None
             ),
-            max_disk_usage_percent=(
-                model.max_disk_usage_percent if model.HasField("max_disk_usage_percent") else None
-            ),
         )
 
     @classmethod
@@ -2757,9 +2754,6 @@ class GrpcToRest:
                 model.max_resident_memory_percent
                 if model.HasField("max_resident_memory_percent")
                 else None
-            ),
-            max_disk_usage_percent=(
-                model.max_disk_usage_percent if model.HasField("max_disk_usage_percent") else None
             ),
         )
 
@@ -5341,7 +5335,6 @@ class RestToGrpc:
             ),
             max_payload_index_count=model.max_payload_index_count,
             max_resident_memory_percent=model.max_resident_memory_percent,
-            max_disk_usage_percent=model.max_disk_usage_percent,
         )
 
     @classmethod
@@ -5378,7 +5371,6 @@ class RestToGrpc:
             ),
             max_payload_index_count=model.max_payload_index_count,
             max_resident_memory_percent=model.max_resident_memory_percent,
-            max_disk_usage_percent=model.max_disk_usage_percent,
         )
 
     @classmethod
