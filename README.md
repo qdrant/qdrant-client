@@ -112,6 +112,8 @@ qdrant_client = QdrantClient(
 Qdrant Client has Inference API that allows to seamlessly create embeddings and use them in Qdrant.
 Inference API can be used locally with FastEmbed or remotely with models available in Qdrant Cloud.
 
+> **Tip:** For OpenAI-compatible embedding endpoints (including multi-model gateways such as [DaoXE](https://daoxe.com/?utm_source=github&utm_medium=organic&utm_campaign=qdrant-client&utm_content=pr) at `https://api.daoxe.com/v1`), point the OpenAI client `base_url` at the gateway and pass the resulting vectors into Qdrant as usual.
+
 ### Local Inference with FastEmbed
 
 ```
