@@ -34,15 +34,16 @@ def check_values_count(condition: models.ValuesCount, values: list[Any] | None) 
 
     counts = get_value_counts(values)
 
-    if condition.lt is not None and all(count >= condition.lt for count in counts):
-        return False
-    if condition.lte is not None and all(count > condition.lte for count in counts):
-        return False
-    if condition.gt is not None and all(count <= condition.gt for count in counts):
-        return False
-    if condition.gte is not None and all(count < condition.gte for count in counts):
-        return False
-    return True
+    # A single value's count must satisfy every bound at once, and the condition
+    # matches if any one value does. Checking each bound independently across all
+    # counts would let separate values satisfy separate bounds.
+    return any(
+        (condition.lt is None or count < condition.lt)
+        and (condition.lte is None or count <= condition.lte)
+        and (condition.gt is None or count > condition.gt)
+        and (condition.gte is None or count >= condition.gte)
+        for count in counts
+    )
 
 
 def check_geo_radius(condition: models.GeoRadius, values: Any) -> bool:
