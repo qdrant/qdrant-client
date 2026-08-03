@@ -83,3 +83,8 @@ def test_field_condition_is_empty_is_null():
                 with_payload=False,
             ),
         )
+        compare_client_results(
+            local_client,
+            remote_client,
+            lambda c, f=flt: c.count(COLLECTION_NAME, count_filter=f).count,
+        )
