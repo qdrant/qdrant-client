@@ -228,3 +228,52 @@ def test_slice_condition_inside_nested_filter():
             COLLECTION_NAME, scroll_filter=models.Filter(must=[nested]), limit=100
         )[0],
     )
+
+
+@pytest.mark.parametrize("key", ["company", "company[]", "company[0]", "company[1]"])
+def test_nested_filter_payload_shapes(key: str):
+    """A nested filter is applied to the elements of an array of objects, so a value which is not
+    an array has no elements to match against. `company` and `company[]` are equivalent.
+    """
+    shapes = [
+        {"name": "qdrant"},  # plain object, not an array
+        [{"name": "qdrant"}],  # array of objects
+        {"a": {"name": "qdrant"}},  # map of objects, still not an array
+        [{"name": "other"}, {"name": "qdrant"}],  # array where only the second element matches
+        ["qdrant", 42, True, None],  # array of scalars, nothing to resolve `name` against
+        [[{"name": "qdrant"}]],  # array whose single element is itself an array of objects
+    ]
+
+    fixture_points = generate_fixtures(num=len(shapes))
+    for point, shape in zip(fixture_points, shapes):
+        point.payload = {"company": shape}
+
+    local_client = init_local()
+    init_client(local_client, fixture_points)
+
+    remote_client = init_remote()
+    init_client(remote_client, fixture_points)
+
+    nested_filter = models.Filter(
+        must=[
+            models.NestedCondition(
+                nested=models.Nested(
+                    key=key,
+                    filter=models.Filter(
+                        must=[
+                            models.FieldCondition(
+                                key="name", match=models.MatchValue(value="qdrant")
+                            )
+                        ]
+                    ),
+                )
+            )
+        ]
+    )
+
+    compare_client_results(
+        local_client,
+        remote_client,
+        scroll_with_filter,
+        scroll_filter=nested_filter,
+    )
