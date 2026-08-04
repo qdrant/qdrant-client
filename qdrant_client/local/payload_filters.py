@@ -186,6 +186,27 @@ def check_match(condition: models.Match, value: Any) -> bool:
     raise ValueError(f"Unknown match condition: {condition}")
 
 
+def nested_filter_values(payload: dict[str, Any], key: str) -> list[Any]:
+    """Array elements a nested filter is applied to, one at a time.
+
+    A nested key should point to an array of objects, and may be written with or without the
+    bracket notation: `data` and `data[]` are equivalent. A value which is not an array - a plain
+    object, a scalar - has no elements to apply the filter to, so it never matches.
+    """
+    if len(key) > 2 and key.endswith("[]"):
+        key = key[: -len("[]")]
+
+    values = value_by_key(payload, key, flat=False)
+    if values is None:
+        return []
+
+    elements: list[Any] = []
+    for value in values:
+        if isinstance(value, list):
+            elements.extend(value)
+    return elements
+
+
 def check_nested_filter(nested_filter: models.Filter, values: list[Any]) -> bool:
     return any(check_filter(nested_filter, v, point_id=-1, has_vector={}) for v in values)
 
@@ -253,10 +274,9 @@ def check_condition(
                 return False
             return any(check_geo_polygon(condition.geo_polygon, v) for v in values)
     elif isinstance(condition, models.NestedCondition):
-        values = value_by_key(payload, condition.nested.key)
-        if values is None:
-            return False
-        return check_nested_filter(condition.nested.filter, values)
+        return check_nested_filter(
+            condition.nested.filter, nested_filter_values(payload, condition.nested.key)
+        )
     elif isinstance(condition, models.Filter):
         return check_filter(condition, payload, point_id, has_vector)
     else:
