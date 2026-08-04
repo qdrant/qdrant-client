@@ -240,7 +240,7 @@ def test_nested_filter_payload_shapes(key: str):
         [{"name": "qdrant"}],  # array of objects
         {"a": {"name": "qdrant"}},  # map of objects, still not an array
         [{"name": "other"}, {"name": "qdrant"}],  # array where only the second element matches
-        ["qdrant"],  # array of scalars
+        ["qdrant", 42, True, None],  # array of scalars, nothing to resolve `name` against
         [[{"name": "qdrant"}]],  # array whose single element is itself an array of objects
     ]
 
