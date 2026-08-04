@@ -12,6 +12,7 @@ from qdrant_client.http.api.collections_api import AsyncCollectionsApi, SyncColl
 from qdrant_client.http.api.distributed_api import AsyncDistributedApi, SyncDistributedApi
 from qdrant_client.http.api.indexes_api import AsyncIndexesApi, SyncIndexesApi
 from qdrant_client.http.api.points_api import AsyncPointsApi, SyncPointsApi
+from qdrant_client.http.api.quotas_api import AsyncQuotasApi, SyncQuotasApi
 from qdrant_client.http.api.search_api import AsyncSearchApi, SyncSearchApi
 from qdrant_client.http.api.service_api import AsyncServiceApi, SyncServiceApi
 from qdrant_client.http.api.snapshots_api import AsyncSnapshotsApi, SyncSnapshotsApi
@@ -31,6 +32,7 @@ class AsyncApis(Generic[AsyncClientT]):
         self.distributed_api = AsyncDistributedApi(self.client)
         self.indexes_api = AsyncIndexesApi(self.client)
         self.points_api = AsyncPointsApi(self.client)
+        self.quotas_api = AsyncQuotasApi(self.client)
         self.search_api = AsyncSearchApi(self.client)
         self.service_api = AsyncServiceApi(self.client)
         self.snapshots_api = AsyncSnapshotsApi(self.client)
@@ -49,6 +51,7 @@ class SyncApis(Generic[ClientT]):
         self.distributed_api = SyncDistributedApi(self.client)
         self.indexes_api = SyncIndexesApi(self.client)
         self.points_api = SyncPointsApi(self.client)
+        self.quotas_api = SyncQuotasApi(self.client)
         self.search_api = SyncSearchApi(self.client)
         self.service_api = SyncServiceApi(self.client)
         self.snapshots_api = SyncSnapshotsApi(self.client)

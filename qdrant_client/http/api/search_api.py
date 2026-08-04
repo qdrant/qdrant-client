@@ -77,7 +77,7 @@ class _SearchApi:
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse20022,
+            type_=m.InlineResponse20023,
             method="POST",
             url="/collections/{collection_name}/points/query/batch",
             headers=headers if headers else None,
@@ -111,7 +111,7 @@ class _SearchApi:
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse20021,
+            type_=m.InlineResponse20022,
             method="POST",
             url="/collections/{collection_name}/points/query",
             headers=headers if headers else None,
@@ -145,7 +145,7 @@ class _SearchApi:
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse20023,
+            type_=m.InlineResponse20024,
             method="POST",
             url="/collections/{collection_name}/points/query/groups",
             headers=headers if headers else None,
@@ -179,7 +179,7 @@ class _SearchApi:
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse20025,
+            type_=m.InlineResponse20026,
             method="POST",
             url="/collections/{collection_name}/points/search/matrix/offsets",
             headers=headers if headers else None,
@@ -213,7 +213,7 @@ class _SearchApi:
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse20024,
+            type_=m.InlineResponse20025,
             method="POST",
             url="/collections/{collection_name}/points/search/matrix/pairs",
             headers=headers if headers else None,
@@ -230,7 +230,7 @@ class AsyncSearchApi(_SearchApi):
         consistency: m.ReadConsistency = None,
         timeout: int = None,
         query_request_batch: m.QueryRequestBatch = None,
-    ) -> m.InlineResponse20022:
+    ) -> m.InlineResponse20023:
         """
         Universally query points in batch. This endpoint covers all capabilities of search, recommend, discover, filters. But also enables hybrid and multi-stage queries.
         """
@@ -247,7 +247,7 @@ class AsyncSearchApi(_SearchApi):
         consistency: m.ReadConsistency = None,
         timeout: int = None,
         query_request: m.QueryRequest = None,
-    ) -> m.InlineResponse20021:
+    ) -> m.InlineResponse20022:
         """
         Universally query points. This endpoint covers all capabilities of search, recommend, discover, filters. But also enables hybrid and multi-stage queries.
         """
@@ -264,7 +264,7 @@ class AsyncSearchApi(_SearchApi):
         consistency: m.ReadConsistency = None,
         timeout: int = None,
         query_groups_request: m.QueryGroupsRequest = None,
-    ) -> m.InlineResponse20023:
+    ) -> m.InlineResponse20024:
         """
         Universally query points, grouped by a given payload field
         """
@@ -281,7 +281,7 @@ class AsyncSearchApi(_SearchApi):
         consistency: m.ReadConsistency = None,
         timeout: int = None,
         search_matrix_request: m.SearchMatrixRequest = None,
-    ) -> m.InlineResponse20025:
+    ) -> m.InlineResponse20026:
         """
         Compute distance matrix for sampled points with an offset based output format
         """
@@ -298,7 +298,7 @@ class AsyncSearchApi(_SearchApi):
         consistency: m.ReadConsistency = None,
         timeout: int = None,
         search_matrix_request: m.SearchMatrixRequest = None,
-    ) -> m.InlineResponse20024:
+    ) -> m.InlineResponse20025:
         """
         Compute distance matrix for sampled points with a pair based output format
         """
@@ -317,7 +317,7 @@ class SyncSearchApi(_SearchApi):
         consistency: m.ReadConsistency = None,
         timeout: int = None,
         query_request_batch: m.QueryRequestBatch = None,
-    ) -> m.InlineResponse20022:
+    ) -> m.InlineResponse20023:
         """
         Universally query points in batch. This endpoint covers all capabilities of search, recommend, discover, filters. But also enables hybrid and multi-stage queries.
         """
@@ -334,7 +334,7 @@ class SyncSearchApi(_SearchApi):
         consistency: m.ReadConsistency = None,
         timeout: int = None,
         query_request: m.QueryRequest = None,
-    ) -> m.InlineResponse20021:
+    ) -> m.InlineResponse20022:
         """
         Universally query points. This endpoint covers all capabilities of search, recommend, discover, filters. But also enables hybrid and multi-stage queries.
         """
@@ -351,7 +351,7 @@ class SyncSearchApi(_SearchApi):
         consistency: m.ReadConsistency = None,
         timeout: int = None,
         query_groups_request: m.QueryGroupsRequest = None,
-    ) -> m.InlineResponse20023:
+    ) -> m.InlineResponse20024:
         """
         Universally query points, grouped by a given payload field
         """
@@ -368,7 +368,7 @@ class SyncSearchApi(_SearchApi):
         consistency: m.ReadConsistency = None,
         timeout: int = None,
         search_matrix_request: m.SearchMatrixRequest = None,
-    ) -> m.InlineResponse20025:
+    ) -> m.InlineResponse20026:
         """
         Compute distance matrix for sampled points with an offset based output format
         """
@@ -385,7 +385,7 @@ class SyncSearchApi(_SearchApi):
         consistency: m.ReadConsistency = None,
         timeout: int = None,
         search_matrix_request: m.SearchMatrixRequest = None,
-    ) -> m.InlineResponse20024:
+    ) -> m.InlineResponse20025:
         """
         Compute distance matrix for sampled points with a pair based output format
         """

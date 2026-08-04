@@ -2096,12 +2096,12 @@ def test_strict_mode(prefer_grpc):
 
     if major is None or dev or (major, minor, patch) >= (1, 18, 0):
         strict_mode_config = StrictModeConfig(
-            max_disk_usage_percent=90,
+            max_resident_memory_percent=90,
         )
         client.update_collection(COLLECTION_NAME, strict_mode_config=strict_mode_config)
         collection_info = client.get_collection(COLLECTION_NAME)
         strict_mode_config = collection_info.config.strict_mode_config
-        assert strict_mode_config.max_disk_usage_percent == 90
+        assert strict_mode_config.max_resident_memory_percent == 90
 
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])
