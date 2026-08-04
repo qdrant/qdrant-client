@@ -40,7 +40,7 @@ fastembed-gpu = [
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.1"
-coverage = "^6.3.3"
+coverage = ">=6.3.3,<8.0.0"
 pytest-asyncio = ">=0.21,<0.24"
 pytest-timeout = "^2.1.0"
 autoflake = "^2.2.1"
