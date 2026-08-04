@@ -5,6 +5,7 @@ from urllib.parse import urljoin
 
 from httpx import AsyncClient, Client, Request, Response
 from pydantic import ValidationError
+from qdrant_client._json_backend import loads as json_loads
 from qdrant_client.common.client_exceptions import ResourceExhaustedResponse
 from qdrant_client.http.api.aliases_api import AsyncAliasesApi, SyncAliasesApi
 from qdrant_client.http.api.beta_api import AsyncBetaApi, SyncBetaApi
@@ -117,7 +118,7 @@ class ApiClient:
         if response.status_code == 429:
             retry_after_s = response.headers.get("Retry-After", None)
             try:
-                resp = response.json()
+                resp = json_loads(response.content)
                 message = resp["status"]["error"] if resp["status"] and resp["status"]["error"] else ""
             except Exception:
                 message = ""
@@ -127,7 +128,7 @@ class ApiClient:
 
         if response.status_code in [200, 201, 202]:
             try:
-                return parse_as_type(response.json(), type_)
+                return parse_as_type(json_loads(response.content), type_)
             except ValidationError as e:
                 raise ResponseHandlingException(e)
         raise UnexpectedResponse.for_response(response)
@@ -206,7 +207,7 @@ class AsyncApiClient:
         if response.status_code == 429:
             retry_after_s = response.headers.get("Retry-After", None)
             try:
-                resp = response.json()
+                resp = json_loads(response.content)
                 message = resp["status"]["error"] if resp["status"] and resp["status"]["error"] else ""
             except Exception:
                 message = ""
@@ -216,7 +217,7 @@ class AsyncApiClient:
 
         if response.status_code in [200, 201, 202]:
             try:
-                return parse_as_type(response.json(), type_)
+                return parse_as_type(json_loads(response.content), type_)
             except ValidationError as e:
                 raise ResponseHandlingException(e)
         raise UnexpectedResponse.for_response(response)
