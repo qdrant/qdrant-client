@@ -1398,68 +1398,68 @@ class InlineResponse20010(BaseModel):
     usage: Optional["Usage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
-    result: Optional["OptimizationsResponse"] = Field(default=None, description="")
+    result: Optional["CollectionClusterInfo"] = Field(default=None, description="")
 
 
 class InlineResponse20011(BaseModel):
     usage: Optional["Usage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
-    result: Optional["CollectionsAliasesResponse"] = Field(default=None, description="")
+    result: Optional["OptimizationsResponse"] = Field(default=None, description="")
 
 
 class InlineResponse20012(BaseModel):
+    usage: Optional["Usage"] = Field(default=None, description="")
+    time: Optional[float] = Field(default=None, description="Time spent to process this request")
+    status: Optional[str] = Field(default=None, description="")
+    result: Optional["CollectionsAliasesResponse"] = Field(default=None, description="")
+
+
+class InlineResponse20013(BaseModel):
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
     result: Optional[bool] = Field(default=None, description="")
 
 
-class InlineResponse20013(BaseModel):
+class InlineResponse20014(BaseModel):
     usage: Optional["Usage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
     result: Optional[List["SnapshotDescription"]] = Field(default=None, description="")
 
 
-class InlineResponse20014(BaseModel):
+class InlineResponse20015(BaseModel):
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
     result: Optional["SnapshotDescription"] = Field(default=None, description="")
-
-
-class InlineResponse20015(BaseModel):
-    usage: Optional["Usage"] = Field(default=None, description="")
-    time: Optional[float] = Field(default=None, description="Time spent to process this request")
-    status: Optional[str] = Field(default=None, description="")
-    result: Optional["Record"] = Field(default=None, description="")
 
 
 class InlineResponse20016(BaseModel):
     usage: Optional["Usage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
-    result: Optional[List["Record"]] = Field(default=None, description="")
+    result: Optional["Record"] = Field(default=None, description="")
 
 
 class InlineResponse20017(BaseModel):
     usage: Optional["Usage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
-    result: Optional[List["UpdateResult"]] = Field(default=None, description="")
+    result: Optional[List["Record"]] = Field(default=None, description="")
 
 
 class InlineResponse20018(BaseModel):
     usage: Optional["Usage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
-    result: Optional["ScrollResult"] = Field(default=None, description="")
+    result: Optional[List["UpdateResult"]] = Field(default=None, description="")
 
 
 class InlineResponse20019(BaseModel):
     usage: Optional["Usage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
-    result: Optional["CountResult"] = Field(default=None, description="")
+    result: Optional["ScrollResult"] = Field(default=None, description="")
 
 
 class InlineResponse2002(BaseModel):
@@ -1473,38 +1473,45 @@ class InlineResponse20020(BaseModel):
     usage: Optional["Usage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
-    result: Optional["FacetResponse"] = Field(default=None, description="")
+    result: Optional["CountResult"] = Field(default=None, description="")
 
 
 class InlineResponse20021(BaseModel):
     usage: Optional["Usage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
-    result: Optional["QueryResponse"] = Field(default=None, description="")
+    result: Optional["FacetResponse"] = Field(default=None, description="")
 
 
 class InlineResponse20022(BaseModel):
     usage: Optional["Usage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
-    result: Optional[List["QueryResponse"]] = Field(default=None, description="")
+    result: Optional["QueryResponse"] = Field(default=None, description="")
 
 
 class InlineResponse20023(BaseModel):
     usage: Optional["Usage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
-    result: Optional["GroupsResult"] = Field(default=None, description="")
+    result: Optional[List["QueryResponse"]] = Field(default=None, description="")
 
 
 class InlineResponse20024(BaseModel):
     usage: Optional["Usage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
-    result: Optional["SearchMatrixPairsResponse"] = Field(default=None, description="")
+    result: Optional["GroupsResult"] = Field(default=None, description="")
 
 
 class InlineResponse20025(BaseModel):
+    usage: Optional["Usage"] = Field(default=None, description="")
+    time: Optional[float] = Field(default=None, description="Time spent to process this request")
+    status: Optional[str] = Field(default=None, description="")
+    result: Optional["SearchMatrixPairsResponse"] = Field(default=None, description="")
+
+
+class InlineResponse20026(BaseModel):
     usage: Optional["Usage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
@@ -1529,35 +1536,35 @@ class InlineResponse2005(BaseModel):
     usage: Optional["Usage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
-    result: Optional["CollectionsResponse"] = Field(default=None, description="")
+    result: Optional["QuotaStatus"] = Field(default=None, description="")
 
 
 class InlineResponse2006(BaseModel):
     usage: Optional["Usage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
-    result: Optional["CollectionInfo"] = Field(default=None, description="")
+    result: Optional["CollectionsResponse"] = Field(default=None, description="")
 
 
 class InlineResponse2007(BaseModel):
     usage: Optional["Usage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
-    result: Optional["UpdateResult"] = Field(default=None, description="")
+    result: Optional["CollectionInfo"] = Field(default=None, description="")
 
 
 class InlineResponse2008(BaseModel):
     usage: Optional["Usage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
-    result: Optional["CollectionExistence"] = Field(default=None, description="")
+    result: Optional["UpdateResult"] = Field(default=None, description="")
 
 
 class InlineResponse2009(BaseModel):
     usage: Optional["Usage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
-    result: Optional["CollectionClusterInfo"] = Field(default=None, description="")
+    result: Optional["CollectionExistence"] = Field(default=None, description="")
 
 
 class InlineResponse202(BaseModel):
@@ -2264,6 +2271,24 @@ class PeerMetadata(BaseModel):
     version: str = Field(..., description="Peer Qdrant version")
 
 
+class PeerQuotaUsage(BaseModel):
+    """
+    What one peer reports about the quota it is enforcing.
+    """
+
+    exceeded: bool = Field(
+        ...,
+        description="Whether this peer is at or over one of the enforced limits, and so is currently refusing updates. Always false while the quota is disabled.",
+    )
+    resident_memory_percent: Optional[int] = Field(
+        default=None,
+        description="Resident memory of this node&#x27;s process, as a percentage of the memory available to it (cgroup limit if one applies, else total system memory).",
+    )
+    disk_usage_percent: Optional[int] = Field(
+        default=None, description="Used space of this node&#x27;s storage filesystem, as a percentage of its capacity."
+    )
+
+
 class PendingOptimization(BaseModel):
     optimizer: str = Field(..., description="Name of the optimizer that scheduled this optimization.")
     segments: List["OptimizationSegmentInfo"] = Field(..., description="Segments that will be optimized.")
@@ -2491,6 +2516,89 @@ class QueryRequestBatch(BaseModel, extra="forbid"):
 
 class QueryResponse(BaseModel):
     points: List["ScoredPoint"] = Field(..., description="")
+
+
+class QuotaConfig(BaseModel, extra="forbid"):
+    """
+    Cluster-wide limits on node resources.  An unset limit means the corresponding resource is not capped. Limits are only enforced while `enabled` is true.
+    """
+
+    enabled: Optional[bool] = Field(default=False, description="Whether the limits below are enforced.")
+    max_resident_memory_percent: Optional[int] = Field(
+        default=None,
+        description="Reject memory-consuming updates once process resident memory reaches this percentage of total system memory (or of the cgroup limit, if one applies).",
+    )
+    max_disk_usage_percent: Optional[int] = Field(
+        default=None,
+        description="Reject disk-consuming updates once the filesystem hosting the storage directory is filled to this percentage of its capacity.",
+    )
+    release_margin_percent: Optional[int] = Field(
+        default=None,
+        description="How many percentage points below its limit a resource has to fall before this node starts accepting work again.  Without a margin, a resource resting on its limit crosses it in both directions on the noise between two readings, putting the node in and out of service each time — and restarting a shard recovery with it. Raise it where usage is volatile; `0` disables the margin and releases as soon as usage is back under the limit.  Unset leaves the built-in default in force, so a config written today does not pin a number that a later release may want to revise.",
+    )
+
+
+class QuotaExceeded(BaseModel):
+    """
+    Which of the enforced limits a node is currently refusing work over.  Reported per resource because they are freed by different actions: disk by deleting or optimizing, memory by unloading. A single flag would not say which one to go and fix.  `true` outlasts the reading that caused it: a resource that reaches its limit stays flagged until it has fallen a margin below, so that one resting near the limit does not flip the node in and out of service. Expect to see it set while the reported utilization is already back under the configured limit.  A field is `null` when the node is not enforcing that resource — the quota is disabled, no limit is set for it, or it cannot be measured here. That is deliberately distinct from `false`: a resource that can never trip must not be reported as one that is within its limits, or it invites an alert that can never fire.
+    """
+
+    resident_memory: Optional[bool] = Field(
+        default=None,
+        description="Which of the enforced limits a node is currently refusing work over.  Reported per resource because they are freed by different actions: disk by deleting or optimizing, memory by unloading. A single flag would not say which one to go and fix.  `true` outlasts the reading that caused it: a resource that reaches its limit stays flagged until it has fallen a margin below, so that one resting near the limit does not flip the node in and out of service. Expect to see it set while the reported utilization is already back under the configured limit.  A field is `null` when the node is not enforcing that resource — the quota is disabled, no limit is set for it, or it cannot be measured here. That is deliberately distinct from `false`: a resource that can never trip must not be reported as one that is within its limits, or it invites an alert that can never fire.",
+    )
+    disk_usage: Optional[bool] = Field(
+        default=None,
+        description="Which of the enforced limits a node is currently refusing work over.  Reported per resource because they are freed by different actions: disk by deleting or optimizing, memory by unloading. A single flag would not say which one to go and fix.  `true` outlasts the reading that caused it: a resource that reaches its limit stays flagged until it has fallen a margin below, so that one resting near the limit does not flip the node in and out of service. Expect to see it set while the reported utilization is already back under the configured limit.  A field is `null` when the node is not enforcing that resource — the quota is disabled, no limit is set for it, or it cannot be measured here. That is deliberately distinct from `false`: a resource that can never trip must not be reported as one that is within its limits, or it invites an alert that can never fire.",
+    )
+
+
+class QuotaStatus(BaseModel):
+    """
+    Quota configuration in effect, and how close each peer is to it.  The configuration is cluster-wide; the utilization is not. `usage` is the node that served the request, and `peers` is what every peer that answered reports about itself — memory and disk are node-local, so one peer being under its limit says nothing about the others.
+    """
+
+    config: "QuotaConfig" = Field(
+        ...,
+        description="Quota configuration in effect, and how close each peer is to it.  The configuration is cluster-wide; the utilization is not. `usage` is the node that served the request, and `peers` is what every peer that answered reports about itself — memory and disk are node-local, so one peer being under its limit says nothing about the others.",
+    )
+    usage: "QuotaUsage" = Field(
+        ...,
+        description="Quota configuration in effect, and how close each peer is to it.  The configuration is cluster-wide; the utilization is not. `usage` is the node that served the request, and `peers` is what every peer that answered reports about itself — memory and disk are node-local, so one peer being under its limit says nothing about the others.",
+    )
+    peers: Optional[Dict[str, "PeerQuotaUsage"]] = Field(
+        default=None,
+        description="Utilization reported by each peer, keyed by peer ID, including the one that served the request.  Only peers that answered are listed: a peer missing from the map could not be reached, which is itself worth seeing. Absent entirely outside distributed mode, where there are no peers to ask.",
+    )
+
+
+class QuotaTelemetry(BaseModel):
+    """
+    What a node reports about the quota it is enforcing.  Carries the verdict rather than the raw utilization, because the point of reporting it is to know whether this node is currently refusing writes — which depends on the limits as well as the readings.
+    """
+
+    config: "QuotaConfig" = Field(
+        ...,
+        description="What a node reports about the quota it is enforcing.  Carries the verdict rather than the raw utilization, because the point of reporting it is to know whether this node is currently refusing writes — which depends on the limits as well as the readings.",
+    )
+    exceeded: "QuotaExceeded" = Field(
+        ...,
+        description="What a node reports about the quota it is enforcing.  Carries the verdict rather than the raw utilization, because the point of reporting it is to know whether this node is currently refusing writes — which depends on the limits as well as the readings.",
+    )
+
+
+class QuotaUsage(BaseModel):
+    """
+    Utilization of the quota-managed resources **on this node alone** — memory and disk are node-local, so a peer under its limit says nothing about the rest of the cluster.  A field is `null` when the platform does not expose the underlying stat.
+    """
+
+    resident_memory_percent: Optional[int] = Field(
+        default=None,
+        description="Resident memory of this node&#x27;s process, as a percentage of the memory available to it (cgroup limit if one applies, else total system memory).",
+    )
+    disk_usage_percent: Optional[int] = Field(
+        default=None, description="Used space of this node&#x27;s storage filesystem, as a percentage of its capacity."
+    )
 
 
 class RaftInfo(BaseModel):
@@ -2737,8 +2845,13 @@ class RunningEnvironmentTelemetry(BaseModel):
         default=None,
         description="Average number of CPU cores used by this process over roughly the last two seconds. `None` on unsupported platforms, before two samples are collected, or on transient failures reading process CPU time.",
     )
-    ram_size: Optional[int] = Field(default=None, description="")
-    disk_size: Optional[int] = Field(default=None, description="")
+    ram_size: Optional[int] = Field(
+        default=None, description="Effective total memory for this process in KiB (cgroup limit or host RAM)."
+    )
+    disk_size: Optional[int] = Field(
+        default=None,
+        description="Size in KiB of the filesystem hosting Qdrant&#x27;s /storage path (if not available, fallback to host disk size)",
+    )
     cpu_flags: str = Field(..., description="")
     cpu_endian: Optional["CpuEndian"] = Field(default=None, description="")
     gpu_devices: Optional[List["GpuDeviceTelemetry"]] = Field(default=None, description="")
@@ -3431,11 +3544,7 @@ class StrictModeConfig(BaseModel, extra="forbid"):
     )
     max_resident_memory_percent: Optional[int] = Field(
         default=None,
-        description="Reject memory-consuming update operations (e.g. upsert, set payload) when the process resident memory exceeds this percentage of total system memory (or cgroup limit). Value in [1, 100]. Applied uniformly to external and internal (replication) traffic — rejection is deterministic so it does not cause replica divergence. Delete operations are not affected, so callers can still free memory.",
-    )
-    max_disk_usage_percent: Optional[int] = Field(
-        default=None,
-        description="Reject disk-consuming update operations (e.g. upsert, set payload) when the filesystem hosting Qdrant storage is filled above this percentage of its total capacity. Value in [1, 100]. Applied uniformly to external and internal (replication) traffic — rejection is deterministic so it does not cause replica divergence. Delete operations are not affected, so callers can still free disk space. Free space is sampled with a small TTL cache; the gate may take a few seconds to react.",
+        description="Deprecated: use the node-wide quota config (`PUT /quotas`) instead, which caps the same resource for every collection. Scheduled for removal in 1.21.  Reject memory-consuming update operations (e.g. upsert, set payload) when the process resident memory exceeds this percentage of total system memory (or cgroup limit). Value in [1, 100]. Memory is a node-wide resource, so this only tightens the quota for one collection; it cannot lift it. Delete operations are not affected, so callers can still free memory.",
     )
 
 
@@ -3486,11 +3595,7 @@ class StrictModeConfigOutput(BaseModel):
     )
     max_resident_memory_percent: Optional[int] = Field(
         default=None,
-        description="Reject memory-consuming update operations when resident memory exceeds this percentage of total RAM (1-100)",
-    )
-    max_disk_usage_percent: Optional[int] = Field(
-        default=None,
-        description="Reject disk-consuming update operations when the storage filesystem exceeds this percentage of total capacity (1-100)",
+        description="Deprecated: use the node-wide quota config instead. Reject memory-consuming update operations when resident memory exceeds this percentage of total RAM (1-100)",
     )
 
 
@@ -3523,6 +3628,10 @@ class TelemetryData(BaseModel):
     memory: Optional["MemoryTelemetry"] = Field(default=None, description="")
     hardware: Optional["HardwareTelemetry"] = Field(default=None, description="")
     search_pool: Optional["SearchThreadPoolTelemetry"] = Field(default=None, description="")
+    quota: Optional["QuotaTelemetry"] = Field(
+        default=None,
+        description="Resource quota this node is enforcing, and whether it is currently over it. The config is whatever this node last persisted, so a peer that missed a consensus update reports what it is actually applying rather than what the cluster agreed on. Absent for a token without global access, which `GET /quotas` requires as well.",
+    )
 
 
 class TextIndexParams(BaseModel, extra="forbid"):

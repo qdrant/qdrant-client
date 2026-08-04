@@ -431,7 +431,6 @@ strict_mode_config = grpc.StrictModeConfig(
     ),
     max_payload_index_count=32,
     max_resident_memory_percent=80,
-    max_disk_usage_percent=90,
 )
 
 strict_mode_config_empty = grpc.StrictModeConfig(

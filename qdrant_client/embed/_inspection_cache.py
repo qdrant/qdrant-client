@@ -212,6 +212,7 @@ CACHE_STR_PATH = {
         "searches.query.relevance_feedback.target",
     ],
     "QueryResponse": ["document"],
+    "QuotaConfig": [],
     "Range": [],
     "RecommendInput": ["negative", "positive"],
     "RecommendQuery": ["recommend.negative", "recommend.positive"],
@@ -2502,14 +2503,8 @@ DEFS = {
             "max_resident_memory_percent": {
                 "anyOf": [{"type": "integer"}, {"type": "null"}],
                 "default": None,
-                "description": "Reject memory-consuming update operations (e.g. upsert, set payload) when the process resident memory exceeds this percentage of total system memory (or cgroup limit). Value in [1, 100]. Applied uniformly to external and internal (replication) traffic — rejection is deterministic so it does not cause replica divergence. Delete operations are not affected, so callers can still free memory.",
+                "description": "Deprecated: use the node-wide quota config (`PUT /quotas`) instead, which caps the same resource for every collection. Scheduled for removal in 1.21.  Reject memory-consuming update operations (e.g. upsert, set payload) when the process resident memory exceeds this percentage of total system memory (or cgroup limit). Value in [1, 100]. Memory is a node-wide resource, so this only tightens the quota for one collection; it cannot lift it. Delete operations are not affected, so callers can still free memory.",
                 "title": "Max Resident Memory Percent",
-            },
-            "max_disk_usage_percent": {
-                "anyOf": [{"type": "integer"}, {"type": "null"}],
-                "default": None,
-                "description": "Reject disk-consuming update operations (e.g. upsert, set payload) when the filesystem hosting Qdrant storage is filled above this percentage of its total capacity. Value in [1, 100]. Applied uniformly to external and internal (replication) traffic — rejection is deterministic so it does not cause replica divergence. Delete operations are not affected, so callers can still free disk space. Free space is sampled with a small TTL cache; the gate may take a few seconds to react.",
-                "title": "Max Disk Usage Percent",
             },
         },
         "title": "StrictModeConfig",
