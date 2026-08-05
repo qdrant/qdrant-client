@@ -257,7 +257,94 @@ hits = client.query_points(
     limit=5  # Return 5 closest points
 )
 ```
+Hybrid search combining sparse (BM25) and dense vectors with RRF fusion
 
+```python
+from qdrant_client import QdrantClient
+from qdrant_client.models import (
+    Distance,
+    VectorParams,
+    SparseVectorParams,
+    SparseIndexParams,
+    PointStruct,
+    SparseVector,
+    Prefetch,
+    FusionQuery,
+    Fusion,
+)
+from fastembed import TextEmbedding, SparseTextEmbedding
+
+client = QdrantClient(":memory:")
+
+dense_model = TextEmbedding("sentence-transformers/all-MiniLM-L6-v2")
+sparse_model = SparseTextEmbedding("Qdrant/bm25")
+
+client.create_collection(
+    collection_name="hybrid_collection",
+    vectors_config={
+        "dense": VectorParams(size=384, distance=Distance.COSINE)
+    },
+    sparse_vectors_config={
+        "sparse": SparseVectorParams(
+            index=SparseIndexParams(on_disk=False)
+        )
+    },
+)
+
+documents = [
+    "The contract termination notice period is 30 days.",
+    "Payment terms require settlement within 14 days of invoice.",
+    "Force majeure clauses apply to acts of God and natural disasters.",
+]
+
+dense_embeddings = list(dense_model.embed(documents))
+sparse_embeddings = list(sparse_model.embed(documents))
+
+client.upsert(
+    collection_name="hybrid_collection",
+    points=[
+        PointStruct(
+            id=i,
+            vector={
+                "dense": dense.tolist(),
+                "sparse": SparseVector(
+                    indices=sparse.indices.tolist(),
+                    values=sparse.values.tolist(),
+                ),
+            },
+            payload={"text": text},
+        )
+        for i, (text, dense, sparse) in enumerate(
+            zip(documents, dense_embeddings, sparse_embeddings)
+        )
+    ],
+)
+
+query = "What is the notice period?"
+dense_query = list(dense_model.embed([query]))[0].tolist()
+sparse_query = list(sparse_model.embed([query]))[0]
+
+results = client.query_points(
+    collection_name="hybrid_collection",
+    prefetch=[
+        Prefetch(query=dense_query, using="dense", limit=5),
+        Prefetch(
+            query=SparseVector(
+                indices=sparse_query.indices.tolist(),
+                values=sparse_query.values.tolist(),
+            ),
+            using="sparse",
+            limit=5,
+        ),
+    ],
+    query=FusionQuery(fusion=Fusion.RRF),
+    limit=3,
+    with_payload=True,
+)
+
+for point in results.points:
+    print(f"Score: {point.score:.4f} | {point.payload['text']}")
+```
 See more examples in our [Documentation](https://qdrant.tech/documentation/)!
 
 ### gRPC
