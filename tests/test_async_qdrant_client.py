@@ -270,27 +270,49 @@ async def test_async_qdrant_client(prefer_grpc):
 @pytest.mark.asyncio
 async def test_async_timeout_propagation():
     client = AsyncQdrantClient()
-    vectors_config = models.VectorParams(size=2, distance=models.Distance.COSINE)
-    with pytest.raises(qdrant_client.http.exceptions.ResponseHandlingException) as exc_info:
-        # timeout is Optional[int]
-        # if we set it to 0 - recreate_collection raises operation is in progress instead of timed out
-        client.http.client._async_client._timeout = Timeout(0.01)
+    try:
+        vectors_config = models.VectorParams(size=2, distance=models.Distance.COSINE)
         if await client.collection_exists(COLLECTION_NAME):
             await client.delete_collection(collection_name=COLLECTION_NAME)
-        await client.create_collection(
-            collection_name=COLLECTION_NAME, vectors_config=vectors_config
-        )
-    # httpx's async transport raises TimeoutException with an empty message (unlike the sync
-    # transport's "timed out"), so assert on the exception type instead of the message text
-    assert isinstance(exc_info.value.source, httpx.TimeoutException)
-    await asyncio.sleep(0.5)
-    if await client.collection_exists(COLLECTION_NAME):
-        await client.delete_collection(collection_name=COLLECTION_NAME, timeout=10)
-    await client.create_collection(
-        collection_name=COLLECTION_NAME, vectors_config=vectors_config, timeout=10
-    )
-    await client.delete_collection(collection_name=COLLECTION_NAME)
-    await client.close()
+
+        # collection_exists() takes no per-call timeout, so only mutate the client-wide
+        # default around the call that's actually under test, and restore it right after
+        original_timeout = client.http.client._async_client._timeout
+        client.http.client._async_client._timeout = Timeout(0.01)
+        try:
+            with pytest.raises(
+                qdrant_client.http.exceptions.ResponseHandlingException
+            ) as exc_info:
+                # timeout is Optional[int]
+                # if we set it to 0 - recreate_collection raises operation is in progress
+                # instead of timed out
+                await client.create_collection(
+                    collection_name=COLLECTION_NAME, vectors_config=vectors_config
+                )
+            # httpx's async transport raises TimeoutException with an empty message (unlike
+            # the sync transport's "timed out"), so assert on the exception type, not the message
+            assert isinstance(exc_info.value.source, httpx.TimeoutException)
+        finally:
+            client.http.client._async_client._timeout = original_timeout
+
+        await asyncio.sleep(0.5)
+        if await client.collection_exists(COLLECTION_NAME):
+            await client.delete_collection(collection_name=COLLECTION_NAME, timeout=10)
+
+        # force the ambient default back down so this call can only succeed if
+        # create_collection's own timeout=10 argument reaches httpx -- that per-call
+        # override is exactly the regression this test guards against
+        client.http.client._async_client._timeout = Timeout(0.01)
+        try:
+            await client.create_collection(
+                collection_name=COLLECTION_NAME, vectors_config=vectors_config, timeout=10
+            )
+        finally:
+            client.http.client._async_client._timeout = original_timeout
+
+        await client.delete_collection(collection_name=COLLECTION_NAME)
+    finally:
+        await client.close()
 
 
 @pytest.mark.asyncio
