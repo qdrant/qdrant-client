@@ -323,6 +323,14 @@ class QdrantRemote(QdrantBase):
 
         self._closed = True
 
+    def health_check(self) -> bool:
+        """Return whether the remote Qdrant server is reachable."""
+        try:
+            self.openapi_client.service_api.healthz()
+        except Exception:
+            return False
+        return True
+
     @staticmethod
     def _parse_url(url: str) -> tuple[str | None, str, int | None, str | None]:
         parse_result: Url = parse_url(url)

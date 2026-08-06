@@ -112,6 +112,10 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         except TypeError:
             pass
 
+    async def health_check(self) -> bool:
+        """Return whether the local Qdrant instance is open."""
+        return not self._closed
+
     def _load(self) -> None:
         deprecated_config_fields = ("init_from",)
         if not self.persistent:
