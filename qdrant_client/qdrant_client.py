@@ -179,9 +179,12 @@ class QdrantClient(QdrantFastembedMixin):
 
     def health_check(self) -> bool:
         """Return whether the client can communicate with Qdrant."""
-        if hasattr(self, "_client"):
-            return self._client.health_check()
-        return False
+        if not hasattr(self, "_client"):
+            return False
+        health_check = getattr(self._client, "health_check", None)
+        if not callable(health_check):
+            return False
+        return bool(health_check())
 
     @property
     def grpc_collections(self) -> grpc.CollectionsStub:

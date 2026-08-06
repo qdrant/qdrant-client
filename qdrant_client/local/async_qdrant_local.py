@@ -112,7 +112,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         except TypeError:
             pass
 
-    async def health_check(self) -> bool:
+    def health_check(self) -> bool:
         """Return whether the local Qdrant instance is open."""
         return not self._closed
 

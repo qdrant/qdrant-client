@@ -54,11 +54,11 @@ def test_qdrant_local_health_check_tracks_lifecycle() -> None:
 async def test_async_qdrant_local_health_check_tracks_lifecycle() -> None:
     client = AsyncQdrantLocal(":memory:")
     try:
-        assert await client.health_check() is True
+        assert client.health_check() is True
 
         await client.close()
 
-        assert await client.health_check() is False
+        assert client.health_check() is False
     finally:
         await client.close()
 

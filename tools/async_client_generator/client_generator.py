@@ -92,6 +92,7 @@ if __name__ == "__main__":
         },
         exclude_methods=[
             "__del__",
+            "health_check",
             "migrate",
         ],
     )

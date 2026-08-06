@@ -265,9 +265,10 @@ class AsyncQdrantRemote(AsyncQdrantBase):
 
     async def health_check(self) -> bool:
         """Return whether the remote Qdrant server is reachable."""
+        # The public probe contract folds every healthz failure into False.
         try:
             await self.openapi_client.service_api.healthz()
-        except Exception:
+        except Exception:  # noqa: BLE001
             return False
         return True
 
