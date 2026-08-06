@@ -75,46 +75,15 @@ mv async_qdrant_local.py local/async_qdrant_local.py
 
 # The AST transformer intentionally excludes health_check because the async
 # facade and remote implementations differ from their sync counterparts.
-# Re-inject the cached method after each regeneration, falling back to the
-# initial implementation only when a generated file has no prior method.
+# Re-inject the cached method after each regeneration. A missing cache is an
+# invalid checkout, so fail loudly instead of silently using stale code.
 python3 - "$ABSOLUTE_PROJECT_ROOT" "$HEALTH_CHECK_CACHE_DIR" <<'PY'
 import ast
 import pathlib
 import sys
-import textwrap
 
 root = pathlib.Path(sys.argv[1])
 cache_dir = pathlib.Path(sys.argv[2])
-
-defaults = {
-    "async_qdrant_client.py": textwrap.dedent(
-        '''\
-        async def health_check(self) -> bool:
-            """Return whether the client can communicate with Qdrant."""
-            if not hasattr(self, "_client"):
-                return False
-            health_check = getattr(self._client, "health_check", None)
-            if not callable(health_check):
-                return False
-            result = health_check()
-            if inspect.iscoroutine(result):
-                result = await result
-            return bool(result)
-        '''
-    ).rstrip(),
-    "async_qdrant_remote.py": textwrap.dedent(
-        '''\
-        async def health_check(self) -> bool:
-            """Return whether the remote Qdrant server is reachable."""
-            try:
-                await self.openapi_client.service_api.healthz()
-            # The public probe contract folds every healthz failure into False.
-            except Exception:  # noqa: BLE001
-                return False
-            return True
-        '''
-    ).rstrip(),
-}
 
 targets = {
     "async_qdrant_client.py": "qdrant_client/async_qdrant_client.py",
@@ -158,10 +127,12 @@ for filename, relative_path in targets.items():
         )
 
     cached_path = cache_dir / filename
-    if cached_path.exists():
-        method = cached_path.read_text(encoding="utf-8").rstrip("\n")
-    else:
-        method = textwrap.indent(defaults[filename], "    ")
+    if not cached_path.exists():
+        raise RuntimeError(
+            f"regen: {relative_path}: cached health_check is missing; "
+            "restore the committed async implementation before regenerating"
+        )
+    method = cached_path.read_text(encoding="utf-8").rstrip("\n")
 
     lines = source.splitlines(keepends=True)
     insert_at = close_node.end_lineno
