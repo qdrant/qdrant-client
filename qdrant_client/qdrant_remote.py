@@ -204,8 +204,7 @@ class QdrantRemote(QdrantBase):
             )
         self._grpc_compression = grpc_compression
 
-        address = f"{self._host}:{self._port}" if self._port is not None else self._host
-        base_url = f"{self._scheme}://{address}"
+        base_url = f"{self._scheme}://{self._address}"
         self.rest_uri = urljoin(base_url, self._prefix)
 
         self._rest_args = {"headers": self._rest_headers, "http2": http2, **kwargs}
@@ -293,6 +292,17 @@ class QdrantRemote(QdrantBase):
                 category=UserWarning,
                 stacklevel=2,
             )
+
+    def __repr__(self) -> str:
+        # api_key is deliberately absent: reprs end up in logs and tracebacks.
+        return (
+            f"<{type(self).__name__} scheme={self._scheme} host={self._address!r} "
+            f"prefer_grpc={self._prefer_grpc}>"
+        )
+
+    @property
+    def _address(self) -> str:
+        return f"{self._host}:{self._port}" if self._port is not None else self._host
 
     @property
     def closed(self) -> bool:

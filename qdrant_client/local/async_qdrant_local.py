@@ -88,6 +88,9 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         self._load()
         self._closed: bool = False
 
+    def __repr__(self) -> str:
+        return f"<{type(self).__name__} location={self.location!r}>"
+
     @property
     def closed(self) -> bool:
         return self._closed
