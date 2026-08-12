@@ -230,6 +230,77 @@ def test_slice_condition_inside_nested_filter():
     )
 
 
+@pytest.mark.parametrize(
+    "except_",
+    [[1], [], ["x"]],
+    ids=["excluded_value", "nothing_excluded", "other_type"],
+)
+def test_match_except_does_not_match_null(except_: list):
+    """A null payload value is absence, not a value which happens to differ from every entry
+    in the `except` list. The server drops nulls before matching, so a field whose only value
+    is null never satisfies an `except` condition - and neither does `[1, None]` when 1 is
+    excluded.
+    """
+    values = [
+        1,  # a value the `except` list excludes
+        5,  # a value it keeps
+        "x",  # a value of another type
+        None,  # an explicit null
+        [1, None],  # an array holding a null beside an excluded value
+        [None],  # an array holding nothing but a null
+    ]
+
+    fixture_points = generate_fixtures(num=len(values) + 1)
+    for point, value in zip(fixture_points, values):
+        point.payload = {"n": value}
+    fixture_points[-1].payload = {"other": 1}  # the key absent altogether
+
+    local_client = init_local()
+    init_client(local_client, fixture_points)
+
+    remote_client = init_remote()
+    init_client(remote_client, fixture_points)
+
+    compare_client_results(
+        local_client,
+        remote_client,
+        scroll_with_filter,
+        scroll_filter=models.Filter(
+            must=[models.FieldCondition(key="n", match=models.MatchExcept(**{"except": except_}))]
+        ),
+    )
+
+
+@pytest.mark.parametrize(
+    "filter_",
+    [
+        models.Filter(should=[]),
+        models.Filter(must=[], must_not=[], should=[]),
+    ],
+    ids=["should", "all_clauses"],
+)
+def test_empty_should_is_not_a_constraint(filter_: models.Filter):
+    """An empty `should` states no alternatives to satisfy, not an unsatisfiable one. The
+    server reads it as no constraint and returns every point, while `any([])` is False, so a
+    literal reading returns none - the exact inverse. `must` and `must_not` are `all(...)`,
+    vacuously true when empty, and already agree.
+    """
+    fixture_points = generate_fixtures(num=10)
+
+    local_client = init_local()
+    init_client(local_client, fixture_points)
+
+    remote_client = init_remote()
+    init_client(remote_client, fixture_points)
+
+    compare_client_results(
+        local_client,
+        remote_client,
+        scroll_with_filter,
+        scroll_filter=filter_,
+    )
+
+
 @pytest.mark.parametrize("key", ["company", "company[]", "company[0]", "company[1]"])
 def test_nested_filter_payload_shapes(key: str):
     """A nested filter is applied to the elements of an array of objects, so a value which is not
