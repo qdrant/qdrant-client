@@ -1,6 +1,8 @@
 from time import sleep
 from typing import Callable
 
+import pytest
+
 from qdrant_client.http import models
 from qdrant_client.http.exceptions import UnexpectedResponse
 from tests.congruence_tests.test_common import (
@@ -95,6 +97,12 @@ def test_collection_exists():
 
     assert remote_client.collection_exists(COLLECTION_NAME)
     assert local_client.collection_exists(COLLECTION_NAME)
+
+    with pytest.raises(ValueError, match="Collection name must not be empty"):
+        local_client.collection_exists("")
+
+    with pytest.raises(ValueError, match="Collection name must not be empty"):
+        remote_client.collection_exists("")
 
 
 def test_config_variations():
