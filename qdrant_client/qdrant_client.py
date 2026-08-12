@@ -1595,10 +1595,16 @@ class QdrantClient(QdrantFastembedMixin):
         Args:
             collection_name: Name of the collection
 
+        Raises:
+            ValueError: If the collection name is empty.
+
         Returns:
             True if collection exists, False if not
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
+        if not collection_name:
+            raise ValueError("Collection name must not be empty")
 
         return self._client.collection_exists(collection_name=collection_name, **kwargs)
 
