@@ -182,7 +182,11 @@ def check_match(condition: models.Match, value: Any) -> bool:
     if isinstance(condition, models.MatchAny):
         return any(values_match(value, v) for v in condition.any)
     if isinstance(condition, models.MatchExcept):
-        return not any(values_match(value, v) for v in condition.except_)
+        # A null payload value is absence, not a value that happens to differ from
+        # everything in the list. The server drops nulls before matching, so a field
+        # whose only value is null does not satisfy an "except" condition — without
+        # this guard the negation turns absence into a match.
+        return value is not None and not any(values_match(value, v) for v in condition.except_)
     raise ValueError(f"Unknown match condition: {condition}")
 
 
@@ -354,9 +358,12 @@ def check_filter(
         ):
             return False
     if payload_filter.should is not None:
-        if not check_should(
-            ensure_condition_list(payload_filter.should), payload, point_id, has_vector
-        ):
+        should = ensure_condition_list(payload_filter.should)
+        # An empty `should` states no alternatives to satisfy, which is not the same
+        # as an unsatisfiable one: the server treats it as no constraint and matches
+        # everything. `any([])` is False, so without this guard it matches nothing —
+        # the exact inverse.
+        if should and not check_should(should, payload, point_id, has_vector):
             return False
     if payload_filter.min_should is not None:
         if not check_min_should(
