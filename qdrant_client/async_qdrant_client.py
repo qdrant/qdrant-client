@@ -1542,10 +1542,8 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             True if collection exists, False if not
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
-
         if not collection_name:
             raise ValueError("Collection name must not be empty")
-
         return await self._client.collection_exists(collection_name=collection_name, **kwargs)
 
     async def update_collection(
