@@ -266,6 +266,31 @@ async def test_async_qdrant_client(prefer_grpc):
 
 
 @pytest.mark.asyncio
+async def test_async_local_validates_query_parameters():
+    client = AsyncQdrantClient(":memory:")
+
+    with pytest.raises(ValueError, match="offset value -1 is invalid"):
+        await client.query_points("missing", offset=-1)
+    with pytest.raises(ValueError, match="offset value -1 is invalid"):
+        await client.query_batch_points("missing", requests=[models.QueryRequest(offset=-1)])
+    with pytest.raises(ValueError, match="prefetch limit value 0 is invalid"):
+        await client.query_points(
+            "missing",
+            prefetch=models.Prefetch(prefetch=models.Prefetch(limit=0)),
+        )
+    with pytest.raises(ValueError, match="group_size value 0 is invalid"):
+        await client.query_points_groups("missing", group_by="group", group_size=0)
+    with pytest.raises(ValueError, match="limit value 0 is invalid"):
+        await client.search_matrix_offsets("missing", limit=0)
+    with pytest.raises(ValueError, match="sample value 1 is invalid"):
+        await client.search_matrix_offsets("missing", sample=1)
+    with pytest.raises(ValueError, match="sample value 1 is invalid"):
+        await client.search_matrix_pairs("missing", sample=1)
+
+    await client.close()
+
+
+@pytest.mark.asyncio
 async def test_async_qdrant_client_local():
     major, minor, patch, dev = read_version()
     client = AsyncQdrantClient(":memory:")

@@ -8,6 +8,53 @@ def qdrant() -> QdrantClient:
     return QdrantClient(":memory:")
 
 
+@pytest.mark.parametrize(
+    ("query", "error"),
+    [
+        (
+            lambda client: client.query_points("missing", offset=-1),
+            "offset value -1 is invalid. Must be 0 or larger.",
+        ),
+        (
+            lambda client: client.query_batch_points(
+                "missing", requests=[models.QueryRequest(offset=-1)]
+            ),
+            "offset value -1 is invalid. Must be 0 or larger.",
+        ),
+        (
+            lambda client: client.query_points("missing", prefetch=models.Prefetch(limit=0)),
+            "prefetch limit value 0 is invalid. Must be 1 or larger.",
+        ),
+        (
+            lambda client: client.query_points(
+                "missing",
+                prefetch=models.Prefetch(prefetch=models.Prefetch(limit=0)),
+            ),
+            "prefetch limit value 0 is invalid. Must be 1 or larger.",
+        ),
+        (
+            lambda client: client.query_points_groups("missing", group_by="group", group_size=0),
+            "group_size value 0 is invalid. Must be 1 or larger.",
+        ),
+        (
+            lambda client: client.search_matrix_offsets("missing", limit=0),
+            "limit value 0 is invalid. Must be 1 or larger.",
+        ),
+        (
+            lambda client: client.search_matrix_offsets("missing", sample=1),
+            "sample value 1 is invalid. Must be 2 or larger.",
+        ),
+        (
+            lambda client: client.search_matrix_pairs("missing", sample=1),
+            "sample value 1 is invalid. Must be 2 or larger.",
+        ),
+    ],
+)
+def test_invalid_local_query_parameters(query, error):
+    with pytest.raises(ValueError, match=error):
+        query(QdrantClient(":memory:"))
+
+
 def test_dense_in_memory_key_filter_returns_results(qdrant: QdrantClient):
     qdrant.create_collection(
         collection_name="test_collection",
