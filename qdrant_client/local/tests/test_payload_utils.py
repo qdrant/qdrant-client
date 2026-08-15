@@ -143,6 +143,11 @@ def test_parse_json_path() -> None:
         jp_key = ".a"
         parse_json_path(jp_key)
 
+    # qdrant core only accepts unsigned integers as array indices
+    for jp_key in ("a[-1]", "a[+1]", "a[1_0]", "a[ 1 ]", "a[²]", "a[٣]"):
+        with pytest.raises(ValueError):
+            parse_json_path(jp_key)
+
     with pytest.raises(ValueError):
         jp_key = "a[x]"
         parse_json_path(jp_key)
@@ -209,6 +214,12 @@ def test_value_by_key() -> None:
     assert value_by_key(payload, "location[1].name") == ["work"]
     assert value_by_key(payload, "location[2].name") is None
     assert value_by_key(payload, "location[].name[0]") is None
+    # a negative index is an invalid path, it must neither wrap around to the end of the
+    # list nor leak an IndexError
+    with pytest.raises(ValueError):
+        value_by_key(payload, "location[-1].name")
+    with pytest.raises(ValueError):
+        value_by_key(payload, "location[-3].name")
     assert value_by_key(payload, "location[0]") == [{"name": "home", "counts": [1, 2, 3]}]
     assert value_by_key(payload, "not_exits") is None
     assert value_by_key(payload, "address") == [{"city": "New York"}]
@@ -460,41 +471,31 @@ def test_set_value_by_key() -> None:
 
     # region exceptions
 
-    try:
+    # `except Exception` also catches the `AssertionError` of the `assert False` below it, so
+    # these have to use `pytest.raises` in order to assert anything at all
+    with pytest.raises(ValueError):
         payload = {"a": []}
         new_value = {"c": 3}
         key = "a.'b.c'"
         set_value_by_key(payload, parse_json_path(key), new_value)
-        assert False, f"Should've raised an exception due to the key with incorrect quotes: {key}"
-    except Exception:
-        assert True
 
-    try:
+    with pytest.raises(ValueError):
         payload = {"a": [{"b": 1}, {"b": 2}]}
         new_value = {"c": 3}
         key = "a[-1]"
         set_value_by_key(payload, parse_json_path(key), new_value)
-        assert False, "Negative indexation is not supported"
-    except Exception:
-        assert True
 
-    try:
+    with pytest.raises(ValueError):
         payload = {"a": [{"b": 1}, {"b": 2}]}
         new_value = {"c": 3}
         key = "a["
         set_value_by_key(payload, parse_json_path(key), new_value)
-        assert False, f"Should've raised an exception due to the incorrect key: {key}"
-    except Exception:
-        assert True
 
-    try:
+    with pytest.raises(ValueError):
         payload = {"a": [{"b": 1}, {"b": 2}]}
         new_value = {"c": 3}
         key = "a]"
         set_value_by_key(payload, parse_json_path(key), new_value)
-        assert False, f"Should've raise an exception due to the incorrect key: {key}"
-    except Exception:
-        assert True
 
     # endregion
 
