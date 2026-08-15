@@ -160,7 +160,9 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             return f"<{type(self).__name__} uninitialized>"
         if isinstance(self._client, AsyncQdrantLocal):
             return f"<{type(self).__name__} mode=local location={self._client.location!r}>"
-        return f"<{type(self).__name__} mode=remote host={self._client._address!r} prefer_grpc={self._client._prefer_grpc}>"
+        if isinstance(self._client, AsyncQdrantRemote):
+            return f"<{type(self).__name__} mode=remote host={self._client._address!r} prefer_grpc={self._client._prefer_grpc}>"
+        return f"<{type(self).__name__} client={type(self._client).__name__}>"
 
     async def close(self, grpc_grace: float | None = None, **kwargs: Any) -> None:
         """Closes the connection to Qdrant
