@@ -3,6 +3,30 @@ from datetime import datetime, timedelta, timezone, tzinfo
 from qdrant_client.local.order_by import to_order_value
 
 
+def test_naive_datetime_is_normalized_to_utc(monkeypatch) -> None:
+    """Assert the normalization itself, not the resulting number.
+
+    On a UTC host `timestamp()` happens to agree with the UTC interpretation, so a
+    value-only assertion passes even without the fix. Spying on what reaches
+    `datetime_to_microseconds` makes this fail on any host timezone.
+    """
+    import qdrant_client.local.order_by as order_by_module
+
+    seen: dict[str, object] = {}
+    real = order_by_module.datetime_to_microseconds
+
+    def spy(dt: datetime) -> int:
+        seen["tzinfo"] = dt.tzinfo
+        seen["utcoffset"] = dt.utcoffset()
+        return real(dt)
+
+    monkeypatch.setattr(order_by_module, "datetime_to_microseconds", spy)
+    order_by_module.to_order_value(datetime(2024, 6, 15, 12, 30, 45))
+
+    assert seen["tzinfo"] is timezone.utc
+    assert seen["utcoffset"] == timedelta(0)
+
+
 def test_naive_datetime_is_utc_like_a_naive_string() -> None:
     """A naive datetime means UTC, matching how a naive datetime *string* is parsed.
 
