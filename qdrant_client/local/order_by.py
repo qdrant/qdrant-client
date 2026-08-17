@@ -19,7 +19,11 @@ def to_order_value(value: str | datetime | OrderValue | None) -> OrderValue | No
         return value
 
     if isinstance(value, datetime):
-        if value.tzinfo is None:
+        # A datetime counts as aware only when tzinfo is set *and* utcoffset() returns
+        # an offset, so both are checked here: a tzinfo whose utcoffset() is None is
+        # naive by Python's own definition and would otherwise reach timestamp() and
+        # raise.
+        if value.tzinfo is None or value.utcoffset() is None:
             # A naive datetime means UTC — the same assumption `parse()` makes for a
             # datetime string with no offset, and the one qdrant core makes. Without
             # this, `timestamp()` reads it as local time, so the same wall clock
