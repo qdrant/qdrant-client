@@ -12,7 +12,6 @@ def test_distances() -> None:
     assert np.allclose(calculate_distance(query, vectors, models.Distance.DOT), [14.0, 14.0])
     assert np.allclose(calculate_distance(query, vectors, models.Distance.EUCLID), [0.0, 0.0])
     assert np.allclose(calculate_distance(query, vectors, models.Distance.MANHATTAN), [0.0, 0.0])
-    # cosine modifies vectors inplace
     assert np.allclose(calculate_distance(query, vectors, models.Distance.COSINE), [1.0, 1.0])
 
     query = np.array([1.0, 0.0, 1.0])
@@ -32,7 +31,6 @@ def test_distances() -> None:
         [4.0, 3.0],
         atol=0.0001,
     )
-    # cosine modifies vectors inplace
     assert np.allclose(
         calculate_distance(query, vectors, models.Distance.COSINE),
         [0.75592895, 0.0],
@@ -55,3 +53,35 @@ def test_distances() -> None:
     multivector_query = np.array([[1, 2, 3], [3, 4, 5]])
     docs = [np.array([[1, 2, 3], [0, 1, 2]])]
     assert calculate_multi_distance(multivector_query, docs, models.Distance.DOT)[0] == 40.0
+
+
+def test_cosine_does_not_mutate_inputs() -> None:
+    # cosine_similarity used to normalize its `query` and `vectors` arguments
+    # in place, corrupting caller-owned arrays. It must leave inputs untouched,
+    # like the other distance functions.
+    query = np.array([3.0, 4.0], dtype=np.float32)
+    vectors = np.array([[6.0, 8.0], [1.0, 0.0]], dtype=np.float32)
+    query_snapshot = query.copy()
+    vectors_snapshot = vectors.copy()
+
+    result = calculate_distance(query, vectors, models.Distance.COSINE)
+
+    assert np.array_equal(query, query_snapshot), "query must not be mutated"
+    assert np.array_equal(vectors, vectors_snapshot), "vectors must not be mutated"
+    # [6, 8] is colinear with the query -> 1.0; [1, 0] -> 3/5 = 0.6
+    assert np.allclose(result, [1.0, 0.6], atol=0.0001)
+
+    # 2D (multivector-style) query path must also leave inputs untouched
+    query_2d = np.array([[3.0, 4.0]], dtype=np.float32)
+    query_2d_snapshot = query_2d.copy()
+    calculate_distance(query_2d, vectors, models.Distance.COSINE)
+    assert np.array_equal(query_2d, query_2d_snapshot), "2D query must not be mutated"
+
+
+def test_cosine_accepts_integer_dtype_inputs() -> None:
+    # In-place normalization used to raise UFuncTypeError on integer arrays,
+    # unlike the dot/euclidean/manhattan distances.
+    query = np.array([3, 4], dtype=np.int64)
+    vectors = np.array([[6, 8], [1, 0]], dtype=np.int64)
+    result = calculate_distance(query, vectors, models.Distance.COSINE)
+    assert np.allclose(result, [1.0, 0.6], atol=0.0001)
