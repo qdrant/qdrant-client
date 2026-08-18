@@ -41,9 +41,11 @@ def parse(date_str: str) -> datetime | None:
     if parsed_dt is not None:
         return parsed_dt
 
-    # Python can't parse timezones containing only hours (+HH), but it can parse timezones with hours and minutes
-    # So we add :00 to the assumed timezone and try parsing it again
-    # dt examples to handle:
-    # "2021-01-01 00:00:00.000+01"
-    # "2021-01-01 00:00:00.000-10"
-    return parse_available_formats(date_str + ":00")
+    # Python can't parse timezones containing only hours (+HH), but it can parse
+    # timezones with hours and minutes. Only retry when the input actually ends
+    # with such an offset; appending to arbitrary invalid dates can make them
+    # look valid (for example, ``2024-06-15 12``).
+    if len(date_str) >= 3 and date_str[-3] in "+-" and date_str[-2:].isdigit():
+        return parse_available_formats(date_str + ":00")
+
+    return None

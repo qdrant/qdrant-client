@@ -55,3 +55,8 @@ from qdrant_client.local.datetime_utils import parse
 )
 def test_parse_dates(date_str: str, expected: datetime):
     assert parse(date_str) == expected
+
+
+@pytest.mark.parametrize("date_str", ["2024-06-15 12", "2024-06-15T12:30"])
+def test_parse_rejects_truncated_dates(date_str: str):
+    assert parse(date_str) is None
