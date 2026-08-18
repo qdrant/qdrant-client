@@ -72,10 +72,12 @@ def test_cosine_does_not_mutate_inputs() -> None:
     assert np.allclose(result, [1.0, 0.6], atol=0.0001)
 
     # 2D (multivector-style) query path must also leave inputs untouched
-    query_2d = np.array([[3.0, 4.0]], dtype=np.float32)
+    query_2d = np.array([[3.0, 4.0], [0.0, 5.0]], dtype=np.float32)
     query_2d_snapshot = query_2d.copy()
-    calculate_distance(query_2d, vectors, models.Distance.COSINE)
+    result_2d = calculate_distance(query_2d, vectors, models.Distance.COSINE)
     assert np.array_equal(query_2d, query_2d_snapshot), "2D query must not be mutated"
+    # per-row cosine of [[3, 4], [0, 5]] against [[6, 8], [1, 0]]
+    assert np.allclose(result_2d, [[1.0, 0.6], [0.8, 0.0]], atol=0.0001)
 
 
 def test_cosine_accepts_integer_dtype_inputs() -> None:
