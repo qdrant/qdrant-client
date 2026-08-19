@@ -196,7 +196,12 @@ def test_rest_embedded_shard_key_propagates(api_call, api_method, request_kwarg)
 @pytest.mark.parametrize("shard_key", FALSY_SHARD_KEYS)
 @pytest.mark.parametrize("api_call,api_method,request_kwarg", REST_CASES)
 def test_rest_explicit_falsy_shard_key_propagates(api_call, api_method, request_kwarg, shard_key):
+    # embedded shard key present to also assert explicit falsy keys take precedence
     client, api = make_rest_client()
-    api_call(client, models.PointIdsList(points=[1]), {"shard_key_selector": shard_key})
+    api_call(
+        client,
+        models.PointIdsList(points=[1], shard_key="us"),
+        {"shard_key_selector": shard_key},
+    )
     request = getattr(api, api_method).call_args.kwargs[request_kwarg]
     assert request.shard_key == shard_key, f"{api_method} dropped falsy shard key {shard_key!r}"
