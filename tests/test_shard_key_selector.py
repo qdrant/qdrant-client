@@ -144,13 +144,59 @@ def test_rest_points_and_filter_returns_embedded_shard_key():
     assert _shard_key is None
 
 
-def test_rest_delete_vectors_uses_embedded_shard_key():
+def make_rest_client() -> tuple[QdrantClient, MagicMock]:
     client = QdrantClient(check_compatibility=False)
     api = MagicMock()
-    api.delete_vectors.return_value = MagicMock(
+    rest_response = MagicMock(
         result=models.UpdateResult(operation_id=1, status=models.UpdateStatus.COMPLETED)
     )
+    for method in (
+        "delete_points",
+        "delete_vectors",
+        "set_payload",
+        "overwrite_payload",
+        "delete_payload",
+        "clear_payload",
+    ):
+        getattr(api, method).return_value = rest_response
     client._client.openapi_client.points_api = api
-    client.delete_vectors("c", ["v"], models.PointIdsList(points=[1], shard_key="us"))
-    request = api.delete_vectors.call_args.kwargs["delete_vectors"]
-    assert request.shard_key == "us"
+    return client, api
+
+
+REST_CASES = [
+    (lambda c, sel, kw: c.delete("c", sel, **kw), "delete_points", "points_selector"),
+    (
+        lambda c, sel, kw: c.delete_vectors("c", ["v"], sel, **kw),
+        "delete_vectors",
+        "delete_vectors",
+    ),
+    (lambda c, sel, kw: c.set_payload("c", {"a": 1}, sel, **kw), "set_payload", "set_payload"),
+    (
+        lambda c, sel, kw: c.overwrite_payload("c", {"a": 1}, sel, **kw),
+        "overwrite_payload",
+        "set_payload",
+    ),
+    (
+        lambda c, sel, kw: c.delete_payload("c", ["a"], sel, **kw),
+        "delete_payload",
+        "delete_payload",
+    ),
+    (lambda c, sel, kw: c.clear_payload("c", sel, **kw), "clear_payload", "points_selector"),
+]
+
+
+@pytest.mark.parametrize("api_call,api_method,request_kwarg", REST_CASES)
+def test_rest_embedded_shard_key_propagates(api_call, api_method, request_kwarg):
+    client, api = make_rest_client()
+    api_call(client, models.PointIdsList(points=[1], shard_key="us"), {})
+    request = getattr(api, api_method).call_args.kwargs[request_kwarg]
+    assert request.shard_key == "us", f"{api_method} dropped embedded shard key"
+
+
+@pytest.mark.parametrize("shard_key", FALSY_SHARD_KEYS)
+@pytest.mark.parametrize("api_call,api_method,request_kwarg", REST_CASES)
+def test_rest_explicit_falsy_shard_key_propagates(api_call, api_method, request_kwarg, shard_key):
+    client, api = make_rest_client()
+    api_call(client, models.PointIdsList(points=[1]), {"shard_key_selector": shard_key})
+    request = getattr(api, api_method).call_args.kwargs[request_kwarg]
+    assert request.shard_key == shard_key, f"{api_method} dropped falsy shard key {shard_key!r}"
