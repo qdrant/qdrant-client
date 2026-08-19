@@ -12,7 +12,7 @@ Model = TypeVar("Model", bound="BaseModel")
 
 SetIntStr = Set[Union[int, str]]
 DictIntStrAny = Dict[Union[int, str], Any]
-file = None
+file = bytes
 
 
 def to_json(model: BaseModel, *args: Any, **kwargs: Any) -> str:

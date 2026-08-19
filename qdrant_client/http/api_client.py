@@ -126,6 +126,8 @@ class ApiClient:
                 raise ResourceExhaustedResponse(message, retry_after_s)
 
         if response.status_code in [200, 201, 202]:
+            if type_ is bytes:
+                return response.content
             try:
                 return parse_as_type(response.json(), type_)
             except ValidationError as e:
@@ -215,6 +217,8 @@ class AsyncApiClient:
                 raise ResourceExhaustedResponse(message, retry_after_s)
 
         if response.status_code in [200, 201, 202]:
+            if type_ is bytes:
+                return response.content
             try:
                 return parse_as_type(response.json(), type_)
             except ValidationError as e:
