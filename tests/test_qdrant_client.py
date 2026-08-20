@@ -1255,6 +1255,157 @@ def test_custom_sharding(prefer_grpc):
 
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])
+def test_shard_key_from_points_selector(prefer_grpc):
+    """A shard key set inside a points selector must be used, and an explicitly passed
+    `shard_key_selector` must take precedence over it, even if it is falsy."""
+    client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
+    if client.cluster_status().status == "disabled":
+        pytest.skip("Requires distributed mode")
+
+    # `0` is a valid shard key, it must not be treated as a missing one
+    zero_shard_key, one_shard_key = 0, 1
+    shard_key_ids = {zero_shard_key: [1, 2], one_shard_key: [3, 4]}
+    cat_payload = {"name": "Barsik"}
+    dog_payload = {"name": "Sharik"}
+
+    def points(shard_key):
+        return [
+            PointStruct(
+                id=point_id, vector={"text": np.random.rand(DIM).tolist()}, payload=cat_payload
+            )
+            for point_id in shard_key_ids[shard_key]
+        ]
+
+    def init_collection():
+        if client.collection_exists(COLLECTION_NAME):
+            client.delete_collection(collection_name=COLLECTION_NAME)
+        client.create_collection(
+            collection_name=COLLECTION_NAME,
+            vectors_config={"text": VectorParams(size=DIM, distance=Distance.DOT)},
+            sharding_method=models.ShardingMethod.CUSTOM,
+        )
+        for shard_key in shard_key_ids:
+            client.create_shard_key(collection_name=COLLECTION_NAME, shard_key=shard_key)
+        reset_points()
+
+    # restores payloads, vectors and points changed by the previous case
+    def reset_points():
+        for shard_key in shard_key_ids:
+            client.upsert(
+                collection_name=COLLECTION_NAME,
+                points=points(shard_key),
+                shard_key_selector=shard_key,
+            )
+
+    def records(shard_key):
+        return client.scroll(
+            collection_name=COLLECTION_NAME,
+            shard_key_selector=shard_key,
+            with_vectors=True,
+            limit=10,
+        )[0]
+
+    def payloads(shard_key):
+        return [record.payload for record in records(shard_key)]
+
+    # both selectors are meant for the `zero_shard_key` shard: the ids are the ones of its
+    # points, the filter matches every point of whichever shard the operation reaches
+    def selectors(selector_shard_key):
+        return [
+            models.PointIdsList(
+                points=shard_key_ids[zero_shard_key], shard_key=selector_shard_key
+            ),
+            models.FilterSelector(filter=models.Filter(), shard_key=selector_shard_key),
+        ]
+
+    # shard key in the points selector, explicitly passed shard_key_selector. Every combination
+    # must apply the operation to the `zero_shard_key` shard, and only to it
+    shard_key_combinations = [
+        (zero_shard_key, None),  # taken from the points selector
+        (one_shard_key, zero_shard_key),  # explicit one wins over the one in the selector
+        (None, zero_shard_key),  # explicit one is used if the selector has none
+    ]
+
+    def cases():
+        for selector_shard_key, explicit_shard_key in shard_key_combinations:
+            for points_selector in selectors(selector_shard_key):
+                reset_points()
+                yield points_selector, explicit_shard_key
+
+    init_collection()
+
+    # region delete_payload
+    for points_selector, explicit_shard_key in cases():
+        client.delete_payload(
+            COLLECTION_NAME,
+            keys=["name"],
+            points=points_selector,
+            shard_key_selector=explicit_shard_key,
+        )
+        assert payloads(zero_shard_key) == [{}, {}]
+        assert payloads(one_shard_key) == [cat_payload, cat_payload]
+    # endregion
+
+    # region set_payload
+    for points_selector, explicit_shard_key in cases():
+        client.set_payload(
+            COLLECTION_NAME,
+            payload={"age": 3},
+            points=points_selector,
+            shard_key_selector=explicit_shard_key,
+        )
+        assert payloads(zero_shard_key) == [{**cat_payload, "age": 3}] * 2
+        assert payloads(one_shard_key) == [cat_payload, cat_payload]
+    # endregion
+
+    # region overwrite_payload
+    for points_selector, explicit_shard_key in cases():
+        client.overwrite_payload(
+            COLLECTION_NAME,
+            payload=dog_payload,
+            points=points_selector,
+            shard_key_selector=explicit_shard_key,
+        )
+        assert payloads(zero_shard_key) == [dog_payload, dog_payload]
+        assert payloads(one_shard_key) == [cat_payload, cat_payload]
+    # endregion
+
+    # region clear_payload
+    for points_selector, explicit_shard_key in cases():
+        client.clear_payload(
+            COLLECTION_NAME,
+            points_selector=points_selector,
+            shard_key_selector=explicit_shard_key,
+        )
+        assert payloads(zero_shard_key) == [{}, {}]
+        assert payloads(one_shard_key) == [cat_payload, cat_payload]
+    # endregion
+
+    # region delete_vectors
+    for points_selector, explicit_shard_key in cases():
+        client.delete_vectors(
+            COLLECTION_NAME,
+            vectors=["text"],
+            points=points_selector,
+            shard_key_selector=explicit_shard_key,
+        )
+        assert [record.vector for record in records(zero_shard_key)] == [{}, {}]
+        assert all(record.vector for record in records(one_shard_key))
+    # endregion
+
+    # region delete
+    for points_selector, explicit_shard_key in cases():
+        client.delete(
+            COLLECTION_NAME,
+            points_selector=points_selector,
+            shard_key_selector=explicit_shard_key,
+        )
+        assert records(zero_shard_key) == []
+        assert [record.id for record in records(one_shard_key)] == shard_key_ids[one_shard_key]
+    # endregion
+
+
+@pytest.mark.parametrize("prefer_grpc", [False, True])
 def test_sparse_vectors(prefer_grpc):
     client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
     if client.collection_exists(COLLECTION_NAME):
