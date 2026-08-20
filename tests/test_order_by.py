@@ -1,6 +1,21 @@
-from datetime import datetime, timezone
+from datetime import datetime, timezone, tzinfo
 
 from qdrant_client.local.order_by import datetime_to_microseconds
+
+
+class _OffsetlessTzInfo(tzinfo):
+    """A tzinfo subclass that's attached (`dt.tzinfo` is not None) but reports no
+    offset (`dt.utcoffset()` is None) - the correct definition of "naive" per the
+    datetime docs. Used to test that naive-detection doesn't rely on `tzinfo is None`."""
+
+    def utcoffset(self, dt):
+        return None
+
+    def dst(self, dt):
+        return None
+
+    def tzname(self, dt):
+        return None
 
 
 def _exact_microseconds_since_epoch(dt: datetime) -> int:
@@ -37,3 +52,18 @@ def test_datetime_to_microseconds_no_mismatch_across_range():
     ):  # every ~1000th microsecond, full coverage would be slow
         dt = datetime(2100, 6, 15, 12, 30, 45, micro, tzinfo=timezone.utc)
         assert datetime_to_microseconds(dt) == _exact_microseconds_since_epoch(dt)
+
+
+def test_datetime_to_microseconds_handles_tzinfo_with_no_offset():
+    # Regression test: naive-detection must check `dt.utcoffset() is None`, not
+    # `dt.tzinfo is None`. A tzinfo subclass can be attached (`tzinfo` is not None)
+    # while still reporting no offset - the datetime docs' actual definition of
+    # naive. Checking only `tzinfo is None` would skip the astimezone() fixup and
+    # crash with "can't subtract offset-naive and offset-aware datetimes".
+    dt = datetime(2024, 6, 15, 12, 30, 45, 123456, tzinfo=_OffsetlessTzInfo())
+    assert dt.tzinfo is not None
+    assert dt.utcoffset() is None
+
+    # Should behave the same as an actually-naive datetime with the same fields.
+    naive_equivalent = datetime(2024, 6, 15, 12, 30, 45, 123456)  # noqa: DTZ001 - naive on purpose
+    assert datetime_to_microseconds(dt) == datetime_to_microseconds(naive_equivalent)
