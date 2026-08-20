@@ -1256,7 +1256,9 @@ class QdrantRemote(QdrantBase):
     ) -> types.UpdateResult:
         if self._prefer_grpc:
             points_selector, opt_shard_key_selector = self._try_argument_to_grpc_selector(points)
-            shard_key_selector = shard_key_selector or opt_shard_key_selector
+            shard_key_selector = (
+                shard_key_selector if shard_key_selector is not None else opt_shard_key_selector
+            )
 
             if isinstance(ordering, models.WriteOrdering):
                 ordering = RestToGrpc.convert_write_ordering(ordering)
@@ -1283,7 +1285,7 @@ class QdrantRemote(QdrantBase):
 
             return GrpcToRest.convert_update_result(grpc_result)
         else:
-            _points, _filter = self._try_argument_to_rest_points_and_filter(points)
+            _points, _filter, _shard_key = self._try_argument_to_rest_points_and_filter(points)
             return self.openapi_client.points_api.delete_vectors(
                 collection_name=collection_name,
                 wait=wait,
@@ -1294,7 +1296,7 @@ class QdrantRemote(QdrantBase):
                     vector=vectors,
                     points=_points,
                     filter=_filter,
-                    shard_key=shard_key_selector,
+                    shard_key=shard_key_selector if shard_key_selector is not None else _shard_key,
                 ),
             ).result
 
@@ -1425,7 +1427,9 @@ class QdrantRemote(QdrantBase):
             points_selector.shard_key = shard_key_selector
         elif isinstance(points, get_args(models.PointsSelector)):
             points_selector = points
-            points_selector.shard_key = shard_key_selector
+            points_selector.shard_key = (
+                shard_key_selector if shard_key_selector is not None else points_selector.shard_key
+            )
         elif isinstance(points, models.Filter):
             points_selector = construct(
                 models.FilterSelector, filter=points, shard_key=shard_key_selector
@@ -1457,9 +1461,12 @@ class QdrantRemote(QdrantBase):
     @classmethod
     def _try_argument_to_rest_points_and_filter(
         cls, points: types.PointsSelector
-    ) -> tuple[list[models.ExtendedPointId] | None, models.Filter | None]:
+    ) -> tuple[
+        list[models.ExtendedPointId] | None, models.Filter | None, models.ShardKeySelector | None
+    ]:
         _points = None
         _filter = None
+        _shard_key = None
         if isinstance(points, list):
             _points = [
                 (GrpcToRest.convert_point_id(idx) if isinstance(idx, grpc.PointId) else idx)
@@ -1473,8 +1480,10 @@ class QdrantRemote(QdrantBase):
                 _filter = selector.filter
         elif isinstance(points, models.PointIdsList):
             _points = points.points
+            _shard_key = points.shard_key
         elif isinstance(points, models.FilterSelector):
             _filter = points.filter
+            _shard_key = points.shard_key
         elif isinstance(points, models.Filter):
             _filter = points
         elif isinstance(points, grpc.Filter):
@@ -1482,7 +1491,7 @@ class QdrantRemote(QdrantBase):
         else:
             raise ValueError(f"Unsupported points selector type: {type(points)}")
 
-        return _points, _filter
+        return _points, _filter, _shard_key
 
     def delete(
         self,
@@ -1498,7 +1507,9 @@ class QdrantRemote(QdrantBase):
             points_selector, opt_shard_key_selector = self._try_argument_to_grpc_selector(
                 points_selector
             )
-            shard_key_selector = shard_key_selector or opt_shard_key_selector
+            shard_key_selector = (
+                shard_key_selector if shard_key_selector is not None else opt_shard_key_selector
+            )
 
             if isinstance(ordering, models.WriteOrdering):
                 ordering = RestToGrpc.convert_write_ordering(ordering)
@@ -1547,7 +1558,9 @@ class QdrantRemote(QdrantBase):
     ) -> types.UpdateResult:
         if self._prefer_grpc:
             points_selector, opt_shard_key_selector = self._try_argument_to_grpc_selector(points)
-            shard_key_selector = shard_key_selector or opt_shard_key_selector
+            shard_key_selector = (
+                shard_key_selector if shard_key_selector is not None else opt_shard_key_selector
+            )
 
             if isinstance(ordering, models.WriteOrdering):
                 ordering = RestToGrpc.convert_write_ordering(ordering)
@@ -1571,7 +1584,7 @@ class QdrantRemote(QdrantBase):
                 ).result
             )
         else:
-            _points, _filter = self._try_argument_to_rest_points_and_filter(points)
+            _points, _filter, _shard_key = self._try_argument_to_rest_points_and_filter(points)
             result: types.UpdateResult | None = self.openapi_client.points_api.set_payload(
                 collection_name=collection_name,
                 wait=wait,
@@ -1581,7 +1594,7 @@ class QdrantRemote(QdrantBase):
                     payload=payload,
                     points=_points,
                     filter=_filter,
-                    shard_key=shard_key_selector,
+                    shard_key=shard_key_selector if shard_key_selector is not None else _shard_key,
                     key=key,
                 ),
             ).result
@@ -1601,7 +1614,9 @@ class QdrantRemote(QdrantBase):
     ) -> types.UpdateResult:
         if self._prefer_grpc:
             points_selector, opt_shard_key_selector = self._try_argument_to_grpc_selector(points)
-            shard_key_selector = shard_key_selector or opt_shard_key_selector
+            shard_key_selector = (
+                shard_key_selector if shard_key_selector is not None else opt_shard_key_selector
+            )
 
             if isinstance(ordering, models.WriteOrdering):
                 ordering = RestToGrpc.convert_write_ordering(ordering)
@@ -1624,7 +1639,7 @@ class QdrantRemote(QdrantBase):
                 ).result
             )
         else:
-            _points, _filter = self._try_argument_to_rest_points_and_filter(points)
+            _points, _filter, _shard_key = self._try_argument_to_rest_points_and_filter(points)
             result: types.UpdateResult | None = self.openapi_client.points_api.overwrite_payload(
                 collection_name=collection_name,
                 wait=wait,
@@ -1634,7 +1649,7 @@ class QdrantRemote(QdrantBase):
                     payload=payload,
                     points=_points,
                     filter=_filter,
-                    shard_key=shard_key_selector,
+                    shard_key=shard_key_selector if shard_key_selector is not None else _shard_key,
                 ),
             ).result
             assert result is not None, "Overwrite payload returned None"
@@ -1653,7 +1668,9 @@ class QdrantRemote(QdrantBase):
     ) -> types.UpdateResult:
         if self._prefer_grpc:
             points_selector, opt_shard_key_selector = self._try_argument_to_grpc_selector(points)
-            shard_key_selector = shard_key_selector or opt_shard_key_selector
+            shard_key_selector = (
+                shard_key_selector if shard_key_selector is not None else opt_shard_key_selector
+            )
             if isinstance(ordering, models.WriteOrdering):
                 ordering = RestToGrpc.convert_write_ordering(ordering)
 
@@ -1675,7 +1692,7 @@ class QdrantRemote(QdrantBase):
                 ).result
             )
         else:
-            _points, _filter = self._try_argument_to_rest_points_and_filter(points)
+            _points, _filter, _shard_key = self._try_argument_to_rest_points_and_filter(points)
             result: types.UpdateResult | None = self.openapi_client.points_api.delete_payload(
                 collection_name=collection_name,
                 wait=wait,
@@ -1685,7 +1702,7 @@ class QdrantRemote(QdrantBase):
                     keys=keys,
                     points=_points,
                     filter=_filter,
-                    shard_key=shard_key_selector,
+                    shard_key=shard_key_selector if shard_key_selector is not None else _shard_key,
                 ),
             ).result
             assert result is not None, "Delete payload returned None"
@@ -1705,7 +1722,9 @@ class QdrantRemote(QdrantBase):
             points_selector, opt_shard_key_selector = self._try_argument_to_grpc_selector(
                 points_selector
             )
-            shard_key_selector = shard_key_selector or opt_shard_key_selector
+            shard_key_selector = (
+                shard_key_selector if shard_key_selector is not None else opt_shard_key_selector
+            )
 
             if isinstance(ordering, models.WriteOrdering):
                 ordering = RestToGrpc.convert_write_ordering(ordering)
