@@ -178,8 +178,10 @@ class QdrantRemote(QdrantBase):
         user_agent = f"python-client/{client_version} python/{python_version}"
         if "User-Agent" in self._rest_headers:
             show_warning_once(
-                "`User-Agent` has been passed in `headers`, but "
-                f"it will be overridden with the builtin value: `{user_agent}`."
+                message="`User-Agent` has been passed in `headers`, but "
+                f"it will be overridden with the builtin value: `{user_agent}`.",
+                category=UserWarning,
+                stacklevel=4,
             )
 
         if grpc_options is not None and "grpc.primary_user_agent" in grpc_options:
