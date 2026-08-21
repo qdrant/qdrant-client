@@ -1689,6 +1689,8 @@ class GrpcToRest:
             on_disk=model.on_disk if model.HasField("on_disk") else None,
             memory=cls.convert_memory(model.memory) if model.HasField("memory") else None,
             enable_hnsw=model.enable_hnsw if model.HasField("enable_hnsw") else None,
+            # presence of grpc.KeywordPrefixParams is the only signal, an explicit `prefix=False`
+            # cannot be represented in grpc and comes back as `None`
             prefix=True if model.HasField("prefix") else None,
         )
 
@@ -4383,6 +4385,9 @@ class RestToGrpc:
             is_tenant=model.is_tenant,
             on_disk=model.on_disk,
             enable_hnsw=model.enable_hnsw,
+            # grpc.KeywordPrefixParams is an empty message, its presence enables prefix matching,
+            # so an explicit `prefix=False` is sent as absent (which the server also treats as
+            # disabled) and is recovered as `None` when converting back
             prefix=grpc.KeywordPrefixParams() if model.prefix else None,
             memory=cls.convert_memory(model.memory) if model.memory is not None else None,
         )

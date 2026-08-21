@@ -643,3 +643,30 @@ def test_convert_points_update_operation_falsy_shard_key():
                 "shard_key_selector"
             ), f"{type(operation).__name__} dropped shard_key={shard_key!r}"
             assert GrpcToRest.convert_shard_key_selector(inner.shard_key_selector) == shard_key
+
+
+def test_convert_keyword_index_params_prefix():
+    from qdrant_client import models
+    from qdrant_client.conversions.conversion import GrpcToRest, RestToGrpc
+
+    def round_trip(prefix):
+        rest_params = models.KeywordIndexParams(
+            type=models.KeywordIndexType.KEYWORD, prefix=prefix
+        )
+        grpc_params = RestToGrpc.convert_keyword_index_params(rest_params)
+        return grpc_params, GrpcToRest.convert_keyword_index_params(grpc_params)
+
+    grpc_params, recovered = round_trip(True)
+    assert grpc_params.HasField("prefix")
+    assert recovered.prefix is True
+
+    grpc_params, recovered = round_trip(None)
+    assert not grpc_params.HasField("prefix")
+    assert recovered.prefix is None
+
+    # grpc.KeywordPrefixParams is an empty message whose presence enables prefix matching,
+    # so an explicit `prefix=False` cannot be represented in grpc: it is sent as absent
+    # (which the server also treats as disabled) and is recovered as `None`
+    grpc_params, recovered = round_trip(False)
+    assert not grpc_params.HasField("prefix")
+    assert recovered.prefix is None
