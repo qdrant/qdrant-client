@@ -8,6 +8,7 @@ import uuid
 from pprint import pprint
 from tempfile import mkdtemp
 from time import sleep
+from unittest.mock import patch
 
 import numpy as np
 import pytest
@@ -1755,6 +1756,33 @@ def test_timeout_propagation():
     client.create_collection(
         collection_name=COLLECTION_NAME, vectors_config=vectors_config, timeout=10
     )
+
+
+def test_api_client_request_sync_returns_value():
+    # Regression for #1336: sync client wrapped the return value in
+    # run_until_complete, so any non-awaitable result raised TypeError.
+    from qdrant_client.http.api_client import ApiClient
+
+    sync_client = ApiClient("http://localhost:6333")
+    with patch.object(sync_client, "request", return_value={"ok": True}) as mocked:
+        result = sync_client.request_sync(
+            type_=dict,
+            method="GET",
+            url="/collections",
+        )
+
+    assert result == {"ok": True}
+    mocked.assert_called_once_with(type_=dict, method="GET", url="/collections")
+
+    with patch.object(sync_client, "request", return_value=None) as mocked_none:
+        result_none = sync_client.request_sync(
+            type_=None,
+            method="GET",
+            url="/collections",
+        )
+
+    assert result_none is None
+    mocked_none.assert_called_once_with(type_=None, method="GET", url="/collections")
 
 
 def test_grpc_options():
