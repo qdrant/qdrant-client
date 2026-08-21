@@ -183,6 +183,8 @@ class AsyncApiClient:
         # in order to do a correct join, url join requires base_url to end with /, and url to not start with /,
         # since url is treated as an absolute path and might truncate prefix in base_url
         url = urljoin(host, url.format(**path_params))
+        if "params" in kwargs and "timeout" in kwargs["params"]:
+            kwargs["timeout"] = int(kwargs["params"]["timeout"])
         request = self._async_client.build_request(method, url, **kwargs)
         return await self.send(request, type_)
 
