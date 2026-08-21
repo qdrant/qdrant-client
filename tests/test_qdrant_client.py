@@ -1759,9 +1759,8 @@ def test_timeout_propagation():
 
 
 def test_api_client_request_sync_returns_value():
-    # Regression for #1336: ApiClient.request_sync wrapped a synchronous
-    # return value in run_until_complete, so any non-awaitable result
-    # raised TypeError instead of being returned.
+    # Regression for #1336: sync client wrapped the return value in
+    # run_until_complete, so any non-awaitable result raised TypeError.
     from qdrant_client.http.api_client import ApiClient
 
     sync_client = ApiClient("http://localhost:6333")
@@ -1775,7 +1774,6 @@ def test_api_client_request_sync_returns_value():
     assert result == {"ok": True}
     mocked.assert_called_once_with(type_=dict, method="GET", url="/collections")
 
-    # type_=None path also returns the value as-is.
     with patch.object(sync_client, "request", return_value=None) as mocked_none:
         result_none = sync_client.request_sync(
             type_=None,
