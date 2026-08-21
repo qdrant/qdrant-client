@@ -127,16 +127,20 @@ def cosine_similarity(query: types.NumpyArray, vectors: types.NumpyArray) -> typ
     Returns:
         distances
     """
+    # `vectors` is normalized in place: through the normal client API it is
+    # always already unit-normalized on cosine collections (normalized on
+    # upsert), so this is a no-op in practice, and avoiding the copy matters
+    # since `vectors` is the (potentially large) candidate set being searched.
     vectors_norm = np.linalg.norm(vectors, axis=-1)[:, np.newaxis]
     vectors /= np.where(vectors_norm != 0.0, vectors_norm, EPSILON)
 
     if len(query.shape) == 1:
         query_norm = np.linalg.norm(query)
-        query /= np.where(query_norm != 0.0, query_norm, EPSILON)
+        query = query / np.where(query_norm != 0.0, query_norm, EPSILON)
         return np.dot(vectors, query)
 
     query_norm = np.linalg.norm(query, axis=-1)[:, np.newaxis]
-    query /= np.where(query_norm != 0.0, query_norm, EPSILON)
+    query = query / np.where(query_norm != 0.0, query_norm, EPSILON)
     return np.dot(query, vectors.T)
 
 
