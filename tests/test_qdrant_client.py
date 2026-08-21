@@ -1759,11 +1759,11 @@ def test_timeout_propagation():
 
 
 def test_async_rest_timeout_propagation():
-    # Regression for #1325: AsyncApiClient.request dropped the per-call
-    # `timeout=` from kwargs before build_request, so async callers were
-    # bound by httpx's default 5s timeout regardless of what they asked
-    # for. The sync ApiClient.request already promotes that value.
+    # Regression for #1325: async client dropped the per-call `timeout=`
+    # from kwargs before build_request, leaving callers bound by httpx's
+    # default 5s timeout. Sync ApiClient.request already promotes it.
     from qdrant_client.http.api_client import AsyncApiClient
+    from unittest.mock import AsyncMock
 
     captured: dict = {}
 
@@ -1772,17 +1772,17 @@ def test_async_rest_timeout_propagation():
         return type("DummyRequest", (), {"headers": {}})()
 
     async_client = AsyncApiClient(host="http://localhost:6333")
-    with patch.object(async_client._async_client, "build_request", _capture):
-        with pytest.raises(Exception):
-            asyncio.run(
-                async_client.request(
-                    type_=None,
-                    method="GET",
-                    url="/collections/{c}",
-                    path_params={"c": "x"},
-                    params={"timeout": "50"},
-                )
+    with patch.object(async_client._async_client, "build_request", _capture), \
+         patch.object(async_client, "send", new=AsyncMock()):
+        asyncio.run(
+            async_client.request(
+                type_=None,
+                method="GET",
+                url="/collections/{c}",
+                path_params={"c": "x"},
+                params={"timeout": "50"},
             )
+        )
 
     assert captured["kwargs"].get("timeout") == 50
 
