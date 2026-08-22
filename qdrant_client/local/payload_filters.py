@@ -404,6 +404,39 @@ def check_filter(
     return True
 
 
+def validate_filter(payload_filter: models.Filter) -> None:
+    """Reject filters the server would refuse, before scanning anything.
+
+    Local mode evaluates min_should as `matches >= min_count`, which quietly
+    treats min_count <= 0 as "every point matches" and returns the whole
+    collection. The server rejects those values outright - 422 for 0, 400 for
+    negatives - so code that passes against local mode fails in production, and
+    fails by returning everything, which for a filter is the worst direction to
+    be wrong in.
+
+    Filters nest, so this recurses: a bad min_count inside a nested must clause
+    is just as invalid as one at the top.
+    """
+    if payload_filter.min_should is not None:
+        min_count = payload_filter.min_should.min_count
+        if min_count < 1:
+            raise ValueError(f"min_count value {min_count} is invalid. Must be 1 or larger.")
+
+    for clause in (payload_filter.must, payload_filter.should, payload_filter.must_not):
+        if clause is None:
+            continue
+        # A clause is either a single condition or a list of them.
+        conditions = clause if isinstance(clause, list) else [clause]
+        for condition in conditions:
+            if isinstance(condition, models.Filter):
+                validate_filter(condition)
+
+    if payload_filter.min_should is not None:
+        for condition in payload_filter.min_should.conditions:
+            if isinstance(condition, models.Filter):
+                validate_filter(condition)
+
+
 def calculate_payload_mask(
     payloads: list[dict],
     payload_filter: models.Filter | None,
@@ -412,6 +445,10 @@ def calculate_payload_mask(
 ) -> types.NumpyArray:
     if payload_filter is None:
         return np.ones(len(payloads), dtype=bool)
+
+    # Before the scan, so an invalid filter is rejected even against an empty
+    # collection - which is what the server does.
+    validate_filter(payload_filter)
 
     mask: types.NumpyArray = np.zeros(len(payloads), dtype=bool)
     for i, payload in enumerate(payloads):
