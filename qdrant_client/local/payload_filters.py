@@ -46,6 +46,22 @@ def check_values_count(condition: models.ValuesCount, values: list[Any] | None) 
     )
 
 
+def check_is_empty_value(is_empty: bool, value: Any) -> bool:
+    if value is None:
+        return is_empty
+    if isinstance(value, list):
+        return (len(value) == 0) == is_empty
+    return not is_empty
+
+
+def check_is_null_value(is_null: bool, value: Any) -> bool:
+    if value is None:
+        return is_null
+    if isinstance(value, list):
+        return any(v is None for v in value) == is_null
+    return not is_null
+
+
 def check_geo_radius(condition: models.GeoRadius, values: Any) -> bool:
     if isinstance(values, dict) and "lat" in values and "lon" in values:
         lat = values["lat"]
@@ -253,6 +269,19 @@ def check_condition(
         if condition.has_vector in has_vector and has_vector[condition.has_vector]:
             return True
     elif isinstance(condition, models.FieldCondition):
+        if condition.values_count is None and (
+            condition.is_empty is not None or condition.is_null is not None
+        ):
+            # values_count keeps its own branch below, this must not shadow it
+            raw_values = value_by_key(payload, condition.key, flat=False)
+            if not raw_values:
+                # nothing stored under the key: the server counts that as empty, not null
+                if condition.is_empty is not None:
+                    return condition.is_empty
+                return not condition.is_null
+            if condition.is_empty is not None:
+                return any(check_is_empty_value(condition.is_empty, v) for v in raw_values)
+            return any(check_is_null_value(condition.is_null, v) for v in raw_values)
         values = value_by_key(payload, condition.key)
         if condition.match is not None:
             if values is None:
