@@ -294,3 +294,42 @@ def test_fusion_dbsf_score_threshold(qdrant: QdrantClient):
         f"Expected 3 points after filtering (threshold 1.0), got {len(result_with_threshold.points)}. "
         f"Scores: {[p.score for p in result_no_threshold.points]}"
     )
+
+
+@pytest.mark.parametrize(
+    "query",
+    [
+        models.FusionQuery(fusion=models.Fusion.RRF),
+        models.FusionQuery(fusion=models.Fusion.DBSF),
+        models.RrfQuery(rrf=models.Rrf(k=2)),
+        models.FormulaQuery(formula=models.MultExpression(mult=["$score", 1.0])),
+    ],
+)
+def test_prefetch_root_query_filter(qdrant: QdrantClient, query: models.QueryInterface):
+    qdrant.create_collection(
+        collection_name="filtered_fusion",
+        vectors_config=models.VectorParams(size=2, distance=models.Distance.COSINE),
+    )
+    qdrant.upsert(
+        collection_name="filtered_fusion",
+        points=[
+            models.PointStruct(id=0, vector=[1.0, 0.0], payload={"group": "a"}),
+            models.PointStruct(id=1, vector=[0.0, 1.0], payload={"group": "a"}),
+            models.PointStruct(id=2, vector=[0.9, 0.1], payload={"group": "b"}),
+        ],
+    )
+
+    result = qdrant.query_points(
+        collection_name="filtered_fusion",
+        prefetch=[
+            models.Prefetch(query=[1.0, 0.05], limit=10),
+            models.Prefetch(query=[0.9, 0.2], limit=10),
+        ],
+        query=query,
+        query_filter=models.Filter(
+            must=[models.FieldCondition(key="group", match=models.MatchValue(value="a"))]
+        ),
+        limit=10,
+    )
+
+    assert sorted(point.id for point in result.points) == [0, 1]

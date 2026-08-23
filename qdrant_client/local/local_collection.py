@@ -847,6 +847,17 @@ class LocalCollection:
                 idf_corpus=self._idf_corpus_of(prefetch.params),
             )
 
+    def _filter_scored_points(
+        self,
+        points: list[types.ScoredPoint],
+        query_filter: types.Filter | None,
+    ) -> list[types.ScoredPoint]:
+        if query_filter is None:
+            return points
+
+        mask = self._payload_and_non_deleted_mask(query_filter)
+        return [point for point in points if mask[self.ids[point.id]]]
+
     def _merge_sources(
         self,
         sources: list[list[types.ScoredPoint]],
@@ -861,29 +872,34 @@ class LocalCollection:
         idf_corpus: types.Filter | None = None,
     ) -> list[types.ScoredPoint]:
         if isinstance(query, (models.FusionQuery, models.RrfQuery)):
+            merge_limit = (
+                sum(len(source) for source in sources)
+                if query_filter is not None
+                else limit + offset
+            )
             # Fuse results
             if isinstance(query, models.RrfQuery):
                 fused = reciprocal_rank_fusion(
                     responses=sources,
-                    limit=limit + offset,
+                    limit=merge_limit,
                     ranking_constant_k=query.rrf.k,
                     weights=query.rrf.weights,
                 )
             else:
                 if query.fusion == models.Fusion.RRF:
                     # RRF: Reciprocal Rank Fusion
-                    fused = reciprocal_rank_fusion(responses=sources, limit=limit + offset)
+                    fused = reciprocal_rank_fusion(responses=sources, limit=merge_limit)
                 elif query.fusion == models.Fusion.DBSF:
                     # DBSF: Distribution-Based Score Fusion
-                    fused = distribution_based_score_fusion(
-                        responses=sources, limit=limit + offset
-                    )
+                    fused = distribution_based_score_fusion(responses=sources, limit=merge_limit)
                 else:
                     raise ValueError(f"Fusion method {query.fusion} does not exist")
 
             # Apply score_threshold filtering (matching server behavior)
             if score_threshold is not None:
                 fused = [p for p in fused if p.score >= score_threshold]
+
+            fused = self._filter_scored_points(fused, query_filter)[: limit + offset]
 
             # Fetch payload and vectors
             ids = [point.id for point in fused]
@@ -897,15 +913,21 @@ class LocalCollection:
             return fused[offset:]
 
         elif isinstance(query, models.FormulaQuery):
+            rescore_limit = (
+                sum(len(source) for source in sources)
+                if query_filter is not None
+                else limit + offset
+            )
             # Re-score with formula
             rescored = self._rescore_with_formula(
                 query=query,
                 prefetches_results=sources,
-                limit=limit + offset,
+                limit=rescore_limit,
                 with_payload=with_payload,
                 with_vectors=with_vectors,
             )
 
+            rescored = self._filter_scored_points(rescored, query_filter)[: limit + offset]
             rescored = [
                 point
                 for point in rescored
