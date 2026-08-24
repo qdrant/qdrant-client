@@ -72,3 +72,37 @@ def test_error_message_names_the_value():
         validate_filter(models.Filter(min_should=min_should(0)))
     assert "min_count value 0 is invalid" in str(exc.value)
     assert "Must be 1 or larger" in str(exc.value)
+
+
+def _nested(inner: models.Filter, key: str = "arr") -> models.NestedCondition:
+    return models.NestedCondition(nested=models.Nested(key=key, filter=inner))
+
+
+@pytest.mark.parametrize("clause", ["must", "should", "must_not"])
+def test_nested_condition_hides_a_filter(clause: str):
+    """A NestedCondition carries a filter, so it has to be walked too.
+
+    check_condition evaluates condition.nested.filter like any other filter, so
+    an invalid min_count reached through one is as live as a top-level one.
+    Filter and NestedCondition are the only condition types that wrap a filter.
+    """
+    bad = _nested(models.Filter(min_should=min_should(0)))
+    with pytest.raises(ValueError, match="min_count"):
+        mask(models.Filter(**{clause: [bad]}))
+
+
+def test_nested_condition_inside_min_should_conditions():
+    bad = _nested(models.Filter(min_should=min_should(-1)))
+    with pytest.raises(ValueError, match="min_count"):
+        mask(models.Filter(min_should=min_should(1, conditions=[bad])))
+
+
+def test_nested_conditions_chained():
+    bad = models.Filter(min_should=min_should(0))
+    with pytest.raises(ValueError, match="min_count"):
+        mask(models.Filter(must=[_nested(models.Filter(must=[_nested(bad, "b")]), "a")]))
+
+
+def test_valid_nested_condition_is_unaffected():
+    validate_filter(models.Filter(must=[_nested(models.Filter(must=COND))]))
+    validate_filter(models.Filter(must=[_nested(models.Filter(min_should=min_should(1)))]))

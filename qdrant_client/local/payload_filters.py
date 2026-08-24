@@ -422,7 +422,11 @@ def validate_filter(payload_filter: models.Filter) -> None:
         if min_count < 1:
             raise ValueError(f"min_count value {min_count} is invalid. Must be 1 or larger.")
 
-    for clause in (payload_filter.must, payload_filter.should, payload_filter.must_not):
+    clauses = [payload_filter.must, payload_filter.should, payload_filter.must_not]
+    if payload_filter.min_should is not None:
+        clauses.append(payload_filter.min_should.conditions)
+
+    for clause in clauses:
         if clause is None:
             continue
         # A clause is either a single condition or a list of them.
@@ -430,11 +434,12 @@ def validate_filter(payload_filter: models.Filter) -> None:
         for condition in conditions:
             if isinstance(condition, models.Filter):
                 validate_filter(condition)
-
-    if payload_filter.min_should is not None:
-        for condition in payload_filter.min_should.conditions:
-            if isinstance(condition, models.Filter):
-                validate_filter(condition)
+            elif isinstance(condition, models.NestedCondition):
+                # A NestedCondition carries a whole filter on .nested.filter, and
+                # check_condition evaluates it like any other, so an invalid
+                # min_count reached through one is just as live as a top-level
+                # one. These two are the only condition types that wrap a filter.
+                validate_filter(condition.nested.filter)
 
 
 def calculate_payload_mask(
