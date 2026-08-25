@@ -294,3 +294,82 @@ def test_fusion_dbsf_score_threshold(qdrant: QdrantClient):
         f"Expected 3 points after filtering (threshold 1.0), got {len(result_with_threshold.points)}. "
         f"Scores: {[p.score for p in result_no_threshold.points]}"
     )
+
+
+def test_facet_with_mixed_type_values_on_count_tie(qdrant: QdrantClient):
+    # A payload key can hold different scalar types across points. When two
+    # facet values have the same count, the tie-break used to compare the
+    # values directly, which raises TypeError for e.g. int vs str.
+    qdrant.create_collection(
+        collection_name="test_collection",
+        vectors_config=models.VectorParams(size=2, distance=models.Distance.DOT),
+    )
+    qdrant.upsert(
+        collection_name="test_collection",
+        points=[
+            models.PointStruct(id=1, vector=[0.1, 0.2], payload={"k": 5}),
+            models.PointStruct(id=2, vector=[0.2, 0.3], payload={"k": "x"}),
+            models.PointStruct(id=3, vector=[0.3, 0.4], payload={"k": False}),
+        ],
+    )
+
+    response = qdrant.facet(collection_name="test_collection", key="k")
+
+    # Each value has count 1, so all three are a mutual tie. The call must not
+    # raise, and the ordering must be deterministic: values are grouped by type
+    # (numbers before strings) and ordered within their group.
+    assert {(hit.value, hit.count) for hit in response.hits} == {(5, 1), ("x", 1), (False, 1)}
+    assert [hit.value for hit in response.hits] == [False, 5, "x"]
+
+
+def test_facet_tie_break_is_deterministic_across_colliding_types(qdrant: QdrantClient):
+    # `""` (str) and `0` (int) are distinct facet values that an id-style key
+    # collides onto the same tie-break key, which would make the order of
+    # equal-count values depend on the upsert order. The facet ordering must stay
+    # deterministic regardless of the order the points are upserted.
+    def facet_order(point_order):
+        qdrant.delete_collection(collection_name="test_collection")
+        qdrant.create_collection(
+            collection_name="test_collection",
+            vectors_config=models.VectorParams(size=2, distance=models.Distance.DOT),
+        )
+        qdrant.upsert(collection_name="test_collection", points=point_order)
+        response = qdrant.facet(collection_name="test_collection", key="k")
+        assert {(hit.value, hit.count) for hit in response.hits} == {("", 1), (0, 1)}
+        return [hit.value for hit in response.hits]
+
+    points = [
+        models.PointStruct(id=1, vector=[0.1, 0.2], payload={"k": ""}),
+        models.PointStruct(id=2, vector=[0.2, 0.3], payload={"k": 0}),
+    ]
+
+    # The order must be identical no matter how the points were inserted.
+    assert facet_order(points) == facet_order(list(reversed(points)))
+
+
+def test_search_matrix_with_mixed_int_and_uuid_ids(qdrant: QdrantClient):
+    # Qdrant allows integer and UUID (string) point ids to coexist in one
+    # collection. Sorting the sampled points by raw id used to raise TypeError
+    # when comparing an int id against a UUID string id.
+    qdrant.create_collection(
+        collection_name="test_collection",
+        vectors_config=models.VectorParams(size=2, distance=models.Distance.DOT),
+    )
+    qdrant.upsert(
+        collection_name="test_collection",
+        points=[
+            models.PointStruct(id=1, vector=[0.1, 0.9]),
+            models.PointStruct(id="550e8400-e29b-41d4-a716-446655440000", vector=[0.9, 0.1]),
+            models.PointStruct(id=7, vector=[0.2, 0.8]),
+        ],
+    )
+
+    pairs_response = qdrant.search_matrix_pairs(
+        collection_name="test_collection", sample=10, limit=1
+    )
+    assert len(pairs_response.pairs) > 0
+
+    offsets_response = qdrant.search_matrix_offsets(
+        collection_name="test_collection", sample=10, limit=1
+    )
+    assert len(offsets_response.ids) == 3
