@@ -1,3 +1,4 @@
+import re
 from datetime import datetime, timezone
 
 # These are the formats accepted by qdrant core
@@ -46,4 +47,12 @@ def parse(date_str: str) -> datetime | None:
     # dt examples to handle:
     # "2021-01-01 00:00:00.000+01"
     # "2021-01-01 00:00:00.000-10"
-    return parse_available_formats(date_str + ":00")
+    # This retry must only fire for an actual hour-only UTC offset at the end of
+    # the string (e.g. "+01" or "-10"). Without this guard, any string that fails
+    # every format above (including truncated datetimes like "2024-06-15 12" or
+    # "2024-06-15T12:30") would also get ":00" appended and could accidentally
+    # match a valid format, silently accepting input that qdrant core rejects.
+    if re.search(r"[+-]\d{2}$", date_str):
+        return parse_available_formats(date_str + ":00")
+
+    return None
