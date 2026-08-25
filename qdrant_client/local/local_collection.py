@@ -712,6 +712,7 @@ class LocalCollection:
                 MultiDiscoveryQuery,
                 MultiContextQuery,
                 MultiRecoQuery,
+                NaiveFeedbackQuery,
             ),  # sparse structures are not required, sparse always uses DOT
         ):
             order = np.argsort(scores)[::-1]

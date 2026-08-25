@@ -1108,6 +1108,31 @@ class TestSimpleSearcher:
             limit=10,
         )
 
+    def relevance_feedback_query_euclid(self, client: QdrantBase) -> models.QueryResponse:
+        # `code` is a euclid vector. Feedback scores come from the internal core
+        # distance, which is oriented higher-is-better whatever the metric, so the
+        # results still have to come back best-first instead of farthest-first.
+        return client.query_points(
+            collection_name=COLLECTION_NAME,
+            query=models.RelevanceFeedbackQuery(
+                relevance_feedback=models.RelevanceFeedbackInput(
+                    target=self.dense_vector_query_code,
+                    feedback=[
+                        models.FeedbackItem(example=1, score=0.9),
+                        models.FeedbackItem(example=2, score=0.8),
+                        models.FeedbackItem(example=3, score=0.7),
+                        models.FeedbackItem(example=4, score=0.6),
+                    ],
+                    strategy=models.NaiveFeedbackStrategy(
+                        naive=models.NaiveFeedbackStrategyParams(a=0.5, b=1.0, c=0.7)
+                    ),
+                )
+            ),
+            using="code",
+            with_payload=True,
+            limit=10,
+        )
+
 
 def group_by_keys():
     return ["maybe", "rand_digit", "two_words", "city.name", "maybe_null", "id"]
@@ -2194,4 +2219,7 @@ def test_relevance_feedback_queries():
 
     compare_clients_results(
         local_client, http_client, grpc_client, searcher.relevance_feedback_query
+    )
+    compare_clients_results(
+        local_client, http_client, grpc_client, searcher.relevance_feedback_query_euclid
     )
