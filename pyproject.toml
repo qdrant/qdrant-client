@@ -44,7 +44,7 @@ coverage = ">=6.3.3,<8.0.0"
 pytest-asyncio = ">=0.21,<0.24"
 pytest-timeout = "^2.1.0"
 autoflake = "^2.2.1"
-ruff = "0.4.3"
+ruff = "0.16.3"
 pytest-mock = "^3.14.0"
 pre-commit = "^4.2.0"
 
