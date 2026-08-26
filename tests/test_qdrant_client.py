@@ -1888,6 +1888,17 @@ def test_client_close():
     # endregion local
 
 
+def test_client_del_suppresses_close_errors(monkeypatch):
+    client = QdrantClient.__new__(QdrantClient)
+
+    def close_raises(*args, **kwargs):
+        raise RuntimeError("connection cleanup failed during shutdown")
+
+    monkeypatch.setattr(QdrantClient, "close", close_raises)
+
+    client.__del__()
+
+
 def test_timeout_propagation():
     client = QdrantClient()
     vectors_config = models.VectorParams(size=2, distance=models.Distance.COSINE)
