@@ -1,7 +1,7 @@
 from asyncio import get_event_loop
 from functools import lru_cache
 from typing import Any, Awaitable, Callable, Dict, Generic, Type, TypeVar, overload
-from urllib.parse import urljoin
+from urllib.parse import quote, urljoin
 
 from httpx import AsyncClient, Client, Request, Response
 from pydantic import ValidationError
@@ -67,6 +67,12 @@ MiddlewareT = Callable[[Request, Send], Response]
 AsyncMiddlewareT = Callable[[Request, SendAsync], Awaitable[Response]]
 
 
+def quote_path_params(path_params: Dict[str, Any]) -> Dict[str, str]:
+    # each path param is a single URL segment, so reserved characters have to be escaped,
+    # otherwise a name like `example/collection1` would change the path of the request
+    return {name: quote(str(value), safe="") for name, value in path_params.items()}
+
+
 class ApiClient:
     def __init__(self, host: str, **kwargs: Any) -> None:
         self.host = host
@@ -91,7 +97,7 @@ class ApiClient:
         url = url[1:] if url.startswith("/") else url
         # in order to do a correct join, url join requires base_url to end with /, and url to not start with /,
         # since url is treated as an absolute path and might truncate prefix in base_url
-        url = urljoin(host, url.format(**path_params))
+        url = urljoin(host, url.format(**quote_path_params(path_params)))
         if "params" in kwargs and "timeout" in kwargs["params"]:
             kwargs["timeout"] = int(kwargs["params"]["timeout"])
         request = self._client.build_request(method, url, **kwargs)
@@ -182,7 +188,7 @@ class AsyncApiClient:
         url = url[1:] if url.startswith("/") else url
         # in order to do a correct join, url join requires base_url to end with /, and url to not start with /,
         # since url is treated as an absolute path and might truncate prefix in base_url
-        url = urljoin(host, url.format(**path_params))
+        url = urljoin(host, url.format(**quote_path_params(path_params)))
         request = self._async_client.build_request(method, url, **kwargs)
         return await self.send(request, type_)
 
