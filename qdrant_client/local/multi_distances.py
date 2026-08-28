@@ -82,6 +82,7 @@ def calculate_multi_distance_core(
     matrices: list[types.NumpyArray],
     distance_type: models.Distance,
 ) -> types.NumpyArray:
+    """Calculate similarities for each candidate multivector matrix."""
     def euclidean(q: types.NumpyArray, m: types.NumpyArray, *_: Any) -> types.NumpyArray:
         return -np.square(m - q, dtype=np.float32).sum(axis=-1, dtype=np.float32)
 

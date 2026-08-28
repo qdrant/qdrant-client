@@ -5,6 +5,7 @@ from qdrant_client.local.local_collection import LocalCollection, DEFAULT_VECTOR
 
 
 def test_get_vectors():
+    """Test retrieving vectors from a local collection."""
     collection = LocalCollection(
         models.CreateCollection(
             vectors=models.VectorParams(size=2, distance=models.Distance.MANHATTAN)
@@ -22,6 +23,7 @@ def test_get_vectors():
 
 
 def test_multivector_search_skips_points_without_a_vector():
+    """Test that missing named multivectors are skipped during local search."""
     collection = LocalCollection(
         models.CreateCollection(
             vectors={
