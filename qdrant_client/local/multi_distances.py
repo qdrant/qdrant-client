@@ -100,6 +100,9 @@ def calculate_multi_distance_core(
         dist_func = calculate_distance  # type: ignore
 
     for matrix in matrices:
+        if matrix.size == 0:
+            similarities.append(-np.inf)
+            continue
         sim_matrix = dist_func(query_matrix, matrix, distance_type)
         similarity = float(np.sum(np.max(sim_matrix, axis=-1)))
         similarities.append(similarity)
