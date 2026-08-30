@@ -1262,7 +1262,7 @@ class LocalCollection:
         facet_filter: types.Filter | None = None,
         limit: int = 10,
     ) -> types.FacetResponse:
-        facet_hits: dict[types.FacetValue, int] = defaultdict(int)
+        facet_hits: dict[tuple[int, types.FacetValue], int] = defaultdict(int)
 
         mask = self._payload_and_non_deleted_mask(facet_filter)
 
@@ -1279,7 +1279,7 @@ class LocalCollection:
                 continue
 
             # Only count the same value for each point once
-            values_set: set[types.FacetValue] = set()
+            values_set: set[tuple[int, types.FacetValue]] = set()
 
             # Sanitize to use only valid values
             for v in values:
@@ -1291,14 +1291,14 @@ class LocalCollection:
                 if as_uuid:
                     v = str(as_uuid)
 
-                values_set.add(v)
+                values_set.add(self._facet_value_identity(v))
 
             for v in values_set:
                 facet_hits[v] += 1
 
         hits = [
             models.FacetValueHit(value=value, count=count)
-            for value, count in sorted(
+            for (_, value), count in sorted(
                 facet_hits.items(),
                 # order by count descending, then by value ascending
                 key=lambda x: (-x[1], x[0]),
@@ -1967,6 +1967,17 @@ class LocalCollection:
         elif isinstance(point_id, int):
             return "", point_id
         raise TypeError(f"Incompatible point id type: {type(point_id)}")
+
+    @staticmethod
+    def _facet_value_identity(value: types.FacetValue) -> tuple[int, types.FacetValue]:
+        """Build a sortable key that preserves JSON scalar type identity."""
+        if isinstance(value, bool):
+            return 0, value
+        if isinstance(value, int):
+            return 1, value
+        if isinstance(value, str):
+            return 2, value
+        raise TypeError(f"Incompatible facet value type: {type(value)}")
 
     def scroll(
         self,
