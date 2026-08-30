@@ -55,3 +55,14 @@ def test_distances() -> None:
     multivector_query = np.array([[1, 2, 3], [3, 4, 5]])
     docs = [np.array([[1, 2, 3], [0, 1, 2]])]
     assert calculate_multi_distance(multivector_query, docs, models.Distance.DOT)[0] == 40.0
+
+
+def test_cosine_similarity_keeps_near_zero_vectors_unchanged() -> None:
+    tiny = np.array([5e-11] * 4, dtype=np.float32)
+    vectors = tiny.copy()
+    query = np.array([1.0] * 4, dtype=np.float32)
+
+    result = calculate_distance(query, vectors[None, :], models.Distance.COSINE)
+
+    assert np.allclose(vectors, tiny)
+    assert np.allclose(result, [1e-10], atol=1e-12)
