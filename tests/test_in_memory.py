@@ -296,40 +296,74 @@ def test_fusion_dbsf_score_threshold(qdrant: QdrantClient):
     )
 
 
-@pytest.mark.parametrize(
-    "query",
-    [
-        models.FusionQuery(fusion=models.Fusion.RRF),
-        models.FusionQuery(fusion=models.Fusion.DBSF),
-        models.RrfQuery(rrf=models.Rrf(k=2)),
-        models.FormulaQuery(formula=models.MultExpression(mult=["$score", 1.0])),
-    ],
+FILTERED_FUSION_POINTS = [
+    models.PointStruct(id=0, vector=[1.0, 0.0], payload={"group": "a"}),
+    models.PointStruct(id=1, vector=[0.0, 1.0], payload={"group": "a"}),
+    models.PointStruct(id=2, vector=[0.9, 0.1], payload={"group": "b"}),
+    models.PointStruct(id=3, vector=[0.95, 0.05], payload={"group": "b"}),
+]
+
+FILTERED_FUSION_PREFETCH = [
+    models.Prefetch(query=[1.0, 0.05], limit=10),
+    models.Prefetch(query=[0.9, 0.2], limit=10),
+]
+
+GROUP_A = models.Filter(
+    must=[models.FieldCondition(key="group", match=models.MatchValue(value="a"))]
 )
-def test_prefetch_root_query_filter(qdrant: QdrantClient, query: models.QueryInterface):
+
+
+@pytest.fixture
+def filtered_fusion(qdrant: QdrantClient) -> QdrantClient:
     qdrant.create_collection(
         collection_name="filtered_fusion",
         vectors_config=models.VectorParams(size=2, distance=models.Distance.COSINE),
     )
-    qdrant.upsert(
-        collection_name="filtered_fusion",
-        points=[
-            models.PointStruct(id=0, vector=[1.0, 0.0], payload={"group": "a"}),
-            models.PointStruct(id=1, vector=[0.0, 1.0], payload={"group": "a"}),
-            models.PointStruct(id=2, vector=[0.9, 0.1], payload={"group": "b"}),
-        ],
-    )
+    qdrant.upsert(collection_name="filtered_fusion", points=FILTERED_FUSION_POINTS)
+    return qdrant
 
-    result = qdrant.query_points(
-        collection_name="filtered_fusion",
-        prefetch=[
-            models.Prefetch(query=[1.0, 0.05], limit=10),
-            models.Prefetch(query=[0.9, 0.2], limit=10),
-        ],
-        query=query,
-        query_filter=models.Filter(
-            must=[models.FieldCondition(key="group", match=models.MatchValue(value="a"))]
+
+def test_excluded_candidate_outranks_an_included_one(filtered_fusion: QdrantClient):
+    # Guards the premise of the tests below: without pre-filtering, point 3 would
+    # take a rank slot ahead of point 0 in both prefetch sources.
+    for prefetch in FILTERED_FUSION_PREFETCH:
+        source = filtered_fusion.query_points(
+            collection_name="filtered_fusion", query=prefetch.query, limit=10
+        )
+        ranked = [point.id for point in source.points]
+        assert ranked.index(3) < ranked.index(0)
+
+
+@pytest.mark.parametrize(
+    ("query", "expected"),
+    [
+        (models.FusionQuery(fusion=models.Fusion.RRF), [(0, 1.0), (1, 0.6666666667)]),
+        (
+            models.FusionQuery(fusion=models.Fusion.DBSF),
+            [(0, 1.2357022604), (1, 0.7642977396)],
         ),
+        (models.RrfQuery(rrf=models.Rrf(k=2)), [(0, 1.0), (1, 0.6666666667)]),
+        (
+            models.FormulaQuery(formula=models.MultExpression(mult=["$score", 1.0])),
+            [(0, 0.9987523556), (1, 0.049937617)],
+        ),
+    ],
+)
+def test_prefetch_root_query_filter(
+    filtered_fusion: QdrantClient,
+    query: models.QueryInterface,
+    expected: list[tuple[int, float]],
+):
+    result = filtered_fusion.query_points(
+        collection_name="filtered_fusion",
+        prefetch=FILTERED_FUSION_PREFETCH,
+        query=query,
+        query_filter=GROUP_A,
         limit=10,
     )
 
-    assert sorted(point.id for point in result.points) == [0, 1]
+    # Scores are the server's, so they must survive filtering unchanged, not just the ids.
+    assert [point.id for point in result.points] == [point_id for point_id, _ in expected]
+    assert [point.score for point in result.points] == pytest.approx(
+        [score for _, score in expected]
+    )
