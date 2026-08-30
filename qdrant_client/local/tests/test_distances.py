@@ -66,3 +66,16 @@ def test_cosine_similarity_keeps_near_zero_vectors_unchanged() -> None:
 
     assert np.allclose(vectors, tiny)
     assert np.allclose(result, [1e-10], atol=1e-12)
+
+
+def test_cosine_similarity_does_not_mutate_inputs() -> None:
+    query = np.array([1.0, 1.0], dtype=np.float32)
+    vectors = np.array([[1.0, 1.0], [0.0, 0.0]], dtype=np.float32)
+    query_before = query.copy()
+    vectors_before = vectors.copy()
+
+    result = calculate_distance(query, vectors, models.Distance.COSINE)
+
+    assert np.allclose(query, query_before)
+    assert np.allclose(vectors, vectors_before)
+    assert np.allclose(result, [1.0, 0.0])

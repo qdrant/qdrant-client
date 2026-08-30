@@ -127,16 +127,19 @@ def cosine_similarity(query: types.NumpyArray, vectors: types.NumpyArray) -> typ
     Returns:
         distances
     """
+    vectors = np.array(vectors, copy=True)
+    query = np.array(query, copy=True)
+
     vectors_norm = np.linalg.norm(vectors, axis=-1)[:, np.newaxis]
-    vectors /= np.where(vectors_norm > EPSILON, vectors_norm, 1.0)
+    vectors = vectors / np.where(vectors_norm > EPSILON, vectors_norm, 1.0)
 
     if len(query.shape) == 1:
         query_norm = np.linalg.norm(query)
-        query /= np.where(query_norm > EPSILON, query_norm, 1.0)
+        query = query / np.where(query_norm > EPSILON, query_norm, 1.0)
         return np.dot(vectors, query)
 
     query_norm = np.linalg.norm(query, axis=-1)[:, np.newaxis]
-    query /= np.where(query_norm > EPSILON, query_norm, 1.0)
+    query = query / np.where(query_norm > EPSILON, query_norm, 1.0)
     return np.dot(query, vectors.T)
 
 
