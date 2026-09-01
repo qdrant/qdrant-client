@@ -1,3 +1,4 @@
+import re
 from datetime import date, datetime, timezone
 from typing import Any
 from uuid import UUID
@@ -162,19 +163,41 @@ def values_match(value: Any, other: Any) -> bool:
     return value == other
 
 
+def unindexed_text_tokens(text: str) -> list[str]:
+    # Mirrors the server's default word tokenizer, used for text and phrase filters on
+    # fields without a text index: split on non-alphanumeric characters, lowercase.
+    return [token.lower() for token in re.findall(r"[^\W_]+", text)]
+
+
 def check_match(condition: models.Match, value: Any) -> bool:
     if isinstance(condition, models.MatchValue):
         return values_match(value, condition.value)
     if isinstance(condition, models.MatchText):
-        return isinstance(value, str) and condition.text in value
+        # On a field without a text index the server tokenizes both sides with the default
+        # word tokenizer and requires every query token to be a whole document token,
+        # order-independent (qdrant#10341). An empty query never matches. A text index may
+        # use a different tokenizer, which local mode cannot reproduce since it builds no
+        # indexes.
+        if not isinstance(value, str):
+            return False
+        query_tokens = unindexed_text_tokens(condition.text)
+        document_tokens = set(unindexed_text_tokens(value))
+        return bool(query_tokens) and all(token in document_tokens for token in query_tokens)
     if isinstance(condition, models.MatchTextAny):
+        # Unlike text/phrase, the server still resolves this with a substring scan on
+        # unindexed fields.
         return isinstance(value, str) and any(word in value for word in condition.text_any.split())
     if isinstance(condition, models.MatchPhrase):
-        # Same approximation as `MatchText` above: on a field without a text index the server
-        # falls back to a substring scan, which this reproduces exactly. A phrase-enabled text
-        # index makes the server tokenize and lowercase instead, and local mode builds no
-        # indexes, so it cannot reproduce that.
-        return isinstance(value, str) and condition.phrase in value
+        # Like `MatchText`, but the query tokens must appear consecutively in document
+        # token order (qdrant#10341).
+        if not isinstance(value, str):
+            return False
+        phrase_tokens = unindexed_text_tokens(condition.phrase)
+        value_tokens = unindexed_text_tokens(value)
+        return bool(phrase_tokens) and any(
+            value_tokens[i : i + len(phrase_tokens)] == phrase_tokens
+            for i in range(len(value_tokens) - len(phrase_tokens) + 1)
+        )
     if isinstance(condition, models.MatchPrefix):
         # byte-wise and case-sensitive, like exact keyword matching. Non-string values never
         # match, not even against an empty prefix.
