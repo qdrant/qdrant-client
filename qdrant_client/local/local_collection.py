@@ -773,7 +773,7 @@ class LocalCollection:
 
         if len(prefetches) > 0:
             # It is a hybrid/re-scoring query
-            sources = [self._prefetch(prefetch) for prefetch in prefetches]
+            sources = [self._prefetch(prefetch, query_filter) for prefetch in prefetches]
 
             if query is None:
                 raise ValueError("Query is required for merging prefetches")
@@ -807,7 +807,13 @@ class LocalCollection:
 
         return types.QueryResponse(points=scored_points)
 
-    def _prefetch(self, prefetch: types.Prefetch) -> list[types.ScoredPoint]:
+    def _prefetch(
+        self, prefetch: types.Prefetch, root_filter: types.Filter | None = None
+    ) -> list[types.ScoredPoint]:
+        # The server folds the root filter into the prefetch search, so a prefetch limit
+        # applies to already-filtered candidates. Filtering the results instead drops
+        # points the server would have returned.
+        prefetch_filter = _merge_filters(prefetch.filter, root_filter)
         inner_prefetches = []
         if prefetch.prefetch is not None:
             inner_prefetches = (
@@ -815,7 +821,9 @@ class LocalCollection:
             )
 
         if len(inner_prefetches) > 0:
-            sources = [self._prefetch(inner_prefetch) for inner_prefetch in inner_prefetches]
+            sources = [
+                self._prefetch(inner_prefetch, root_filter) for inner_prefetch in inner_prefetches
+            ]
 
             if prefetch.query is None:
                 raise ValueError("Query is required for merging prefetches")
@@ -827,7 +835,7 @@ class LocalCollection:
                 limit=prefetch.limit if prefetch.limit is not None else 10,
                 offset=0,
                 using=prefetch.using,
-                query_filter=prefetch.filter,
+                query_filter=prefetch_filter,
                 with_payload=False,
                 with_vectors=False,
                 score_threshold=prefetch.score_threshold,
@@ -838,7 +846,7 @@ class LocalCollection:
             return self._query_collection(
                 query=prefetch.query,
                 using=prefetch.using,
-                query_filter=prefetch.filter,
+                query_filter=prefetch_filter,
                 limit=prefetch.limit,
                 offset=0,
                 with_payload=False,
@@ -3073,6 +3081,12 @@ def ignore_mentioned_ids_filter(
             query_filter.must_not = [query_filter.must_not, ignore_mentioned_ids]
 
     return query_filter
+
+
+def _merge_filters(base: types.Filter | None, extra: types.Filter | None) -> types.Filter | None:
+    if base is None or extra is None:
+        return base if extra is None else extra
+    return models.Filter(must=[base, extra])
 
 
 def _include_ids_in_filter(

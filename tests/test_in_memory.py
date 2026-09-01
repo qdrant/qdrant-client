@@ -367,3 +367,37 @@ def test_prefetch_root_query_filter(
     assert [point.score for point in result.points] == pytest.approx(
         [score for _, score in expected]
     )
+
+
+def test_prefetch_limit_applies_after_the_root_filter(qdrant: QdrantClient):
+    # The prefetch limit must see filtered candidates: id 1 outranks id 5 but fails the
+    # root filter, and filtering after the fact would return nothing.
+    qdrant.create_collection(
+        collection_name="pushdown",
+        vectors_config=models.VectorParams(size=2, distance=models.Distance.DOT),
+    )
+    qdrant.upsert(
+        collection_name="pushdown",
+        points=[
+            models.PointStruct(id=1, vector=[0.3, 0.3], payload={"a": 1, "b": 1}),
+            models.PointStruct(id=5, vector=[0.2, 0.3], payload={"a": 1, "b": 2}),
+        ],
+    )
+
+    result = qdrant.query_points(
+        collection_name="pushdown",
+        prefetch=models.Prefetch(
+            query=[0.1, 0.3],
+            filter=models.Filter(
+                must=[models.FieldCondition(key="a", match=models.MatchValue(value=1))]
+            ),
+            limit=1,
+        ),
+        query=models.RrfQuery(rrf=models.Rrf(k=2)),
+        query_filter=models.Filter(
+            must=[models.FieldCondition(key="b", match=models.MatchValue(value=2))]
+        ),
+        limit=1,
+    )
+
+    assert [(point.id, point.score) for point in result.points] == [(5, pytest.approx(0.5))]
