@@ -5,19 +5,15 @@ Collection management uses the simplified serverless API; point operations
 (query, upsert, ...) work exactly like in the regular client.
 """
 
-from qdrant_client.http.models import PointStruct
-from qdrant_client.serverless import (
-    DenseVectorConfig,
-    Distance,
-    KeywordIndex,
-    QdrantServerless,
-)
+from qdrant_client.models import PointStruct
+from qdrant_client.models.serverless import DenseVectorConfig, Distance, KeywordIndex
+from qdrant_client.serverless import QdrantServerless
 
 
 def main() -> None:
     client = QdrantServerless(
         url="https://serverless.plush-volt.aws.development-cloud.qdrant.io",
-        api_key="IZAeyepNJz2ieJxZ7NQE-Ri3H96cvKcmGNVm7QtmvHM",
+        api_key="<your api key>",
     )
 
     # make the example rerunnable: creating an existing collection raises ALREADY_EXISTS
