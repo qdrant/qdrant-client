@@ -10,6 +10,7 @@ serverless CollectionsService.
 from typing import Any, Optional, Sequence
 
 from qdrant_client.conversions import common_types as types
+from qdrant_client.qdrant_fastembed import QdrantFastembedMixin
 from qdrant_client.qdrant_remote import QdrantRemote
 from qdrant_client.serverless import models as serverless_models
 from qdrant_client.serverless.conversions import (
@@ -146,7 +147,10 @@ class QdrantServerless:
             timeout: Overrides global timeout for this request. Unit is seconds.
 
         Returns:
-            Outcome of the operation, e.g. `"created"` or `"already exists"`
+            Outcome of the operation, e.g. `"created"`
+
+        Raises:
+            grpc.RpcError: with `StatusCode.ALREADY_EXISTS` if the collection already exists
         """
         if isinstance(dense_vectors, serverless_models.DenseVectorConfig):
             dense_vectors = {"": dense_vectors}
@@ -299,7 +303,8 @@ class QdrantServerless:
                 - If `SparseVector` - use as a sparse vector for nearest search.
                 - If `Query` - use as a query for specific search type.
                 - If `NumpyArray` - use as a dense vector for nearest search.
-                - If `Document` - infer vector from the document text and use it for nearest search.
+                - If `Document` - the server infers the vector from the document text
+                  (serverless performs no client-side embedding inference).
                 - If `None` - return first `limit` points from the collection.
             using:
                 Name of the vectors to use for query.
@@ -336,6 +341,10 @@ class QdrantServerless:
         Returns:
             QueryResponse structure containing list of found close points with similarity scores
         """
+        # Type resolution only (e.g. a raw list becomes NearestQuery) - no client-side
+        # embedding inference: Document/Image inputs go to the server as-is, serverless
+        # inference is server-side only.
+        query = QdrantFastembedMixin._resolve_query(query)
         return self._remote.query_points(
             collection_name=collection_name,
             query=query,
