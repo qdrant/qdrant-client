@@ -573,6 +573,98 @@ class TestSimpleSearcher:
             limit=10,
         )
 
+    def dense_queries_root_filtered_prefetch(
+        self, client: QdrantBase, query_filter: models.Filter
+    ) -> models.QueryResponse:
+        # prefetch limits are deliberately small: the filter has to be applied together with
+        # each prefetch, not to the results of the fusion
+        return client.query_points(
+            collection_name=COLLECTION_NAME,
+            prefetch=[
+                models.Prefetch(
+                    query=self.dense_vector_query_text,
+                    using="text",
+                    limit=5,
+                ),
+                models.Prefetch(
+                    query=self.dense_vector_query_code,
+                    using="code",
+                    limit=5,
+                ),
+            ],
+            query=models.FusionQuery(fusion=models.Fusion.RRF),
+            query_filter=query_filter,
+            with_payload=True,
+            limit=10,
+        )
+
+    def dense_queries_root_filtered_prefetch_formula(
+        self, client: QdrantBase, query_filter: models.Filter
+    ) -> models.QueryResponse:
+        return client.query_points(
+            collection_name=COLLECTION_NAME,
+            prefetch=[
+                models.Prefetch(
+                    query=self.dense_vector_query_text,
+                    using="text",
+                    limit=5,
+                ),
+            ],
+            query=models.FormulaQuery(formula=models.MultExpression(mult=["$score", 1.0])),
+            query_filter=query_filter,
+            with_payload=True,
+            limit=10,
+        )
+
+    def dense_queries_root_and_prefetch_filtered(
+        self,
+        client: QdrantBase,
+        query_filter: models.Filter,
+        prefetch_filter: models.Filter,
+    ) -> models.QueryResponse:
+        # the root filter is merged into the one of the prefetch clause by clause
+        return client.query_points(
+            collection_name=COLLECTION_NAME,
+            prefetch=[
+                models.Prefetch(
+                    query=self.dense_vector_query_text,
+                    using="text",
+                    filter=prefetch_filter,
+                    limit=5,
+                ),
+            ],
+            query=models.FusionQuery(fusion=models.Fusion.RRF),
+            query_filter=query_filter,
+            with_payload=True,
+            limit=10,
+        )
+
+    def deep_dense_queries_root_filtered_prefetch(
+        self, client: QdrantBase, query_filter: models.Filter
+    ) -> models.QueryResponse:
+        # the root filter has to reach the leaves of the prefetch tree
+        return client.query_points(
+            collection_name=COLLECTION_NAME,
+            prefetch=[
+                models.Prefetch(
+                    query=self.dense_vector_query_code,
+                    using="code",
+                    limit=5,
+                    prefetch=[
+                        models.Prefetch(
+                            query=self.dense_vector_query_text,
+                            using="text",
+                            limit=10,
+                        )
+                    ],
+                )
+            ],
+            query=models.FusionQuery(fusion=models.Fusion.RRF),
+            query_filter=query_filter,
+            with_payload=True,
+            limit=10,
+        )
+
     def dense_queries_prefetch_score_threshold(self, client: QdrantBase) -> models.QueryResponse:
         return client.query_points(
             collection_name=COLLECTION_NAME,
@@ -1136,6 +1228,40 @@ def test_dense_query_filtered_prefetch():
         except AssertionError as e:
             print(f"\nAttempt {i} failed with filter {query_filter}")
             raise e
+
+
+def test_dense_query_root_filtered_prefetch():
+    fixture_points = generate_fixtures()
+
+    searcher = TestSimpleSearcher()
+
+    local_client, http_client, grpc_client = init_clients(fixture_points)
+
+    for i in range(10):
+        query_filter = one_random_filter_please()
+        prefetch_filter = one_random_filter_please()
+        queries = [
+            (searcher.dense_queries_root_filtered_prefetch, {}),
+            (searcher.dense_queries_root_filtered_prefetch_formula, {}),
+            (searcher.deep_dense_queries_root_filtered_prefetch, {}),
+            (
+                searcher.dense_queries_root_and_prefetch_filtered,
+                {"prefetch_filter": prefetch_filter},
+            ),
+        ]
+        for query, extra_kwargs in queries:
+            try:
+                compare_clients_results(
+                    local_client,
+                    http_client,
+                    grpc_client,
+                    query,
+                    query_filter=query_filter,
+                    **extra_kwargs,
+                )
+            except AssertionError as e:
+                print(f"\nAttempt {i} of {query.__name__} failed with filter {query_filter}")
+                raise e
 
 
 def test_dense_query_prefetch_score_threshold():

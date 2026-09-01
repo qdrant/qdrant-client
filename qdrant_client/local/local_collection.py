@@ -808,12 +808,12 @@ class LocalCollection:
         return types.QueryResponse(points=scored_points)
 
     def _prefetch(
-        self, prefetch: types.Prefetch, root_filter: types.Filter | None = None
+        self, prefetch: types.Prefetch, propagated_filter: types.Filter | None = None
     ) -> list[types.ScoredPoint]:
-        # The server folds the root filter into the prefetch search, so a prefetch limit
-        # applies to already-filtered candidates. Filtering the results instead drops
-        # points the server would have returned.
-        prefetch_filter = _merge_filters(prefetch.filter, root_filter)
+        # The server propagates the filter of each level down into the leaves of the prefetch
+        # tree, so prefetch limits are applied to already filtered candidates.
+        prefetch_filter = _merge_filters(propagated_filter, prefetch.filter)
+
         inner_prefetches = []
         if prefetch.prefetch is not None:
             inner_prefetches = (
@@ -822,7 +822,8 @@ class LocalCollection:
 
         if len(inner_prefetches) > 0:
             sources = [
-                self._prefetch(inner_prefetch, root_filter) for inner_prefetch in inner_prefetches
+                self._prefetch(inner_prefetch, prefetch_filter)
+                for inner_prefetch in inner_prefetches
             ]
 
             if prefetch.query is None:
@@ -868,14 +869,6 @@ class LocalCollection:
         with_vectors: bool | Sequence[str] = False,
         idf_corpus: types.Filter | None = None,
     ) -> list[types.ScoredPoint]:
-        if query_filter is not None:
-            # The server filters each prefetch source, so excluded candidates must not
-            # occupy RRF ranks or feed the DBSF distribution.
-            mask = self._payload_and_non_deleted_mask(query_filter)
-            sources = [
-                [point for point in source if mask[self.ids[point.id]]] for source in sources
-            ]
-
         if isinstance(query, (models.FusionQuery, models.RrfQuery)):
             # Fuse results
             if isinstance(query, models.RrfQuery):
@@ -921,6 +914,7 @@ class LocalCollection:
                 with_payload=with_payload,
                 with_vectors=with_vectors,
             )
+
             rescored = [
                 point
                 for point in rescored
@@ -3083,10 +3077,47 @@ def ignore_mentioned_ids_filter(
     return query_filter
 
 
-def _merge_filters(base: types.Filter | None, extra: types.Filter | None) -> types.Filter | None:
-    if base is None or extra is None:
-        return base if extra is None else extra
-    return models.Filter(must=[base, extra])
+def _merge_filters(outer: types.Filter | None, inner: types.Filter | None) -> types.Filter | None:
+    """Combine a propagated filter with the filter of a prefetch.
+
+    Mirrors `Filter::merge_opts` on the server: clauses are concatenated field-wise, which
+    means `should` clauses of both filters become alternatives of each other rather than
+    being ANDed together.
+    """
+    if outer is None:
+        return inner
+    if inner is None:
+        return outer
+
+    def merge_clause(
+        first: list[models.Condition] | models.Condition | None,
+        second: list[models.Condition] | models.Condition | None,
+    ) -> list[models.Condition] | None:
+        if first is None:
+            return second if second is None or isinstance(second, list) else [second]
+        if second is None:
+            return first if isinstance(first, list) else [first]
+        first = first if isinstance(first, list) else [first]
+        second = second if isinstance(second, list) else [second]
+        return [*first, *second]
+
+    if outer.min_should is None:
+        min_should = inner.min_should
+    elif inner.min_should is None:
+        min_should = outer.min_should
+    else:
+        min_should = models.MinShould(
+            conditions=[*outer.min_should.conditions, *inner.min_should.conditions],
+            # the union of conditions can satisfy at least the bigger of the two counts
+            min_count=max(outer.min_should.min_count, inner.min_should.min_count),
+        )
+
+    return models.Filter(
+        must=merge_clause(outer.must, inner.must),
+        must_not=merge_clause(outer.must_not, inner.must_not),
+        should=merge_clause(outer.should, inner.should),
+        min_should=min_should,
+    )
 
 
 def _include_ids_in_filter(
