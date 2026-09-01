@@ -656,21 +656,22 @@ class QdrantServerless:
         self,
         collection_name: str,
         vectors: Sequence[str],
-        ids: Sequence[types.PointId],
+        points: Sequence[types.PointId],
         wait: bool = False,
         timeout: Optional[int] = None,
     ) -> types.UpdateResult:
-        """Removes the given named vectors from the given points, keeping the
-        points themselves.
+        """Removes the given named vectors from the selected points, keeping
+        the points themselves.
 
-        Unlike the regular client, only selection by explicit ids is available:
-        serverless does not support vector deletion by filter.
+        Selection is currently limited to explicit ids. Once serverless
+        supports filtered updates, this parameter will also accept
+        filter-based selectors (a non-breaking type widening).
 
         Args:
             collection_name: Name of the collection to delete vectors from
             vectors: List of vector names to delete; use `""` for the unnamed
                 default vector
-            ids: List of ids of the points to modify
+            points: List of ids of the points to modify
             wait: Await for the write to be accepted on the server side.
                 Default `False`: serverless reads are eventually consistent with
                 writes, so waiting does not guarantee read-your-write anyway.
@@ -682,7 +683,7 @@ class QdrantServerless:
         return self._remote.delete_vectors(
             collection_name=collection_name,
             vectors=vectors,
-            points=list(ids),
+            points=list(points),
             wait=wait,
             timeout=timeout,
         )
@@ -691,20 +692,21 @@ class QdrantServerless:
         self,
         collection_name: str,
         payload: types.Payload,
-        ids: Sequence[types.PointId],
+        points: Sequence[types.PointId],
         wait: bool = False,
         timeout: Optional[int] = None,
     ) -> types.UpdateResult:
-        """Replaces the entire payload of the given points with the given payload.
+        """Replaces the entire payload of the selected points with the given payload.
 
         Unlike `set_payload`, existing keys not present in the new payload are
-        removed. Unlike the regular client, only selection by explicit ids is
-        available: serverless does not support payload updates by filter.
+        removed. Selection is currently limited to explicit ids. Once
+        serverless supports filtered updates, this parameter will also accept
+        filter-based selectors (a non-breaking type widening).
 
         Args:
             collection_name: Name of the collection to overwrite payload in
             payload: Key-value pairs of payload to assign
-            ids: List of ids of the points to modify
+            points: List of ids of the points to modify
             wait: Await for the write to be accepted on the server side.
                 Default `False`: serverless reads are eventually consistent with
                 writes, so waiting does not guarantee read-your-write anyway.
@@ -716,7 +718,7 @@ class QdrantServerless:
         return self._remote.overwrite_payload(
             collection_name=collection_name,
             payload=payload,
-            points=list(ids),
+            points=list(points),
             wait=wait,
             timeout=timeout,
         )
@@ -724,18 +726,19 @@ class QdrantServerless:
     def clear_payload(
         self,
         collection_name: str,
-        ids: Sequence[types.PointId],
+        points: Sequence[types.PointId],
         wait: bool = False,
         timeout: Optional[int] = None,
     ) -> types.UpdateResult:
-        """Removes the entire payload of the given points.
+        """Removes the entire payload of the selected points.
 
-        Unlike the regular client, only selection by explicit ids is available:
-        serverless does not support payload updates by filter.
+        Selection is currently limited to explicit ids. Once serverless
+        supports filtered updates, this parameter will also accept
+        filter-based selectors (a non-breaking type widening).
 
         Args:
             collection_name: Name of the collection to clear payload in
-            ids: List of ids of the points to modify
+            points: List of ids of the points to modify
             wait: Await for the write to be accepted on the server side.
                 Default `False`: serverless reads are eventually consistent with
                 writes, so waiting does not guarantee read-your-write anyway.
@@ -746,7 +749,7 @@ class QdrantServerless:
         """
         return self._remote.clear_payload(
             collection_name=collection_name,
-            points_selector=list(ids),
+            points_selector=list(points),
             wait=wait,
             timeout=timeout,
         )
@@ -785,18 +788,19 @@ class QdrantServerless:
     def delete(
         self,
         collection_name: str,
-        ids: Sequence[types.PointId],
+        points: Sequence[types.PointId],
         wait: bool = False,
         timeout: Optional[int] = None,
     ) -> types.UpdateResult:
-        """Deletes points by ids.
+        """Deletes selected points.
 
-        Unlike the regular client, only deletion by explicit ids is available:
-        serverless does not support deletion by filter.
+        Selection is currently limited to explicit ids. Once serverless
+        supports filtered updates, this parameter will also accept
+        filter-based selectors (a non-breaking type widening).
 
         Args:
             collection_name: Deletes points from this collection
-            ids: List of ids of the points to delete
+            points: List of ids of the points to delete
             wait: Await for the write to be accepted on the server side.
                 Default `False`: serverless reads are eventually consistent with
                 writes, so waiting does not guarantee read-your-write anyway.
@@ -807,7 +811,7 @@ class QdrantServerless:
         """
         return self._remote.delete(
             collection_name=collection_name,
-            points_selector=list(ids),
+            points_selector=list(points),
             wait=wait,
             timeout=timeout,
         )
@@ -816,22 +820,23 @@ class QdrantServerless:
         self,
         collection_name: str,
         payload: types.Payload,
-        ids: Sequence[types.PointId],
+        points: Sequence[types.PointId],
         key: Optional[str] = None,
         wait: bool = False,
         timeout: Optional[int] = None,
     ) -> types.UpdateResult:
-        """Modifies payload of the given points.
+        """Modifies payload of the selected points.
 
         Only the given payload values are merged into the stored payload;
-        other existing keys stay untouched. Unlike the regular client, only
-        selection by explicit ids is available: serverless does not support
-        payload updates by filter.
+        other existing keys stay untouched. Selection is currently limited to
+        explicit ids. Once serverless supports filtered updates, this
+        parameter will also accept filter-based selectors (a non-breaking
+        type widening).
 
         Args:
             collection_name: Name of the collection to set payload in
             payload: Key-value pairs of payload to assign
-            ids: List of ids of the points to modify
+            points: List of ids of the points to modify
             key: Path to the nested field in the payload to modify.
                 If `None` - modify the root of the payload.
             wait: Await for the write to be accepted on the server side.
@@ -845,7 +850,7 @@ class QdrantServerless:
         return self._remote.set_payload(
             collection_name=collection_name,
             payload=payload,
-            points=list(ids),
+            points=list(points),
             key=key,
             wait=wait,
             timeout=timeout,
@@ -855,19 +860,20 @@ class QdrantServerless:
         self,
         collection_name: str,
         keys: Sequence[str],
-        ids: Sequence[types.PointId],
+        points: Sequence[types.PointId],
         wait: bool = False,
         timeout: Optional[int] = None,
     ) -> types.UpdateResult:
-        """Removes the given payload keys from the given points.
+        """Removes the given payload keys from the selected points.
 
-        Unlike the regular client, only selection by explicit ids is
-        available: serverless does not support payload updates by filter.
+        Selection is currently limited to explicit ids. Once serverless
+        supports filtered updates, this parameter will also accept
+        filter-based selectors (a non-breaking type widening).
 
         Args:
             collection_name: Name of the collection to delete payload from
             keys: List of payload keys to remove
-            ids: List of ids of the points to modify
+            points: List of ids of the points to modify
             wait: Await for the write to be accepted on the server side.
                 Default `False`: serverless reads are eventually consistent with
                 writes, so waiting does not guarantee read-your-write anyway.
@@ -879,7 +885,7 @@ class QdrantServerless:
         return self._remote.delete_payload(
             collection_name=collection_name,
             keys=keys,
-            points=list(ids),
+            points=list(points),
             wait=wait,
             timeout=timeout,
         )
