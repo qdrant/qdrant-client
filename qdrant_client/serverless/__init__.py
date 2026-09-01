@@ -5,8 +5,8 @@ collection management uses the simplified, tenant-facing serverless API.
 
 Usage:
 
-    from qdrant_client.models.serverless import DenseVectorConfig, Distance
     from qdrant_client.serverless import QdrantServerless
+    from qdrant_client.serverless.models import DenseVectorConfig, Distance
 
     client = QdrantServerless(url="https://...", api_key="...")
     client.create_collection(
@@ -18,44 +18,8 @@ Usage:
 
 from qdrant_client.serverless.async_client import AsyncQdrantServerless
 from qdrant_client.serverless.client import QdrantServerless
-from qdrant_client.serverless.models import (
-    BoolIndex,
-    CollectionConfig,
-    CollectionInfo,
-    CollectionSummary,
-    DatetimeIndex,
-    DenseVectorConfig,
-    Distance,
-    FloatIndex,
-    GeoIndex,
-    IntegerIndex,
-    KeywordIndex,
-    PayloadIndex,
-    PrecisionTier,
-    SparseVectorConfig,
-    TextIndex,
-    TokenizerType,
-    UuidIndex,
-)
 
 __all__ = [
     "AsyncQdrantServerless",
     "QdrantServerless",
-    "BoolIndex",
-    "CollectionConfig",
-    "CollectionInfo",
-    "CollectionSummary",
-    "DatetimeIndex",
-    "DenseVectorConfig",
-    "Distance",
-    "FloatIndex",
-    "GeoIndex",
-    "IntegerIndex",
-    "KeywordIndex",
-    "PayloadIndex",
-    "PrecisionTier",
-    "SparseVectorConfig",
-    "TextIndex",
-    "TokenizerType",
-    "UuidIndex",
 ]
