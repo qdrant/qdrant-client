@@ -1,6 +1,6 @@
 import inspect
 
-from qdrant_client.models.serverless import (
+from qdrant_client.serverless.models import (
     CollectionConfig,
     DenseVectorConfig,
     Distance,
