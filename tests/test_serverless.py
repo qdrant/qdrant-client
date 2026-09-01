@@ -1,4 +1,7 @@
+import inspect
+
 from qdrant_client.serverless import (
+    AsyncQdrantServerless,
     CollectionConfig,
     DenseVectorConfig,
     Distance,
@@ -55,3 +58,25 @@ def test_client_construction_is_offline() -> None:
     assert client._remote._grpc_port == 443
     assert client._remote._https
     client.close()
+
+
+def test_async_client_mirrors_sync_client() -> None:
+    sync_methods = {
+        name
+        for name, _ in inspect.getmembers(QdrantServerless, predicate=inspect.isfunction)
+        if not name.startswith("__")
+    }
+    async_methods = {
+        name
+        for name, _ in inspect.getmembers(AsyncQdrantServerless, predicate=inspect.isfunction)
+        if not name.startswith("__")
+    }
+    assert sync_methods == async_methods
+    for name in async_methods:
+        if name.startswith("_"):
+            continue
+        assert inspect.iscoroutinefunction(getattr(AsyncQdrantServerless, name)), name
+
+    client = AsyncQdrantServerless(url="https://serverless.example.qdrant.io", api_key="secret")
+    assert ("api-key", "secret") in client._remote._grpc_headers
+    assert client._remote._grpc_port == 443
