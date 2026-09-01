@@ -90,6 +90,9 @@ class QdrantLocal(QdrantBase):
     def closed(self) -> bool:
         return self._closed
 
+    def health_check(self, **kwargs: Any) -> bool:
+        return not self._closed
+
     def close(self, **kwargs: Any) -> None:
         self._closed = True
         for collection in self.collections.values():

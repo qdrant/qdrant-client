@@ -261,6 +261,13 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             )
         self._closed = True
 
+    async def health_check(self, **kwargs: Any) -> bool:
+        try:
+            await self.rest.service_api.healthz()
+            return True
+        except Exception:
+            return False
+
     @staticmethod
     def _parse_url(url: str) -> tuple[str | None, str, int | None, str | None]:
         parse_result: Url = parse_url(url)

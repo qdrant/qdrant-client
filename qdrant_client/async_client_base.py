@@ -348,6 +348,9 @@ class AsyncQdrantBase:
     async def close(self, **kwargs: Any) -> None:
         pass
 
+    async def health_check(self, **kwargs: Any) -> bool:
+        raise NotImplementedError()
+
     def migrate(
         self,
         dest_client: "AsyncQdrantBase",

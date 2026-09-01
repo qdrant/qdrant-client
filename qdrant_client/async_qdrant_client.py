@@ -164,6 +164,16 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         if hasattr(self, "_client"):
             await self._client.close(grpc_grace=grpc_grace, **kwargs)
 
+    async def health_check(self, **kwargs: Any) -> bool:
+        """Checks if Qdrant server is reachable and healthy
+
+        Returns:
+            bool: True if server is healthy or local storage is open, False otherwise
+        """
+        if hasattr(self, "_client"):
+            return await self._client.health_check(**kwargs)
+        return False
+
     @property
     def grpc_collections(self) -> grpc.CollectionsStub:
         """gRPC client for collections methods

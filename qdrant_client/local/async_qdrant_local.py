@@ -92,6 +92,9 @@ class AsyncQdrantLocal(AsyncQdrantBase):
     def closed(self) -> bool:
         return self._closed
 
+    async def health_check(self, **kwargs: Any) -> bool:
+        return not self._closed
+
     async def close(self, **kwargs: Any) -> None:
         self._closed = True
         for collection in self.collections.values():
@@ -826,6 +829,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         update_mode: types.UpdateMode | None = None,
         **kwargs: Any,
     ) -> None:
+
         def uuid_generator() -> Generator[str, None, None]:
             while True:
                 yield str(uuid4())
@@ -834,9 +838,9 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         if isinstance(vectors, dict) and any(
             (isinstance(v, np.ndarray) for v in vectors.values())
         ):
-            assert (
-                len(set([arr.shape[0] for arr in vectors.values()])) == 1
-            ), "Each named vector should have the same number of vectors"
+            assert len(set([arr.shape[0] for arr in vectors.values()])) == 1, (
+                "Each named vector should have the same number of vectors"
+            )
             num_vectors = next(iter(vectors.values())).shape[0]
             vectors = [
                 {name: vectors[name][i].tolist() for name in vectors.keys()}
