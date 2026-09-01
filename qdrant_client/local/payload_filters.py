@@ -248,7 +248,11 @@ def check_condition(
         values = value_by_key(payload, condition.is_null.key, flat=False)
         if values is None:
             return False
-        if any(v is None for v in values):
+        # A value is null if it is null itself, or is an array containing a null
+        # element, one level deep (qdrant#10101).
+        if any(
+            v is None or (isinstance(v, list) and any(e is None for e in v)) for v in values
+        ):
             return True
     elif isinstance(condition, models.IsEmptyCondition):
         values = value_by_key(payload, condition.is_empty.key, flat=False)
