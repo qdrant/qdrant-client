@@ -96,6 +96,9 @@ class AsyncQdrantLocal(AsyncQdrantBase):
     def closed(self) -> bool:
         return self._closed
 
+    async def health_check(self, **kwargs: Any) -> bool:
+        return not self._closed
+
     async def close(self, **kwargs: Any) -> None:
         self._closed = True
         for collection in self.collections.values():
