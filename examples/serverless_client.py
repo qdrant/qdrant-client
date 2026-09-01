@@ -17,8 +17,12 @@ from qdrant_client.serverless import (
 def main() -> None:
     client = QdrantServerless(
         url="https://serverless.plush-volt.aws.development-cloud.qdrant.io",
-        api_key="<your api key>",
+        api_key="IZAeyepNJz2ieJxZ7NQE-Ri3H96cvKcmGNVm7QtmvHM",
     )
+
+    # make the example rerunnable: creating an existing collection raises ALREADY_EXISTS
+    if client.collection_exists("my-collection"):
+        client.delete_collection("my-collection")
 
     # serverless-specific collection management: no quantization, wal,
     # segment number etc. - the serverless manager decides those
