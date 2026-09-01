@@ -18,6 +18,7 @@ delegated to the regular gRPC client; collection operations talk to the
 serverless CollectionsService.
 """
 
+from copy import deepcopy
 from typing import Any, Optional, Sequence
 from qdrant_client.conversions import common_types as types
 from qdrant_client.qdrant_fastembed import QdrantFastembedMixin
@@ -347,6 +348,114 @@ class AsyncQdrantServerless:
             timeout=timeout,
         )
 
+    async def query_batch_points(
+        self,
+        collection_name: str,
+        requests: Sequence[types.QueryRequest],
+        timeout: Optional[int] = None,
+    ) -> list[types.QueryResponse]:
+        """Performs several queries in one request, same as in the regular
+        client, minus `consistency`, which serverless does not support.
+
+        Args:
+            collection_name: Name of the collection
+            requests: List of query requests
+            timeout: Overrides global timeout for this request. Unit is seconds.
+
+        Returns:
+            List of query responses, in the same order as the requests
+        """
+        resolved_requests = []
+        for request in requests:
+            request = deepcopy(request)
+            request.query = QdrantFastembedMixin._resolve_query(request.query)
+            resolved_requests.append(request)
+        return await self._remote.query_batch_points(
+            collection_name=collection_name, requests=resolved_requests, timeout=timeout
+        )
+
+    async def query_points_groups(
+        self,
+        collection_name: str,
+        group_by: str,
+        query: types.PointId
+        | list[float]
+        | list[list[float]]
+        | types.SparseVector
+        | types.Query
+        | types.NumpyArray
+        | types.Document
+        | types.Image
+        | types.InferenceObject
+        | None = None,
+        using: Optional[str] = None,
+        prefetch: types.Prefetch | list[types.Prefetch] | None = None,
+        query_filter: Optional[types.Filter] = None,
+        search_params: Optional[types.SearchParams] = None,
+        limit: int = 10,
+        group_size: int = 3,
+        with_payload: bool | Sequence[str] | types.PayloadSelector = True,
+        with_vectors: bool | Sequence[str] = False,
+        score_threshold: Optional[float] = None,
+        timeout: Optional[int] = None,
+    ) -> types.GroupsResult:
+        """Universal endpoint to run any available operation and group results
+        by a payload field. Same as in the regular client, minus `consistency`,
+        `shard_key_selector` and the cross-collection lookups (`lookup_from`,
+        `with_lookup`), which serverless does not support.
+
+        Args:
+            collection_name: Collection to search in
+            group_by: Payload field to group by; supports dot notation for
+                nested fields
+            query: Query for the chosen search type operation, same forms as in
+                `query_points`
+            using:
+                Name of the vectors to use for query.
+                If `None` - use default vectors or provided in named vector structures.
+            prefetch: Prefetch queries to make a selection of the data to be used with the main query
+            query_filter:
+                - Exclude vectors which doesn't fit given conditions.
+                - If `None` - search among all vectors
+            search_params: Additional search params
+            limit: How many groups return
+            group_size: How many results return for a single group
+            with_payload:
+                - Specify which stored payload should be attached to the result.
+                - If `True` - attach all payload
+                - If `False` - do not attach any payload
+                - If List of string - include only specified fields
+                - If `PayloadSelector` - use explicit rules
+            with_vectors:
+                - If `True` - Attach stored vector to the search result.
+                - If `False` - Do not attach vector.
+                - If List of string - include only specified fields
+                - Default: `False`
+            score_threshold:
+                Define a minimal score threshold for the result.
+                If defined, less similar results will not be returned.
+            timeout: Overrides global timeout for this search. Unit is seconds.
+
+        Returns:
+            List of groups with not more than `group_size` hits in each group
+        """
+        query = QdrantFastembedMixin._resolve_query(query)
+        return await self._remote.query_points_groups(
+            collection_name=collection_name,
+            group_by=group_by,
+            query=query,
+            using=using,
+            prefetch=prefetch,
+            query_filter=query_filter,
+            search_params=search_params,
+            limit=limit,
+            group_size=group_size,
+            with_payload=with_payload,
+            with_vectors=with_vectors,
+            score_threshold=score_threshold,
+            timeout=timeout,
+        )
+
     async def retrieve(
         self,
         collection_name: str,
@@ -472,7 +581,7 @@ class AsyncQdrantServerless:
         self,
         collection_name: str,
         points: types.Points,
-        wait: bool = True,
+        wait: bool = False,
         timeout: Optional[int] = None,
     ) -> types.UpdateResult:
         """Updates or inserts points into the collection.
@@ -484,8 +593,9 @@ class AsyncQdrantServerless:
         Args:
             collection_name: To which collection to insert
             points: Batch or list of points to insert
-            wait: Await for the results to be applied on the server side.
-                If `true`, result will be returned only when all changes are applied
+            wait: Await for the write to be accepted on the server side.
+                Default `False`: serverless reads are eventually consistent with
+                writes, so waiting does not guarantee read-your-write anyway.
             timeout: Overrides global timeout for this request. Unit is seconds.
 
         Returns:
@@ -495,11 +605,163 @@ class AsyncQdrantServerless:
             collection_name=collection_name, points=points, wait=wait, timeout=timeout
         )
 
+    async def update_vectors(
+        self,
+        collection_name: str,
+        points: Sequence[types.PointVectors],
+        wait: bool = False,
+        timeout: Optional[int] = None,
+    ) -> types.UpdateResult:
+        """Updates specified vectors of the given points, keeping payload and
+        the remaining vectors untouched.
+
+        Args:
+            collection_name: Name of the collection to update vectors in
+            points: List of (id, vector) pairs to update
+            wait: Await for the write to be accepted on the server side.
+                Default `False`: serverless reads are eventually consistent with
+                writes, so waiting does not guarantee read-your-write anyway.
+            timeout: Overrides global timeout for this request. Unit is seconds.
+
+        Returns:
+            Operation Result(UpdateResult)
+        """
+        return await self._remote.update_vectors(
+            collection_name=collection_name, points=points, wait=wait, timeout=timeout
+        )
+
+    async def delete_vectors(
+        self,
+        collection_name: str,
+        vectors: Sequence[str],
+        ids: Sequence[types.PointId],
+        wait: bool = False,
+        timeout: Optional[int] = None,
+    ) -> types.UpdateResult:
+        """Removes the given named vectors from the given points, keeping the
+        points themselves.
+
+        Unlike the regular client, only selection by explicit ids is available:
+        serverless does not support vector deletion by filter.
+
+        Args:
+            collection_name: Name of the collection to delete vectors from
+            vectors: List of vector names to delete; use `""` for the unnamed
+                default vector
+            ids: List of ids of the points to modify
+            wait: Await for the write to be accepted on the server side.
+                Default `False`: serverless reads are eventually consistent with
+                writes, so waiting does not guarantee read-your-write anyway.
+            timeout: Overrides global timeout for this request. Unit is seconds.
+
+        Returns:
+            Operation Result(UpdateResult)
+        """
+        return await self._remote.delete_vectors(
+            collection_name=collection_name,
+            vectors=vectors,
+            points=list(ids),
+            wait=wait,
+            timeout=timeout,
+        )
+
+    async def overwrite_payload(
+        self,
+        collection_name: str,
+        payload: types.Payload,
+        ids: Sequence[types.PointId],
+        wait: bool = False,
+        timeout: Optional[int] = None,
+    ) -> types.UpdateResult:
+        """Replaces the entire payload of the given points with the given payload.
+
+        Unlike `set_payload`, existing keys not present in the new payload are
+        removed. Unlike the regular client, only selection by explicit ids is
+        available: serverless does not support payload updates by filter.
+
+        Args:
+            collection_name: Name of the collection to overwrite payload in
+            payload: Key-value pairs of payload to assign
+            ids: List of ids of the points to modify
+            wait: Await for the write to be accepted on the server side.
+                Default `False`: serverless reads are eventually consistent with
+                writes, so waiting does not guarantee read-your-write anyway.
+            timeout: Overrides global timeout for this request. Unit is seconds.
+
+        Returns:
+            Operation Result(UpdateResult)
+        """
+        return await self._remote.overwrite_payload(
+            collection_name=collection_name,
+            payload=payload,
+            points=list(ids),
+            wait=wait,
+            timeout=timeout,
+        )
+
+    async def clear_payload(
+        self,
+        collection_name: str,
+        ids: Sequence[types.PointId],
+        wait: bool = False,
+        timeout: Optional[int] = None,
+    ) -> types.UpdateResult:
+        """Removes the entire payload of the given points.
+
+        Unlike the regular client, only selection by explicit ids is available:
+        serverless does not support payload updates by filter.
+
+        Args:
+            collection_name: Name of the collection to clear payload in
+            ids: List of ids of the points to modify
+            wait: Await for the write to be accepted on the server side.
+                Default `False`: serverless reads are eventually consistent with
+                writes, so waiting does not guarantee read-your-write anyway.
+            timeout: Overrides global timeout for this request. Unit is seconds.
+
+        Returns:
+            Operation Result(UpdateResult)
+        """
+        return await self._remote.clear_payload(
+            collection_name=collection_name, points_selector=list(ids), wait=wait, timeout=timeout
+        )
+
+    async def batch_update_points(
+        self,
+        collection_name: str,
+        update_operations: Sequence[types.UpdateOperation],
+        wait: bool = False,
+        timeout: Optional[int] = None,
+    ) -> list[types.UpdateResult]:
+        """Performs a batch of point update operations in one request.
+
+        Operations with filter-based selectors are rejected by the serverless
+        service; select points by explicit ids inside each operation.
+
+        Args:
+            collection_name: Name of the collection to update
+            update_operations: List of update operations (upsert, delete,
+                set/overwrite/delete/clear payload, update/delete vectors)
+            wait: Await for the write to be accepted on the server side.
+                Default `False`: serverless reads are eventually consistent with
+                writes, so waiting does not guarantee read-your-write anyway.
+            timeout: Overrides global timeout for this request. Unit is seconds.
+
+        Returns:
+            List of operation results, one per operation
+        """
+        return await self._remote.batch_update_points(
+            collection_name=collection_name,
+            update_operations=update_operations,
+            wait=wait,
+            timeout=timeout,
+        )
+
     async def delete(
         self,
         collection_name: str,
         ids: Sequence[types.PointId],
-        wait: bool = True,
+        wait: bool = False,
         timeout: Optional[int] = None,
     ) -> types.UpdateResult:
         """Deletes points by ids.
@@ -510,8 +772,9 @@ class AsyncQdrantServerless:
         Args:
             collection_name: Deletes points from this collection
             ids: List of ids of the points to delete
-            wait: Await for the results to be applied on the server side.
-                If `true`, result will be returned only when all changes are applied
+            wait: Await for the write to be accepted on the server side.
+                Default `False`: serverless reads are eventually consistent with
+                writes, so waiting does not guarantee read-your-write anyway.
             timeout: Overrides global timeout for this request. Unit is seconds.
 
         Returns:
@@ -527,7 +790,7 @@ class AsyncQdrantServerless:
         payload: types.Payload,
         ids: Sequence[types.PointId],
         key: Optional[str] = None,
-        wait: bool = True,
+        wait: bool = False,
         timeout: Optional[int] = None,
     ) -> types.UpdateResult:
         """Modifies payload of the given points.
@@ -543,8 +806,9 @@ class AsyncQdrantServerless:
             ids: List of ids of the points to modify
             key: Path to the nested field in the payload to modify.
                 If `None` - modify the root of the payload.
-            wait: Await for the results to be applied on the server side.
-                If `true`, result will be returned only when all changes are applied
+            wait: Await for the write to be accepted on the server side.
+                Default `False`: serverless reads are eventually consistent with
+                writes, so waiting does not guarantee read-your-write anyway.
             timeout: Overrides global timeout for this request. Unit is seconds.
 
         Returns:
@@ -564,7 +828,7 @@ class AsyncQdrantServerless:
         collection_name: str,
         keys: Sequence[str],
         ids: Sequence[types.PointId],
-        wait: bool = True,
+        wait: bool = False,
         timeout: Optional[int] = None,
     ) -> types.UpdateResult:
         """Removes the given payload keys from the given points.
@@ -576,8 +840,9 @@ class AsyncQdrantServerless:
             collection_name: Name of the collection to delete payload from
             keys: List of payload keys to remove
             ids: List of ids of the points to modify
-            wait: Await for the results to be applied on the server side.
-                If `true`, result will be returned only when all changes are applied
+            wait: Await for the write to be accepted on the server side.
+                Default `False`: serverless reads are eventually consistent with
+                writes, so waiting does not guarantee read-your-write anyway.
             timeout: Overrides global timeout for this request. Unit is seconds.
 
         Returns:
