@@ -5,7 +5,8 @@ collection management uses the simplified, tenant-facing serverless API.
 
 Usage:
 
-    from qdrant_client.serverless import QdrantServerless, DenseVectorConfig, Distance
+    from qdrant_client.models.serverless import DenseVectorConfig, Distance
+    from qdrant_client.serverless import QdrantServerless
 
     client = QdrantServerless(url="https://...", api_key="...")
     client.create_collection(

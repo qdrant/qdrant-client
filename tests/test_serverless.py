@@ -1,18 +1,17 @@
 import inspect
 
-from qdrant_client.serverless import (
-    AsyncQdrantServerless,
+from qdrant_client.models.serverless import (
     CollectionConfig,
     DenseVectorConfig,
     Distance,
     IntegerIndex,
     KeywordIndex,
     PrecisionTier,
-    QdrantServerless,
     SparseVectorConfig,
     TextIndex,
     TokenizerType,
 )
+from qdrant_client.serverless import AsyncQdrantServerless, QdrantServerless
 from qdrant_client.serverless.conversions import (
     collection_config_from_grpc,
     collection_config_to_grpc,
