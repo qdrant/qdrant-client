@@ -210,7 +210,6 @@ class QdrantServerless:
         with_payload: bool | Sequence[str] | types.PayloadSelector = True,
         with_vectors: bool | Sequence[str] = False,
         score_threshold: Optional[float] = None,
-        lookup_from: Optional[types.LookupLocation] = None,
         timeout: Optional[int] = None,
     ) -> types.QueryResponse:
         """Universal endpoint to run any available operation, such as search,
@@ -227,7 +226,6 @@ class QdrantServerless:
             with_payload=with_payload,
             with_vectors=with_vectors,
             score_threshold=score_threshold,
-            lookup_from=lookup_from,
             timeout=timeout,
         )
 
