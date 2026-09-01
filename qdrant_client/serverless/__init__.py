@@ -15,6 +15,7 @@ Usage:
     client.query_points("my-collection", query=[0.1, 0.2, ...])
 """
 
+from qdrant_client.serverless.async_client import AsyncQdrantServerless
 from qdrant_client.serverless.client import QdrantServerless
 from qdrant_client.serverless.models import (
     BoolIndex,
@@ -37,6 +38,7 @@ from qdrant_client.serverless.models import (
 )
 
 __all__ = [
+    "AsyncQdrantServerless",
     "QdrantServerless",
     "BoolIndex",
     "CollectionConfig",
