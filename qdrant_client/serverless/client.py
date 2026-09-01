@@ -26,6 +26,13 @@ DEFAULT_SERVERLESS_GRPC_PORT = 443
 class QdrantServerless:
     """Entry point to a Qdrant Serverless space.
 
+    Point operations behave like in the regular `QdrantClient`, except that
+    parameters serverless does not support (read consistency, shard selection,
+    write ordering, filtered updates) are not available. Collection management
+    uses the simplified serverless API: only the tenant-facing configuration is
+    exposed, storage internals (quantization, WAL, segments, ...) are decided
+    by the serverless manager.
+
     Examples:
 
         >>> client = QdrantServerless(
@@ -38,8 +45,10 @@ class QdrantServerless:
         ... )
 
     Args:
-        url: Base url of the serverless space, e.g. `https://serverless.example.cloud.qdrant.io`
-        api_key: API key of the serverless space, sent as `api-key` metadata with every request
+        url: Base url of the serverless space,
+            e.g. `https://serverless.example.cloud.qdrant.io`
+        api_key: API key of the serverless space,
+            sent as `api-key` metadata with every request
         grpc_port: Port of the gRPC interface. Default: 443
         timeout: Timeout for gRPC requests in seconds. Default: 5 seconds
         grpc_options: Additional low-level gRPC channel options
@@ -78,7 +87,14 @@ class QdrantServerless:
         return timeout if timeout is not None else self._remote._timeout
 
     def close(self, grpc_grace: Optional[float] = None, **kwargs: Any) -> None:
-        """Closes the underlying gRPC connections."""
+        """Closes the underlying gRPC connections.
+
+        The client is unusable afterwards; create a new instance to reconnect.
+
+        Args:
+            grpc_grace: Grace period for gRPC connection teardown in seconds.
+                If `None` - close immediately, cancelling active calls.
+        """
         self._grpc_collections = None
         self._remote.close(grpc_grace=grpc_grace, **kwargs)
 
@@ -102,14 +118,35 @@ class QdrantServerless:
         payload_indexes: dict[str, serverless_models.PayloadIndex] | None = None,
         timeout: Optional[int] = None,
     ) -> str:
-        """Creates a collection.
+        """Creates a collection with the given tenant-facing configuration.
 
-        At least one dense or sparse vector is required. A bare (non-dict)
-        vector config is registered as the unnamed default vector, like in
-        regular qdrant.
+        At least one dense or sparse vector is required. Unlike the regular
+        client, no storage internals (quantization, WAL, segment number, ...)
+        can be configured: the serverless manager decides those.
+
+        Args:
+            collection_name: Name of the collection to create
+            dense_vectors:
+                Dense (embedding) vectors of the collection.
+                - If `DenseVectorConfig` - register as the single unnamed
+                  default vector, like in regular qdrant.
+                - If `dict` - one config per vector name.
+            sparse_vectors:
+                Sparse vectors of the collection.
+                - If `SparseVectorConfig` - register as the single unnamed
+                  default vector.
+                - If `dict` - one config per vector name.
+            payload_indexes:
+                Payload indexes to create, keyed by payload field name
+                (JSON path, e.g. `user_id` or `meta.tags`). Only the kind of
+                filter the field supports is chosen (e.g. `KeywordIndex()`,
+                `TextIndex(tokenizer=...)`); index placement is decided by the
+                serverless manager. Serverless does not support changing
+                payload indexes after creation.
+            timeout: Overrides global timeout for this request. Unit is seconds.
 
         Returns:
-            Outcome, e.g. "created" or "already exists"
+            Outcome of the operation, e.g. `"created"` or `"already exists"`
         """
         if isinstance(dense_vectors, serverless_models.DenseVectorConfig):
             dense_vectors = {"": dense_vectors}
@@ -132,8 +169,13 @@ class QdrantServerless:
     def delete_collection(self, collection_name: str, timeout: Optional[int] = None) -> bool:
         """Deletes a collection and all of its data.
 
+        Args:
+            collection_name: Name of the collection to delete
+            timeout: Overrides global timeout for this request. Unit is seconds.
+
         Returns:
-            True if the collection existed and was deleted
+            `True` if the collection existed and was deleted, `False` if there
+            was no such collection
         """
         response = self._collections.DeleteCollection(
             pb2.DeleteCollectionRequest(collection_name=collection_name),
@@ -146,7 +188,20 @@ class QdrantServerless:
     ) -> serverless_models.CollectionInfo:
         """Returns a collection's configuration and stats.
 
-        Does not raise if the collection is missing: check `.exists`.
+        Unlike the regular client, does not raise if the collection is
+        missing: check the `exists` field of the result. The returned config
+        is the tenant-facing configuration the collection was created with;
+        collection internals (segment number, optimizer status, ...) are not
+        exposed by serverless.
+
+        Args:
+            collection_name: Name of the collection to fetch
+            timeout: Overrides global timeout for this request. Unit is seconds.
+
+        Returns:
+            `CollectionInfo` with `exists`, the creation-time `config` and an
+            eventually consistent `point_count` (absent until stats have been
+            written for the collection)
         """
         response = self._collections.GetCollection(
             pb2.GetCollectionRequest(collection_name=collection_name),
@@ -161,13 +216,29 @@ class QdrantServerless:
         )
 
     def collection_exists(self, collection_name: str, timeout: Optional[int] = None) -> bool:
-        """Checks whether a collection exists."""
+        """Checks whether a collection exists.
+
+        Args:
+            collection_name: Name of the collection to check
+            timeout: Overrides global timeout for this request. Unit is seconds.
+
+        Returns:
+            `True` if the collection exists, `False` otherwise
+        """
         return self.get_collection(collection_name, timeout=timeout).exists
 
     def get_collections(
         self, timeout: Optional[int] = None
     ) -> list[serverless_models.CollectionSummary]:
-        """Lists the collections of the space, ordered by name."""
+        """Lists the collections of the space.
+
+        Args:
+            timeout: Overrides global timeout for this request. Unit is seconds.
+
+        Returns:
+            Collection summaries (name and eventually consistent point count),
+            ordered by name
+        """
         response = self._collections.ListCollections(
             pb2.ListCollectionsRequest(),
             timeout=self._collections_timeout(timeout),
@@ -213,7 +284,58 @@ class QdrantServerless:
         timeout: Optional[int] = None,
     ) -> types.QueryResponse:
         """Universal endpoint to run any available operation, such as search,
-        recommendation, discovery, context search. Same as in the regular client."""
+        recommendation, discovery, context search. Same as in the regular
+        client, minus `consistency`, `shard_key_selector` and `lookup_from`,
+        which serverless does not support.
+
+        Args:
+            collection_name: Collection to search in
+            query:
+                Query for the chosen search type operation.
+                - If `str` - use string as UUID of the existing point as a search query.
+                - If `int` - use integer as ID of the existing point as a search query.
+                - If `list[float]` - use as a dense vector for nearest search.
+                - If `list[list[float]]` - use as a multi-vector for nearest search.
+                - If `SparseVector` - use as a sparse vector for nearest search.
+                - If `Query` - use as a query for specific search type.
+                - If `NumpyArray` - use as a dense vector for nearest search.
+                - If `Document` - infer vector from the document text and use it for nearest search.
+                - If `None` - return first `limit` points from the collection.
+            using:
+                Name of the vectors to use for query.
+                If `None` - use default vectors or provided in named vector structures.
+            prefetch: Prefetch queries to make a selection of the data to be used with the main query
+            query_filter:
+                - Exclude vectors which doesn't fit given conditions.
+                - If `None` - search among all vectors
+            search_params: Additional search params
+            limit: How many results return
+            offset:
+                Offset of the first result to return.
+                May be used to paginate results.
+                Note: large offset values may cause performance issues.
+            with_payload:
+                - Specify which stored payload should be attached to the result.
+                - If `True` - attach all payload
+                - If `False` - do not attach any payload
+                - If List of string - include only specified fields
+                - If `PayloadSelector` - use explicit rules
+            with_vectors:
+                - If `True` - Attach stored vector to the search result.
+                - If `False` - Do not attach vector.
+                - If List of string - include only specified fields
+                - Default: `False`
+            score_threshold:
+                Define a minimal score threshold for the result.
+                If defined, less similar results will not be returned.
+                Score of the returned result might be higher or smaller than the threshold depending
+                on the Distance function used.
+                E.g. for cosine similarity only higher scores will be returned.
+            timeout: Overrides global timeout for this search. Unit is seconds.
+
+        Returns:
+            QueryResponse structure containing list of found close points with similarity scores
+        """
         return self._remote.query_points(
             collection_name=collection_name,
             query=query,
@@ -237,7 +359,28 @@ class QdrantServerless:
         with_vectors: bool | Sequence[str] = False,
         timeout: Optional[int] = None,
     ) -> list[types.Record]:
-        """Retrieves points by ids."""
+        """Retrieves points by ids.
+
+        Args:
+            collection_name: Name of the collection to retrieve from
+            ids: List of ids to retrieve
+            with_payload:
+                - Specify which stored payload should be attached to the result.
+                - If `True` - attach all payload
+                - If `False` - do not attach any payload
+                - If List of string - include only specified fields
+                - If `PayloadSelector` - use explicit rules
+            with_vectors:
+                - If `True` - Attach stored vector to the search result.
+                - If `False` - Do not attach vector.
+                - If List of string - include only specified fields
+                - Default: `False`
+            timeout: Overrides global timeout for this request. Unit is seconds.
+
+        Returns:
+            List of points. Order of the points is not guaranteed;
+            ids that do not exist are silently skipped.
+        """
         return self._remote.retrieve(
             collection_name=collection_name,
             ids=ids,
@@ -257,9 +400,35 @@ class QdrantServerless:
         with_vectors: bool | Sequence[str] = False,
         timeout: Optional[int] = None,
     ) -> tuple[list[types.Record], Optional[types.PointId]]:
-        """Iterates over all points, optionally filtered.
+        """Scrolls over all points, optionally filtered.
 
-        Returns a page of points and the offset of the next page (None if done).
+        This method provides a way to iterate over all stored points with some
+        optional filtering condition. Scroll does not apply any similarity
+        estimations, it will return points sorted by id in ascending order.
+
+        Args:
+            collection_name: Name of the collection to scroll
+            scroll_filter: If provided - only returns points matching the filtering conditions
+            limit: How many points to return
+            order_by: Order the records by a payload key. If `None` - order by id.
+                Requires a range-capable payload index on the key.
+            offset: If provided - skip points with ids less than given `offset`
+            with_payload:
+                - Specify which stored payload should be attached to the result.
+                - If `True` - attach all payload
+                - If `False` - do not attach any payload
+                - If List of string - include only specified fields
+                - If `PayloadSelector` - use explicit rules
+            with_vectors:
+                - If `True` - Attach stored vector to the search result.
+                - If `False` - Do not attach vector.
+                - If List of string - include only specified fields
+                - Default: `False`
+            timeout: Overrides global timeout for this request. Unit is seconds.
+
+        Returns:
+            A pair of (List of points) and (optional offset of the next scroll request).
+            If the next offset is `None` - there are no more points to scroll.
         """
         return self._remote.scroll(
             collection_name=collection_name,
@@ -279,7 +448,23 @@ class QdrantServerless:
         exact: bool = True,
         timeout: Optional[int] = None,
     ) -> types.CountResult:
-        """Counts points, optionally filtered."""
+        """Counts points in the collection.
+
+        Counts points matching the filtering conditions, or all points if no
+        filter is given.
+
+        Args:
+            collection_name: Name of the collection to count points in
+            count_filter: Filtering conditions
+            exact:
+                - If `True` - provide the exact count of points matching the filter.
+                - If `False` - provide the approximate count of points matching the filter.
+                  Works faster.
+            timeout: Overrides global timeout for this request. Unit is seconds.
+
+        Returns:
+            Amount of points in the collection matching the filter
+        """
         return self._remote.count(
             collection_name=collection_name,
             count_filter=count_filter,
@@ -294,7 +479,22 @@ class QdrantServerless:
         wait: bool = True,
         timeout: Optional[int] = None,
     ) -> types.UpdateResult:
-        """Inserts or updates points."""
+        """Updates or inserts points into the collection.
+
+        If a point with a given ID already exists - it will be overwritten.
+        Same as in the regular client, minus `ordering`, `shard_key_selector`,
+        `update_filter` and `update_mode`, which serverless does not support.
+
+        Args:
+            collection_name: To which collection to insert
+            points: Batch or list of points to insert
+            wait: Await for the results to be applied on the server side.
+                If `true`, result will be returned only when all changes are applied
+            timeout: Overrides global timeout for this request. Unit is seconds.
+
+        Returns:
+            Operation Result(UpdateResult)
+        """
         return self._remote.upsert(
             collection_name=collection_name,
             points=points,
@@ -309,7 +509,21 @@ class QdrantServerless:
         wait: bool = True,
         timeout: Optional[int] = None,
     ) -> types.UpdateResult:
-        """Deletes points by ids. Serverless does not support deletion by filter."""
+        """Deletes points by ids.
+
+        Unlike the regular client, only deletion by explicit ids is available:
+        serverless does not support deletion by filter.
+
+        Args:
+            collection_name: Deletes points from this collection
+            ids: List of ids of the points to delete
+            wait: Await for the results to be applied on the server side.
+                If `true`, result will be returned only when all changes are applied
+            timeout: Overrides global timeout for this request. Unit is seconds.
+
+        Returns:
+            Operation Result(UpdateResult)
+        """
         return self._remote.delete(
             collection_name=collection_name,
             points_selector=list(ids),
@@ -326,7 +540,26 @@ class QdrantServerless:
         wait: bool = True,
         timeout: Optional[int] = None,
     ) -> types.UpdateResult:
-        """Merges the given payload into the payload of the given points."""
+        """Modifies payload of the given points.
+
+        Only the given payload values are merged into the stored payload;
+        other existing keys stay untouched. Unlike the regular client, only
+        selection by explicit ids is available: serverless does not support
+        payload updates by filter.
+
+        Args:
+            collection_name: Name of the collection to set payload in
+            payload: Key-value pairs of payload to assign
+            ids: List of ids of the points to modify
+            key: Path to the nested field in the payload to modify.
+                If `None` - modify the root of the payload.
+            wait: Await for the results to be applied on the server side.
+                If `true`, result will be returned only when all changes are applied
+            timeout: Overrides global timeout for this request. Unit is seconds.
+
+        Returns:
+            Operation Result(UpdateResult)
+        """
         return self._remote.set_payload(
             collection_name=collection_name,
             payload=payload,
@@ -344,7 +577,22 @@ class QdrantServerless:
         wait: bool = True,
         timeout: Optional[int] = None,
     ) -> types.UpdateResult:
-        """Removes the given payload keys from the given points."""
+        """Removes the given payload keys from the given points.
+
+        Unlike the regular client, only selection by explicit ids is
+        available: serverless does not support payload updates by filter.
+
+        Args:
+            collection_name: Name of the collection to delete payload from
+            keys: List of payload keys to remove
+            ids: List of ids of the points to modify
+            wait: Await for the results to be applied on the server side.
+                If `true`, result will be returned only when all changes are applied
+            timeout: Overrides global timeout for this request. Unit is seconds.
+
+        Returns:
+            Operation Result(UpdateResult)
+        """
         return self._remote.delete_payload(
             collection_name=collection_name,
             keys=keys,
