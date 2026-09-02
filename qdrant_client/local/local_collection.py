@@ -1737,8 +1737,9 @@ class LocalCollection:
         if len(samples) < 2:
             return [], []
 
-        # sort samples by id
-        samples = sorted(samples, key=lambda x: x.id)
+        # sort samples by id; use a type-safe key since a collection may mix
+        # integer and UUID (str) point ids, which cannot be compared directly
+        samples = sorted(samples, key=lambda x: self._universal_id(x.id))
         # extract the ids
         ids = [sample.id for sample in samples]
         scores: list[list[ScoredPoint]] = []
