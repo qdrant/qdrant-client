@@ -1262,6 +1262,13 @@ class LocalCollection:
         facet_filter: types.Filter | None = None,
         limit: int = 10,
     ) -> types.FacetResponse:
+        # (bool, int, str). A value's position in this tuple is used as a type tag, so
+        # that `False`/`0` and `True`/`1` (equal and same-hash in python) don't collapse
+        # into a single bucket, and so that values of different types stay totally
+        # ordered when their counts tie. The server never mixes types in one facet (it
+        # reads a single payload index), so this cross-type order is local-mode only.
+        value_types = get_args_subscribed(types.FacetValue)
+
         facet_hits: dict[tuple[int, types.FacetValue], int] = defaultdict(int)
 
         mask = self._payload_and_non_deleted_mask(facet_filter)
@@ -1283,7 +1290,7 @@ class LocalCollection:
 
             # Sanitize to use only valid values
             for v in values:
-                if type(v) not in get_args_subscribed(types.FacetValue):
+                if type(v) not in value_types:
                     continue
 
                 # If values are UUIDs, format with hyphens
@@ -1291,7 +1298,7 @@ class LocalCollection:
                 if as_uuid:
                     v = str(as_uuid)
 
-                values_set.add(self._facet_value_identity(v))
+                values_set.add((value_types.index(type(v)), v))
 
             for v in values_set:
                 facet_hits[v] += 1
@@ -1967,17 +1974,6 @@ class LocalCollection:
         elif isinstance(point_id, int):
             return "", point_id
         raise TypeError(f"Incompatible point id type: {type(point_id)}")
-
-    @staticmethod
-    def _facet_value_identity(value: types.FacetValue) -> tuple[int, types.FacetValue]:
-        """Build a sortable key that preserves JSON scalar type identity."""
-        if isinstance(value, bool):
-            return 0, value
-        if isinstance(value, int):
-            return 1, value
-        if isinstance(value, str):
-            return 2, value
-        raise TypeError(f"Incompatible facet value type: {type(value)}")
 
     def scroll(
         self,

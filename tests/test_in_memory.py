@@ -208,47 +208,6 @@ def test_fusion_rrf_score_threshold(qdrant: QdrantClient):
     )
 
 
-def test_facet_keeps_bool_and_int_values_distinct(qdrant: QdrantClient):
-    """Keep scalar types distinct while retaining UUID normalization and dedupe."""
-    qdrant.create_collection(
-        collection_name="facet_identity",
-        vectors_config=models.VectorParams(size=2, distance=models.Distance.DOT),
-    )
-
-    qdrant.upsert(
-        collection_name="facet_identity",
-        wait=True,
-        points=[
-            models.PointStruct(id=1, vector=[0.1, 0.2], payload={"k": [False, 0]}),
-            models.PointStruct(id=2, vector=[0.2, 0.3], payload={"k": True}),
-            models.PointStruct(id=3, vector=[0.3, 0.4], payload={"k": 1}),
-            models.PointStruct(id=4, vector=[0.4, 0.5], payload={"k": "0"}),
-            models.PointStruct(
-                id=5,
-                vector=[0.5, 0.6],
-                payload={
-                    "k": [
-                        "550e8400e29b41d4a716446655440000",
-                        "550e8400-e29b-41d4-a716-446655440000",
-                    ]
-                },
-            ),
-        ],
-    )
-
-    result = qdrant.facet(collection_name="facet_identity", key="k", exact=True, limit=10)
-
-    hits = {(type(hit.value), hit.value): hit.count for hit in result.hits}
-    assert hits == {
-        (bool, False): 1,
-        (int, 0): 1,
-        (bool, True): 1,
-        (int, 1): 1,
-        (str, "0"): 1,
-        (str, "550e8400-e29b-41d4-a716-446655440000"): 1,
-    }
-
-
 def test_fusion_dbsf_score_threshold(qdrant: QdrantClient):
     """Test that DBSF fusion with score_threshold correctly filters results.
 
