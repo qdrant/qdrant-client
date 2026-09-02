@@ -348,3 +348,102 @@ def test_nested_filter_payload_shapes(key: str):
         scroll_with_filter,
         scroll_filter=nested_filter,
     )
+
+
+@pytest.mark.parametrize(
+    "match",
+    [
+        models.MatchText(text="fly"),
+        models.MatchText(text="FLY"),
+        models.MatchText(text="good cheap"),
+        models.MatchPhrase(phrase="alpha beta"),
+        models.MatchPhrase(phrase="Alpha, Beta!"),
+        models.MatchPhrase(phrase="good"),
+        models.MatchTextAny(text_any="good fly"),
+    ],
+    ids=[
+        "text_word",
+        "text_uppercase",
+        "text_two_words",
+        "phrase_two_words",
+        "phrase_punctuated",
+        "phrase_one_word",
+        "text_any",
+    ],
+)
+def test_text_match_on_unindexed_field(match: models.Match):
+    """On a field without a text index the server tokenizes both sides with the default word
+    tokenizer - split on non-alphanumeric, lowercased - and matches whole tokens rather than
+    substrings, so "fly" does not match "butterfly". `MatchText` accepts the query tokens in
+    any order, `MatchPhrase` only consecutively, and `MatchTextAny` is the exception which
+    still scans for substrings.
+    """
+    values = [
+        "goodness only",  # substring of the query, not a token
+        "good cheap stuff",
+        "cheap hardware good",  # query tokens present, reversed
+        "cheap hardware",  # only one of two query tokens
+        "fly agaric",
+        "come fly, with me",  # token followed by punctuation
+        "butterfly dragonfly",  # substrings only
+        "foo alpha beta bar",
+        "beta alpha",
+        "alphabeta",  # a single token, not two
+        "goodness only good",
+        7,  # a non-string value has no tokens
+    ]
+
+    fixture_points = generate_fixtures(num=len(values) + 1)
+    for point, value in zip(fixture_points, values):
+        point.payload = {"words": value}
+    fixture_points[-1].payload = {"other": 1}  # the key absent altogether
+
+    local_client = init_local()
+    init_client(local_client, fixture_points)
+
+    remote_client = init_remote()
+    init_client(remote_client, fixture_points)
+
+    compare_client_results(
+        local_client,
+        remote_client,
+        scroll_with_filter,
+        scroll_filter=models.Filter(must=[models.FieldCondition(key="words", match=match)]),
+    )
+
+
+@pytest.mark.parametrize("key", ["a", "nested[].empty"])
+def test_is_null_matches_null_inside_arrays(key: str):
+    """A value counts as null when it is null itself or is an array holding a null element,
+    one level deep - so `[null, 1]` matches while `[[null]]` does not.
+    """
+    payloads = [
+        {"a": [None, 1]},
+        {"a": [1, None]},
+        {"a": [1, 2]},
+        {"a": None},
+        {"a": [[None]]},  # the null is one level too deep
+        {"a": []},
+        {"nested": [{"empty": [None]}, {"empty": [None]}]},
+        {"nested": [{"empty": 1}]},
+        {"other": 1},  # the key absent altogether
+    ]
+
+    fixture_points = generate_fixtures(num=len(payloads))
+    for point, payload in zip(fixture_points, payloads):
+        point.payload = payload
+
+    local_client = init_local()
+    init_client(local_client, fixture_points)
+
+    remote_client = init_remote()
+    init_client(remote_client, fixture_points)
+
+    compare_client_results(
+        local_client,
+        remote_client,
+        scroll_with_filter,
+        scroll_filter=models.Filter(
+            must=[models.IsNullCondition(is_null=models.PayloadField(key=key))]
+        ),
+    )

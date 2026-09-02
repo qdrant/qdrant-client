@@ -1,5 +1,5 @@
 from qdrant_client.http.models import models
-from qdrant_client.local.payload_filters import check_filter
+from qdrant_client.local.payload_filters import check_filter, check_match
 
 
 def test_nested_payload_filters():
@@ -187,3 +187,49 @@ def test_geo_polygon_filter_query():
 
     res = check_filter(query, payload, 0, has_vector={})
     assert res is False
+
+
+def text(query: str) -> models.MatchText:
+    return models.MatchText(text=query)
+
+
+def phrase(query: str) -> models.MatchPhrase:
+    return models.MatchPhrase(phrase=query)
+
+
+def test_text_match_uses_token_matching_not_substring():
+    """On a field without a text index the server matches whole tokens, not substrings
+    (qdrant#10341). Cases mirror the server's own `unindexed_text_match_test.rs`.
+    """
+    assert not check_match(text("good"), "goodness only")
+    assert check_match(text("good"), "good cheap stuff")
+    assert check_match(text("good cheap"), "cheap hardware good")
+    assert not check_match(text("good cheap"), "cheap hardware")
+
+    # tokenization: split on non-alphanumeric, lowercase
+    assert check_match(text("FLY"), "fly agaric")
+    assert check_match(text("fly"), "come fly, with me")
+    assert not check_match(text("fly"), "butterfly dragonfly")
+    assert not check_match(text(""), "anything")
+    assert not check_match(text("fly"), 7)
+
+
+def test_phrase_match_requires_token_order():
+    assert check_match(phrase("alpha beta"), "foo alpha beta bar")
+    assert not check_match(phrase("alpha beta"), "beta alpha")
+    assert not check_match(phrase("alpha beta"), "alphabeta")
+    assert not check_match(phrase("good"), "goodness only")
+    assert check_match(phrase("good"), "goodness only good")
+
+    assert check_match(phrase("Alpha, Beta!"), "alpha beta")
+    assert not check_match(phrase(""), "anything")
+    assert not check_match(phrase("alpha"), None)
+
+
+def test_text_any_match_keeps_substring_semantics():
+    """Unlike text and phrase, the server still resolves `MatchTextAny` on an unindexed
+    field with a substring scan.
+    """
+    assert check_match(models.MatchTextAny(text_any="good fly"), "goodness only")
+    assert check_match(models.MatchTextAny(text_any="fly"), "butterfly")
+    assert not check_match(models.MatchTextAny(text_any="cheap"), "goodness only")
