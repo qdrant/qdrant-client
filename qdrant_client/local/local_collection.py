@@ -1262,7 +1262,14 @@ class LocalCollection:
         facet_filter: types.Filter | None = None,
         limit: int = 10,
     ) -> types.FacetResponse:
-        facet_hits: dict[types.FacetValue, int] = defaultdict(int)
+        # (bool, int, str). A value's position in this tuple is used as a type tag, so
+        # that `False`/`0` and `True`/`1` (equal and same-hash in python) don't collapse
+        # into a single bucket, and so that values of different types stay totally
+        # ordered when their counts tie. The server never mixes types in one facet (it
+        # reads a single payload index), so this cross-type order is local-mode only.
+        value_types = get_args_subscribed(types.FacetValue)
+
+        facet_hits: dict[tuple[int, types.FacetValue], int] = defaultdict(int)
 
         mask = self._payload_and_non_deleted_mask(facet_filter)
 
@@ -1279,11 +1286,11 @@ class LocalCollection:
                 continue
 
             # Only count the same value for each point once
-            values_set: set[types.FacetValue] = set()
+            values_set: set[tuple[int, types.FacetValue]] = set()
 
             # Sanitize to use only valid values
             for v in values:
-                if type(v) not in get_args_subscribed(types.FacetValue):
+                if type(v) not in value_types:
                     continue
 
                 # If values are UUIDs, format with hyphens
@@ -1291,14 +1298,14 @@ class LocalCollection:
                 if as_uuid:
                     v = str(as_uuid)
 
-                values_set.add(v)
+                values_set.add((value_types.index(type(v)), v))
 
             for v in values_set:
                 facet_hits[v] += 1
 
         hits = [
             models.FacetValueHit(value=value, count=count)
-            for value, count in sorted(
+            for (_, value), count in sorted(
                 facet_hits.items(),
                 # order by count descending, then by value ascending
                 key=lambda x: (-x[1], x[0]),
