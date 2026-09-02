@@ -250,9 +250,7 @@ def check_condition(
             return False
         # A value is null if it is null itself, or is an array containing a null
         # element, one level deep (qdrant#10101).
-        if any(
-            v is None or (isinstance(v, list) and any(e is None for e in v)) for v in values
-        ):
+        if any(v is None or (isinstance(v, list) and any(e is None for e in v)) for v in values):
             return True
     elif isinstance(condition, models.IsEmptyCondition):
         values = value_by_key(payload, condition.is_empty.key, flat=False)
@@ -268,10 +266,6 @@ def check_condition(
             return True
     elif isinstance(condition, models.SliceCondition):
         total, index = condition.slice.total, condition.slice.index
-        if total < 1:
-            raise ValueError(f"Slice total must be >= 1, got {total}")
-        if not 0 <= index < total:
-            raise ValueError(f"Slice index must be in 0..{total}, got {index}")
         if isinstance(point_id, int) and point_id < 0:
             # sentinel id used while evaluating nested filters, it belongs to no slice
             return False
@@ -402,6 +396,37 @@ def check_filter(
         ):
             return False
     return True
+
+
+def validate_filter(payload_filter: models.Filter | None) -> None:
+    """Reject filters the server would refuse, before touching any point."""
+    if payload_filter is None:
+        return
+
+    clauses = [payload_filter.must, payload_filter.should, payload_filter.must_not]
+
+    if payload_filter.min_should is not None:
+        min_count = payload_filter.min_should.min_count
+        if min_count < 1:
+            raise ValueError(f"min_count value {min_count} is invalid. Must be 1 or larger.")
+        clauses.append(payload_filter.min_should.conditions)
+
+    for clause in clauses:
+        if clause is None:
+            continue
+        # A clause is either a single condition or a list of them.
+        conditions = clause if isinstance(clause, list) else [clause]
+        for condition in conditions:
+            if isinstance(condition, models.Filter):
+                validate_filter(condition)
+            elif isinstance(condition, models.NestedCondition):
+                validate_filter(condition.nested.filter)
+            elif isinstance(condition, models.SliceCondition):
+                total, index = condition.slice.total, condition.slice.index
+                if total < 1:
+                    raise ValueError(f"Slice total must be >= 1, got {total}")
+                if not 0 <= index < total:
+                    raise ValueError(f"Slice index must be in 0..{total}, got {index}")
 
 
 def calculate_payload_mask(

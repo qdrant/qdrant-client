@@ -167,6 +167,7 @@ def test_slices_cover_all_points(random_ids: bool):
             assert local_ids == remote_ids, f"slice {index} of {total} differs between clients"
 
 
+@pytest.mark.parametrize("num_points", [10, 0], ids=["populated", "empty"])
 @pytest.mark.parametrize(
     "total,index,reported",
     [
@@ -178,9 +179,13 @@ def test_slices_cover_all_points(random_ids: bool):
         (2, -1, "index"),
     ],
 )
-def test_invalid_slice_is_rejected(total: int, index: int, reported: str):
-    """`index` must be within `0..total`, and `total` at least 1, on both clients."""
-    fixture_points = generate_fixtures(num=10)
+def test_invalid_slice_is_rejected(total: int, index: int, reported: str, num_points: int):
+    """`index` must be within `0..total`, and `total` at least 1, on both clients.
+
+    Empty collections included: the values are invalid on their own, so validating them
+    while scanning points means never validating them when there are none.
+    """
+    fixture_points = generate_fixtures(num=num_points) if num_points else []
 
     local_client = init_local()
     init_client(local_client, fixture_points)
@@ -228,6 +233,104 @@ def test_slice_condition_inside_nested_filter():
             COLLECTION_NAME, scroll_filter=models.Filter(must=[nested]), limit=100
         )[0],
     )
+
+
+def min_should_filter(min_count: int, conditions: list | None = None) -> models.Filter:
+    if conditions is None:
+        conditions = [models.FieldCondition(key="rand_digit", match=models.MatchValue(value=1))]
+    return models.Filter(min_should=models.MinShould(conditions=conditions, min_count=min_count))
+
+
+def nested_condition(inner: models.Filter) -> models.NestedCondition:
+    return models.NestedCondition(nested=models.Nested(key="nested.array", filter=inner))
+
+
+@pytest.mark.parametrize(
+    "scroll_filter",
+    [
+        min_should_filter(0),
+        min_should_filter(-1),
+        models.Filter(must=[min_should_filter(0)]),
+        models.Filter(must_not=[min_should_filter(0)]),
+        min_should_filter(1, conditions=[min_should_filter(0)]),
+        models.Filter(must=[nested_condition(min_should_filter(0))]),
+        models.Filter(should=[models.Filter(must=[min_should_filter(0)])]),
+    ],
+    ids=[
+        "zero",
+        "negative",
+        "in_must",
+        "in_must_not",
+        "in_min_should_conditions",
+        "through_nested_condition",
+        "two_levels_deep",
+    ],
+)
+def test_invalid_min_count_is_rejected(scroll_filter: models.Filter):
+    """`min_count` must be at least 1, at any depth, on both clients.
+
+    Local mode evaluates `min_should` as `matches >= min_count`, so anything at or below
+    zero is trivially true for every point and the whole collection comes back instead of
+    being rejected - the worst direction for a filter to be wrong in.
+    """
+    fixture_points = generate_fixtures(num=10)
+
+    local_client = init_local()
+    init_client(local_client, fixture_points)
+
+    remote_client = init_remote()
+    init_client(remote_client, fixture_points)
+
+    # local mode names the offending parameter, the server reports its own validation error;
+    # the point is that neither silently accepts it
+    with pytest.raises(ValueError, match="min_count"):
+        local_client.scroll(COLLECTION_NAME, scroll_filter=scroll_filter, limit=10)
+
+    with pytest.raises(UnexpectedResponse):
+        remote_client.scroll(COLLECTION_NAME, scroll_filter=scroll_filter, limit=10)
+
+
+@pytest.mark.parametrize("num_points", [10, 0], ids=["populated", "empty"])
+def test_invalid_min_count_is_rejected_on_every_filter_path(num_points: int):
+    """Reads and `update_filter` writes alike, and on an empty collection too.
+
+    The `update_filter` paths check points directly instead of building a payload mask, and
+    `scroll` returns early when the collection is empty, so each needs the filter validated
+    where it enters the collection rather than deep in the scan.
+    """
+    fixture_points = generate_fixtures(num=10)
+    point = fixture_points[0]
+
+    local_client = init_local()
+    init_client(local_client, fixture_points[:num_points])
+
+    remote_client = init_remote()
+    init_client(remote_client, fixture_points[:num_points])
+
+    flt = min_should_filter(0)
+    # `delete` and `clear_payload` are left out on purpose: the server does not validate the
+    # filter on those two requests and happily wipes everything, so local mode rejecting them
+    # is a deliberate divergence rather than a congruence failure.
+    operations = [
+        lambda client: client.scroll(COLLECTION_NAME, scroll_filter=flt, limit=10),
+        lambda client: client.count(COLLECTION_NAME, count_filter=flt),
+        lambda client: client.upsert(
+            COLLECTION_NAME, points=[point], update_filter=flt, wait=True
+        ),
+        lambda client: client.update_vectors(
+            COLLECTION_NAME,
+            points=[models.PointVectors(id=point.id, vector=point.vector)],
+            update_filter=flt,
+            wait=True,
+        ),
+    ]
+
+    for operation in operations:
+        with pytest.raises(ValueError, match="min_count"):
+            operation(local_client)
+
+        with pytest.raises(UnexpectedResponse):
+            operation(remote_client)
 
 
 @pytest.mark.parametrize(
