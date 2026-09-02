@@ -106,12 +106,14 @@ def evaluate_expression(
             expression.pow.exponent, point_id, scores, payload, has_vector, defaults
         )
 
-        # Check for valid input
-        if base >= 0 or (base != 0 and exponent.is_integer()):
-            try:
+        try:
+            # `float()` is needed because payload values and formula
+            # defaults can be ints, and `int.is_integer()` only exists since Python 3.12.
+            # the condition is inside the try-except because too large integers can't be converted to floats.
+            if base >= 0 or (base != 0 and float(exponent).is_integer()):
                 return math.pow(base, exponent)
-            except OverflowError:
-                pass
+        except OverflowError:
+            pass
 
         raise_non_finite_error(f"{base}^{exponent}")
 
