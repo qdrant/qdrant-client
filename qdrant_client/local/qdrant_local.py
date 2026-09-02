@@ -351,10 +351,9 @@ class QdrantLocal(QdrantBase):
 
         prefetches = []
         if isinstance(prefetch, types.Prefetch):
+            # nested prefetches are resolved recursively in `_resolve_prefetch_input`,
+            # they must not be hoisted to this level
             prefetches = [prefetch]
-            prefetches.extend(
-                prefetch.prefetch if isinstance(prefetch.prefetch, list) else [prefetch.prefetch]
-            )
         elif isinstance(prefetch, Sequence):
             prefetches = list(prefetch)
 
