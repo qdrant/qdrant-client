@@ -1,5 +1,7 @@
 """Conversions between serverless pydantic models and the internal gRPC types.
 
+**In development — do not use yet.** Part of the experimental serverless client.
+
 The generated gRPC types are an implementation detail and must not leak into
 the public interface.
 """

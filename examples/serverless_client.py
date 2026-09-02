@@ -1,6 +1,9 @@
 """
 Example of using the Qdrant Serverless client.
 
+**In development — do not use yet.** This client is experimental and unstable;
+it may change without notice and is not ready for production or general use.
+
 Collection management uses the simplified serverless API; point operations
 (query, upsert, ...) work exactly like in the regular client.
 """
