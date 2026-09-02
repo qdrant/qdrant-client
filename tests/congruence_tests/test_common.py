@@ -257,6 +257,38 @@ def compare_scored_record(
         compare_vectors(point1.vector, point2.vector, idx)
 
 
+def compare_group_hits(hits_1: list, hits_2: list, rel_tol: float = 1e-4) -> None:
+    """Compare the hits of the same group between the exact (local) client and a
+    remote one.
+
+    Server-side grouping is best-effort within a request budget (see qdrant's
+    lib/shard/src/grouping/driver.rs): once the budget is spent, a group may be
+    filled with worse points than its true best, or stay below group_size. The
+    exact local hits therefore bound the remote ones: at any rank the remote hit
+    may be worse, but never better, and the remote group may not be larger.
+    """
+    compare_scored_record(hits_1[0], hits_2[0], 0)
+    assert len(hits_2) <= len(
+        hits_1
+    ), f"len(hits_1) = {len(hits_1)}, len(hits_2) = {len(hits_2)}"
+
+    # infer score ordering from the exact side
+    larger_is_better = hits_1[0].score >= hits_1[-1].score
+
+    for i in range(1, len(hits_2)):
+        margin = max(abs(hits_1[i].score) * rel_tol, 1e-6)
+        if larger_is_better:
+            assert hits_2[i].score <= hits_1[i].score + margin, (
+                f"hits_2[{i}].score = {hits_2[i].score} is better than exact "
+                f"hits_1[{i}].score = {hits_1[i].score}"
+            )
+        else:
+            assert hits_2[i].score >= hits_1[i].score - margin, (
+                f"hits_2[{i}].score = {hits_2[i].score} is better than exact "
+                f"hits_1[{i}].score = {hits_1[i].score}"
+            )
+
+
 def compare_records(res1: list, res2: list, rel_tol: float = 1e-4, abs_tol: float = 1e-6) -> None:
     assert len(res1) == len(res2), f"len(res1) = {len(res1)}, len(res2) = {len(res2)}"
     for i in range(len(res2)):
@@ -369,7 +401,7 @@ def compare_client_results(
             # ), f"groups_1[{i}].id = {group_1.id}, groups_2[{i}].id = {group_2.id}"
 
             if group_1.id == group_2.id:
-                compare_records(group_1.hits, group_2.hits)
+                compare_group_hits(group_1.hits, group_2.hits)
             else:
                 # If group ids are different, but scores are the same, we assume that the top hits are the same
                 compare_scored_record(group_1.hits[0], group_2.hits[0], 0)

@@ -251,7 +251,7 @@ def test_search_with_persistence():
         payload_update_filter = one_random_filter_please()
         local_client.set_payload(COLLECTION_NAME, {"test": f"test"}, payload_update_filter)
 
-        del local_client
+        local_client.close()
         local_client_2 = init_local(tmpdir)
 
         remote_client = init_remote()
@@ -290,7 +290,7 @@ def test_search_with_persistence_and_skipped_vectors():
         local_client.set_payload(COLLECTION_NAME, {"test": f"test"}, payload_update_filter)
 
         count_before_load = local_client.count(COLLECTION_NAME)
-        del local_client
+        local_client.close()
         local_client_2 = init_local(tmpdir)
 
         count_after_load = local_client_2.count(COLLECTION_NAME)
