@@ -773,7 +773,7 @@ class LocalCollection:
 
         if len(prefetches) > 0:
             # It is a hybrid/re-scoring query
-            sources = [self._prefetch(prefetch) for prefetch in prefetches]
+            sources = [self._prefetch(prefetch, query_filter) for prefetch in prefetches]
 
             if query is None:
                 raise ValueError("Query is required for merging prefetches")
@@ -807,7 +807,13 @@ class LocalCollection:
 
         return types.QueryResponse(points=scored_points)
 
-    def _prefetch(self, prefetch: types.Prefetch) -> list[types.ScoredPoint]:
+    def _prefetch(
+        self, prefetch: types.Prefetch, propagated_filter: types.Filter | None = None
+    ) -> list[types.ScoredPoint]:
+        # The server propagates the filter of each level down into the leaves of the prefetch
+        # tree, so prefetch limits are applied to already filtered candidates.
+        prefetch_filter = _merge_filters(propagated_filter, prefetch.filter)
+
         inner_prefetches = []
         if prefetch.prefetch is not None:
             inner_prefetches = (
@@ -815,7 +821,10 @@ class LocalCollection:
             )
 
         if len(inner_prefetches) > 0:
-            sources = [self._prefetch(inner_prefetch) for inner_prefetch in inner_prefetches]
+            sources = [
+                self._prefetch(inner_prefetch, prefetch_filter)
+                for inner_prefetch in inner_prefetches
+            ]
 
             if prefetch.query is None:
                 raise ValueError("Query is required for merging prefetches")
@@ -827,7 +836,7 @@ class LocalCollection:
                 limit=prefetch.limit if prefetch.limit is not None else 10,
                 offset=0,
                 using=prefetch.using,
-                query_filter=prefetch.filter,
+                query_filter=prefetch_filter,
                 with_payload=False,
                 with_vectors=False,
                 score_threshold=prefetch.score_threshold,
@@ -838,7 +847,7 @@ class LocalCollection:
             return self._query_collection(
                 query=prefetch.query,
                 using=prefetch.using,
-                query_filter=prefetch.filter,
+                query_filter=prefetch_filter,
                 limit=prefetch.limit,
                 offset=0,
                 with_payload=False,
@@ -3066,6 +3075,49 @@ def ignore_mentioned_ids_filter(
             query_filter.must_not = [query_filter.must_not, ignore_mentioned_ids]
 
     return query_filter
+
+
+def _merge_filters(outer: types.Filter | None, inner: types.Filter | None) -> types.Filter | None:
+    """Combine a propagated filter with the filter of a prefetch.
+
+    Mirrors `Filter::merge_opts` on the server: clauses are concatenated field-wise, which
+    means `should` clauses of both filters become alternatives of each other rather than
+    being ANDed together.
+    """
+    if outer is None:
+        return inner
+    if inner is None:
+        return outer
+
+    def merge_clause(
+        first: list[models.Condition] | models.Condition | None,
+        second: list[models.Condition] | models.Condition | None,
+    ) -> list[models.Condition] | None:
+        if first is None:
+            return second if second is None or isinstance(second, list) else [second]
+        if second is None:
+            return first if isinstance(first, list) else [first]
+        first = first if isinstance(first, list) else [first]
+        second = second if isinstance(second, list) else [second]
+        return [*first, *second]
+
+    if outer.min_should is None:
+        min_should = inner.min_should
+    elif inner.min_should is None:
+        min_should = outer.min_should
+    else:
+        min_should = models.MinShould(
+            conditions=[*outer.min_should.conditions, *inner.min_should.conditions],
+            # the union of conditions can satisfy at least the bigger of the two counts
+            min_count=max(outer.min_should.min_count, inner.min_should.min_count),
+        )
+
+    return models.Filter(
+        must=merge_clause(outer.must, inner.must),
+        must_not=merge_clause(outer.must_not, inner.must_not),
+        should=merge_clause(outer.should, inner.should),
+        min_should=min_should,
+    )
 
 
 def _include_ids_in_filter(
