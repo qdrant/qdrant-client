@@ -80,7 +80,7 @@ from qdrant_client import QdrantClient
 
 client = QdrantClient(host="localhost", port=6333)
 # or
-client = QdrantClient(url="http://localhost:6333")
+client = QdrantClient("http://localhost:6333")
 ```
 
 You can run Qdrant server locally with docker:
