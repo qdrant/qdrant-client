@@ -1471,6 +1471,107 @@ def test_dense_query():
             raise e
 
 
+def test_dense_query_score_threshold_boundary():
+    def query_score_threshold(
+        client: QdrantBase, query: models.Query, thresholds: list[float]
+    ) -> list[list[models.ScoredPoint]]:
+        return [
+            client.query_points(
+                collection_name=COLLECTION_NAME,
+                query=query,
+                limit=10,
+                score_threshold=threshold,
+                with_payload=False,
+            ).points
+            for threshold in thresholds
+        ]
+
+    recommend = models.RecommendQuery(
+        recommend=models.RecommendInput(
+            positive=[[0.5, 0.0]], strategy=models.RecommendStrategy.SUM_SCORES
+        )
+    )
+    discover = models.DiscoverQuery(
+        discover=models.DiscoverInput(
+            target=[1.0, 0.0],
+            context=[models.ContextPair(positive=[1.0, 0.0], negative=[-1.0, 0.0])],
+        )
+    )
+
+    # Vectors are picked so that every score is exactly representable in float32,
+    # which makes the equality boundary reproducible on both sides. Each threshold is
+    # equal to the score of one of the points: that point must be dropped, since a
+    # threshold keeps only strictly better scores.
+    cases = [
+        # distance, vectors, query, thresholds
+        # nearest queries are scored by the metric itself
+        (
+            models.Distance.COSINE,
+            [[1.0, 0.0], [1.0, 1.0], [0.0, 1.0], [-1.0, 0.0]],
+            [1.0, 0.0],
+            [1.0, 0.0, -1.0],
+        ),
+        (models.Distance.DOT, [[2.0, 0.0], [1.0, 0.0], [0.5, 0.0]], [1.0, 0.0], [2.0, 1.0, 0.5]),
+        (
+            models.Distance.EUCLID,
+            [[0.5, 0.0], [1.0, 0.0], [2.0, 0.0]],
+            [0.0, 0.0],
+            [0.5, 1.0, 2.0],
+        ),
+        (
+            models.Distance.MANHATTAN,
+            [[0.5, 0.0], [1.0, 0.0], [2.0, 0.0]],
+            [0.0, 0.0],
+            [0.5, 1.0, 2.0],
+        ),
+        # recommend and discovery score higher-is-better whatever the metric is, but
+        # the threshold keeps following the metric's own direction, so on euclid the
+        # best-scoring point already stops the scan
+        (
+            models.Distance.DOT,
+            [[0.0, 0.0], [1.0, 0.0], [2.0, 0.0], [3.0, 0.0]],
+            recommend,
+            [1.5, 1.0, 0.5, 0.0],
+        ),
+        (
+            models.Distance.EUCLID,
+            [[1.0, 0.0], [2.0, 0.0], [3.0, 0.0]],
+            recommend,
+            [-0.25, -2.25],
+        ),
+        (
+            models.Distance.COSINE,
+            [[1.0, 0.0], [1.0, 1.0], [0.0, 1.0], [-1.0, 0.0]],
+            discover,
+            [1.75, 0.5, -0.75],
+        ),
+    ]
+
+    for distance, vectors, query, thresholds in cases:
+        fixture_points = [
+            models.PointStruct(id=idx, vector=vector)
+            for idx, vector in enumerate(vectors, start=1)
+        ]
+
+        local_client, http_client, grpc_client = init_clients(
+            fixture_points,
+            vectors_config=models.VectorParams(size=len(vectors[0]), distance=distance),
+        )
+
+        try:
+            compare_clients_results(
+                local_client,
+                http_client,
+                grpc_client,
+                query_score_threshold,
+                query=query,
+                thresholds=thresholds,
+            )
+        except AssertionError as e:
+            print(f"\nFailed with distance {distance} and query {type(query).__name__}")
+            raise e
+
+
 def test_dense_query_orderby():
     fixture_points = generate_fixtures(200)
 

@@ -734,10 +734,10 @@ class LocalCollection:
 
             if score_threshold is not None:
                 if required_order == DistanceOrder.BIGGER_IS_BETTER:
-                    if score < score_threshold:
+                    if score <= score_threshold:
                         break
                 else:
-                    if score > score_threshold:
+                    if score >= score_threshold:
                         break
 
             scored_point = construct(
