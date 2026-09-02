@@ -250,9 +250,7 @@ def check_condition(
             return False
         # A value is null if it is null itself, or is an array containing a null
         # element, one level deep (qdrant#10101).
-        if any(
-            v is None or (isinstance(v, list) and any(e is None for e in v)) for v in values
-        ):
+        if any(v is None or (isinstance(v, list) and any(e is None for e in v)) for v in values):
             return True
     elif isinstance(condition, models.IsEmptyCondition):
         values = value_by_key(payload, condition.is_empty.key, flat=False)
@@ -268,10 +266,6 @@ def check_condition(
             return True
     elif isinstance(condition, models.SliceCondition):
         total, index = condition.slice.total, condition.slice.index
-        if total < 1:
-            raise ValueError(f"Slice total must be >= 1, got {total}")
-        if not 0 <= index < total:
-            raise ValueError(f"Slice index must be in 0..{total}, got {index}")
         if isinstance(point_id, int) and point_id < 0:
             # sentinel id used while evaluating nested filters, it belongs to no slice
             return False
@@ -404,26 +398,17 @@ def check_filter(
     return True
 
 
-def validate_filter(payload_filter: models.Filter) -> None:
-    """Reject filters the server would refuse, before scanning anything.
+def validate_filter(payload_filter: models.Filter | None) -> None:
+    """Reject filters the server would refuse, before touching any point."""
+    if payload_filter is None:
+        return
 
-    Local mode evaluates min_should as `matches >= min_count`, which quietly
-    treats min_count <= 0 as "every point matches" and returns the whole
-    collection. The server rejects those values outright - 422 for 0, 400 for
-    negatives - so code that passes against local mode fails in production, and
-    fails by returning everything, which for a filter is the worst direction to
-    be wrong in.
+    clauses = [payload_filter.must, payload_filter.should, payload_filter.must_not]
 
-    Filters nest, so this recurses: a bad min_count inside a nested must clause
-    is just as invalid as one at the top.
-    """
     if payload_filter.min_should is not None:
         min_count = payload_filter.min_should.min_count
         if min_count < 1:
             raise ValueError(f"min_count value {min_count} is invalid. Must be 1 or larger.")
-
-    clauses = [payload_filter.must, payload_filter.should, payload_filter.must_not]
-    if payload_filter.min_should is not None:
         clauses.append(payload_filter.min_should.conditions)
 
     for clause in clauses:
@@ -435,11 +420,13 @@ def validate_filter(payload_filter: models.Filter) -> None:
             if isinstance(condition, models.Filter):
                 validate_filter(condition)
             elif isinstance(condition, models.NestedCondition):
-                # A NestedCondition carries a whole filter on .nested.filter, and
-                # check_condition evaluates it like any other, so an invalid
-                # min_count reached through one is just as live as a top-level
-                # one. These two are the only condition types that wrap a filter.
                 validate_filter(condition.nested.filter)
+            elif isinstance(condition, models.SliceCondition):
+                total, index = condition.slice.total, condition.slice.index
+                if total < 1:
+                    raise ValueError(f"Slice total must be >= 1, got {total}")
+                if not 0 <= index < total:
+                    raise ValueError(f"Slice index must be in 0..{total}, got {index}")
 
 
 def calculate_payload_mask(
@@ -450,10 +437,6 @@ def calculate_payload_mask(
 ) -> types.NumpyArray:
     if payload_filter is None:
         return np.ones(len(payloads), dtype=bool)
-
-    # Before the scan, so an invalid filter is rejected even against an empty
-    # collection - which is what the server does.
-    validate_filter(payload_filter)
 
     mask: types.NumpyArray = np.zeros(len(payloads), dtype=bool)
     for i, payload in enumerate(payloads):

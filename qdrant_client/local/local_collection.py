@@ -59,7 +59,11 @@ from qdrant_client.local.multi_distances import (
 )
 from qdrant_client.local.json_path_parser import JsonPathItem, parse_json_path
 from qdrant_client.local.order_by import to_order_value
-from qdrant_client.local.payload_filters import calculate_payload_mask, check_filter
+from qdrant_client.local.payload_filters import (
+    calculate_payload_mask,
+    check_filter,
+    validate_filter,
+)
 from qdrant_client.local.payload_value_extractor import value_by_key, parse_uuid
 from qdrant_client.local.payload_value_setter import set_value_by_key
 from qdrant_client.local.persistence import CollectionPersistence
@@ -544,6 +548,8 @@ class LocalCollection:
         """
         Calculate mask for filtered payload and non-deleted points. True - accepted, False - rejected
         """
+        validate_filter(payload_filter)
+
         payload_mask = calculate_payload_mask(
             payloads=self.payload,
             payload_filter=payload_filter,
@@ -1972,6 +1978,9 @@ class LocalCollection:
         with_vectors: bool | Sequence[str] = False,
     ) -> tuple[list[types.Record], types.PointId | None]:
         if len(self.ids) == 0:
+            validate_filter(
+                scroll_filter
+            )  # check the filter to have the same behaviour as the server
             return [], None
 
         if order_by is None:
@@ -2627,6 +2636,8 @@ class LocalCollection:
         update_filter: types.Filter | None = None,
         update_mode: types.UpdateMode | None = None,
     ) -> None:
+        validate_filter(update_filter)
+
         if isinstance(points, list):
             for point in points:
                 self._upsert_point(point, update_filter=update_filter, update_mode=update_mode)
@@ -2701,6 +2712,8 @@ class LocalCollection:
     def update_vectors(
         self, points: Sequence[types.PointVectors], update_filter: types.Filter | None = None
     ) -> None:
+        validate_filter(update_filter)
+
         for point in points:
             point_id = str(point.id) if isinstance(point.id, uuid.UUID) else point.id
             idx = self.ids[point_id]
