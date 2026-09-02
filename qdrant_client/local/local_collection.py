@@ -697,7 +697,10 @@ class LocalCollection:
 
         required_order = distance_to_order(distance)
 
-        if required_order == DistanceOrder.BIGGER_IS_BETTER or isinstance(
+        # Recommend/discovery/context queries score through a sigmoid, so bigger is
+        # always better for them, whatever the collection's distance is. Both the sort
+        # order and the score_threshold comparison below have to follow this flag.
+        bigger_is_better = required_order == DistanceOrder.BIGGER_IS_BETTER or isinstance(
             query_vector,
             (
                 DiscoveryQuery,
@@ -707,7 +710,9 @@ class LocalCollection:
                 MultiContextQuery,
                 MultiRecoQuery,
             ),  # sparse structures are not required, sparse always uses DOT
-        ):
+        )
+
+        if bigger_is_better:
             order = np.argsort(scores)[::-1]
         else:
             order = np.argsort(scores)
@@ -727,7 +732,7 @@ class LocalCollection:
             point_id = self.ids_inv[idx]
 
             if score_threshold is not None:
-                if required_order == DistanceOrder.BIGGER_IS_BETTER:
+                if bigger_is_better:
                     if score < score_threshold:
                         break
                 else:
