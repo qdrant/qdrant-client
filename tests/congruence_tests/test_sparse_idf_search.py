@@ -292,7 +292,7 @@ def test_search_with_persistence():
             vectors_config={},
         )
 
-        del local_client
+        local_client.close()
         local_client_2 = init_local(tmpdir)
 
         remote_client = init_remote()
