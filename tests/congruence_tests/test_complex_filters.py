@@ -388,6 +388,7 @@ def test_text_match_on_unindexed_field(match: models.Match):
         "butterfly dragonfly",  # substrings only
         "foo alpha beta bar",
         "beta alpha",
+        "alpha x beta",  # in order but not consecutive
         "alphabeta",  # a single token, not two
         "goodness only good",
         7,  # a non-string value has no tokens

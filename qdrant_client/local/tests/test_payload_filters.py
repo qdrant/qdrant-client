@@ -218,6 +218,8 @@ def test_phrase_match_requires_token_order():
     assert check_match(phrase("alpha beta"), "foo alpha beta bar")
     assert not check_match(phrase("alpha beta"), "beta alpha")
     assert not check_match(phrase("alpha beta"), "alphabeta")
+    # consecutive, not merely in order: an ordered subsequence is not a phrase
+    assert not check_match(phrase("alpha beta"), "alpha x beta")
     assert not check_match(phrase("good"), "goodness only")
     assert check_match(phrase("good"), "goodness only good")
 
