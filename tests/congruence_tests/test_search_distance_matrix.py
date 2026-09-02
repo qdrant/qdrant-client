@@ -182,3 +182,39 @@ def test_search_pairs_filter(
         except AssertionError as e:
             print(f"\nAttempt {i} failed with filter {query_filter}")
             raise e
+
+
+def test_search_matrix_with_mixed_id_types():
+    # Integer and UUID point ids can coexist in one collection. Sampled points are
+    # ordered by id, so local mode has to order the two id types the way the server
+    # does instead of comparing them directly.
+    collection_name = "congruence_search_matrix_mixed_ids"
+    half = TEST_NUM_POINTS // 2
+    points = generate_fixtures(half) + generate_fixtures(half, random_ids=True)
+
+    local_client = init_local()
+    init_client(local_client, points, collection_name=collection_name)
+
+    http_client = init_remote()
+    init_client(http_client, points, collection_name=collection_name)
+
+    grpc_client = init_remote(prefer_grpc=True)
+
+    def search_offsets_mixed_ids(client: QdrantBase) -> models.SearchMatrixOffsetsResponse:
+        return client.search_matrix_offsets(
+            collection_name=collection_name,
+            sample=TEST_NUM_POINTS,
+            limit=3,
+            using="text",
+        )
+
+    def search_pairs_mixed_ids(client: QdrantBase) -> models.SearchMatrixPairsResponse:
+        return client.search_matrix_pairs(
+            collection_name=collection_name,
+            sample=TEST_NUM_POINTS,
+            limit=3,
+            using="text",
+        )
+
+    compare_all_clients_results(local_client, http_client, grpc_client, search_offsets_mixed_ids)
+    compare_all_clients_results(local_client, http_client, grpc_client, search_pairs_mixed_ids)

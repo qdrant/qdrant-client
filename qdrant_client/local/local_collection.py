@@ -1307,11 +1307,8 @@ class LocalCollection:
             models.FacetValueHit(value=value, count=count)
             for (_, value), count in sorted(
                 facet_hits.items(),
-                # order by count descending, then by value; use a type-safe key
-                # so a payload key holding mixed scalar types (e.g. int and str)
-                # doesn't crash the tie-break comparison and ties are ordered
-                # deterministically across types
-                key=lambda x: (-x[1], self._facet_value_sort_key(x[0])),
+                # order by count descending, then by value ascending
+                key=lambda x: (-x[1], x[0]),
             )[:limit]
         ]
 
@@ -1978,19 +1975,6 @@ class LocalCollection:
         elif isinstance(point_id, int):
             return "", point_id
         raise TypeError(f"Incompatible point id type: {type(point_id)}")
-
-    @staticmethod
-    def _facet_value_sort_key(value: types.FacetValue) -> tuple[int, int, str]:
-        # A total order over facet values (bool | int | str) whose keys never
-        # collide across types, so equal-count ties are ordered deterministically
-        # regardless of the type mix or insertion order. `_universal_id` is only
-        # safe for point ids: it maps "" and 0 (and False/0, True/1) to the same
-        # key, which is fine for ids but would make facet ties non-deterministic.
-        if isinstance(value, bool):
-            return 0, int(value), ""
-        if isinstance(value, int):
-            return 1, value, ""
-        return 2, 0, value
 
     def scroll(
         self,
