@@ -1,5 +1,8 @@
 """Client for Qdrant Serverless.
 
+**In development — do not use yet.** This API is experimental and unstable;
+it may change without notice and is not ready for production or general use.
+
 Point-level operations (query, upsert, ...) behave like the regular client;
 collection management uses the simplified, tenant-facing serverless API.
 
