@@ -1805,3 +1805,118 @@ def test_bm25_core():
             local_client.upsert(COLLECTION_NAME, points)
     else:
         local_client.upsert(COLLECTION_NAME, points)
+
+
+def _client_with_plain_collection(num_points: int = 0) -> QdrantClient:
+    local_client = QdrantClient(":memory:")
+    local_client.create_collection(
+        COLLECTION_NAME,
+        vectors_config=models.VectorParams(size=2, distance=models.Distance.COSINE),
+    )
+    if num_points:
+        local_client.upsert(
+            COLLECTION_NAME,
+            [models.PointStruct(id=i, vector=[0.1, 0.2]) for i in range(num_points)],
+        )
+    return local_client
+
+
+def _inspect_spy(client: QdrantClient):
+    return patch.object(
+        client._inference_inspector, "inspect", wraps=client._inference_inspector.inspect
+    )
+
+
+def test_upsert_runs_inspection_once():
+    # inspection is invoked once per call, not per vector value
+    # https://github.com/qdrant/qdrant-client/issues/969
+    local_client = _client_with_plain_collection()
+    num_points = 100
+
+    points = [models.PointStruct(id=i, vector=[0.1, 0.2]) for i in range(num_points)]
+    with _inspect_spy(local_client) as spy:
+        local_client.upsert(COLLECTION_NAME, points)
+    assert spy.call_count == 1
+    assert spy.call_args.args[0] is points
+
+    batch = models.Batch(ids=list(range(num_points)), vectors=[[0.1, 0.2]] * num_points)
+    with _inspect_spy(local_client) as spy:
+        local_client.upsert(COLLECTION_NAME, batch)
+    assert spy.call_count == 1
+    assert spy.call_args.args[0] is batch
+
+
+def test_upload_points_inspects_only_first_point():
+    # lazy iterables are inspected by their first element only and are not exhausted
+    # https://github.com/qdrant/qdrant-client/issues/969
+    local_client = _client_with_plain_collection()
+    num_points = 100
+
+    points = (models.PointStruct(id=i, vector=[0.1, 0.2]) for i in range(num_points))
+    with _inspect_spy(local_client) as spy:
+        local_client.upload_points(COLLECTION_NAME, points, wait=True)
+    assert spy.call_count == 1
+    inspected = spy.call_args.args[0]
+    assert isinstance(inspected, models.PointStruct) and inspected.id == 0
+    assert local_client.count(COLLECTION_NAME).count == num_points
+
+
+def test_upload_collection_inspects_only_first_vector():
+    # https://github.com/qdrant/qdrant-client/issues/969
+    local_client = _client_with_plain_collection()
+    num_points = 100
+
+    vectors = ([0.1, 0.2] for _ in range(num_points))
+    with _inspect_spy(local_client) as spy:
+        local_client.upload_collection(
+            COLLECTION_NAME, vectors, ids=list(range(num_points)), wait=True
+        )
+    assert spy.call_count == 1
+    assert spy.call_args.args[0] == [0.1, 0.2]
+    assert local_client.count(COLLECTION_NAME).count == num_points
+
+
+def test_query_runs_inspection_once_per_argument():
+    # https://github.com/qdrant/qdrant-client/issues/969
+    local_client = _client_with_plain_collection(num_points=10)
+
+    with _inspect_spy(local_client) as spy:
+        local_client.query_points(COLLECTION_NAME, query=[0.1, 0.2])
+    assert spy.call_count == 2  # query and prefetch are inspected separately
+
+    with _inspect_spy(local_client) as spy:
+        local_client.query_points(
+            COLLECTION_NAME,
+            query=[0.1, 0.2],
+            prefetch=[models.Prefetch(query=[0.3, 0.4]) for _ in range(10)],
+        )
+    assert spy.call_count == 2
+
+    requests = [models.QueryRequest(query=[0.1, 0.2]) for _ in range(10)]
+    with _inspect_spy(local_client) as spy:
+        local_client.query_batch_points(COLLECTION_NAME, requests)
+    assert spy.call_count == 1
+    assert len(spy.call_args.args[0]) == len(requests)
+
+
+def test_update_operations_run_inspection_once():
+    # https://github.com/qdrant/qdrant-client/issues/969
+    local_client = _client_with_plain_collection(num_points=100)
+
+    point_vectors = [models.PointVectors(id=i, vector=[0.3, 0.4]) for i in range(100)]
+    with _inspect_spy(local_client) as spy:
+        local_client.update_vectors(COLLECTION_NAME, point_vectors)
+    assert spy.call_count == 1
+    assert spy.call_args.args[0] is point_vectors
+
+    operations = [
+        models.UpsertOperation(
+            upsert=models.PointsList(
+                points=[models.PointStruct(id=i, vector=[0.5, 0.6]) for i in range(100)]
+            )
+        )
+    ]
+    with _inspect_spy(local_client) as spy:
+        local_client.batch_update_points(COLLECTION_NAME, operations)
+    assert spy.call_count == 1
+    assert spy.call_args.args[0] is operations
