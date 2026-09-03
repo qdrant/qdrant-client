@@ -57,6 +57,16 @@ def _has_ignored_search_params(search_params: types.SearchParams | None) -> bool
     )
 
 
+def _validate_prefetch_limits(prefetch: types.Prefetch | list[types.Prefetch] | None) -> None:
+    if prefetch is None:
+        return
+    prefetches = prefetch if isinstance(prefetch, list) else [prefetch]
+    for item in prefetches:
+        if item.limit is not None and item.limit < 1:
+            raise ValueError(f"prefetch limit value {item.limit} is invalid. Must be 1 or larger.")
+        _validate_prefetch_limits(item.prefetch)
+
+
 class AsyncQdrantLocal(AsyncQdrantBase):
     """
     Everything Qdrant server can do, but locally.
@@ -197,6 +207,10 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         using: str | None = None,
         **kwargs: Any,
     ) -> types.SearchMatrixOffsetsResponse:
+        if limit < 1:
+            raise ValueError(f"limit value {limit} is invalid. Must be 1 or larger.")
+        if sample < 2:
+            raise ValueError(f"sample value {sample} is invalid. Must be 2 or larger.")
         collection = self._get_collection(collection_name)
         return collection.search_matrix_offsets(
             query_filter=query_filter, limit=limit, sample=sample, using=using
@@ -213,6 +227,8 @@ class AsyncQdrantLocal(AsyncQdrantBase):
     ) -> types.SearchMatrixPairsResponse:
         if limit < 1:
             raise ValueError(f"limit value {limit} is invalid. Must be 1 or larger.")
+        if sample < 2:
+            raise ValueError(f"sample value {sample} is invalid. Must be 2 or larger.")
         collection = self._get_collection(collection_name)
         return collection.search_matrix_pairs(
             query_filter=query_filter, limit=limit, sample=sample, using=using
@@ -360,6 +376,9 @@ class AsyncQdrantLocal(AsyncQdrantBase):
     ) -> types.QueryResponse:
         if limit < 1:
             raise ValueError(f"limit value {limit} is invalid. Must be 1 or larger.")
+        if offset is not None and offset < 0:
+            raise ValueError(f"offset value {offset} is invalid. Must be 0 or larger.")
+        _validate_prefetch_limits(prefetch)
         collection = self._get_collection(collection_name)
         search_params = _parse_search_params(search_params)
         if _has_ignored_search_params(search_params):
@@ -437,6 +456,9 @@ class AsyncQdrantLocal(AsyncQdrantBase):
     ) -> types.GroupsResult:
         if limit < 1:
             raise ValueError(f"limit value {limit} is invalid. Must be 1 or larger.")
+        if group_size < 1:
+            raise ValueError(f"group_size value {group_size} is invalid. Must be 1 or larger.")
+        _validate_prefetch_limits(prefetch)
         collection = self._get_collection(collection_name)
         search_params = _parse_search_params(search_params)
         if _has_ignored_search_params(search_params):
