@@ -1366,8 +1366,8 @@ class LocalCollection:
         ) -> None:
             for example in examples:
                 if isinstance(example, get_args(types.PointId)):
-                    vec = collection._vector_by_point_id(vector_name, example)
-                    acc.append(vec)  # type: ignore[arg-type]
+                    vec: Any = collection._vector_by_point_id(vector_name, example)
+                    acc.append(vec)
                     if collection == self:
                         mentioned_ids.append(example)
                 else:
@@ -1801,7 +1801,8 @@ class LocalCollection:
         multi_context_vectors = []
 
         for pair in context:
-            pair_vectors = []
+            # holds a dense, sparse or multi vector, dispatched on by type below
+            pair_vectors: list[Any] = []
             for example in [pair.positive, pair.negative]:
                 if isinstance(example, get_args(types.PointId)):
                     vector = collection._vector_by_point_id(vector_name, example)
