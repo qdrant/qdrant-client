@@ -155,6 +155,15 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             is_local_mode=isinstance(self._client, AsyncQdrantLocal),
         )
 
+    @property
+    def closed(self) -> bool:
+        """Whether the connection to Qdrant has been closed
+
+        Returns:
+            True once close() has been called, False otherwise
+        """
+        return self._client.closed
+
     async def close(self, grpc_grace: float | None = None, **kwargs: Any) -> None:
         """Closes the connection to Qdrant
 
