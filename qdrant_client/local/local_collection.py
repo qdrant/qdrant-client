@@ -92,6 +92,31 @@ EPSILON = 1.1920929e-7  # https://doc.rust-lang.org/std/f32/constant.EPSILON.htm
 # https://github.com/qdrant/qdrant/blob/7164ac4a5987d28f1c93f5712aef8e09e7d93555/lib/segment/src/spaces/simple_avx.rs#L99C10-L99C10
 
 
+def _last_argmax(values: list[float]) -> int:
+    """Index of the maximum value, resolving ties in favour of the *last* maximum.
+
+    Mirrors Rust's `Iterator::max_by_key`, which core uses to pick MMR candidates.
+    `np.argmax` returns the first maximum instead, which orders exact ties differently.
+    """
+    best_index = 0
+    for index in range(1, len(values)):
+        if values[index] >= values[best_index]:
+            best_index = index
+    return best_index
+
+
+def _swap_remove(items: list[int], position: int) -> int:
+    """Remove and return `items[position]`, moving the last item into the freed slot.
+
+    Mirrors `IndexSet::swap_remove`, which core uses to drop a selected MMR candidate,
+    and which therefore decides the order the remaining candidates are visited in.
+    """
+    value = items[position]
+    items[position] = items[-1]
+    items.pop()
+    return value
+
+
 def to_jsonable_python(x: Any) -> Any:
     try:
         return json.loads(json.dumps(x, allow_nan=True))
@@ -2279,17 +2304,30 @@ class LocalCollection:
             for i in range(len(candidate_ids)):
                 candidate_distance_matrix[(candidate_id, candidate_ids[i])] = nearest_candidates[i]
 
-        selected = [candidate_ids[0]]
-        pending = candidate_ids[1:]
+        # Core keeps the pending candidates in an insertion-ordered set and removes the chosen
+        # one with `swap_remove`, which moves the last element into the freed slot. It then picks
+        # the best candidate with `max_by_key`, which returns the *last* maximum on ties (unlike
+        # `np.argmax`, which returns the first). Both details are reproduced here, otherwise
+        # exact ties in relevance or in MMR score are resolved differently than in core.
+        pending = list(range(len(candidate_ids)))
+
+        # first point is the most relevant one
+        seed_position = _last_argmax(
+            [query_raw_similarities[candidate_ids[index]] for index in pending]
+        )
+        selected = [_swap_remove(pending, seed_position)]
+
         while len(selected) < limit and len(pending) > 0:
             mmr_scores = []
 
-            for pending_id in pending:
-                relevance_score = query_raw_similarities[pending_id]
+            for pending_index in pending:
+                relevance_score = query_raw_similarities[candidate_ids[pending_index]]
                 similarities_to_selected = []
-                for selected_id in selected:
+                for selected_index in selected:
                     similarities_to_selected.append(
-                        candidate_distance_matrix[(pending_id, selected_id)]
+                        candidate_distance_matrix[
+                            (candidate_ids[pending_index], candidate_ids[selected_index])
+                        ]
                     )
                 max_similarity_to_selected = max(similarities_to_selected)
                 mmr_score = (
@@ -2301,10 +2339,9 @@ class LocalCollection:
                 [np.isneginf(sim) for sim in mmr_scores]
             ):  # no points left passing score threshold
                 break
-            best_candidate_index = np.argmax(mmr_scores).item()
-            selected.append(pending.pop(best_candidate_index))
+            selected.append(_swap_remove(pending, _last_argmax(mmr_scores)))
 
-        return [id_to_point[candidate_id] for candidate_id in selected]
+        return [id_to_point[candidate_ids[index]] for index in selected]
 
     def _rescore_with_formula(
         self,
