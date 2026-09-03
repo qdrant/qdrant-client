@@ -785,6 +785,45 @@ class TestSimpleSearcher:
             limit=10,
         )
 
+    def dense_query_prefetch_by_id(self, client: QdrantBase) -> models.QueryResponse:
+        # a bare point id is a valid prefetch query, just like a bare vector
+        return client.query_points(
+            collection_name=COLLECTION_NAME,
+            prefetch=models.Prefetch(query=1, using="text", limit=10),
+            query=self.dense_vector_query_text,
+            using="text",
+            with_payload=True,
+            limit=10,
+        )
+
+    def dense_query_nested_prefetch_by_id(self, client: QdrantBase) -> models.QueryResponse:
+        # a bare point id has to be resolved at every level of the prefetch tree
+        return client.query_points(
+            collection_name=COLLECTION_NAME,
+            prefetch=models.Prefetch(
+                prefetch=models.Prefetch(query=2, using="text", limit=10),
+                query=1,
+                using="text",
+                limit=5,
+            ),
+            query=self.dense_vector_query_text,
+            using="text",
+            with_payload=True,
+            limit=10,
+        )
+
+    def dense_query_prefetch_by_id_lookup_from(
+        self, client: QdrantBase, lookup_from: models.LookupLocation
+    ) -> models.QueryResponse:
+        return client.query_points(
+            collection_name=COLLECTION_NAME,
+            prefetch=models.Prefetch(query=1, using="text", limit=10, lookup_from=lookup_from),
+            query=self.dense_vector_query_text,
+            using="text",
+            with_payload=True,
+            limit=10,
+        )
+
     def dense_query_text_nested_prefetch(self, client: QdrantBase) -> models.QueryResponse:
         return client.query_points(
             collection_name=COLLECTION_NAME,
@@ -1260,6 +1299,41 @@ def test_no_query_no_prefetch():
 
     compare_clients_results(local_client, http_client, grpc_client, searcher.query_scroll_offset)
     compare_clients_results(http_client, grpc_client, grpc_client, searcher.query_scroll_offset)
+
+
+def test_dense_query_prefetch_by_id():
+    fixture_points = generate_fixtures()
+
+    searcher = TestSimpleSearcher()
+
+    local_client, http_client, grpc_client = init_clients(fixture_points)
+
+    for query in (
+        searcher.dense_query_prefetch_by_id,
+        searcher.dense_query_nested_prefetch_by_id,
+    ):
+        compare_clients_results(local_client, http_client, grpc_client, query)
+
+
+def test_dense_query_prefetch_by_id_lookup_from_another_collection():
+    fixture_points = generate_fixtures(10)
+
+    secondary_collection_points = generate_fixtures(10)
+
+    searcher = TestSimpleSearcher()
+
+    local_client, http_client, grpc_client = init_clients(fixture_points)
+
+    init_client(local_client, secondary_collection_points, SECONDARY_COLLECTION_NAME)
+    init_client(http_client, secondary_collection_points, SECONDARY_COLLECTION_NAME)
+
+    compare_clients_results(
+        local_client,
+        http_client,
+        grpc_client,
+        searcher.dense_query_prefetch_by_id_lookup_from,
+        lookup_from=models.LookupLocation(collection=SECONDARY_COLLECTION_NAME, vector="text"),
+    )
 
 
 def test_dense_query_nested_prefetch():

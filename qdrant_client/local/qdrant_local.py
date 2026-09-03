@@ -317,6 +317,9 @@ class QdrantLocal(QdrantBase):
             pass
         elif isinstance(query, rest_models.RrfQuery):
             pass
+        elif query is not None and not isinstance(query, get_args(rest_models.Query)):
+            # a bare vector input, e.g. a point id, is a shorthand for a nearest query
+            query = rest_models.NearestQuery(nearest=input_into_vector(query))
 
         return query, mentioned_ids
 

@@ -292,6 +292,8 @@ class AsyncQdrantLocal(AsyncQdrantBase):
             pass
         elif isinstance(query, rest_models.RrfQuery):
             pass
+        elif query is not None and (not isinstance(query, get_args(rest_models.Query))):
+            query = rest_models.NearestQuery(nearest=input_into_vector(query))
         return (query, mentioned_ids)
 
     def _resolve_prefetches_input(
