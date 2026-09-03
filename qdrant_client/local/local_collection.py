@@ -307,7 +307,9 @@ class LocalCollection:
                     if v is not None:
                         multivectors[name].append(v)
                     else:
-                        multivectors[name].append(np.array([]))
+                        multivectors[name].append(
+                            np.ones((1, self.multivectors_config[name].size), dtype=np.float32)
+                        )
                         deleted_ids.append((idx, name))
 
             # setup dense vectors by name
@@ -1365,14 +1367,7 @@ class LocalCollection:
         ) -> None:
             for example in examples:
                 if isinstance(example, get_args(types.PointId)):
-                    if example not in collection.ids:
-                        raise ValueError(f"Point {example} is not found in the collection")
-
-                    idx = collection.ids[example]
-                    vec = collection_vectors[vector_name][idx]
-
-                    if isinstance(vec, np.ndarray):
-                        vec = vec.tolist()
+                    vec: Any = collection._vector_by_point_id(vector_name, example)
                     acc.append(vec)
                     if collection == self:
                         mentioned_ids.append(example)
@@ -1413,15 +1408,12 @@ class LocalCollection:
         sparse = vector_name in collection.sparse_vectors
         multi = vector_name in collection.multivectors
         if sparse:
-            collection_vectors = collection.sparse_vectors
             examples_into_vectors(positive, sparse_positive_vectors)
             examples_into_vectors(negative, sparse_negative_vectors)
         elif multi:
-            collection_vectors = collection.multivectors
             examples_into_vectors(positive, positive_multivectors)
             examples_into_vectors(negative, negative_multivectors)
         else:
-            collection_vectors = collection.vectors
             examples_into_vectors(positive, positive_vectors)
             examples_into_vectors(negative, negative_vectors)
 
@@ -1766,22 +1758,35 @@ class LocalCollection:
 
         return ids, scores
 
+    def _vector_by_point_id(
+        self, vector_name: str, point_id: types.PointId
+    ) -> list[float] | SparseVector | list[list[float]]:
+        if point_id not in self.ids:
+            raise ValueError(f"Point {point_id} is not found in the collection")
+
+        idx = self.ids[point_id]
+        if vector_name in self.vectors:
+            vector = self.vectors[vector_name][idx].tolist()
+        elif vector_name in self.sparse_vectors:
+            vector = self.sparse_vectors[vector_name][idx]
+        elif vector_name in self.multivectors:
+            vector = self.multivectors[vector_name][idx].tolist()
+        else:
+            raise ValueError(f"Vector {vector_name} not found")
+
+        # Absent vectors are kept as placeholders to keep the storage dense, they are
+        # filtered out of search results by the mask and must not be used as query vectors
+        if self.deleted_per_vector[vector_name][idx]:
+            raise ValueError(f"Vector with name {vector_name} for point {point_id} not found")
+
+        return vector
+
     @staticmethod
     def _preprocess_vector_input(
         target: models.VectorInput | None, collection: "LocalCollection", vector_name: str
     ) -> tuple[models.Vector, types.PointId | None]:
         if isinstance(target, get_args(types.PointId)):
-            if target not in collection.ids:
-                raise ValueError(f"Point {target} is not found in the collection")
-
-            idx = collection.ids[target]
-            if vector_name in collection.vectors:
-                target_vector = collection.vectors[vector_name][idx].tolist()
-            elif vector_name in collection.sparse_vectors:
-                target_vector = collection.sparse_vectors[vector_name][idx]
-            else:
-                target_vector = collection.multivectors[vector_name][idx].tolist()
-
+            target_vector = collection._vector_by_point_id(vector_name, target)
             return target_vector, target
 
         return target, None
@@ -1797,19 +1802,11 @@ class LocalCollection:
         multi_context_vectors = []
 
         for pair in context:
-            pair_vectors = []
+            # holds a dense, sparse or multi vector, dispatched on by type below
+            pair_vectors: list[Any] = []
             for example in [pair.positive, pair.negative]:
                 if isinstance(example, get_args(types.PointId)):
-                    if example not in collection.ids:
-                        raise ValueError(f"Point {example} is not found in the collection")
-
-                    idx = collection.ids[example]
-                    if vector_name in collection.vectors:
-                        vector = collection.vectors[vector_name][idx].tolist()
-                    elif vector_name in collection.sparse_vectors:
-                        vector = collection.sparse_vectors[vector_name][idx]
-                    else:
-                        vector = collection.multivectors[vector_name][idx].tolist()
+                    vector = collection._vector_by_point_id(vector_name, example)
 
                     pair_vectors.append(vector)
                     if collection == self:
@@ -2554,11 +2551,15 @@ class LocalCollection:
             if len(named_vectors) <= idx:
                 diff = idx - len(named_vectors) + 1
                 for _ in range(diff):
-                    named_vectors.append(np.array([]))
+                    named_vectors.append(
+                        np.ones((1, self.get_vector_params(vector_name).size), dtype=np.float32)
+                    )
 
             if vector is None:
                 # Add fake vector and mark as removed
-                named_vectors[idx] = np.array([])
+                named_vectors[idx] = np.ones(
+                    (1, self.get_vector_params(vector_name).size), dtype=np.float32
+                )
                 self.deleted_per_vector[vector_name] = np.append(
                     self.deleted_per_vector[vector_name], 1
                 )
@@ -2965,7 +2966,9 @@ class LocalCollection:
 
         if config.multivector_config is not None:
             self.multivectors_config[vector_name] = params
-            self.multivectors[vector_name] = [np.array([]) for _ in range(num_points)]
+            self.multivectors[vector_name] = [
+                np.ones((1, config.size), dtype=np.float32) for _ in range(num_points)
+            ]
         else:
             self.vectors_config[vector_name] = params
             self.vectors[vector_name] = np.zeros((num_points, config.size), dtype=np.float32)
