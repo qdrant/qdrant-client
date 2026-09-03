@@ -237,14 +237,6 @@ class AsyncQdrantLocal(AsyncQdrantBase):
             if lookup_from is not None and lookup_from.vector is not None
             else search_in_vector_name
         )
-        sparse = vector_name in collection.sparse_vectors
-        multi = vector_name in collection.multivectors
-        if sparse:
-            collection_vectors = collection.sparse_vectors
-        elif multi:
-            collection_vectors = collection.multivectors
-        else:
-            collection_vectors = collection.vectors
         mentioned_ids: set[types.PointId] = set()
 
         def input_into_vector(vector_input: types.VectorInput) -> types.VectorInput:
@@ -252,15 +244,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
                 if isinstance(vector_input, uuid.UUID):
                     vector_input = str(vector_input)
                 point_id = vector_input
-                if point_id not in collection.ids:
-                    raise ValueError(f"Point {point_id} is not found in the collection")
-                idx = collection.ids[point_id]
-                if vector_name in collection_vectors:
-                    vec = collection_vectors[vector_name][idx]
-                else:
-                    raise ValueError(f"Vector {vector_name} not found")
-                if isinstance(vec, np.ndarray):
-                    vec = vec.tolist()
+                vec = collection._vector_by_point_id(vector_name, point_id)
                 if collection_name == lookup_collection_name:
                     mentioned_ids.add(point_id)
                 return vec
