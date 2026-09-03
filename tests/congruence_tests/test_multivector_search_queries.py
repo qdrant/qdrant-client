@@ -157,6 +157,22 @@ def test_simple():
     compare_client_results(local_client, remote_client, searcher.simple_search_code)
 
 
+def test_simple_opt_vectors_search():
+    fixture_points = generate_multivector_fixtures(100, skip_vectors=True)
+
+    searcher = TestSimpleSearcher()
+
+    local_client = init_local()
+    init_client(local_client, fixture_points, vectors_config=multi_vector_config)
+
+    remote_client = init_remote()
+    init_client(remote_client, fixture_points, vectors_config=multi_vector_config)
+
+    compare_client_results(local_client, remote_client, searcher.simple_search_text)
+    compare_client_results(local_client, remote_client, searcher.simple_search_image)
+    compare_client_results(local_client, remote_client, searcher.simple_search_code)
+
+
 def test_mmr():
     fixture_points = generate_multivector_fixtures(10)
 

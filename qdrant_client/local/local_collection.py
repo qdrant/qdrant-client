@@ -307,7 +307,9 @@ class LocalCollection:
                     if v is not None:
                         multivectors[name].append(v)
                     else:
-                        multivectors[name].append(np.array([]))
+                        multivectors[name].append(
+                            np.ones((1, self.multivectors_config[name].size), dtype=np.float32)
+                        )
                         deleted_ids.append((idx, name))
 
             # setup dense vectors by name
@@ -2553,11 +2555,15 @@ class LocalCollection:
             if len(named_vectors) <= idx:
                 diff = idx - len(named_vectors) + 1
                 for _ in range(diff):
-                    named_vectors.append(np.array([]))
+                    named_vectors.append(
+                        np.ones((1, self.get_vector_params(vector_name).size), dtype=np.float32)
+                    )
 
             if vector is None:
                 # Add fake vector and mark as removed
-                named_vectors[idx] = np.array([])
+                named_vectors[idx] = np.ones(
+                    (1, self.get_vector_params(vector_name).size), dtype=np.float32
+                )
                 self.deleted_per_vector[vector_name] = np.append(
                     self.deleted_per_vector[vector_name], 1
                 )
@@ -2964,7 +2970,9 @@ class LocalCollection:
 
         if config.multivector_config is not None:
             self.multivectors_config[vector_name] = params
-            self.multivectors[vector_name] = [np.array([]) for _ in range(num_points)]
+            self.multivectors[vector_name] = [
+                np.ones((1, config.size), dtype=np.float32) for _ in range(num_points)
+            ]
         else:
             self.vectors_config[vector_name] = params
             self.vectors[vector_name] = np.zeros((num_points, config.size), dtype=np.float32)
