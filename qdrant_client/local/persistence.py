@@ -150,7 +150,64 @@ class CollectionPersistence:
         cursor = self.storage.cursor()
         cursor.execute("SELECT point FROM points")
         for row in cursor.fetchall():
-            yield pickle.loads(row[0])
+            yield load_point_compat(row[0])
+
+
+def load_point_compat(blob: bytes) -> models.PointStruct:
+    """Unpickle a persisted point, including pydantic v1 -> v2 migrations.
+
+    Points stored with pydantic<2 put ``__fields_set__`` in the pickle state.
+    pydantic>=2 expects ``__pydantic_fields_set__`` and raises ``KeyError`` on
+    load otherwise (https://github.com/qdrant/qdrant-client/issues/481).
+    """
+    try:
+        point = pickle.loads(blob)
+    except KeyError as exc:
+        if exc.args != ("__pydantic_fields_set__",):
+            raise
+        point = _load_pydantic_v1_point(blob)
+
+    if isinstance(point, models.PointStruct):
+        return point
+    if isinstance(point, dict):
+        return models.PointStruct.model_validate(point)
+    raise TypeError(f"Unexpected persisted point type: {type(point)!r}")
+
+
+def _load_pydantic_v1_point(blob: bytes) -> models.PointStruct:
+    """Best-effort recovery for PointStruct blobs pickled under pydantic v1."""
+    import io
+
+    class _LegacyPoint:
+        def __setstate__(self, state):  # type: ignore[no-untyped-def]
+            if not isinstance(state, dict):
+                raise TypeError(f"Unexpected pickle state type: {type(state)!r}")
+            payload = state.get("__dict__", state)
+            if not isinstance(payload, dict):
+                raise TypeError(f"Unexpected payload type: {type(payload)!r}")
+            self.__dict__.update(payload)
+
+    class _CompatUnpickler(pickle.Unpickler):
+        def find_class(self, module: str, name: str):  # type: ignore[override]
+            if name == "PointStruct" and "qdrant" in module:
+                return _LegacyPoint
+            return super().find_class(module, name)
+
+    obj = _CompatUnpickler(io.BytesIO(blob)).load()
+    data = getattr(obj, "__dict__", None)
+    if not isinstance(data, dict):
+        raise TypeError(f"Recovered point has no dict state: {type(obj)!r}")
+
+    payload = {
+        "id": data.get("id"),
+        "vector": data.get("vector", data.get("vectors")),
+        "payload": data.get("payload"),
+    }
+    return models.PointStruct.model_validate(
+        {key: value for key, value in payload.items() if value is not None or key == "id"}
+    )
+
+
 
 
 def test_persistence() -> None:
