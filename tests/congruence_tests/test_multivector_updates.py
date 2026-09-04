@@ -250,3 +250,48 @@ def test_upsert_empty_multivector():
         UPLOAD_NUM_VECTORS,
         attrs=("points_count",),
     )
+
+
+def test_rejected_empty_multivector_update_leaves_point_untouched():
+    """A rejected update_vectors request must not make an absent multivector visible.
+
+    Regression: validation used to run after `deleted_per_vector` was cleared, so rejecting
+    an empty multivector still exposed the placeholder to retrieval and search.
+    """
+    local_client = init_local()
+    remote_client = init_remote()
+
+    mvc = models.MultiVectorConfig(comparator=models.MultiVectorComparator.MAX_SIM)
+    vectors_config = {
+        "a": models.VectorParams(size=4, distance=models.Distance.COSINE, multivector_config=mvc),
+        "b": models.VectorParams(size=4, distance=models.Distance.COSINE, multivector_config=mvc),
+    }
+    local_client.create_collection(COLLECTION_NAME, vectors_config=vectors_config)
+    if remote_client.collection_exists(collection_name=COLLECTION_NAME):
+        remote_client.delete_collection(collection_name=COLLECTION_NAME)
+    remote_client.create_collection(COLLECTION_NAME, vectors_config=vectors_config)
+
+    query = [[1.0, 0.0, 0.0, 0.0]]
+
+    # point 1 has no "a" at all, so "a" is backed by a placeholder marked deleted
+    absent_a = [models.PointStruct(id=1, vector={"b": query})]
+    local_client.upsert(COLLECTION_NAME, absent_a)
+    remote_client.upsert(COLLECTION_NAME, absent_a, wait=True)
+
+    for empty_multivector, local_error in (
+        ([], "Multivector must not be empty"),
+        ([[]], "vectors of a multivector must be non-empty"),
+    ):
+        point_vectors = [models.PointVectors(id=1, vector={"a": empty_multivector})]
+        with pytest.raises(ValueError, match=local_error):
+            local_client.update_vectors(COLLECTION_NAME, points=point_vectors)
+        with pytest.raises(UnexpectedResponse):
+            remote_client.update_vectors(COLLECTION_NAME, points=point_vectors, wait=True)
+
+        for client in (local_client, remote_client):
+            record = client.retrieve(COLLECTION_NAME, ids=[1], with_vectors=True)[0]
+            assert "a" not in record.vector
+            hits = client.query_points(COLLECTION_NAME, query=query, using="a", limit=5).points
+            assert hits == []
+
+    compare_collections(local_client, remote_client, 1, attrs=("points_count",))

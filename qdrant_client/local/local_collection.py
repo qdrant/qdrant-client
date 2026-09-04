@@ -2739,24 +2739,31 @@ class LocalCollection:
     def _update_named_vectors(
         self, idx: int, vectors: dict[str, list[float] | SparseVector | list[list[float]]]
     ) -> None:
+        validated: list[tuple[str, Any]] = []
         for vector_name, vector in vectors.items():
             if vector_name not in self._all_vectors_keys:
                 raise ValueError(f"Wrong input: Not existing vector name error: {vector_name}")
 
-            self.deleted_per_vector[vector_name][idx] = 0
-
             if isinstance(vector, SparseVector):
                 validate_sparse_vector(vector)
-                old_vector = self.sparse_vectors[vector_name][idx]
-                self._update_idf_remove(old_vector, vector_name)
-                new_vector = sort_sparse_vector(vector)
-                self.sparse_vectors[vector_name][idx] = new_vector
-                self._update_idf_append(new_vector, vector_name)
+                validated.append((vector_name, sort_sparse_vector(vector)))
                 continue
 
             self._validate_dense_or_multivector(vector, vector_name)
             vector_np = np.array(vector, dtype=np.float32)
             assert not np.isnan(vector_np).any(), "Vector contains NaN values"
+            validated.append((vector_name, vector_np))
+
+        for vector_name, vector_np in validated:
+            self.deleted_per_vector[vector_name][idx] = 0
+
+            if isinstance(vector_np, SparseVector):
+                old_vector = self.sparse_vectors[vector_name][idx]
+                self._update_idf_remove(old_vector, vector_name)
+                self.sparse_vectors[vector_name][idx] = vector_np
+                self._update_idf_append(vector_np, vector_name)
+                continue
+
             params = self.get_vector_params(vector_name)
             if vector_name in self.vectors:
                 if params.distance == models.Distance.COSINE:
