@@ -3,7 +3,12 @@ from functools import lru_cache
 from typing import Any, Awaitable, Callable, Dict, Generic, Type, TypeVar, overload
 from urllib.parse import urljoin
 
-from httpx import AsyncClient, Client, Request, Response
+# HTTPXodus Option A — dual import: prefer httpx2 (Pydantic-maintained
+# fork), fall back to httpx on environments that only ship real httpx.
+try:
+    from httpx2 import AsyncClient, Client, Request, Response
+except ImportError:
+    from httpx import AsyncClient, Client, Request, Response
 from pydantic import ValidationError
 from qdrant_client.common.client_exceptions import ResourceExhaustedResponse
 from qdrant_client.http.api.aliases_api import AsyncAliasesApi, SyncAliasesApi
