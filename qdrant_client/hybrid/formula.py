@@ -320,11 +320,14 @@ def parse_variable(var: str) -> str | int:
     if bracket_end == -1:
         raise ValueError(f"Invalid score pattern: {var}")
 
-    # try parsing the content in between brackets as integer
-    try:
-        idx = int(remaining[:bracket_end])
-    except ValueError:
+    # parse the content in between brackets as an unsigned integer. qdrant core represents
+    # the score index as a usize, while `int()` would also accept a sign, underscore
+    # separators and surrounding whitespace
+    raw_idx = remaining[:bracket_end]
+    if not (raw_idx.isascii() and raw_idx.isdigit()):
         raise ValueError(f"Invalid score pattern: {var}")
+
+    idx = int(raw_idx)
 
     # make sure the string ends after the closing bracket
     if len(remaining) > bracket_end + 1:
