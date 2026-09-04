@@ -2510,6 +2510,7 @@ class GrpcToRest:
             return dt
         if model.HasField("datetime"):
             return model.datetime
+        raise ValueError(f"invalid StartFrom model: {model}")  # pragma: no cover
 
     @classmethod
     def convert_order_by(cls, model: grpc.OrderBy) -> rest.OrderBy:
