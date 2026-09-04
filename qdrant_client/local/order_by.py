@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from qdrant_client.http.models import OrderValue
 from qdrant_client.local.datetime_utils import parse
@@ -19,6 +19,16 @@ def to_order_value(value: str | datetime | OrderValue | None) -> OrderValue | No
         return value
 
     if isinstance(value, datetime):
+        # A datetime counts as aware only when tzinfo is set *and* utcoffset() returns
+        # an offset, so both are checked here: a tzinfo whose utcoffset() is None is
+        # naive by Python's own definition and would otherwise reach timestamp() and
+        # raise.
+        if value.tzinfo is None or value.utcoffset() is None:
+            # A naive datetime means UTC — the same assumption `parse()` makes for a
+            # datetime string with no offset, and the one qdrant core makes. Without
+            # this, `timestamp()` reads it as local time, so the same wall clock
+            # sorts differently depending on the client machine's timezone.
+            value = value.replace(tzinfo=timezone.utc)
         return datetime_to_microseconds(value)
 
     if isinstance(value, str):
