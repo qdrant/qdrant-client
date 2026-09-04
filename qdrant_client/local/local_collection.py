@@ -100,6 +100,25 @@ def to_jsonable_python(x: Any) -> Any:
         return json.loads(json.dumps(x, allow_nan=True, default=_to_jsonable_python))
 
 
+def validate_dense_vector(vector: Any, vector_name: str) -> None:
+    """Reject empty dense vectors, as the server does at write time."""
+    if len(vector) == 0:
+        raise ValueError(f"Wrong input: Dense vector must not be empty for vector '{vector_name}'")
+
+
+def validate_multivector(vector: Any, vector_name: str) -> None:
+    """Reject empty multivectors and multivectors holding empty vectors, as the server does."""
+    if len(vector) == 0:
+        raise ValueError(f"Wrong input: Multivector must not be empty for vector '{vector_name}'")
+
+    for sub_vector in vector:
+        if hasattr(sub_vector, "__len__") and len(sub_vector) == 0:
+            raise ValueError(
+                "Wrong input: All vectors of a multivector must be non-empty "
+                f"for vector '{vector_name}'"
+            )
+
+
 class LocalCollection:
     """
     LocalCollection is a class that represents a collection of vectors in the local storage.
@@ -392,6 +411,20 @@ class LocalCollection:
             return self.config.vectors
 
         raise ValueError(f"Malformed config.vectors: {self.config.vectors}")
+
+    def _validate_dense_or_multivector(self, vector: Any, vector_name: str) -> None:
+        """Reject empty vectors on the write path, the way the server does.
+
+        Sparse vectors are validated by `validate_sparse_vector`; an empty sparse vector is
+        legitimate, so it is not routed here.
+        """
+        if vector is None:
+            return
+
+        if vector_name in self.multivectors:
+            validate_multivector(vector, vector_name)
+        elif vector_name in self.vectors:
+            validate_dense_vector(vector, vector_name)
 
     @classmethod
     def _check_include_pattern(cls, pattern: str, key: str) -> bool:
@@ -2613,6 +2646,8 @@ class LocalCollection:
                     validate_sparse_vector(vector)
                     # sort sparse vector by indices before persistence
                     updated_sparse_vectors[vector_name] = sort_sparse_vector(vector)
+                else:
+                    self._validate_dense_or_multivector(vector, vector_name)
             # update point.vector with the modified values after iteration
             point.vector.update(updated_sparse_vectors)
         else:
@@ -2627,6 +2662,7 @@ class LocalCollection:
                 )
             if not self.vectors and not self.multivectors:
                 raise ValueError("Wrong input: Not existing vector name error")
+            self._validate_dense_or_multivector(point.vector, DEFAULT_VECTOR_NAME)
 
         if isinstance(point.id, uuid.UUID):
             point.id = str(point.id)
@@ -2718,6 +2754,7 @@ class LocalCollection:
                 self._update_idf_append(new_vector, vector_name)
                 continue
 
+            self._validate_dense_or_multivector(vector, vector_name)
             vector_np = np.array(vector, dtype=np.float32)
             assert not np.isnan(vector_np).any(), "Vector contains NaN values"
             params = self.get_vector_params(vector_name)

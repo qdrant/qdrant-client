@@ -5,6 +5,7 @@ from collections import defaultdict
 import pytest
 
 from qdrant_client.http import models
+from qdrant_client.http.exceptions import UnexpectedResponse
 from tests.congruence_tests.test_common import (
     COLLECTION_NAME,
     compare_collections,
@@ -57,9 +58,7 @@ def test_upsert():
         COLLECTION_NAME,
         scroll_filter=id_filter,
         limit=1,
-    )[
-        0
-    ][0]
+    )[0][0]
     remote_old_point = remote_client.scroll(COLLECTION_NAME, scroll_filter=id_filter, limit=1)[0][
         0
     ]
@@ -196,6 +195,54 @@ def test_upload_uuid_in_batches():
 
     local_client.upsert(COLLECTION_NAME, batch)
     remote_client.upsert(COLLECTION_NAME, batch)
+
+    compare_collections(
+        local_client,
+        remote_client,
+        UPLOAD_NUM_VECTORS,
+        attrs=("points_count",),
+    )
+
+
+def test_upsert_empty_multivector():
+    """Both clients must reject an empty multivector on every write path."""
+    points = generate_multivector_fixtures(UPLOAD_NUM_VECTORS)
+
+    local_client = init_local()
+    init_client(local_client, points, vectors_config=multi_vector_config)
+
+    remote_client = init_remote()
+    init_client(remote_client, points, vectors_config=multi_vector_config)
+
+    existing_id = points[0].id
+    new_point_id = UPLOAD_NUM_VECTORS + 1
+
+    # a multivector with no vectors at all, and one holding an empty vector
+    cases = (
+        ([], "Multivector must not be empty"),
+        ([[]], "vectors of a multivector must be non-empty"),
+    )
+    for empty_multivector, local_error in cases:
+        upsert_structs = (
+            [models.PointStruct(id=new_point_id, vector={"multi-text": empty_multivector})],
+            [models.PointStruct(id=existing_id, vector={"multi-text": empty_multivector})],
+            models.Batch(ids=[new_point_id], vectors={"multi-text": [empty_multivector]}),
+        )
+        for upsert_struct in upsert_structs:
+            with pytest.raises(ValueError, match=local_error):
+                local_client.upsert(COLLECTION_NAME, upsert_struct)
+
+            with pytest.raises(UnexpectedResponse):
+                remote_client.upsert(COLLECTION_NAME, upsert_struct)
+
+        point_vectors = [
+            models.PointVectors(id=existing_id, vector={"multi-text": empty_multivector})
+        ]
+        with pytest.raises(ValueError, match=local_error):
+            local_client.update_vectors(COLLECTION_NAME, points=point_vectors)
+
+        with pytest.raises(UnexpectedResponse):
+            remote_client.update_vectors(COLLECTION_NAME, points=point_vectors)
 
     compare_collections(
         local_client,
