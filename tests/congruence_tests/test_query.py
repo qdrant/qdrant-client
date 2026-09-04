@@ -2293,10 +2293,16 @@ def test_mmr_tie_breaking():
     one with `swap_remove`, which moves the last candidate into the freed slot and so changes the
     order candidates are visited in.
 
-    Relevance scores are kept distinct on purpose: core orders equally relevant candidates by
-    whatever order the search returned them in, which is not stable, so a tie in *relevance*
-    can't be asserted on. All coordinates are exact binary fractions, so the MMR ties are exact
-    in f32 both locally and in core.
+    Relevance scores are kept distinct on purpose. Core resolves a tie in *relevance* by the
+    order search returned the candidates in, and `Ord for ScoredPoint` compares score only,
+    with no tiebreak on id, so equally scored points come back in the order they sit in the
+    segment. `upsert_points_impl` derives that order from `AHashMap` key iteration, which is
+    randomly seeded per operation, so it is stable for repeated queries against one collection
+    but reshuffles on every rebuild of the fixture - regardless of segment count. Every test
+    run rebuilds the collection, so only ties in the MMR score can be asserted on.
+
+    All coordinates are exact binary fractions, so the MMR ties are exact in f32 both locally
+    and in core.
     """
 
     def mmr_query(client: QdrantBase, query, using=None) -> models.QueryResponse:
@@ -2310,13 +2316,16 @@ def test_mmr_tie_breaking():
         )
 
     # dense, DOT: query is [1, 0, 0, 0], so relevance is the first coordinate.
-    # Once id 1 is selected, ids 2 and 3 both end up with an MMR score of -0.5.
+    # Once id 1 is selected, ids 2 and 4 - the first and the last of the pending candidates -
+    # both end up with an MMR score of -0.5. `swap_remove` visits the pending candidates as
+    # [4, 2, 3], while an order-preserving removal would visit them as [2, 3, 4], so the two
+    # disagree on which of the tied candidates is the *last* maximum.
     clients = init_clients(
         [
             models.PointStruct(id=1, vector=[2.0, 1.0, 0.0, 0.0]),  # relevance 2.0, selected first
             models.PointStruct(id=2, vector=[1.0, 0.0, 0.0, 0.0]),  # relevance 1.0, MMR -0.5
-            models.PointStruct(id=3, vector=[0.5, 0.5, 0.0, 0.0]),  # relevance 0.5, MMR -0.5
-            models.PointStruct(id=4, vector=[0.25, 1.0, 0.0, 0.0]),  # relevance 0.25, MMR -0.625
+            models.PointStruct(id=3, vector=[0.5, 1.0, 0.0, 0.0]),  # relevance 0.5, MMR -0.75
+            models.PointStruct(id=4, vector=[0.25, 0.75, 0.0, 0.0]),  # relevance 0.25, MMR -0.5
         ],
         vectors_config=models.VectorParams(size=4, distance=models.Distance.DOT),
     )
