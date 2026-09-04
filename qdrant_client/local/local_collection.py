@@ -67,6 +67,7 @@ from qdrant_client.local.payload_filters import (
 from qdrant_client.local.payload_value_extractor import value_by_key, parse_uuid
 from qdrant_client.local.payload_value_setter import set_value_by_key
 from qdrant_client.local.persistence import CollectionPersistence
+from qdrant_client.local.utils import last_argmax, swap_remove
 from qdrant_client.local.sparse import (
     empty_sparse_vector,
     sort_sparse_vector,
@@ -90,31 +91,6 @@ from qdrant_client.local.sparse_distances import (
 DEFAULT_VECTOR_NAME = ""
 EPSILON = 1.1920929e-7  # https://doc.rust-lang.org/std/f32/constant.EPSILON.html
 # https://github.com/qdrant/qdrant/blob/7164ac4a5987d28f1c93f5712aef8e09e7d93555/lib/segment/src/spaces/simple_avx.rs#L99C10-L99C10
-
-
-def _last_argmax(values: list[float]) -> int:
-    """Index of the maximum value, resolving ties in favour of the *last* maximum.
-
-    Mirrors Rust's `Iterator::max_by_key`, which core uses to pick MMR candidates.
-    `np.argmax` returns the first maximum instead, which orders exact ties differently.
-    """
-    best_index = 0
-    for index in range(1, len(values)):
-        if values[index] >= values[best_index]:
-            best_index = index
-    return best_index
-
-
-def _swap_remove(items: list[int], position: int) -> int:
-    """Remove and return `items[position]`, moving the last item into the freed slot.
-
-    Mirrors `IndexSet::swap_remove`, which core uses to drop a selected MMR candidate,
-    and which therefore decides the order the remaining candidates are visited in.
-    """
-    value = items[position]
-    items[position] = items[-1]
-    items.pop()
-    return value
 
 
 def to_jsonable_python(x: Any) -> Any:
@@ -2312,10 +2288,10 @@ class LocalCollection:
         pending = list(range(len(candidate_ids)))
 
         # first point is the most relevant one
-        seed_position = _last_argmax(
+        seed_position = last_argmax(
             [query_raw_similarities[candidate_ids[index]] for index in pending]
         )
-        selected = [_swap_remove(pending, seed_position)]
+        selected = [swap_remove(pending, seed_position)]
 
         while len(selected) < limit and len(pending) > 0:
             mmr_scores = []
@@ -2339,7 +2315,7 @@ class LocalCollection:
                 [np.isneginf(sim) for sim in mmr_scores]
             ):  # no points left passing score threshold
                 break
-            selected.append(_swap_remove(pending, _last_argmax(mmr_scores)))
+            selected.append(swap_remove(pending, last_argmax(mmr_scores)))
 
         return [id_to_point[candidate_ids[index]] for index in selected]
 

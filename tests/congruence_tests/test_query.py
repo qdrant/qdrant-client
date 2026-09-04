@@ -2284,6 +2284,80 @@ def test_mmr_queries():
     )
 
 
+def test_mmr_tie_breaking():
+    """MMR ordering when candidates tie exactly, which is where local mode used to diverge.
+
+    Core seeds the selection with the most relevant candidate and then picks the best MMR score
+    with Rust's `max_by_key`, which returns the *last* maximum on ties, while `np.argmax` returns
+    the first one. Core also holds the pending candidates in an `IndexSet` and drops the selected
+    one with `swap_remove`, which moves the last candidate into the freed slot and so changes the
+    order candidates are visited in.
+
+    Relevance scores are kept distinct on purpose: core orders equally relevant candidates by
+    whatever order the search returned them in, which is not stable, so a tie in *relevance*
+    can't be asserted on. All coordinates are exact binary fractions, so the MMR ties are exact
+    in f32 both locally and in core.
+    """
+
+    def mmr_query(client: QdrantBase, query, using=None) -> models.QueryResponse:
+        return client.query_points(
+            collection_name=COLLECTION_NAME,
+            query=models.NearestQuery(nearest=query, mmr=models.Mmr()),
+            using=using,
+            # these points carry no payload, and grpc reports that as None while rest reports {}
+            with_payload=False,
+            limit=10,
+        )
+
+    # dense, DOT: query is [1, 0, 0, 0], so relevance is the first coordinate.
+    # Once id 1 is selected, ids 2 and 3 both end up with an MMR score of -0.5.
+    clients = init_clients(
+        [
+            models.PointStruct(id=1, vector=[2.0, 1.0, 0.0, 0.0]),  # relevance 2.0, selected first
+            models.PointStruct(id=2, vector=[1.0, 0.0, 0.0, 0.0]),  # relevance 1.0, MMR -0.5
+            models.PointStruct(id=3, vector=[0.5, 0.5, 0.0, 0.0]),  # relevance 0.5, MMR -0.5
+            models.PointStruct(id=4, vector=[0.25, 1.0, 0.0, 0.0]),  # relevance 0.25, MMR -0.625
+        ],
+        vectors_config=models.VectorParams(size=4, distance=models.Distance.DOT),
+    )
+    compare_clients_results(*clients, mmr_query, query=[1.0, 0.0, 0.0, 0.0])
+
+    # the same tie with EUCLID, to show the tie-breaking is not specific to DOT
+    clients = init_clients(
+        [
+            models.PointStruct(id=1, vector=[0.25, 0.0]),  # relevance -0.0625, selected first
+            models.PointStruct(id=2, vector=[0.5, 0.25]),  # relevance -0.3125, MMR -0.09375
+            models.PointStruct(id=3, vector=[0.5, 0.5]),  # relevance -0.5, MMR -0.09375
+            models.PointStruct(id=4, vector=[0.75, 0.5]),  # relevance -0.8125, MMR -0.15625
+        ],
+        vectors_config=models.VectorParams(size=2, distance=models.Distance.EUCLID),
+    )
+    compare_clients_results(*clients, mmr_query, query=[0.0, 0.0])
+
+    # the same tie on a MAX_SIM multivector field, where the divergence was first spotted
+    clients = init_clients(
+        [
+            # the extra vector is never the closest one, it only exercises the MAX_SIM reduction
+            models.PointStruct(
+                id=1, vector={"multi": [[2.0, 1.0, 0.0, 0.0], [0.0, 0.0, -1.0, 0.0]]}
+            ),
+            models.PointStruct(id=2, vector={"multi": [[1.0, 0.0, 0.0, 0.0]]}),
+            models.PointStruct(id=3, vector={"multi": [[0.5, 0.5, 0.0, 0.0]]}),
+            models.PointStruct(id=4, vector={"multi": [[0.25, 1.0, 0.0, 0.0]]}),
+        ],
+        vectors_config={
+            "multi": models.VectorParams(
+                size=4,
+                distance=models.Distance.DOT,
+                multivector_config=models.MultiVectorConfig(
+                    comparator=models.MultiVectorComparator.MAX_SIM
+                ),
+            )
+        },
+    )
+    compare_clients_results(*clients, mmr_query, query=[[1.0, 0.0, 0.0, 0.0]], using="multi")
+
+
 def test_relevance_feedback_queries():
     fixture_points = generate_fixtures()
 
