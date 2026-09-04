@@ -67,6 +67,7 @@ from qdrant_client.local.payload_filters import (
 from qdrant_client.local.payload_value_extractor import value_by_key, parse_uuid
 from qdrant_client.local.payload_value_setter import set_value_by_key
 from qdrant_client.local.persistence import CollectionPersistence
+from qdrant_client.local.utils import last_argmax, swap_remove
 from qdrant_client.local.sparse import (
     empty_sparse_vector,
     sort_sparse_vector,
@@ -2279,17 +2280,30 @@ class LocalCollection:
             for i in range(len(candidate_ids)):
                 candidate_distance_matrix[(candidate_id, candidate_ids[i])] = nearest_candidates[i]
 
-        selected = [candidate_ids[0]]
-        pending = candidate_ids[1:]
+        # Core keeps the pending candidates in an insertion-ordered set and removes the chosen
+        # one with `swap_remove`, which moves the last element into the freed slot. It then picks
+        # the best candidate with `max_by_key`, which returns the *last* maximum on ties (unlike
+        # `np.argmax`, which returns the first). Both details are reproduced here, otherwise
+        # exact ties in relevance or in MMR score are resolved differently than in core.
+        pending = list(range(len(candidate_ids)))
+
+        # first point is the most relevant one
+        seed_position = last_argmax(
+            [query_raw_similarities[candidate_ids[index]] for index in pending]
+        )
+        selected = [swap_remove(pending, seed_position)]
+
         while len(selected) < limit and len(pending) > 0:
             mmr_scores = []
 
-            for pending_id in pending:
-                relevance_score = query_raw_similarities[pending_id]
+            for pending_index in pending:
+                relevance_score = query_raw_similarities[candidate_ids[pending_index]]
                 similarities_to_selected = []
-                for selected_id in selected:
+                for selected_index in selected:
                     similarities_to_selected.append(
-                        candidate_distance_matrix[(pending_id, selected_id)]
+                        candidate_distance_matrix[
+                            (candidate_ids[pending_index], candidate_ids[selected_index])
+                        ]
                     )
                 max_similarity_to_selected = max(similarities_to_selected)
                 mmr_score = (
@@ -2301,10 +2315,9 @@ class LocalCollection:
                 [np.isneginf(sim) for sim in mmr_scores]
             ):  # no points left passing score threshold
                 break
-            best_candidate_index = np.argmax(mmr_scores).item()
-            selected.append(pending.pop(best_candidate_index))
+            selected.append(swap_remove(pending, last_argmax(mmr_scores)))
 
-        return [id_to_point[candidate_id] for candidate_id in selected]
+        return [id_to_point[candidate_ids[index]] for index in selected]
 
     def _rescore_with_formula(
         self,
