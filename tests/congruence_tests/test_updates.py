@@ -343,6 +343,116 @@ def test_upload_wrong_vectors():
         )
 
 
+def test_upsert_empty_dense_vector():
+    """Both clients must reject an empty dense vector on every write path.
+
+    An empty *sparse* vector, on the other hand, is legitimate and must stay accepted.
+    """
+    local_client = init_local()
+    remote_client = init_remote()
+
+    vectors_config = {"text": models.VectorParams(size=2, distance=models.Distance.COSINE)}
+    sparse_vectors_config = {"text-sparse": models.SparseVectorParams()}
+
+    local_client.create_collection(
+        collection_name=COLLECTION_NAME,
+        vectors_config=vectors_config,
+        sparse_vectors_config=sparse_vectors_config,
+    )
+    if remote_client.collection_exists(collection_name=COLLECTION_NAME):
+        remote_client.delete_collection(collection_name=COLLECTION_NAME)
+    remote_client.create_collection(
+        collection_name=COLLECTION_NAME,
+        vectors_config=vectors_config,
+        sparse_vectors_config=sparse_vectors_config,
+    )
+
+    # a valid point to overwrite later
+    valid_points = [models.PointStruct(id=1, vector={"text": [0.1, 0.3]})]
+    local_client.upsert(COLLECTION_NAME, valid_points)
+    remote_client.upsert(COLLECTION_NAME, valid_points)
+
+    empty_points = [models.PointStruct(id=2, vector={"text": []})]
+    overwrite_points = [models.PointStruct(id=1, vector={"text": []})]
+    empty_batch = models.Batch(ids=[3], vectors={"text": [[]]})
+
+    for points in (empty_points, overwrite_points, empty_batch):
+        with pytest.raises(ValueError, match="Dense vector must not be empty"):
+            local_client.upsert(COLLECTION_NAME, points)
+
+        with pytest.raises(qdrant_client.http.exceptions.UnexpectedResponse):
+            remote_client.upsert(COLLECTION_NAME, points)
+
+    empty_point_vectors = [models.PointVectors(id=1, vector={"text": []})]
+    with pytest.raises(ValueError, match="Dense vector must not be empty"):
+        local_client.update_vectors(COLLECTION_NAME, points=empty_point_vectors)
+
+    with pytest.raises(qdrant_client.http.exceptions.UnexpectedResponse):
+        remote_client.update_vectors(COLLECTION_NAME, points=empty_point_vectors)
+
+    # an empty sparse vector is valid input for both clients
+    empty_sparse_points = [
+        models.PointStruct(
+            id=4, vector={"text-sparse": models.SparseVector(indices=[], values=[])}
+        )
+    ]
+    local_client.upsert(COLLECTION_NAME, empty_sparse_points)
+    remote_client.upsert(COLLECTION_NAME, empty_sparse_points, wait=True)
+
+    compare_collections(local_client, remote_client, UPLOAD_NUM_VECTORS)
+
+
+def test_rejected_empty_vector_update_leaves_point_untouched():
+    """A rejected update_vectors request must not change the point in any way.
+
+    Regression: validation used to run after `deleted_per_vector` was cleared, so rejecting
+    an empty vector still made an absent vector's placeholder visible to search, and a valid
+    vector supplied alongside the rejected one was written anyway.
+    """
+    local_client = init_local()
+    remote_client = init_remote()
+
+    vectors_config = {
+        "a": models.VectorParams(size=4, distance=models.Distance.COSINE),
+        "b": models.VectorParams(size=4, distance=models.Distance.COSINE),
+    }
+    local_client.create_collection(COLLECTION_NAME, vectors_config=vectors_config)
+    if remote_client.collection_exists(collection_name=COLLECTION_NAME):
+        remote_client.delete_collection(collection_name=COLLECTION_NAME)
+    remote_client.create_collection(COLLECTION_NAME, vectors_config=vectors_config)
+
+    orig = [1.0, 0.0, 0.0, 0.0]
+    other = [0.0, 1.0, 0.0, 0.0]
+
+    # point 1 has no "a" at all, so "a" is backed by a placeholder marked deleted
+    absent_a = [models.PointStruct(id=1, vector={"b": orig})]
+    local_client.upsert(COLLECTION_NAME, absent_a)
+    remote_client.upsert(COLLECTION_NAME, absent_a, wait=True)
+
+    empty_a = [models.PointVectors(id=1, vector={"a": []})]
+    with pytest.raises(ValueError, match="Dense vector must not be empty"):
+        local_client.update_vectors(COLLECTION_NAME, points=empty_a)
+    with pytest.raises(qdrant_client.http.exceptions.UnexpectedResponse):
+        remote_client.update_vectors(COLLECTION_NAME, points=empty_a, wait=True)
+
+    # "a" must still be absent for both clients, and must not be searchable
+    for client in (local_client, remote_client):
+        assert "a" not in client.retrieve(COLLECTION_NAME, ids=[1], with_vectors=True)[0].vector
+        assert client.query_points(COLLECTION_NAME, query=orig, using="a", limit=5).points == []
+
+    # a valid vector supplied next to the rejected one must not be written either
+    mixed = [models.PointVectors(id=1, vector={"b": other, "a": []})]
+    with pytest.raises(ValueError, match="Dense vector must not be empty"):
+        local_client.update_vectors(COLLECTION_NAME, points=mixed)
+    with pytest.raises(qdrant_client.http.exceptions.UnexpectedResponse):
+        remote_client.update_vectors(COLLECTION_NAME, points=mixed, wait=True)
+
+    for client in (local_client, remote_client):
+        assert client.retrieve(COLLECTION_NAME, ids=[1], with_vectors=True)[0].vector["b"] == orig
+
+    compare_collections(local_client, remote_client, UPLOAD_NUM_VECTORS)
+
+
 def test_upsert_without_vector_name():
     local_client = init_local()
     remote_client = init_remote()
