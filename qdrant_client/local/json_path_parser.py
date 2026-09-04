@@ -140,11 +140,14 @@ def _match_brackets(path: str) -> tuple[JsonPathItem | None, str]:
             path[right_bracket_pos + 1 :],
         )
 
-    try:
-        index = int(path[left_bracket_pos + 1 : right_bracket_pos])
-        return (
-            JsonPathItem(item_type=JsonPathItemType.INDEX, index=index),
-            path[right_bracket_pos + 1 :],
-        )
-    except ValueError as e:
-        raise ValueError("Invalid path") from e
+    raw_index = path[left_bracket_pos + 1 : right_bracket_pos]
+
+    # qdrant core only accepts unsigned integers as array indices, while `int()` would also
+    # accept a sign, underscore separators and surrounding whitespace
+    if not (raw_index.isascii() and raw_index.isdigit()):
+        raise ValueError("Invalid path")
+
+    return (
+        JsonPathItem(item_type=JsonPathItemType.INDEX, index=int(raw_index)),
+        path[right_bracket_pos + 1 :],
+    )
