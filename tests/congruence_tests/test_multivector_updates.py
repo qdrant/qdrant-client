@@ -5,6 +5,7 @@ from collections import defaultdict
 import pytest
 
 from qdrant_client.http import models
+from qdrant_client.http.exceptions import UnexpectedResponse
 from tests.congruence_tests.test_common import (
     COLLECTION_NAME,
     compare_collections,
@@ -57,9 +58,7 @@ def test_upsert():
         COLLECTION_NAME,
         scroll_filter=id_filter,
         limit=1,
-    )[
-        0
-    ][0]
+    )[0][0]
     remote_old_point = remote_client.scroll(COLLECTION_NAME, scroll_filter=id_filter, limit=1)[0][
         0
     ]
@@ -203,3 +202,96 @@ def test_upload_uuid_in_batches():
         UPLOAD_NUM_VECTORS,
         attrs=("points_count",),
     )
+
+
+def test_upsert_empty_multivector():
+    """Both clients must reject an empty multivector on every write path."""
+    points = generate_multivector_fixtures(UPLOAD_NUM_VECTORS)
+
+    local_client = init_local()
+    init_client(local_client, points, vectors_config=multi_vector_config)
+
+    remote_client = init_remote()
+    init_client(remote_client, points, vectors_config=multi_vector_config)
+
+    existing_id = points[0].id
+    new_point_id = UPLOAD_NUM_VECTORS + 1
+
+    # a multivector with no vectors at all, and one holding an empty vector
+    cases = (
+        ([], "Multivector must not be empty"),
+        ([[]], "vectors of a multivector must be non-empty"),
+    )
+    for empty_multivector, local_error in cases:
+        upsert_structs = (
+            [models.PointStruct(id=new_point_id, vector={"multi-text": empty_multivector})],
+            [models.PointStruct(id=existing_id, vector={"multi-text": empty_multivector})],
+            models.Batch(ids=[new_point_id], vectors={"multi-text": [empty_multivector]}),
+        )
+        for upsert_struct in upsert_structs:
+            with pytest.raises(ValueError, match=local_error):
+                local_client.upsert(COLLECTION_NAME, upsert_struct)
+
+            with pytest.raises(UnexpectedResponse):
+                remote_client.upsert(COLLECTION_NAME, upsert_struct)
+
+        point_vectors = [
+            models.PointVectors(id=existing_id, vector={"multi-text": empty_multivector})
+        ]
+        with pytest.raises(ValueError, match=local_error):
+            local_client.update_vectors(COLLECTION_NAME, points=point_vectors)
+
+        with pytest.raises(UnexpectedResponse):
+            remote_client.update_vectors(COLLECTION_NAME, points=point_vectors)
+
+    compare_collections(
+        local_client,
+        remote_client,
+        UPLOAD_NUM_VECTORS,
+        attrs=("points_count",),
+    )
+
+
+def test_rejected_empty_multivector_update_leaves_point_untouched():
+    """A rejected update_vectors request must not make an absent multivector visible.
+
+    Regression: validation used to run after `deleted_per_vector` was cleared, so rejecting
+    an empty multivector still exposed the placeholder to retrieval and search.
+    """
+    local_client = init_local()
+    remote_client = init_remote()
+
+    mvc = models.MultiVectorConfig(comparator=models.MultiVectorComparator.MAX_SIM)
+    vectors_config = {
+        "a": models.VectorParams(size=4, distance=models.Distance.COSINE, multivector_config=mvc),
+        "b": models.VectorParams(size=4, distance=models.Distance.COSINE, multivector_config=mvc),
+    }
+    local_client.create_collection(COLLECTION_NAME, vectors_config=vectors_config)
+    if remote_client.collection_exists(collection_name=COLLECTION_NAME):
+        remote_client.delete_collection(collection_name=COLLECTION_NAME)
+    remote_client.create_collection(COLLECTION_NAME, vectors_config=vectors_config)
+
+    query = [[1.0, 0.0, 0.0, 0.0]]
+
+    # point 1 has no "a" at all, so "a" is backed by a placeholder marked deleted
+    absent_a = [models.PointStruct(id=1, vector={"b": query})]
+    local_client.upsert(COLLECTION_NAME, absent_a)
+    remote_client.upsert(COLLECTION_NAME, absent_a, wait=True)
+
+    for empty_multivector, local_error in (
+        ([], "Multivector must not be empty"),
+        ([[]], "vectors of a multivector must be non-empty"),
+    ):
+        point_vectors = [models.PointVectors(id=1, vector={"a": empty_multivector})]
+        with pytest.raises(ValueError, match=local_error):
+            local_client.update_vectors(COLLECTION_NAME, points=point_vectors)
+        with pytest.raises(UnexpectedResponse):
+            remote_client.update_vectors(COLLECTION_NAME, points=point_vectors, wait=True)
+
+        for client in (local_client, remote_client):
+            record = client.retrieve(COLLECTION_NAME, ids=[1], with_vectors=True)[0]
+            assert "a" not in record.vector
+            hits = client.query_points(COLLECTION_NAME, query=query, using="a", limit=5).points
+            assert hits == []
+
+    compare_collections(local_client, remote_client, 1, attrs=("points_count",))
