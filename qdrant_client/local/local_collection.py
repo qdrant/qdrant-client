@@ -93,6 +93,18 @@ EPSILON = 1.1920929e-7  # https://doc.rust-lang.org/std/f32/constant.EPSILON.htm
 # https://github.com/qdrant/qdrant/blob/7164ac4a5987d28f1c93f5712aef8e09e7d93555/lib/segment/src/spaces/simple_avx.rs#L99C10-L99C10
 
 
+def normalize_dense(vector: types.NumpyArray) -> types.NumpyArray:
+    """Unit-normalize a dense vector, the form cosine collections store it in."""
+    norm = np.linalg.norm(vector)
+    return vector / norm if norm > EPSILON else vector
+
+
+def normalize_multivector(vector: types.NumpyArray) -> types.NumpyArray:
+    """Unit-normalize each token vector, the form cosine collections store them in."""
+    vector_norm = np.linalg.norm(vector, axis=-1)[:, np.newaxis]
+    return vector / np.where(vector_norm != 0.0, vector_norm, EPSILON)
+
+
 def to_jsonable_python(x: Any) -> Any:
     try:
         return json.loads(json.dumps(x, allow_nan=True))
@@ -303,7 +315,10 @@ class LocalCollection:
                 for name in all_dense_vector_names:
                     v = loaded_vector.get(name)
                     if v is not None:
-                        vectors[name].append(v)
+                        vector_np = np.array(v, dtype=np.float32)
+                        if self.vectors_config[name].distance == models.Distance.COSINE:
+                            vector_np = normalize_dense(vector_np)
+                        vectors[name].append(vector_np)
                     else:
                         vectors[name].append(
                             np.ones(self.vectors_config[name].size, dtype=np.float32)
@@ -325,7 +340,10 @@ class LocalCollection:
                 for name in all_multivector_names:
                     v = loaded_vector.get(name)
                     if v is not None:
-                        multivectors[name].append(v)
+                        vector_np = np.array(v, dtype=np.float32)
+                        if self.multivectors_config[name].distance == models.Distance.COSINE:
+                            vector_np = normalize_multivector(vector_np)
+                        multivectors[name].append(vector_np)
                     else:
                         multivectors[name].append(
                             np.ones((1, self.multivectors_config[name].size), dtype=np.float32)
@@ -346,7 +364,7 @@ class LocalCollection:
 
             # setup multivectors by name
             for name, named_vectors in multivectors.items():
-                self.multivectors[name] = [np.array(vector) for vector in named_vectors]
+                self.multivectors[name] = named_vectors
                 self.deleted_per_vector[name] = np.zeros(len(self.payload), dtype=bool)
 
             # track deleted points by named vector
@@ -2478,12 +2496,12 @@ class LocalCollection:
         for vector_name, _named_vectors in self.vectors.items():
             vector = vectors.get(vector_name)
             if vector is not None:
+                vector_np = np.array(vector, dtype=np.float32)
+                assert not np.isnan(vector_np).any(), "Vector contains NaN values"
                 params = self.get_vector_params(vector_name)
-                assert not np.isnan(vector).any(), "Vector contains NaN values"
                 if params.distance == models.Distance.COSINE:
-                    norm = np.linalg.norm(vector)
-                    vector = np.array(vector) / norm if norm > EPSILON else vector
-                self.vectors[vector_name][idx] = vector
+                    vector_np = normalize_dense(vector_np)
+                self.vectors[vector_name][idx] = vector_np
                 self.deleted_per_vector[vector_name][idx] = 0
             else:
                 self.deleted_per_vector[vector_name][idx] = 1
@@ -2507,13 +2525,13 @@ class LocalCollection:
         for vector_name, _named_vector in self.multivectors.items():
             vector = vectors.get(vector_name)
             if vector is not None:
-                params = self.get_vector_params(vector_name)
-                assert not np.isnan(vector).any(), "Vector contains NaN values"
+                vector_np = np.array(vector, dtype=np.float32)
+                assert not np.isnan(vector_np).any(), "Vector contains NaN values"
 
+                params = self.get_vector_params(vector_name)
                 if params.distance == models.Distance.COSINE:
-                    vector_norm = np.linalg.norm(vector, axis=-1)[:, np.newaxis]
-                    vector /= np.where(vector_norm != 0.0, vector_norm, EPSILON)
-                self.multivectors[vector_name][idx] = np.array(vector)
+                    vector_np = normalize_multivector(vector_np)
+                self.multivectors[vector_name][idx] = vector_np
                 self.deleted_per_vector[vector_name][idx] = 0
             else:
                 self.deleted_per_vector[vector_name][idx] = 1
@@ -2558,8 +2576,7 @@ class LocalCollection:
                 assert not np.isnan(vector_np).any(), "Vector contains NaN values"
                 params = self.get_vector_params(vector_name)
                 if params.distance == models.Distance.COSINE:
-                    norm = np.linalg.norm(vector_np)
-                    vector_np = vector_np / norm if norm > EPSILON else vector_np
+                    vector_np = normalize_dense(vector_np)
                 named_vectors[idx] = vector_np
                 self.deleted_per_vector[vector_name] = np.append(
                     self.deleted_per_vector[vector_name], 0
@@ -2614,8 +2631,7 @@ class LocalCollection:
                 assert not np.isnan(vector_np).any(), "Vector contains NaN values"
                 params = self.get_vector_params(vector_name)
                 if params.distance == models.Distance.COSINE:
-                    vector_norm = np.linalg.norm(vector_np, axis=-1)[:, np.newaxis]
-                    vector_np /= np.where(vector_norm != 0.0, vector_norm, EPSILON)
+                    vector_np = normalize_multivector(vector_np)
                 named_vectors[idx] = vector_np
                 self.deleted_per_vector[vector_name] = np.append(
                     self.deleted_per_vector[vector_name], 0
@@ -2767,13 +2783,11 @@ class LocalCollection:
             params = self.get_vector_params(vector_name)
             if vector_name in self.vectors:
                 if params.distance == models.Distance.COSINE:
-                    norm = np.linalg.norm(vector_np)
-                    vector_np = vector_np / norm if norm > EPSILON else vector_np
+                    vector_np = normalize_dense(vector_np)
                 self.vectors[vector_name][idx] = vector_np
             else:
                 if params.distance == models.Distance.COSINE:
-                    vector_norm = np.linalg.norm(vector_np, axis=-1)[:, np.newaxis]
-                    vector_np /= np.where(vector_norm != 0.0, vector_norm, EPSILON)
+                    vector_np = normalize_multivector(vector_np)
                 self.multivectors[vector_name][idx] = vector_np
 
     def update_vectors(
