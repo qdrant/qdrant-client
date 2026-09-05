@@ -498,7 +498,7 @@ class GrpcToRest:
     @classmethod
     def convert_update_result(cls, model: grpc.UpdateResult) -> rest.UpdateResult:
         return rest.UpdateResult(
-            operation_id=model.operation_id,
+            operation_id=model.operation_id if model.HasField("operation_id") else None,
             status=cls.convert_update_status(model.status),
         )
 
