@@ -28,6 +28,55 @@ def set_value_by_key(payload: dict, keys: list[JsonPathItem], value: Any) -> Non
     Setter.set(payload, keys.copy(), value, None, None)
 
 
+def delete_value_by_key(payload: dict, keys: list[JsonPathItem]) -> None:
+    """
+    Delete value in payload by key path, matching the server's payload-delete
+    semantics (nested keys via dot notation, array indices and wildcards).
+
+    A key path that does not resolve to an existing value is a no-op, and
+    sibling values are preserved. This mirrors the json-path handling that
+    ``set_value_by_key`` and ``value_by_key`` already use, so ``delete_payload``
+    honors the same paths as ``set_payload`` and filters.
+
+    Args:
+        payload: arbitrary json-like object
+        keys: list of json path items, e.g. the parse of "address.city",
+            "location[0].name" or "location[].name"
+    """
+
+    def _delete(data: Any, k_list: list[JsonPathItem]) -> None:
+        if not k_list:
+            return
+
+        current_key = k_list.pop(0)
+
+        if len(k_list) == 0:
+            if isinstance(data, dict) and current_key.item_type == JsonPathItemType.KEY:
+                data.pop(current_key.key, None)
+            elif isinstance(data, list):
+                if current_key.item_type == JsonPathItemType.INDEX:
+                    assert current_key.index is not None
+                    if current_key.index < len(data):
+                        del data[current_key.index]
+                elif current_key.item_type == JsonPathItemType.WILDCARD_INDEX:
+                    data.clear()
+            return
+
+        if current_key.item_type == JsonPathItemType.KEY:
+            if isinstance(data, dict) and current_key.key in data:
+                _delete(data[current_key.key], k_list.copy())
+        elif current_key.item_type == JsonPathItemType.INDEX:
+            assert current_key.index is not None
+            if isinstance(data, list) and current_key.index < len(data):
+                _delete(data[current_key.index], k_list.copy())
+        elif current_key.item_type == JsonPathItemType.WILDCARD_INDEX:
+            if isinstance(data, list):
+                for item in data:
+                    _delete(item, k_list.copy())
+
+    _delete(payload, keys.copy())
+
+
 class Setter:
     TYPE: Any
     SETTERS: dict[JsonPathItemType, Type["Setter"]] = {}

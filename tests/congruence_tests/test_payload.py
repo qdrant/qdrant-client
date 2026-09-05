@@ -83,6 +83,43 @@ def test_delete_payload(prefer_grpc):
 
 
 @pytest.mark.parametrize("prefer_grpc", [True, False])
+def test_delete_payload_with_nested_key(prefer_grpc):
+    local_client = init_local()
+    remote_client = init_remote(prefer_grpc=prefer_grpc)
+
+    vector_size = 2
+    vectors_config = models.VectorParams(size=vector_size, distance=models.Distance.COSINE)
+    initialize_fixture_collection(local_client, vectors_config=vectors_config)
+    initialize_fixture_collection(remote_client, vectors_config=vectors_config)
+
+    vector = np.random.rand(vector_size).tolist()
+
+    def delete_keys(payload, keys):
+        for client in (local_client, remote_client):
+            client.upsert(
+                collection_name=COLLECTION_NAME,
+                points=[PointStruct(id=9999, payload=payload, vector=vector)],
+                wait=True,
+            )
+            client.delete_payload(
+                collection_name=COLLECTION_NAME, keys=keys, points=[9999], wait=True
+            )
+        compare_collections(local_client, remote_client, 1)
+
+    # nested dict key: only the leaf is removed, siblings preserved
+    delete_keys({"a": {"b": 1, "c": 2}, "top": 9}, ["a.b"])
+
+    # a non-existent nested path is a no-op
+    delete_keys({"a": {"c": 2}}, ["a.b"])
+
+    # field inside every element of a nested array
+    delete_keys({"loc": [{"x": 1, "y": 2}, {"x": 3, "y": 4}]}, ["loc[].x"])
+
+    # top-level and nested keys together
+    delete_keys({"a": {"b": 1}, "top": 9}, ["a.b", "top"])
+
+
+@pytest.mark.parametrize("prefer_grpc", [True, False])
 def test_clear_payload(prefer_grpc):
     local_client: QdrantClient = init_local()
     initialize_fixture_collection(local_client)
