@@ -670,3 +670,22 @@ def test_convert_keyword_index_params_prefix():
     grpc_params, recovered = round_trip(False)
     assert not grpc_params.HasField("prefix")
     assert recovered.prefix is None
+
+
+def test_convert_update_result_operation_id_presence():
+    from qdrant_client import grpc
+    from qdrant_client.conversions.conversion import GrpcToRest, RestToGrpc
+
+    # `optional uint64 operation_id` carries explicit presence: the server leaves it
+    # unset for updates that were not assigned a sequence number (delete-by-filter that
+    # matched nothing, clock-rejected updates, custom sharding with no shard keys yet).
+    absent = grpc.UpdateResult(status=grpc.UpdateStatus.Completed)
+    assert not absent.HasField("operation_id")
+    assert GrpcToRest.convert_update_result(absent).operation_id is None
+    assert not RestToGrpc.convert_update_result(GrpcToRest.convert_update_result(absent)).HasField(
+        "operation_id"
+    )
+
+    # a real operation id of 0 must stay distinguishable from "no operation id"
+    zero = grpc.UpdateResult(operation_id=0, status=grpc.UpdateStatus.Completed)
+    assert GrpcToRest.convert_update_result(zero).operation_id == 0
