@@ -238,27 +238,46 @@ class AsyncQdrantServerless:
         return (await self.get_collection(collection_name, timeout=timeout)).exists
 
     async def get_collections(
-        self, timeout: Optional[int] = None
-    ) -> list[serverless_models.CollectionSummary]:
-        """Lists the collections of the space.
+        self,
+        limit: Optional[int] = None,
+        offset_token: Optional[str] = None,
+        timeout: Optional[int] = None,
+    ) -> serverless_models.CollectionsList:
+        """Lists a page of collections in the space.
 
         Args:
+            limit: Maximum number of collections to return. Defaults to 20
+                (server-side) and must not exceed 100.
+            offset_token: Opaque token from a previous response's
+                `next_offset_token` to fetch the next page.
             timeout: Overrides global timeout for this request. Unit is seconds.
 
         Returns:
-            Collection summaries (name and eventually consistent point count),
-            ordered by name
+            A page of collection summaries (name and eventually consistent
+            point count) plus an optional `next_offset_token`.
         """
+        request = pb2.ListCollectionsRequest()
+        if limit is not None:
+            request.limit = limit
+        if offset_token is not None:
+            request.offset_token = offset_token
         response = await self._collections.ListCollections(
-            pb2.ListCollectionsRequest(), timeout=self._collections_timeout(timeout)
+            request, timeout=self._collections_timeout(timeout)
         )
-        return [
-            serverless_models.CollectionSummary(
-                collection_name=collection.collection_name,
-                point_count=collection.point_count if collection.HasField("point_count") else None,
-            )
-            for collection in response.collections
-        ]
+        return serverless_models.CollectionsList(
+            collections=[
+                serverless_models.CollectionSummary(
+                    collection_name=collection.collection_name,
+                    point_count=collection.point_count
+                    if collection.HasField("point_count")
+                    else None,
+                )
+                for collection in response.collections
+            ],
+            next_offset_token=response.next_offset_token
+            if response.HasField("next_offset_token")
+            else None,
+        )
 
     async def query_points(
         self,

@@ -6,8 +6,12 @@ from qdrant_client.serverless.models import (
     Distance,
     IntegerIndex,
     KeywordIndex,
+    KeywordPrefixParams,
     PrecisionTier,
+    SnowballParams,
     SparseVectorConfig,
+    StemmingAlgorithm,
+    StopwordsSet,
     TextIndex,
     TokenizerType,
 )
@@ -31,9 +35,15 @@ def test_collection_config_grpc_roundtrip() -> None:
         },
         sparse_vectors={"bm25": SparseVectorConfig(use_idf=True)},
         payload_indexes={
-            "user_id": KeywordIndex(),
+            "user_id": KeywordIndex(prefix=KeywordPrefixParams()),
             "age": IntegerIndex(lookup=True, range=False),
-            "description": TextIndex(tokenizer=TokenizerType.WORD, lowercase=False),
+            "description": TextIndex(
+                tokenizer=TokenizerType.WORD,
+                lowercase=False,
+                ascii_folding=True,
+                stopwords=StopwordsSet(languages=["english"]),
+                stemmer=StemmingAlgorithm(snowball=SnowballParams(language="english")),
+            ),
         },
     )
     assert collection_config_from_grpc(collection_config_to_grpc(config)) == config
@@ -42,12 +52,20 @@ def test_collection_config_grpc_roundtrip() -> None:
 def test_optional_fields_stay_unset() -> None:
     config = CollectionConfig(
         dense_vectors={"": DenseVectorConfig(size=4, distance=Distance.EUCLID)},
-        payload_indexes={"age": IntegerIndex(), "text": TextIndex()},
+        payload_indexes={
+            "age": IntegerIndex(),
+            "user_id": KeywordIndex(),
+            "text": TextIndex(),
+        },
     )
     grpc_config = collection_config_to_grpc(config)
     assert not grpc_config.dense_vectors[""].HasField("precision_tier")
     assert not grpc_config.payload_indexes["age"].integer.HasField("lookup")
+    assert not grpc_config.payload_indexes["user_id"].keyword.HasField("prefix")
     assert not grpc_config.payload_indexes["text"].text.HasField("tokenizer")
+    assert not grpc_config.payload_indexes["text"].text.HasField("ascii_folding")
+    assert not grpc_config.payload_indexes["text"].text.HasField("stopwords")
+    assert not grpc_config.payload_indexes["text"].text.HasField("stemmer")
     assert collection_config_from_grpc(grpc_config) == config
 
 

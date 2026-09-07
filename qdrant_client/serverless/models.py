@@ -21,11 +21,15 @@ __all__ = [
     "PrecisionTier",
     "DenseVectorConfig",
     "SparseVectorConfig",
+    "KeywordPrefixParams",
     "KeywordIndex",
     "IntegerIndex",
     "FloatIndex",
     "UuidIndex",
     "DatetimeIndex",
+    "StopwordsSet",
+    "SnowballParams",
+    "StemmingAlgorithm",
     "TextIndex",
     "GeoIndex",
     "BoolIndex",
@@ -33,6 +37,7 @@ __all__ = [
     "CollectionConfig",
     "CollectionInfo",
     "CollectionSummary",
+    "CollectionsList",
 ]
 
 
@@ -63,10 +68,15 @@ class SparseVectorConfig(BaseModel):
     precision_tier: Optional[PrecisionTier] = None
 
 
+class KeywordPrefixParams(BaseModel):
+    """Prefix matching options for a keyword index. Presence enables prefix matching."""
+
+
 class KeywordIndex(BaseModel):
     """Exact match on string values, e.g. `color: "red"`."""
 
     type: Literal["keyword"] = "keyword"
+    prefix: Optional[KeywordPrefixParams] = None
 
 
 class IntegerIndex(BaseModel):
@@ -95,6 +105,29 @@ class DatetimeIndex(BaseModel):
     type: Literal["datetime"] = "datetime"
 
 
+class StopwordsSet(BaseModel):
+    """Tokens ignored by a full-text index."""
+
+    languages: list[str] = Field(default_factory=list)
+    custom: list[str] = Field(default_factory=list)
+
+
+class SnowballParams(BaseModel):
+    """Snowball stemming for a full-text index."""
+
+    language: str
+
+
+class StemmingAlgorithm(BaseModel):
+    """Stemming algorithm for a full-text index. Unset: no stemming.
+
+    Exactly one of `snowball` or `disabled` should be set.
+    """
+
+    snowball: Optional[SnowballParams] = None
+    disabled: Optional[bool] = None
+
+
 class TextIndex(BaseModel):
     """Full-text filtering on string values."""
 
@@ -104,6 +137,9 @@ class TextIndex(BaseModel):
     phrase_matching: Optional[bool] = None
     min_token_len: Optional[int] = None
     max_token_len: Optional[int] = None
+    ascii_folding: Optional[bool] = None
+    stopwords: Optional[StopwordsSet] = None
+    stemmer: Optional[StemmingAlgorithm] = None
 
 
 class GeoIndex(BaseModel):
@@ -160,3 +196,10 @@ class CollectionSummary(BaseModel):
 
     collection_name: str
     point_count: Optional[int] = None
+
+
+class CollectionsList(BaseModel):
+    """A page of collections returned by `get_collections`."""
+
+    collections: list[CollectionSummary]
+    next_offset_token: Optional[str] = None

@@ -4,6 +4,7 @@ isort:skip_file
 Source: https://github.com/qdrant/qdrant-cloud-public-api/blob/main/proto/qdrant/serverless/collections.proto
 Renamed to serverless_collections.proto: the protobuf descriptor pool registers files by
 name, and "collections.proto" is already taken by the regular qdrant client proto.
+Client copy: buf.validate options are stripped (server-side only; wire format unchanged).
 Regenerate with tools/generate_serverless_grpc_client.sh
 """
 import builtins
@@ -180,11 +181,35 @@ class KeywordIndex(google.protobuf.message.Message):
 
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
+    PREFIX_FIELD_NUMBER: builtins.int
+    @property
+    def prefix(self) -> global___KeywordPrefixParams:
+        """If set, enable prefix matching (`match: { "prefix": ... }`) on this field.
+        Presence of this message enables prefix matching; it has no options yet.
+        """
+    def __init__(
+        self,
+        *,
+        prefix: global___KeywordPrefixParams | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_prefix", b"_prefix", "prefix", b"prefix"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_prefix", b"_prefix", "prefix", b"prefix"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_prefix", b"_prefix"]) -> typing_extensions.Literal["prefix"] | None: ...
+
+global___KeywordIndex = KeywordIndex
+
+class KeywordPrefixParams(google.protobuf.message.Message):
+    """Prefix matching options for the keyword index. Has no options yet:
+    presence of this message enables prefix matching.
+    """
+
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
     def __init__(
         self,
     ) -> None: ...
 
-global___KeywordIndex = KeywordIndex
+global___KeywordPrefixParams = KeywordPrefixParams
 
 class IntegerIndex(google.protobuf.message.Message):
     """Exact match and/or range filters on integers, e.g. `age: 25`. Both are on
@@ -247,6 +272,84 @@ class DatetimeIndex(google.protobuf.message.Message):
 
 global___DatetimeIndex = DatetimeIndex
 
+class StopwordsSet(google.protobuf.message.Message):
+    """Tokens ignored by a full-text index. Language names match qdrant (e.g.
+    "english"); predefined lists and custom tokens are merged.
+    """
+
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    LANGUAGES_FIELD_NUMBER: builtins.int
+    CUSTOM_FIELD_NUMBER: builtins.int
+    @property
+    def languages(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]:
+        """Languages whose predefined stopword lists to apply."""
+    @property
+    def custom(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]:
+        """Extra stopwords to ignore, merged with the language lists."""
+    def __init__(
+        self,
+        *,
+        languages: collections.abc.Iterable[builtins.str] | None = ...,
+        custom: collections.abc.Iterable[builtins.str] | None = ...,
+    ) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["custom", b"custom", "languages", b"languages"]) -> None: ...
+
+global___StopwordsSet = StopwordsSet
+
+class SnowballParams(google.protobuf.message.Message):
+    """Snowball stemming for a full-text index."""
+
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    LANGUAGE_FIELD_NUMBER: builtins.int
+    language: builtins.str
+    """Language for the snowball algorithm, e.g. "english"."""
+    def __init__(
+        self,
+        *,
+        language: builtins.str = ...,
+    ) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["language", b"language"]) -> None: ...
+
+global___SnowballParams = SnowballParams
+
+class DisabledStemmer(google.protobuf.message.Message):
+    """Explicitly disable stemming (overrides any language default)."""
+
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    def __init__(
+        self,
+    ) -> None: ...
+
+global___DisabledStemmer = DisabledStemmer
+
+class StemmingAlgorithm(google.protobuf.message.Message):
+    """Stemming algorithm for a full-text index. Unset: no stemming."""
+
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    SNOWBALL_FIELD_NUMBER: builtins.int
+    DISABLED_FIELD_NUMBER: builtins.int
+    @property
+    def snowball(self) -> global___SnowballParams:
+        """Snowball stemmer for the given language."""
+    @property
+    def disabled(self) -> global___DisabledStemmer:
+        """Explicitly disable stemming."""
+    def __init__(
+        self,
+        *,
+        snowball: global___SnowballParams | None = ...,
+        disabled: global___DisabledStemmer | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["disabled", b"disabled", "snowball", b"snowball", "stemming_params", b"stemming_params"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["disabled", b"disabled", "snowball", b"snowball", "stemming_params", b"stemming_params"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["stemming_params", b"stemming_params"]) -> typing_extensions.Literal["snowball", "disabled"] | None: ...
+
+global___StemmingAlgorithm = StemmingAlgorithm
+
 class TextIndex(google.protobuf.message.Message):
     """Full-text filtering on string values."""
 
@@ -257,6 +360,9 @@ class TextIndex(google.protobuf.message.Message):
     PHRASE_MATCHING_FIELD_NUMBER: builtins.int
     MIN_TOKEN_LEN_FIELD_NUMBER: builtins.int
     MAX_TOKEN_LEN_FIELD_NUMBER: builtins.int
+    ASCII_FOLDING_FIELD_NUMBER: builtins.int
+    STOPWORDS_FIELD_NUMBER: builtins.int
+    STEMMER_FIELD_NUMBER: builtins.int
     tokenizer: global___Tokenizer.ValueType
     """Tokenizer to split text with. Unset: WHITESPACE."""
     lowercase: builtins.bool
@@ -267,6 +373,14 @@ class TextIndex(google.protobuf.message.Message):
     """Minimum token length to index."""
     max_token_len: builtins.int
     """Maximum token length to index."""
+    ascii_folding: builtins.bool
+    """Fold accented characters to ASCII. Default false."""
+    @property
+    def stopwords(self) -> global___StopwordsSet:
+        """Tokens to ignore at index and query time."""
+    @property
+    def stemmer(self) -> global___StemmingAlgorithm:
+        """Stemming algorithm. Unset: engine default (no stemming)."""
     def __init__(
         self,
         *,
@@ -275,9 +389,14 @@ class TextIndex(google.protobuf.message.Message):
         phrase_matching: builtins.bool | None = ...,
         min_token_len: builtins.int | None = ...,
         max_token_len: builtins.int | None = ...,
+        ascii_folding: builtins.bool | None = ...,
+        stopwords: global___StopwordsSet | None = ...,
+        stemmer: global___StemmingAlgorithm | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_lowercase", b"_lowercase", "_max_token_len", b"_max_token_len", "_min_token_len", b"_min_token_len", "_phrase_matching", b"_phrase_matching", "_tokenizer", b"_tokenizer", "lowercase", b"lowercase", "max_token_len", b"max_token_len", "min_token_len", b"min_token_len", "phrase_matching", b"phrase_matching", "tokenizer", b"tokenizer"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_lowercase", b"_lowercase", "_max_token_len", b"_max_token_len", "_min_token_len", b"_min_token_len", "_phrase_matching", b"_phrase_matching", "_tokenizer", b"_tokenizer", "lowercase", b"lowercase", "max_token_len", b"max_token_len", "min_token_len", b"min_token_len", "phrase_matching", b"phrase_matching", "tokenizer", b"tokenizer"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_ascii_folding", b"_ascii_folding", "_lowercase", b"_lowercase", "_max_token_len", b"_max_token_len", "_min_token_len", b"_min_token_len", "_phrase_matching", b"_phrase_matching", "_stemmer", b"_stemmer", "_stopwords", b"_stopwords", "_tokenizer", b"_tokenizer", "ascii_folding", b"ascii_folding", "lowercase", b"lowercase", "max_token_len", b"max_token_len", "min_token_len", b"min_token_len", "phrase_matching", b"phrase_matching", "stemmer", b"stemmer", "stopwords", b"stopwords", "tokenizer", b"tokenizer"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_ascii_folding", b"_ascii_folding", "_lowercase", b"_lowercase", "_max_token_len", b"_max_token_len", "_min_token_len", b"_min_token_len", "_phrase_matching", b"_phrase_matching", "_stemmer", b"_stemmer", "_stopwords", b"_stopwords", "_tokenizer", b"_tokenizer", "ascii_folding", b"ascii_folding", "lowercase", b"lowercase", "max_token_len", b"max_token_len", "min_token_len", b"min_token_len", "phrase_matching", b"phrase_matching", "stemmer", b"stemmer", "stopwords", b"stopwords", "tokenizer", b"tokenizer"]) -> None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_ascii_folding", b"_ascii_folding"]) -> typing_extensions.Literal["ascii_folding"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_lowercase", b"_lowercase"]) -> typing_extensions.Literal["lowercase"] | None: ...
     @typing.overload
@@ -286,6 +405,10 @@ class TextIndex(google.protobuf.message.Message):
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_min_token_len", b"_min_token_len"]) -> typing_extensions.Literal["min_token_len"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_phrase_matching", b"_phrase_matching"]) -> typing_extensions.Literal["phrase_matching"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_stemmer", b"_stemmer"]) -> typing_extensions.Literal["stemmer"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_stopwords", b"_stopwords"]) -> typing_extensions.Literal["stopwords"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_tokenizer", b"_tokenizer"]) -> typing_extensions.Literal["tokenizer"] | None: ...
 
@@ -590,15 +713,32 @@ class GetCollectionResponse(google.protobuf.message.Message):
 global___GetCollectionResponse = GetCollectionResponse
 
 class ListCollectionsRequest(google.protobuf.message.Message):
-    """Lists the caller's collections. The tenant travels in metadata, so there is
-    nothing to name here.
-    """
+    """Lists the caller's collections. The tenant travels in metadata."""
 
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
+    LIMIT_FIELD_NUMBER: builtins.int
+    OFFSET_TOKEN_FIELD_NUMBER: builtins.int
+    limit: builtins.int
+    """Maximum number of collections to return. Defaults to 20 and must not
+    exceed 100.
+    """
+    offset_token: builtins.str
+    """Opaque token returned as `next_offset_token` by the previous page. Clients
+    must not interpret this value.
+    """
     def __init__(
         self,
+        *,
+        limit: builtins.int | None = ...,
+        offset_token: builtins.str | None = ...,
     ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_limit", b"_limit", "_offset_token", b"_offset_token", "limit", b"limit", "offset_token", b"offset_token"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_limit", b"_limit", "_offset_token", b"_offset_token", "limit", b"limit", "offset_token", b"offset_token"]) -> None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_limit", b"_limit"]) -> typing_extensions.Literal["limit"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_offset_token", b"_offset_token"]) -> typing_extensions.Literal["offset_token"] | None: ...
 
 global___ListCollectionsRequest = ListCollectionsRequest
 
@@ -633,16 +773,22 @@ class ListCollectionsResponse(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
     COLLECTIONS_FIELD_NUMBER: builtins.int
+    NEXT_OFFSET_TOKEN_FIELD_NUMBER: builtins.int
     @property
     def collections(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___CollectionSummary]:
-        """Ordered by name. A collection whose creation never published a manifest is
-        not listed: it is not servable.
-        """
+        """Collections in this page."""
+    next_offset_token: builtins.str
+    """Opaque token to pass as `offset_token` to retrieve the next page. Absent
+    when there are no more results.
+    """
     def __init__(
         self,
         *,
         collections: collections.abc.Iterable[global___CollectionSummary] | None = ...,
+        next_offset_token: builtins.str | None = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["collections", b"collections"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_next_offset_token", b"_next_offset_token", "next_offset_token", b"next_offset_token"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_next_offset_token", b"_next_offset_token", "collections", b"collections", "next_offset_token", b"next_offset_token"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_next_offset_token", b"_next_offset_token"]) -> typing_extensions.Literal["next_offset_token"] | None: ...
 
 global___ListCollectionsResponse = ListCollectionsResponse

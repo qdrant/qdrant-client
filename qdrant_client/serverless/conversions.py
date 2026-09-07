@@ -95,11 +95,62 @@ def sparse_vector_from_grpc(grpc_model: pb2.SparseVectorConfig) -> models.Sparse
     return models.SparseVectorConfig(use_idf=use_idf, precision_tier=precision_tier)
 
 
+def _stopwords_to_grpc(model: models.StopwordsSet) -> pb2.StopwordsSet:
+    match model:
+        case models.StopwordsSet(languages=languages, custom=custom):
+            return pb2.StopwordsSet(languages=list(languages), custom=list(custom))
+        case _:
+            raise ValueError(f"Unexpected StopwordsSet shape: {model!r}")
+
+
+def _stopwords_from_grpc(grpc_model: pb2.StopwordsSet) -> models.StopwordsSet:
+    return models.StopwordsSet(
+        languages=list(grpc_model.languages),
+        custom=list(grpc_model.custom),
+    )
+
+
+def _stemmer_to_grpc(model: models.StemmingAlgorithm) -> pb2.StemmingAlgorithm:
+    match model:
+        case models.StemmingAlgorithm(snowball=snowball, disabled=disabled):
+            result = pb2.StemmingAlgorithm()
+            if snowball is not None:
+                match snowball:
+                    case models.SnowballParams(language=language):
+                        result.snowball.language = language
+                    case _:
+                        raise ValueError(f"Unexpected SnowballParams shape: {snowball!r}")
+            elif disabled:
+                result.disabled.SetInParent()
+            else:
+                raise ValueError("StemmingAlgorithm requires either snowball or disabled=True")
+            return result
+        case _:
+            raise ValueError(f"Unexpected StemmingAlgorithm shape: {model!r}")
+
+
+def _stemmer_from_grpc(grpc_model: pb2.StemmingAlgorithm) -> models.StemmingAlgorithm:
+    kind = grpc_model.WhichOneof("stemming_params")
+    if kind == "snowball":
+        return models.StemmingAlgorithm(
+            snowball=models.SnowballParams(language=grpc_model.snowball.language)
+        )
+    if kind == "disabled":
+        return models.StemmingAlgorithm(disabled=True)
+    raise ValueError(f"Unknown stemming_params variant: {kind}")
+
+
 def payload_index_to_grpc(model: models.PayloadIndex) -> pb2.PayloadIndexConfig:
     result = pb2.PayloadIndexConfig()
     match model:
-        case models.KeywordIndex(type=_type):
+        case models.KeywordIndex(type=_type, prefix=prefix):
             result.keyword.SetInParent()
+            if prefix is not None:
+                match prefix:
+                    case models.KeywordPrefixParams():
+                        result.keyword.prefix.SetInParent()
+                    case _:
+                        raise ValueError(f"Unexpected KeywordPrefixParams shape: {prefix!r}")
         case models.IntegerIndex(type=_type, lookup=lookup, range=range_):
             result.integer.SetInParent()
             if lookup is not None:
@@ -119,6 +170,9 @@ def payload_index_to_grpc(model: models.PayloadIndex) -> pb2.PayloadIndexConfig:
             phrase_matching=phrase_matching,
             min_token_len=min_token_len,
             max_token_len=max_token_len,
+            ascii_folding=ascii_folding,
+            stopwords=stopwords,
+            stemmer=stemmer,
         ):
             result.text.SetInParent()
             if tokenizer is not None:
@@ -131,6 +185,12 @@ def payload_index_to_grpc(model: models.PayloadIndex) -> pb2.PayloadIndexConfig:
                 result.text.min_token_len = min_token_len
             if max_token_len is not None:
                 result.text.max_token_len = max_token_len
+            if ascii_folding is not None:
+                result.text.ascii_folding = ascii_folding
+            if stopwords is not None:
+                result.text.stopwords.CopyFrom(_stopwords_to_grpc(stopwords))
+            if stemmer is not None:
+                result.text.stemmer.CopyFrom(_stemmer_to_grpc(stemmer))
         case models.GeoIndex(type=_type):
             result.geo.SetInParent()
         case models.BoolIndex(type=_type):
@@ -143,8 +203,9 @@ def payload_index_to_grpc(model: models.PayloadIndex) -> pb2.PayloadIndexConfig:
 def payload_index_from_grpc(grpc_model: pb2.PayloadIndexConfig) -> models.PayloadIndex:
     kind = grpc_model.WhichOneof("index")
     if kind == "keyword":
-        _keyword = grpc_model.keyword
-        return models.KeywordIndex()
+        keyword = grpc_model.keyword
+        prefix = models.KeywordPrefixParams() if keyword.HasField("prefix") else None
+        return models.KeywordIndex(prefix=prefix)
     if kind == "integer":
         integer = grpc_model.integer
         lookup = integer.lookup if integer.HasField("lookup") else None
@@ -161,21 +222,23 @@ def payload_index_from_grpc(grpc_model: pb2.PayloadIndexConfig) -> models.Payloa
         return models.DatetimeIndex()
     if kind == "text":
         text = grpc_model.text
-        tokenizer = (
-            _TOKENIZER_FROM_GRPC[text.tokenizer] if text.HasField("tokenizer") else None
-        )
+        tokenizer = _TOKENIZER_FROM_GRPC[text.tokenizer] if text.HasField("tokenizer") else None
         lowercase = text.lowercase if text.HasField("lowercase") else None
-        phrase_matching = (
-            text.phrase_matching if text.HasField("phrase_matching") else None
-        )
+        phrase_matching = text.phrase_matching if text.HasField("phrase_matching") else None
         min_token_len = text.min_token_len if text.HasField("min_token_len") else None
         max_token_len = text.max_token_len if text.HasField("max_token_len") else None
+        ascii_folding = text.ascii_folding if text.HasField("ascii_folding") else None
+        stopwords = _stopwords_from_grpc(text.stopwords) if text.HasField("stopwords") else None
+        stemmer = _stemmer_from_grpc(text.stemmer) if text.HasField("stemmer") else None
         return models.TextIndex(
             tokenizer=tokenizer,
             lowercase=lowercase,
             phrase_matching=phrase_matching,
             min_token_len=min_token_len,
             max_token_len=max_token_len,
+            ascii_folding=ascii_folding,
+            stopwords=stopwords,
+            stemmer=stemmer,
         )
     if kind == "geo":
         _geo = grpc_model.geo
@@ -207,12 +270,10 @@ def collection_config_to_grpc(model: models.CollectionConfig) -> pb2.CollectionC
 
 def collection_config_from_grpc(grpc_model: pb2.CollectionConfig) -> models.CollectionConfig:
     dense_vectors = {
-        name: dense_vector_from_grpc(dense)
-        for name, dense in grpc_model.dense_vectors.items()
+        name: dense_vector_from_grpc(dense) for name, dense in grpc_model.dense_vectors.items()
     }
     sparse_vectors = {
-        name: sparse_vector_from_grpc(sparse)
-        for name, sparse in grpc_model.sparse_vectors.items()
+        name: sparse_vector_from_grpc(sparse) for name, sparse in grpc_model.sparse_vectors.items()
     }
     payload_indexes = {
         field: payload_index_from_grpc(index)
