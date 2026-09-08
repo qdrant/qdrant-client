@@ -945,6 +945,15 @@ collection_info = grpc.CollectionInfo(
     update_queue=grpc.UpdateQueueInfo(length=42),
 )
 
+# `points_count` is `optional` in the proto: the server omits it when the count is
+# not available, which must not be reported as an empty collection.
+collection_info_no_points_count = grpc.CollectionInfo(
+    status=collection_status,
+    optimizer_status=optimizer_status_error,
+    segments_count=6,
+    config=collection_config,
+)
+
 collection_info_red = grpc.CollectionInfo(
     status=collection_status_error,
     optimizer_status=optimizer_status_error,
@@ -1885,6 +1894,7 @@ fixtures = {
     "Filter": [filter_nested, filter_],
     "CollectionInfo": [
         collection_info,
+        collection_info_no_points_count,
         collection_info_ok,
         collection_info_red,
         collection_info_grey,

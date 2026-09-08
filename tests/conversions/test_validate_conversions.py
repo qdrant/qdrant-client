@@ -689,3 +689,35 @@ def test_convert_update_result_operation_id_presence():
     # a real operation id of 0 must stay distinguishable from "no operation id"
     zero = grpc.UpdateResult(operation_id=0, status=grpc.UpdateStatus.Completed)
     assert GrpcToRest.convert_update_result(zero).operation_id == 0
+
+
+def test_convert_collection_info_points_count_presence():
+    from qdrant_client import grpc
+    from qdrant_client.conversions.conversion import GrpcToRest, RestToGrpc
+    from tests.conversions.fixtures import collection_config
+
+    # `optional uint64 points_count` carries explicit presence: an absent count means
+    # "not available", which is distinct from a collection that holds zero points.
+    absent = grpc.CollectionInfo(
+        status=grpc.CollectionStatus.Green,
+        optimizer_status=grpc.OptimizerStatus(ok=True),
+        segments_count=1,
+        config=collection_config,
+    )
+    assert not absent.HasField("points_count")
+    assert GrpcToRest.convert_collection_info(absent).points_count is None
+    assert not RestToGrpc.convert_collection_info(
+        GrpcToRest.convert_collection_info(absent)
+    ).HasField("points_count")
+
+    zero = grpc.CollectionInfo(
+        status=grpc.CollectionStatus.Green,
+        optimizer_status=grpc.OptimizerStatus(ok=True),
+        segments_count=1,
+        config=collection_config,
+        points_count=0,
+    )
+    assert GrpcToRest.convert_collection_info(zero).points_count == 0
+    round_tripped = RestToGrpc.convert_collection_info(GrpcToRest.convert_collection_info(zero))
+    assert round_tripped.HasField("points_count")
+    assert round_tripped.points_count == 0

@@ -239,7 +239,7 @@ class GrpcToRest:
             payload_schema=cls.convert_payload_schema(model.payload_schema),
             segments_count=model.segments_count,
             status=cls.convert_collection_status(model.status),
-            points_count=model.points_count,
+            points_count=model.points_count if model.HasField("points_count") else None,
             indexed_vectors_count=(
                 model.indexed_vectors_count if model.HasField("indexed_vectors_count") else None
             ),
