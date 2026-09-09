@@ -107,6 +107,35 @@ qdrant_client = QdrantClient(
 )
 ```
 
+## Retries
+
+By default the client does not retry failed requests. You can opt in to automatic
+retries with exponential backoff for transient failures (connection errors,
+timeouts, and rate-limit / unavailable responses) by passing a `retry` config.
+It is applied to both the REST and gRPC transports:
+
+```python
+from qdrant_client import QdrantClient, RetryConfig
+
+client = QdrantClient(
+    url="http://localhost:6333",
+    retry=RetryConfig(
+        max_retries=3,       # retries after the initial attempt
+        backoff_factor=0.5,  # base delay in seconds (0.5, 1, 2, ... capped by max_backoff)
+        max_backoff=10.0,    # maximum delay between attempts, in seconds
+    ),
+)
+
+# A plain dict works too:
+client = QdrantClient(url="http://localhost:6333", retry={"max_retries": 3, "backoff_factor": 0.5})
+```
+
+Only transient failures are retried by default: HTTP `429`, `502`, `503`, `504`
+and connection/timeout errors for REST, and `UNAVAILABLE`, `RESOURCE_EXHAUSTED`,
+`DEADLINE_EXCEEDED` for gRPC. The server-provided `Retry-After` header is honoured
+when present. Note that retries can re-send non-idempotent operations, so prefer
+explicit point IDs for upserts when enabling retries.
+
 ## Inference API
 
 Qdrant Client has Inference API that allows to seamlessly create embeddings and use them in Qdrant.
