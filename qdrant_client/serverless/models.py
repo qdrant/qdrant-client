@@ -15,31 +15,6 @@ from pydantic import BaseModel, Field
 
 from qdrant_client.http.models import Distance, TokenizerType
 
-__all__ = [
-    "Distance",
-    "TokenizerType",
-    "PrecisionTier",
-    "DenseVectorConfig",
-    "SparseVectorConfig",
-    "KeywordPrefixParams",
-    "KeywordIndex",
-    "IntegerIndex",
-    "FloatIndex",
-    "UuidIndex",
-    "DatetimeIndex",
-    "StopwordsSet",
-    "SnowballParams",
-    "StemmingAlgorithm",
-    "TextIndex",
-    "GeoIndex",
-    "BoolIndex",
-    "PayloadIndex",
-    "CollectionConfig",
-    "CollectionInfo",
-    "CollectionSummary",
-    "CollectionsList",
-]
-
 
 class PrecisionTier(str, Enum):
     """How much vector precision may be traded for cost.

@@ -89,6 +89,7 @@ class QdrantServerless:
             # reuse the delegate's channel: same host, tls, api-key metadata and options
             self._remote._init_grpc_channel()
             self._grpc_collections = CollectionsServiceStub(self._remote._grpc_channel_pool[0])
+        assert self._grpc_collections is not None
         return self._grpc_collections
 
     def _collections_timeout(self, timeout: Optional[int]) -> int:
@@ -105,12 +106,6 @@ class QdrantServerless:
         """
         self._grpc_collections = None
         self._remote.close(grpc_grace=grpc_grace, **kwargs)
-
-    def __enter__(self) -> "QdrantServerless":
-        return self
-
-    def __exit__(self, *args: Any) -> None:
-        self.close()
 
     # region collections
 

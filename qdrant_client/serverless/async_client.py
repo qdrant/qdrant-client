@@ -97,6 +97,7 @@ class AsyncQdrantServerless:
         if self._grpc_collections is None:
             self._remote._init_grpc_channel()
             self._grpc_collections = CollectionsServiceStub(self._remote._grpc_channel_pool[0])
+        assert self._grpc_collections is not None
         return self._grpc_collections
 
     def _collections_timeout(self, timeout: Optional[int]) -> int:

@@ -52,7 +52,7 @@ def dense_vector_to_grpc(model: models.DenseVectorConfig) -> pb2.DenseVectorConf
             if precision_tier is not None:
                 result.precision_tier = _PRECISION_TO_GRPC[precision_tier]
             return result
-        case _:
+        case _:  # pragma: no cover
             raise ValueError(f"Unexpected DenseVectorConfig shape: {model!r}")
 
 
@@ -81,7 +81,7 @@ def sparse_vector_to_grpc(model: models.SparseVectorConfig) -> pb2.SparseVectorC
             if precision_tier is not None:
                 result.precision_tier = _PRECISION_TO_GRPC[precision_tier]
             return result
-        case _:
+        case _:  # pragma: no cover
             raise ValueError(f"Unexpected SparseVectorConfig shape: {model!r}")
 
 
@@ -99,7 +99,7 @@ def _stopwords_to_grpc(model: models.StopwordsSet) -> pb2.StopwordsSet:
     match model:
         case models.StopwordsSet(languages=languages, custom=custom):
             return pb2.StopwordsSet(languages=list(languages), custom=list(custom))
-        case _:
+        case _:  # pragma: no cover
             raise ValueError(f"Unexpected StopwordsSet shape: {model!r}")
 
 
@@ -118,14 +118,14 @@ def _stemmer_to_grpc(model: models.StemmingAlgorithm) -> pb2.StemmingAlgorithm:
                 match snowball:
                     case models.SnowballParams(language=language):
                         result.snowball.language = language
-                    case _:
+                    case _:  # pragma: no cover
                         raise ValueError(f"Unexpected SnowballParams shape: {snowball!r}")
             elif disabled:
                 result.disabled.SetInParent()
             else:
                 raise ValueError("StemmingAlgorithm requires either snowball or disabled=True")
             return result
-        case _:
+        case _:  # pragma: no cover
             raise ValueError(f"Unexpected StemmingAlgorithm shape: {model!r}")
 
 
@@ -137,7 +137,7 @@ def _stemmer_from_grpc(grpc_model: pb2.StemmingAlgorithm) -> models.StemmingAlgo
         )
     if kind == "disabled":
         return models.StemmingAlgorithm(disabled=True)
-    raise ValueError(f"Unknown stemming_params variant: {kind}")
+    raise ValueError(f"Unknown stemming_params variant: {kind}")  # pragma: no cover
 
 
 def payload_index_to_grpc(model: models.PayloadIndex) -> pb2.PayloadIndexConfig:
@@ -149,7 +149,7 @@ def payload_index_to_grpc(model: models.PayloadIndex) -> pb2.PayloadIndexConfig:
                 match prefix:
                     case models.KeywordPrefixParams():
                         result.keyword.prefix.SetInParent()
-                    case _:
+                    case _:  # pragma: no cover
                         raise ValueError(f"Unexpected KeywordPrefixParams shape: {prefix!r}")
         case models.IntegerIndex(type=_type, lookup=lookup, range=range_):
             result.integer.SetInParent()
@@ -195,7 +195,7 @@ def payload_index_to_grpc(model: models.PayloadIndex) -> pb2.PayloadIndexConfig:
             result.geo.SetInParent()
         case models.BoolIndex(type=_type):
             result.bool.SetInParent()
-        case _:
+        case _:  # pragma: no cover
             raise ValueError(f"Unknown payload index type: {model}")
     return result
 
@@ -246,7 +246,7 @@ def payload_index_from_grpc(grpc_model: pb2.PayloadIndexConfig) -> models.Payloa
     if kind == "bool":
         _bool = grpc_model.bool
         return models.BoolIndex()
-    raise ValueError(f"Unknown payload index type: {kind}")
+    raise ValueError(f"Unknown payload index type: {kind}")  # pragma: no cover
 
 
 def collection_config_to_grpc(model: models.CollectionConfig) -> pb2.CollectionConfig:
@@ -264,7 +264,7 @@ def collection_config_to_grpc(model: models.CollectionConfig) -> pb2.CollectionC
             for field, index in payload_indexes.items():
                 result.payload_indexes[field].CopyFrom(payload_index_to_grpc(index))
             return result
-        case _:
+        case _:  # pragma: no cover
             raise ValueError(f"Unexpected CollectionConfig shape: {model!r}")
 
 
