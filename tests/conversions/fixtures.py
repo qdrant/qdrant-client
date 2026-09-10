@@ -945,6 +945,15 @@ collection_info = grpc.CollectionInfo(
     update_queue=grpc.UpdateQueueInfo(length=42),
 )
 
+# `points_count` is `optional` in the proto: the server omits it when the count is
+# not available, which must not be reported as an empty collection.
+collection_info_no_points_count = grpc.CollectionInfo(
+    status=collection_status,
+    optimizer_status=optimizer_status_error,
+    segments_count=6,
+    config=collection_config,
+)
+
 collection_info_red = grpc.CollectionInfo(
     status=collection_status_error,
     optimizer_status=optimizer_status_error,
@@ -1088,6 +1097,9 @@ update_status_wait_timeout = grpc.UpdateStatus.WaitTimeout
 
 update_result_completed = grpc.UpdateResult(operation_id=201, status=update_status_completed)
 update_result_wait_timeout = grpc.UpdateResult(operation_id=201, status=update_status_wait_timeout)
+# `operation_id` is `optional` in the proto: the server omits it, e.g. when a
+# delete-by-filter matches nothing or when an update is clock-rejected.
+update_result_no_operation_id = grpc.UpdateResult(status=update_status_completed)
 
 delete_alias = grpc.DeleteAlias(alias_name="col3")
 
@@ -1882,6 +1894,7 @@ fixtures = {
     "Filter": [filter_nested, filter_],
     "CollectionInfo": [
         collection_info,
+        collection_info_no_points_count,
         collection_info_ok,
         collection_info_red,
         collection_info_grey,
@@ -2116,7 +2129,12 @@ fixtures = {
     "SearchMatrixOffsets": [search_matrix_offsets],
     "StrictModeConfig": [strict_mode_config, strict_mode_config_empty],
     "UpdateQueueInfo": [update_queue_info, update_queue_info_deferred],
-    "UpdateResult": [update_result, update_result_completed, update_result_wait_timeout],
+    "UpdateResult": [
+        update_result,
+        update_result_completed,
+        update_result_wait_timeout,
+        update_result_no_operation_id,
+    ],
     "UpdateMode": [update_mode_upsert, update_mode_insert_only, update_mode_update_only],
     "ReplicaState": [
         replica_state_active,
