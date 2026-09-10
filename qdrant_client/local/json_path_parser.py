@@ -3,6 +3,9 @@ from enum import Enum
 from pydantic import BaseModel
 
 
+U64_MAX = 2**64 - 1
+
+
 class JsonPathItemType(str, Enum):
     KEY = "key"
     INDEX = "index"
@@ -140,11 +143,15 @@ def _match_brackets(path: str) -> tuple[JsonPathItem | None, str]:
             path[right_bracket_pos + 1 :],
         )
 
-    try:
-        index = int(path[left_bracket_pos + 1 : right_bracket_pos])
-        return (
-            JsonPathItem(item_type=JsonPathItemType.INDEX, index=index),
-            path[right_bracket_pos + 1 :],
-        )
-    except ValueError as e:
-        raise ValueError("Invalid path") from e
+    index_str = path[left_bracket_pos + 1 : right_bracket_pos]
+    if not (index_str.isascii() and index_str.isdigit()):
+        raise ValueError("Invalid path")
+
+    index = int(index_str)
+    if index > U64_MAX:
+        raise ValueError("Invalid path")
+
+    return (
+        JsonPathItem(item_type=JsonPathItemType.INDEX, index=index),
+        path[right_bracket_pos + 1 :],
+    )

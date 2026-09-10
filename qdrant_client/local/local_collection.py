@@ -65,7 +65,7 @@ from qdrant_client.local.payload_filters import (
     validate_filter,
 )
 from qdrant_client.local.payload_value_extractor import value_by_key, parse_uuid
-from qdrant_client.local.payload_value_setter import set_value_by_key
+from qdrant_client.local.payload_value_setter import delete_value_by_key, set_value_by_key
 from qdrant_client.local.persistence import CollectionPersistence
 from qdrant_client.local.utils import last_argmax, swap_remove
 from qdrant_client.local.sparse import (
@@ -2933,12 +2933,12 @@ class LocalCollection:
             | models.PointIdsList
         ),
     ) -> None:
+        parsed_keys = [parse_json_path(key) for key in keys]
         ids = self._selector_to_ids(selector)
         for point_id in ids:
             idx = self.ids[point_id]
-            for key in keys:
-                if key in self.payload[idx]:
-                    self.payload[idx].pop(key)
+            for parsed_key in parsed_keys:
+                delete_value_by_key(self.payload[idx], parsed_key)
             self._persist_by_id(point_id)
 
     def clear_payload(
