@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from qdrant_client import models
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.local import datetime_utils
@@ -176,3 +178,45 @@ def test_scroll_bool_values_are_skipped():
 
     compare_client_results(grpc_client, http_client, scroll_all_bools_and_ints)
     compare_client_results(local_client, http_client, scroll_all_bools_and_ints)
+
+
+def scroll_from_naive_datetime(client: QdrantBase) -> list[models.Record]:
+    records, next_page = client.scroll(
+        collection_name=COLLECTION_NAME,
+        limit=24,
+        # no offset, so this means noon UTC, both to the server and to local mode
+        order_by=models.OrderBy(key="datetime", start_from=datetime(2024, 6, 15, 12, 0, 0)),
+        with_payload=True,
+    )
+
+    assert next_page is None
+
+    return subsorted_by_id(records, "datetime")
+
+
+def test_scroll_from_naive_datetime() -> None:
+    """A naive `start_from` means the same instant to local mode as it does to the server.
+
+    Local mode used to read it as the client machine's local time, so a regression here is
+    only visible on a client outside UTC.
+    """
+    fixture_points = [
+        models.PointStruct(
+            id=hour, vector=[], payload={"datetime": f"2024-06-15T{hour:02d}:00:00Z"}
+        )
+        for hour in range(24)
+    ]
+
+    local_client = init_local()
+    init_client(local_client, fixture_points, vectors_config={})
+
+    http_client = init_remote()
+    init_client(http_client, fixture_points, vectors_config={})
+    http_client.create_payload_index(
+        COLLECTION_NAME, "datetime", models.PayloadSchemaType.DATETIME, wait=True
+    )
+
+    grpc_client = init_remote(prefer_grpc=True)
+
+    compare_client_results(grpc_client, http_client, scroll_from_naive_datetime)
+    compare_client_results(local_client, http_client, scroll_from_naive_datetime)
