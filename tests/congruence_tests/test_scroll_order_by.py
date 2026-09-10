@@ -145,3 +145,34 @@ def test_scroll_duplicated_values():
     )
     compare_client_results(grpc_client, http_client, scroll_all_integer_arrays)
     compare_client_results(local_client, http_client, scroll_all_integer_arrays)
+
+
+def scroll_all_bools_and_ints(client: QdrantBase) -> list[models.Record]:
+    return scroll_all_with_key(client, "bool_and_int")
+
+
+def test_scroll_bool_values_are_skipped():
+    local_client = init_local()
+    http_client = init_remote()
+    grpc_client = init_remote(prefer_grpc=True)
+
+    fixture_points = [
+        models.PointStruct(id=1, vector=[], payload={"bool_and_int": True}),
+        models.PointStruct(id=2, vector=[], payload={"bool_and_int": 1}),
+        models.PointStruct(id=3, vector=[], payload={"bool_and_int": False}),
+        models.PointStruct(id=4, vector=[], payload={"bool_and_int": 0}),
+        models.PointStruct(id=5, vector=[], payload={"bool_and_int": [True, 7]}),
+    ]
+    init_client(http_client, fixture_points, vectors_config={})
+    init_client(local_client, fixture_points, vectors_config={})
+
+    http_client.create_payload_index(
+        COLLECTION_NAME, "bool_and_int", models.PayloadSchemaType.INTEGER, wait=True
+    )
+
+    # all points are stored, only their ordering values differ
+    assert len(http_client.scroll(COLLECTION_NAME, limit=10)[0]) == len(fixture_points)
+    assert len(local_client.scroll(COLLECTION_NAME, limit=10)[0]) == len(fixture_points)
+
+    compare_client_results(grpc_client, http_client, scroll_all_bools_and_ints)
+    compare_client_results(local_client, http_client, scroll_all_bools_and_ints)

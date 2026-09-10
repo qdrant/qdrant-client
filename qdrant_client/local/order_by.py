@@ -15,10 +15,6 @@ def to_order_value(value: str | datetime | OrderValue | None) -> OrderValue | No
         return None
 
     # check if OrderValue
-    # bool is a subclass of int in Python, but bools are never order values on
-    # the server: order-by reads exclusively from the numeric index, where bool
-    # payloads have no entries, and OrderValue::try_from only accepts integers
-    # and floats. The REST model agrees (OrderValue is StrictInt | StrictFloat).
     if isinstance(value, bool):
         return None
     if isinstance(value, (int, float)):
