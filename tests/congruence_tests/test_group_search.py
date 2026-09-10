@@ -375,3 +375,53 @@ def test_search_with_persistence():
             except AssertionError as e:
                 print(f"\nFailed with filter {query_filter}")
                 raise e
+
+
+def test_group_search_value_types():
+    """Only strings and integers can become a group id, and a bad value drops the whole point.
+
+    `GroupId::try_from` accepts nothing else, and the aggregator ignores a point as soon as one
+    of its `group_by` values fails to convert. `search_groups` goes through the same code.
+    """
+    points = [
+        models.PointStruct(id=1, vector=[1.0, 0.0], payload={"a": True}),
+        models.PointStruct(id=2, vector=[2.0, 0.0], payload={"a": 1}),
+        models.PointStruct(id=3, vector=[3.0, 0.0], payload={"a": False}),
+        models.PointStruct(id=4, vector=[4.0, 0.0], payload={"a": 0}),
+        models.PointStruct(id=5, vector=[5.0, 0.0], payload={"a": "1"}),
+        models.PointStruct(id=6, vector=[6.0, 0.0], payload={"a": 1.5}),
+        models.PointStruct(id=7, vector=[7.0, 0.0], payload={"a": None}),
+        models.PointStruct(id=8, vector=[8.0, 0.0], payload={"b": "no such key"}),
+        models.PointStruct(id=9, vector=[9.0, 0.0], payload={"a": [2, True]}),
+        models.PointStruct(id=10, vector=[10.0, 0.0], payload={"a": [3, None]}),
+        models.PointStruct(id=11, vector=[11.0, 0.0], payload={"a": [4, 5]}),
+    ]
+    # bools (1, 3), a float (6), a null (7) and a missing key (8) form no group. Points 9 and
+    # 10 are dropped as a whole, values 2 and 3 included, because one unsupported value in the
+    # array is enough; only 11 spreads a point over several groups. The expected type of every
+    # group id is spelled out, since `False`/`0` and `True`/`1` are equal in python and a
+    # leaked bool would otherwise hide behind the integer group
+    expected_groups = {
+        (int, 0, (4,)),
+        (int, 1, (2,)),
+        (int, 4, (11,)),
+        (int, 5, (11,)),
+        (str, "1", (5,)),
+    }
+
+    vectors_config = models.VectorParams(size=2, distance=models.Distance.DOT)
+
+    local_client = init_local()
+    init_client(local_client, points, vectors_config=vectors_config)
+
+    remote_client = init_remote()
+    init_client(remote_client, points, vectors_config=vectors_config)
+
+    for client in (local_client, remote_client):
+        result = client.query_points_groups(
+            COLLECTION_NAME, group_by="a", query=[1.0, 0.0], limit=10, group_size=10
+        )
+        assert {
+            (type(group.id), group.id, tuple(hit.id for hit in group.hits))
+            for group in result.groups
+        } == expected_groups

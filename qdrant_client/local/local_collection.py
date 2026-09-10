@@ -1131,6 +1131,27 @@ class LocalCollection:
                 idf_corpus=idf_corpus,
             )
 
+    def _group_ids(self, payload: dict[str, Any], group_by: str) -> list[models.GroupId] | None:
+        """Unique group ids a point belongs to, or None if it cannot be grouped at all.
+
+        `type(...) in` rather than `isinstance`, because `bool` subclasses `int`, so `True`/`1`
+        (equal and same-hash in python) would end up in a single group.
+
+        A value which cannot become a group id is not merely skipped: the server drops the
+        whole point as soon as one of the `group_by` values has an unsupported type
+        (`GroupId::try_from` fails and the aggregator ignores the point), so a point with
+        `{"a": [1, true]}` joins no group at all.
+        """
+        values = value_by_key(payload, group_by)
+        if values is None:
+            return None
+
+        group_id_types = get_args_subscribed(models.GroupId)
+        if any(type(value) not in group_id_types for value in values):
+            return None
+
+        return list(set(values))
+
     def query_groups(
         self,
         group_by: str,
@@ -1183,16 +1204,9 @@ class LocalCollection:
             if not isinstance(point.payload, dict):
                 continue
 
-            group_values = value_by_key(point.payload, group_by)
+            group_values = self._group_ids(point.payload, group_by)
             if group_values is None:
                 continue
-
-            # Only exact str/int values can form groups. `isinstance` would admit
-            # bools (bool subclasses int) and `set()` would then collapse
-            # `True`/`1` and `False`/`0` into one group. The server never groups
-            # booleans (`GroupId::try_from` rejects `Bool`, the point is ignored),
-            # so they are skipped here as well. Same convention as `facet()`.
-            group_values = list(set(v for v in group_values if type(v) in (str, int)))
 
             point.payload = self._process_payload(point.payload, with_payload)
 
@@ -1261,16 +1275,9 @@ class LocalCollection:
             if not isinstance(point.payload, dict):
                 continue
 
-            group_values = value_by_key(point.payload, group_by)
+            group_values = self._group_ids(point.payload, group_by)
             if group_values is None:
                 continue
-
-            # Only exact str/int values can form groups. `isinstance` would admit
-            # bools (bool subclasses int) and `set()` would then collapse
-            # `True`/`1` and `False`/`0` into one group. The server never groups
-            # booleans (`GroupId::try_from` rejects `Bool`, the point is ignored),
-            # so they are skipped here as well. Same convention as `facet()`.
-            group_values = list(set(v for v in group_values if type(v) in (str, int)))
 
             point.payload = self._process_payload(point.payload, with_payload)
 
