@@ -1,8 +1,9 @@
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone, tzinfo
 
 import pytest
 
 from qdrant_client.local.datetime_utils import parse
+from qdrant_client.local.order_by import datetime_to_microseconds
 
 
 @pytest.mark.parametrize(  # type: ignore
@@ -97,3 +98,34 @@ def test_parse_dates(date_str: str, expected: datetime):
 )
 def test_parse_unsupported_dates(date_str: str):
     assert parse(date_str) is None
+
+
+def test_tzinfo_without_an_offset_counts_as_naive() -> None:
+    """A datetime is aware only when `utcoffset()` returns an offset, so a tzinfo returning
+    None is naive and gets UTC too. `timestamp()` raised TypeError on these."""
+
+    class NoOffset(tzinfo):
+        def utcoffset(self, dt: datetime | None) -> timedelta | None:
+            return None
+
+        def dst(self, dt: datetime | None) -> timedelta | None:
+            return None
+
+        def tzname(self, dt: datetime | None) -> str | None:
+            return None
+
+    assert datetime_to_microseconds(
+        datetime(2024, 6, 15, 12, 30, 45, tzinfo=NoOffset())
+    ) == datetime_to_microseconds(datetime(2024, 6, 15, 12, 30, 45, tzinfo=timezone.utc))
+
+
+def test_the_whole_datetime_range_converts() -> None:
+    """Read as UTC, a naive datetime converts by subtraction from the epoch, over the full
+    datetime range.
+
+    Read as local time it went through the platform's local-time conversion instead, which
+    `datetime.min` falls outside of whatever the machine's timezone is.
+    """
+    assert datetime_to_microseconds(datetime.min) == datetime_to_microseconds(
+        datetime.min.replace(tzinfo=timezone.utc)
+    )

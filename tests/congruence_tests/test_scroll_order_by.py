@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from qdrant_client import models
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.local import datetime_utils
@@ -176,3 +178,47 @@ def test_scroll_bool_values_are_skipped():
 
     compare_client_results(grpc_client, http_client, scroll_all_bools_and_ints)
     compare_client_results(local_client, http_client, scroll_all_bools_and_ints)
+
+
+def scroll_from_naive_datetime(client: QdrantBase) -> list[models.Record]:
+    records, next_page = client.scroll(
+        collection_name=COLLECTION_NAME,
+        limit=24,
+        # no offset, so this means noon UTC, both to the server and to local mode
+        order_by=models.OrderBy(key="datetime", start_from=datetime(2024, 6, 15, 12, 0, 0)),
+        with_payload=True,
+    )
+
+    assert next_page is None
+
+    return subsorted_by_id(records, "datetime")
+
+
+def test_scroll_from_naive_datetime() -> None:
+    """A naive `start_from` means the same instant to local mode as it does to the server.
+
+    Passes wherever it runs. Note what it cannot do, though: local mode used to read a naive
+    datetime as the machine's local time, and the divergence was exactly the machine's UTC
+    offset, so on a UTC machine such as CI this stays green even if that returns. The
+    order-value tests in qdrant_client/local/tests/test_datetimes.py catch it on any machine.
+    """
+    fixture_points = [
+        models.PointStruct(
+            id=hour, vector=[], payload={"datetime": f"2024-06-15T{hour:02d}:00:00Z"}
+        )
+        for hour in range(24)
+    ]
+
+    local_client = init_local()
+    init_client(local_client, fixture_points, vectors_config={})
+
+    http_client = init_remote()
+    init_client(http_client, fixture_points, vectors_config={})
+    http_client.create_payload_index(
+        COLLECTION_NAME, "datetime", models.PayloadSchemaType.DATETIME, wait=True
+    )
+
+    grpc_client = init_remote(prefer_grpc=True)
+
+    compare_client_results(grpc_client, http_client, scroll_from_naive_datetime)
+    compare_client_results(local_client, http_client, scroll_from_naive_datetime)
