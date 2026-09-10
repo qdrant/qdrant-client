@@ -15,6 +15,8 @@ def to_order_value(value: str | datetime | OrderValue | None) -> OrderValue | No
         return None
 
     # check if OrderValue
+    if isinstance(value, bool):
+        return None
     if isinstance(value, (int, float)):
         return value
 
