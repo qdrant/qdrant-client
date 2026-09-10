@@ -3646,7 +3646,9 @@ class RestToGrpc:
             return grpc.StartFrom(integer=model)
         if isinstance(model, float):
             return grpc.StartFrom(float=model)
-        if isinstance(model, datetime):
+        if isinstance(model, date):
+            # covers datetime too, which is a subclass of date. convert_datetime turns a
+            # bare date into midnight UTC on that day.
             ts = cls.convert_datetime(model)
             return grpc.StartFrom(timestamp=ts)
         if isinstance(model, str):

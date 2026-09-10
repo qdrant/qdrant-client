@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 
 from qdrant_client.http.models import OrderValue
 from qdrant_client.local.datetime_utils import parse
@@ -24,7 +24,7 @@ def datetime_to_microseconds(dt: datetime) -> int:
     return delta.days * MICROS_PER_DAY + delta.seconds * MICROS_PER_SECOND + delta.microseconds
 
 
-def to_order_value(value: str | datetime | OrderValue | None) -> OrderValue | None:
+def to_order_value(value: str | date | datetime | OrderValue | None) -> OrderValue | None:
     if value is None:
         return None
 
@@ -36,6 +36,11 @@ def to_order_value(value: str | datetime | OrderValue | None) -> OrderValue | No
 
     if isinstance(value, datetime):
         return datetime_to_microseconds(value)
+
+    if isinstance(value, date):
+        # Must stay below the datetime branch: datetime is a subclass of date. Midnight is
+        # naive, so `datetime_to_microseconds` reads it as UTC, like core reads "%Y-%m-%d".
+        return datetime_to_microseconds(datetime.combine(value, datetime.min.time()))
 
     if isinstance(value, str):
         dt = parse(value)
