@@ -677,8 +677,7 @@ def test_convert_update_result_operation_id_presence():
     from qdrant_client.conversions.conversion import GrpcToRest, RestToGrpc
 
     # `optional uint64 operation_id` carries explicit presence: the server leaves it
-    # unset for updates that were not assigned a sequence number (delete-by-filter that
-    # matched nothing, clock-rejected updates, custom sharding with no shard keys yet).
+    # unset for updates that were not assigned a sequence number
     absent = grpc.UpdateResult(status=grpc.UpdateStatus.Completed)
     assert not absent.HasField("operation_id")
     assert GrpcToRest.convert_update_result(absent).operation_id is None
@@ -689,12 +688,21 @@ def test_convert_update_result_operation_id_presence():
     # a real operation id of 0 must stay distinguishable from "no operation id"
     zero = grpc.UpdateResult(operation_id=0, status=grpc.UpdateStatus.Completed)
     assert GrpcToRest.convert_update_result(zero).operation_id == 0
+    round_tripped = RestToGrpc.convert_update_result(GrpcToRest.convert_update_result(zero))
+    assert round_tripped.HasField("operation_id")
+    assert round_tripped.operation_id == 0
 
 
 def test_convert_collection_info_points_count_presence():
     from qdrant_client import grpc
     from qdrant_client.conversions.conversion import GrpcToRest, RestToGrpc
-    from tests.conversions.fixtures import collection_config
+
+    config = grpc.CollectionConfig(
+        params=grpc.CollectionParams(shard_number=1),
+        hnsw_config=grpc.HnswConfigDiff(m=16, ef_construct=100, full_scan_threshold=10000),
+        optimizer_config=grpc.OptimizersConfigDiff(default_segment_number=2),
+        wal_config=grpc.WalConfigDiff(wal_capacity_mb=32, wal_segments_ahead=0),
+    )
 
     # `optional uint64 points_count` carries explicit presence: an absent count means
     # "not available", which is distinct from a collection that holds zero points.
@@ -702,7 +710,7 @@ def test_convert_collection_info_points_count_presence():
         status=grpc.CollectionStatus.Green,
         optimizer_status=grpc.OptimizerStatus(ok=True),
         segments_count=1,
-        config=collection_config,
+        config=config,
     )
     assert not absent.HasField("points_count")
     assert GrpcToRest.convert_collection_info(absent).points_count is None
@@ -710,13 +718,9 @@ def test_convert_collection_info_points_count_presence():
         GrpcToRest.convert_collection_info(absent)
     ).HasField("points_count")
 
-    zero = grpc.CollectionInfo(
-        status=grpc.CollectionStatus.Green,
-        optimizer_status=grpc.OptimizerStatus(ok=True),
-        segments_count=1,
-        config=collection_config,
-        points_count=0,
-    )
+    zero = grpc.CollectionInfo()
+    zero.CopyFrom(absent)
+    zero.points_count = 0
     assert GrpcToRest.convert_collection_info(zero).points_count == 0
     round_tripped = RestToGrpc.convert_collection_info(GrpcToRest.convert_collection_info(zero))
     assert round_tripped.HasField("points_count")
