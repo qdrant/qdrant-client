@@ -426,7 +426,7 @@ def validate_filter(payload_filter: models.Filter | None) -> None:
                 if total < 1:
                     raise ValueError(f"Slice total must be >= 1, got {total}")
                 if not 0 <= index < total:
-                    raise ValueError(f"Slice index must be in 0..{total - 1}, got {index}")
+                    raise ValueError(f"Slice index must be in [0;{total - 1}], got {index}")
 
 
 def calculate_payload_mask(
