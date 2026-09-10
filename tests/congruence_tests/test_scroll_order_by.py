@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 
 from qdrant_client import models
 from qdrant_client.client_base import QdrantBase
@@ -220,3 +220,55 @@ def test_scroll_from_naive_datetime() -> None:
 
     compare_client_results(grpc_client, http_client, scroll_from_naive_datetime)
     compare_client_results(local_client, http_client, scroll_from_naive_datetime)
+
+
+DATE_START_FROM = date(2024, 6, 15)
+
+DATED_POINTS = [
+    models.PointStruct(id=1, vector=[], payload={"date_field": "2024-06-13T12:00:00+00:00"}),
+    models.PointStruct(id=2, vector=[], payload={"date_field": "2024-06-14T23:59:59+00:00"}),
+    # exactly on the boundary: start_from is inclusive
+    models.PointStruct(id=3, vector=[], payload={"date_field": "2024-06-15T00:00:00+00:00"}),
+    models.PointStruct(id=4, vector=[], payload={"date_field": "2024-06-15T08:30:00+00:00"}),
+    models.PointStruct(id=5, vector=[], payload={"date_field": "2024-06-17T00:00:00+00:00"}),
+]
+
+
+def scroll_from_date(client: QdrantBase, direction: models.Direction) -> list[models.Record]:
+    records, next_page = client.scroll(
+        collection_name=COLLECTION_NAME,
+        limit=10,
+        order_by=models.OrderBy(key="date_field", direction=direction, start_from=DATE_START_FROM),
+        with_payload=True,
+    )
+
+    assert next_page is None
+
+    return records
+
+
+def test_scroll_order_by_date_start_from() -> None:
+    """A `date` start_from means midnight UTC on that day to local, REST and gRPC alike.
+
+    Local mode used to drop it and scroll the whole collection, and gRPC used to raise.
+    """
+    local_client = init_local()
+    init_client(local_client, DATED_POINTS, vectors_config={})
+
+    http_client = init_remote()
+    init_client(http_client, DATED_POINTS, vectors_config={})
+    http_client.create_payload_index(
+        COLLECTION_NAME, "date_field", models.PayloadSchemaType.DATETIME, wait=True
+    )
+
+    grpc_client = init_remote(prefer_grpc=True)
+
+    for direction, expected_ids in [
+        (models.Direction.ASC, [3, 4, 5]),
+        (models.Direction.DESC, [3, 2, 1]),
+    ]:
+        # a dropped start_from returns all five points, which congruence alone would miss
+        assert [record.id for record in scroll_from_date(http_client, direction)] == expected_ids
+
+        compare_client_results(grpc_client, http_client, scroll_from_date, direction=direction)
+        compare_client_results(local_client, http_client, scroll_from_date, direction=direction)
