@@ -1187,7 +1187,12 @@ class LocalCollection:
             if group_values is None:
                 continue
 
-            group_values = list(set(v for v in group_values if isinstance(v, (str, int))))
+            # Only exact str/int values can form groups. `isinstance` would admit
+            # bools (bool subclasses int) and `set()` would then collapse
+            # `True`/`1` and `False`/`0` into one group. The server never groups
+            # booleans (`GroupId::try_from` rejects `Bool`, the point is ignored),
+            # so they are skipped here as well. Same convention as `facet()`.
+            group_values = list(set(v for v in group_values if type(v) in (str, int)))
 
             point.payload = self._process_payload(point.payload, with_payload)
 
@@ -1260,7 +1265,12 @@ class LocalCollection:
             if group_values is None:
                 continue
 
-            group_values = list(set(v for v in group_values if isinstance(v, (str, int))))
+            # Only exact str/int values can form groups. `isinstance` would admit
+            # bools (bool subclasses int) and `set()` would then collapse
+            # `True`/`1` and `False`/`0` into one group. The server never groups
+            # booleans (`GroupId::try_from` rejects `Bool`, the point is ignored),
+            # so they are skipped here as well. Same convention as `facet()`.
+            group_values = list(set(v for v in group_values if type(v) in (str, int)))
 
             point.payload = self._process_payload(point.payload, with_payload)
 
