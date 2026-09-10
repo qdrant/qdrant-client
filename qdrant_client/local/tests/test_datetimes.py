@@ -100,9 +100,36 @@ def test_parse_unsupported_dates(date_str: str):
     assert parse(date_str) is None
 
 
+@pytest.mark.parametrize(  # type: ignore
+    "dt, microseconds",
+    [
+        (datetime(1970, 7, 21, 14, 9, 16, 146413, tzinfo=timezone.utc), 17417356146413),
+        (datetime(2024, 6, 15, 12, 30, 45, 123456, tzinfo=timezone.utc), 1718454645123456),
+        (datetime(2100, 1, 1, 0, 0, 0, 1, tzinfo=timezone.utc), 4102444800000001),
+        (datetime.min.replace(tzinfo=timezone.utc), -62135596800000000),
+        (datetime.max.replace(tzinfo=timezone.utc), 253402300799999999),
+    ],
+)
+def test_datetime_to_microseconds_is_exact(dt: datetime, microseconds: int) -> None:
+    """The old float path read 146412 for the first of these, and put `datetime.max` a
+    microsecond above its own value."""
+    assert datetime_to_microseconds(dt) == microseconds
+
+
+def test_every_microsecond_is_distinguishable_far_from_the_epoch() -> None:
+    """A fix that replaced only the multiplication, still taking whole seconds from
+    `timestamp()`, was still wrong this far out."""
+    base = datetime(2100, 6, 15, 12, 30, 45, tzinfo=timezone.utc)
+    start = datetime_to_microseconds(base)
+
+    for microsecond in range(0, 1_000_000, 997):
+        assert (
+            datetime_to_microseconds(base.replace(microsecond=microsecond)) == start + microsecond
+        )
+
+
 def test_tzinfo_without_an_offset_counts_as_naive() -> None:
-    """A datetime is aware only when `utcoffset()` returns an offset, so a tzinfo returning
-    None is naive and gets UTC too. `timestamp()` raised TypeError on these."""
+    """A tzinfo reporting no offset is naive per the datetime docs, so it gets UTC too."""
 
     class NoOffset(tzinfo):
         def utcoffset(self, dt: datetime | None) -> timedelta | None:
@@ -117,15 +144,3 @@ def test_tzinfo_without_an_offset_counts_as_naive() -> None:
     assert datetime_to_microseconds(
         datetime(2024, 6, 15, 12, 30, 45, tzinfo=NoOffset())
     ) == datetime_to_microseconds(datetime(2024, 6, 15, 12, 30, 45, tzinfo=timezone.utc))
-
-
-def test_the_whole_datetime_range_converts() -> None:
-    """Read as UTC, a naive datetime converts by subtraction from the epoch, over the full
-    datetime range.
-
-    Read as local time it went through the platform's local-time conversion instead, which
-    `datetime.min` falls outside of whatever the machine's timezone is.
-    """
-    assert datetime_to_microseconds(datetime.min) == datetime_to_microseconds(
-        datetime.min.replace(tzinfo=timezone.utc)
-    )

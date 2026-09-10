@@ -197,10 +197,8 @@ def scroll_from_naive_datetime(client: QdrantBase) -> list[models.Record]:
 def test_scroll_from_naive_datetime() -> None:
     """A naive `start_from` means the same instant to local mode as it does to the server.
 
-    Passes wherever it runs. Note what it cannot do, though: local mode used to read a naive
-    datetime as the machine's local time, and the divergence was exactly the machine's UTC
-    offset, so on a UTC machine such as CI this stays green even if that returns. The
-    order-value tests in qdrant_client/local/tests/test_datetimes.py catch it on any machine.
+    Local mode used to read it as the client machine's local time, so a regression here is
+    only visible on a client outside UTC.
     """
     fixture_points = [
         models.PointStruct(
