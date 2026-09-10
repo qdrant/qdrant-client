@@ -1,9 +1,9 @@
-from datetime import datetime, timedelta, timezone, tzinfo
+from datetime import date, datetime, timedelta, timezone, tzinfo
 
 import pytest
 
 from qdrant_client.local.datetime_utils import parse
-from qdrant_client.local.order_by import datetime_to_microseconds
+from qdrant_client.local.order_by import datetime_to_microseconds, to_order_value
 
 
 @pytest.mark.parametrize(  # type: ignore
@@ -144,3 +144,11 @@ def test_tzinfo_without_an_offset_counts_as_naive() -> None:
     assert datetime_to_microseconds(
         datetime(2024, 6, 15, 12, 30, 45, tzinfo=NoOffset())
     ) == datetime_to_microseconds(datetime(2024, 6, 15, 12, 30, 45, tzinfo=timezone.utc))
+
+
+def test_to_order_value_reads_a_bare_date_as_utc_midnight() -> None:
+    """A `date` is a member of the StartFrom union, and means the same instant as the
+    "%Y-%m-%d" string REST serializes it to. Local midnight would shift the window, and is
+    only visible on a client outside UTC."""
+    assert to_order_value(date(2021, 1, 1)) == 1609459200000000  # 2021-01-01T00:00:00Z
+    assert to_order_value("2021-01-01") == 1609459200000000
