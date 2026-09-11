@@ -2496,7 +2496,8 @@ class LocalCollection:
             vector = vectors.get(vector_name)
             if vector is not None:
                 params = self.get_vector_params(vector_name)
-                assert not np.isnan(vector).any(), "Vector contains NaN values"
+                if np.isnan(vector).any():
+                    raise ValueError("Vector contains NaN values")
                 if params.distance == models.Distance.COSINE:
                     norm = np.linalg.norm(vector)
                     vector = np.array(vector) / norm if norm > EPSILON else vector
@@ -2525,7 +2526,8 @@ class LocalCollection:
             vector = vectors.get(vector_name)
             if vector is not None:
                 params = self.get_vector_params(vector_name)
-                assert not np.isnan(vector).any(), "Vector contains NaN values"
+                if np.isnan(vector).any():
+                    raise ValueError("Vector contains NaN values")
 
                 if params.distance == models.Distance.COSINE:
                     vector_norm = np.linalg.norm(vector, axis=-1)[:, np.newaxis]
@@ -2572,7 +2574,8 @@ class LocalCollection:
                 )
             else:
                 vector_np = np.array(vector, dtype=np.float32)
-                assert not np.isnan(vector_np).any(), "Vector contains NaN values"
+                if np.isnan(vector_np).any():
+                    raise ValueError("Vector contains NaN values")
                 params = self.get_vector_params(vector_name)
                 if params.distance == models.Distance.COSINE:
                     norm = np.linalg.norm(vector_np)
@@ -2628,7 +2631,8 @@ class LocalCollection:
                 )
             else:
                 vector_np = np.array(vector, dtype=np.float32)
-                assert not np.isnan(vector_np).any(), "Vector contains NaN values"
+                if np.isnan(vector_np).any():
+                    raise ValueError("Vector contains NaN values")
                 params = self.get_vector_params(vector_name)
                 if params.distance == models.Distance.COSINE:
                     vector_norm = np.linalg.norm(vector_np, axis=-1)[:, np.newaxis]
@@ -2768,7 +2772,9 @@ class LocalCollection:
 
             self._validate_dense_or_multivector(vector, vector_name)
             vector_np = np.array(vector, dtype=np.float32)
-            assert not np.isnan(vector_np).any(), "Vector contains NaN values"
+
+            if np.isnan(vector_np).any():
+                raise ValueError("Vector contains NaN values")
             validated.append((vector_name, vector_np))
 
         for vector_name, vector_np in validated:

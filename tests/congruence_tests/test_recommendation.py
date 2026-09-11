@@ -392,7 +392,7 @@ def test_query_with_nan():
     init_client(local_client, fixture_points)
     init_client(remote_client, fixture_points)
 
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         local_client.query_points(
             collection_name=COLLECTION_NAME,
             query=models.RecommendQuery(
@@ -410,7 +410,7 @@ def test_query_with_nan():
             using=using,
         )
 
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         local_client.query_points(
             collection_name=COLLECTION_NAME,
             query=models.RecommendQuery(

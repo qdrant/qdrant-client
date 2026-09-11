@@ -273,7 +273,7 @@ def test_query_with_nan():
 
     vector = generate_random_multivector(text_vector_size, 10)
     vector[0][4] = np.nan
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         local_client.query_points(COLLECTION_NAME, query=vector, using="multi-text")
     with pytest.raises(UnexpectedResponse):
         remote_client.query_points(COLLECTION_NAME, query=vector, using="multi-text")
@@ -296,7 +296,7 @@ def test_query_with_nan():
     init_client(local_client, fixture_points, vectors_config=single_multi_vector_config)
     init_client(remote_client, fixture_points, vectors_config=single_multi_vector_config)
 
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         local_client.query_points(COLLECTION_NAME, query=vector)
     with pytest.raises(UnexpectedResponse):
         remote_client.query_points(COLLECTION_NAME, query=vector)

@@ -34,8 +34,10 @@ class RecoQuery:
         self.positive: list[types.NumpyArray] = [np.array(vector) for vector in positive]
         self.negative: list[types.NumpyArray] = [np.array(vector) for vector in negative]
 
-        assert not np.isnan(self.positive).any(), "Positive vectors must not contain NaN"
-        assert not np.isnan(self.negative).any(), "Negative vectors must not contain NaN"
+        if np.isnan(self.positive).any():
+            raise ValueError("Positive vectors must not contain NaN")
+        if np.isnan(self.negative).any():
+            raise ValueError("Negative vectors must not contain NaN")
 
 
 class ContextPair:
@@ -43,8 +45,10 @@ class ContextPair:
         self.positive: types.NumpyArray = np.array(positive)
         self.negative: types.NumpyArray = np.array(negative)
 
-        assert not np.isnan(self.positive).any(), "Positive vector must not contain NaN"
-        assert not np.isnan(self.negative).any(), "Negative vector must not contain NaN"
+        if np.isnan(self.positive).any():
+            raise ValueError("Positive vector must not contain NaN")
+        if np.isnan(self.negative).any():
+            raise ValueError("Negative vector must not contain NaN")
 
 
 class DiscoveryQuery:
@@ -52,7 +56,8 @@ class DiscoveryQuery:
         self.target: types.NumpyArray = np.array(target)
         self.context = context
 
-        assert not np.isnan(self.target).any(), "Target vector must not contain NaN"
+        if np.isnan(self.target).any():
+            raise ValueError("Target vector must not contain NaN")
 
 
 class ContextQuery:
@@ -64,7 +69,8 @@ class FeedbackItem:
     def __init__(self, vector: list[float], score: float):
         self.vector = np.array(vector)
         self.score = score
-        assert not np.isnan(self.vector).any(), "Feedback vector must not contain NaN"
+        if np.isnan(self.vector).any():
+            raise ValueError("Feedback vector must not contain NaN")
 
 
 class NaiveFeedbackCoefficients:
@@ -94,9 +100,11 @@ class NaiveFeedbackQuery:
         self.feedback = feedback
         self.coefficients = coefficients
 
-        assert not np.isnan(self.target).any(), "Target vector must not contain NaN"
+        if np.isnan(self.target).any():
+            raise ValueError("Target vector must not contain NaN")
         for item in self.feedback:
-            assert not np.isnan(item.vector).any(), "Feedback vector must not contain NaN"
+            if np.isnan(item.vector).any():
+                raise ValueError("Feedback vector must not contain NaN")
 
 
 DenseQueryVector: TypeAlias = DiscoveryQuery | ContextQuery | RecoQuery | NaiveFeedbackQuery
@@ -192,7 +200,8 @@ def manhattan_distance(query: types.NumpyArray, vectors: types.NumpyArray) -> ty
 def calculate_distance(
     query: types.NumpyArray, vectors: types.NumpyArray, distance_type: models.Distance
 ) -> types.NumpyArray:
-    assert not np.isnan(query).any(), "Query vector must not contain NaN"
+    if np.isnan(query).any():
+        raise ValueError("Query vector must not contain NaN")
 
     if distance_type == models.Distance.COSINE:
         return cosine_similarity(query, vectors)
@@ -212,7 +221,8 @@ def calculate_distance_core(
     """
     Calculate same internal distances as in core, rather than the final displayed distance
     """
-    assert not np.isnan(query).any(), "Query vector must not contain NaN"
+    if np.isnan(query).any():
+        raise ValueError("Query vector must not contain NaN")
 
     if distance_type == models.Distance.EUCLID:
         return -np.square(vectors - query, dtype=np.float32).sum(axis=1, dtype=np.float32)
