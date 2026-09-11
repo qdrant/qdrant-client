@@ -478,8 +478,7 @@ def test_text_match_on_unindexed_field(match: models.Match):
     """On a field without a text index the server tokenizes both sides with the default word
     tokenizer - split on non-alphanumeric, lowercased - and matches whole tokens rather than
     substrings, so "fly" does not match "butterfly". `MatchText` accepts the query tokens in
-    any order, `MatchPhrase` only consecutively, and `MatchTextAny` is the exception which
-    still scans for substrings.
+    any order, `MatchPhrase` only consecutively, and `MatchTextAny` needs just one of them.
     """
     values = [
         "goodness only",  # substring of the query, not a token
