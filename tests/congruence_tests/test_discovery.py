@@ -426,7 +426,7 @@ def test_query_with_nan():
     init_client(local_client, fixture_points)
     init_client(remote_client, fixture_points)
 
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         local_client.query_points(
             collection_name=COLLECTION_NAME,
             query=models.DiscoverQuery(discover=models.DiscoverInput(target=vector, context=[])),
@@ -438,7 +438,7 @@ def test_query_with_nan():
             query=models.DiscoverQuery(discover=models.DiscoverInput(target=vector, context=[])),
             using=using,
         )
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         local_client.query_points(
             collection_name=COLLECTION_NAME,
             query=models.ContextQuery(context=models.ContextPair(positive=vector, negative=1)),
@@ -450,7 +450,7 @@ def test_query_with_nan():
             query=models.ContextQuery(context=models.ContextPair(positive=vector, negative=1)),
             using=using,
         )
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         local_client.query_points(
             collection_name=COLLECTION_NAME,
             query=models.ContextQuery(context=models.ContextPair(positive=1, negative=vector)),

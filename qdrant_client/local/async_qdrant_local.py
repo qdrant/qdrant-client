@@ -817,9 +817,8 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         if isinstance(vectors, dict) and any(
             (isinstance(v, np.ndarray) for v in vectors.values())
         ):
-            assert (
-                len(set([arr.shape[0] for arr in vectors.values()])) == 1
-            ), "Each named vector should have the same number of vectors"
+            if len(set([arr.shape[0] for arr in vectors.values()])) != 1:
+                raise ValueError("Each named vector should have the same number of vectors")
             num_vectors = next(iter(vectors.values())).shape[0]
             vectors = [
                 {name: vectors[name][i].tolist() for name in vectors.keys()}
