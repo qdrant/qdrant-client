@@ -79,9 +79,8 @@ class BaseUploader(Worker, ABC):
     def _vector_batches_from_numpy_named_vectors(
         vectors: dict[str, types.NumpyArray], batch_size: int
     ) -> Iterable[dict[str, list[float]]]:
-        assert (
-            len(set([arr.shape[0] for arr in vectors.values()])) == 1
-        ), "Each named vector should have the same number of vectors"
+        if len(set([arr.shape[0] for arr in vectors.values()])) != 1:
+            raise ValueError("Each named vector should have the same number of vectors")
 
         num_vectors = next(iter(vectors.values())).shape[0]
         # Convert dict[str, np.ndarray] to Generator(dict[str, list[float]])

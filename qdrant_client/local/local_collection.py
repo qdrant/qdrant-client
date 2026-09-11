@@ -109,6 +109,19 @@ def validate_dense_vector(vector: Any, vector_name: str) -> None:
         raise ValueError("Vector contains NaN values")
 
 
+def validate_vector_dimension(got: int, expected: int, vector_name: str) -> None:
+    """Reject a vector whose size does not match the collection's, as the server does.
+
+    Without this a wrong-size dense vector reached numpy and died with a raw broadcast
+    error part-way through the write, and a wrong-size multivector was stored silently.
+    """
+    if got != expected:
+        raise ValueError(
+            f"Wrong input: Vector dimension error: expected dim: {expected}, "
+            f"got {got} for vector '{vector_name}'"
+        )
+
+
 def validate_multivector(vector: Any, vector_name: str) -> None:
     """Reject empty multivectors, empty sub-vectors and NaN values, as the server does."""
     if len(vector) == 0:
@@ -419,7 +432,7 @@ class LocalCollection:
         raise ValueError(f"Malformed config.vectors: {self.config.vectors}")
 
     def _validate_dense_or_multivector(self, vector: Any, vector_name: str) -> None:
-        """Reject empty vectors on the write path, the way the server does.
+        """Reject vectors the server would refuse on the write path: empty, NaN, wrong size.
 
         Sparse vectors are validated by `validate_sparse_vector`; an empty sparse vector is
         legitimate, so it is not routed here.
@@ -429,8 +442,14 @@ class LocalCollection:
 
         if vector_name in self.multivectors:
             validate_multivector(vector, vector_name)
+            expected_dim = self.get_vector_params(vector_name).size
+            for sub_vector in vector:
+                validate_vector_dimension(len(sub_vector), expected_dim, vector_name)
         elif vector_name in self.vectors:
             validate_dense_vector(vector, vector_name)
+            validate_vector_dimension(
+                len(vector), self.get_vector_params(vector_name).size, vector_name
+            )
 
     @classmethod
     def _check_include_pattern(cls, pattern: str, key: str) -> bool:
@@ -2856,11 +2875,9 @@ class LocalCollection:
             | models.PointIdsList
         ),
     ) -> None:
-        # Check every name up front: the server rejects the whole request on an unknown
-        # vector name, rather than deleting the names it recognizes first.
-        for vector_name in vectors:
-            if vector_name not in self._all_vectors_keys:
-                raise ValueError(f"Wrong input: Not existing vector name error: {vector_name}")
+        # Check every name up front, rather than deleting the ones we recognize and then
+        # failing. The server errors either way, but whether it deletes first varies.
+        self._validate_vector_names(vectors)
 
         ids = self._selector_to_ids(selector)
         for point_id in ids:
@@ -3006,8 +3023,19 @@ class LocalCollection:
             self.payload[idx] = {}
             self._persist_by_id(point_id)
 
+    def _validate_vector_names(self, vector_names: Sequence[str]) -> None:
+        for vector_name in vector_names:
+            if vector_name not in self._all_vectors_keys:
+                raise ValueError(f"Wrong input: Not existing vector name error: {vector_name}")
+
     def _validate_update_operation(self, update_op: types.UpdateOperation) -> None:
-        """Validate the vectors an operation carries, without touching collection state."""
+        """Validate the vectors and payload keys an operation carries, without touching state.
+
+        Filters an operation carries are left to the apply pass, so a batch whose later
+        operation holds an invalid filter still applies the operations ahead of it. The
+        server rejects the whole request there, but it also disagrees with itself about
+        which filters are invalid, so local mode does not try to match it.
+        """
         if isinstance(update_op, models.UpsertOperation):
             upsert_struct = update_op.upsert
             if isinstance(upsert_struct, models.PointsBatch):
@@ -3027,6 +3055,17 @@ class LocalCollection:
                     if isinstance(point.vector, list)
                     else point.vector
                 )
+
+        elif isinstance(update_op, models.SetPayloadOperation):
+            if update_op.set_payload.key is not None:
+                parse_json_path(update_op.set_payload.key)
+
+        elif isinstance(update_op, models.DeletePayloadOperation):
+            for key in update_op.delete_payload.keys:
+                parse_json_path(key)
+
+        elif isinstance(update_op, models.DeleteVectorsOperation):
+            self._validate_vector_names(update_op.delete_vectors.vector)
 
     def batch_update_points(
         self,
