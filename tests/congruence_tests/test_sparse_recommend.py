@@ -344,7 +344,7 @@ def test_query_with_nan():
         sparse_vectors_config=sparse_vectors_config,
     )
 
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         local_client.query_points(
             collection_name=COLLECTION_NAME,
             query=models.RecommendQuery(
@@ -362,7 +362,7 @@ def test_query_with_nan():
             using=using,
         )
 
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         local_client.query_points(
             collection_name=COLLECTION_NAME,
             query=models.RecommendQuery(

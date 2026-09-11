@@ -354,7 +354,7 @@ def test_query_with_nan():
             )
         else:
             query = models.ContextQuery(context=models.ContextPair(positive=pos, negative=neg))
-        with pytest.raises(AssertionError):
+        with pytest.raises(ValueError):
             local_client.query_points(
                 collection_name=COLLECTION_NAME,
                 query=query,
