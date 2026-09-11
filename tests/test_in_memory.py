@@ -1,3 +1,5 @@
+import math
+
 import pytest
 
 from qdrant_client import QdrantClient, models
@@ -294,3 +296,51 @@ def test_fusion_dbsf_score_threshold(qdrant: QdrantClient):
         f"Expected 3 points after filtering (threshold 1.0), got {len(result_with_threshold.points)}. "
         f"Scores: {[p.score for p in result_no_threshold.points]}"
     )
+
+
+def test_mmr_offset_paginates_reranked_output(qdrant: QdrantClient):
+    """`offset` must paginate the MMR-reranked list, not the candidate pool.
+
+    Core builds the MMR candidate list with offset 0, re-ranks `limit + offset` points and
+    only then cuts off the offset. Applying the offset to the candidate search instead hides
+    the top `offset` nearest points from MMR and silently returns the first page again.
+    """
+    qdrant.create_collection(
+        collection_name="test_collection",
+        vectors_config=models.VectorParams(size=2, distance=models.Distance.COSINE),
+    )
+
+    # 8 points evenly spread over a quarter turn, so MMR reorders them non-trivially
+    qdrant.upsert(
+        collection_name="test_collection",
+        wait=True,
+        points=[
+            models.PointStruct(
+                id=i,
+                vector=[math.cos(i * math.pi / 16), math.sin(i * math.pi / 16)],
+            )
+            for i in range(8)
+        ],
+    )
+
+    query_vector = [1.0, 0.0]
+    mmr = models.Mmr(diversity=0.5, candidates_limit=8)
+
+    def query(limit: int, offset: int) -> list:
+        return [
+            point.id
+            for point in qdrant.query_points(
+                collection_name="test_collection",
+                query=models.NearestQuery(nearest=query_vector, mmr=mmr),
+                limit=limit,
+                offset=offset,
+            ).points
+        ]
+
+    full_ranking = query(limit=8, offset=0)
+    assert len(full_ranking) == 8
+
+    for offset in (0, 2, 3, 5):
+        assert query(limit=3, offset=offset) == full_ranking[offset : offset + 3], (
+            f"MMR page at offset={offset} does not match the re-ranked ordering " f"{full_ranking}"
+        )
