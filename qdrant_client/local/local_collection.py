@@ -2442,7 +2442,7 @@ class LocalCollection:
 
                 if params.distance == models.Distance.COSINE:
                     vector_norm = np.linalg.norm(vector, axis=-1)[:, np.newaxis]
-                    vector /= np.where(vector_norm != 0.0, vector_norm, EPSILON)
+                    vector /= np.where(vector_norm > EPSILON, vector_norm, 1.0)
                 self.multivectors[vector_name][idx] = np.array(vector)
                 self.deleted_per_vector[vector_name][idx] = 0
             else:
@@ -2541,7 +2541,7 @@ class LocalCollection:
                 params = self.get_vector_params(vector_name)
                 if params.distance == models.Distance.COSINE:
                     vector_norm = np.linalg.norm(vector_np, axis=-1)[:, np.newaxis]
-                    vector_np /= np.where(vector_norm != 0.0, vector_norm, EPSILON)
+                    vector_np /= np.where(vector_norm > EPSILON, vector_norm, 1.0)
                 named_vectors[idx] = vector_np
                 self.deleted_per_vector[vector_name] = np.append(
                     self.deleted_per_vector[vector_name], 0
@@ -2686,7 +2686,7 @@ class LocalCollection:
             else:
                 if params.distance == models.Distance.COSINE:
                     vector_norm = np.linalg.norm(vector_np, axis=-1)[:, np.newaxis]
-                    vector_np /= np.where(vector_norm != 0.0, vector_norm, EPSILON)
+                    vector_np /= np.where(vector_norm > EPSILON, vector_norm, 1.0)
                 self.multivectors[vector_name][idx] = vector_np
 
     def update_vectors(
