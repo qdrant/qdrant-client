@@ -2714,6 +2714,32 @@ class LocalCollection:
         if self.storage is not None:
             self.storage.persist(point)
 
+    @staticmethod
+    def _materialize_points(
+        points: Sequence[models.PointStruct] | models.Batch,
+    ) -> list[models.PointStruct]:
+        """Flatten either accepted upsert shape into a plain list of points."""
+        if isinstance(points, list):
+            return list(points)
+
+        if isinstance(points, models.Batch):
+            batch = points
+            if isinstance(batch.vectors, list):
+                vectors = {DEFAULT_VECTOR_NAME: batch.vectors}
+            else:
+                vectors = batch.vectors
+
+            return [
+                models.PointStruct(
+                    id=point_id,
+                    payload=batch.payloads[idx] if batch.payloads is not None else None,
+                    vector={name: v[idx] for name, v in vectors.items()},
+                )
+                for idx, point_id in enumerate(batch.ids)
+            ]
+
+        raise ValueError(f"Unsupported type: {type(points)}")
+
     def upsert(
         self,
         points: Sequence[models.PointStruct] | models.Batch,
@@ -2722,25 +2748,7 @@ class LocalCollection:
     ) -> None:
         validate_filter(update_filter)
 
-        if isinstance(points, list):
-            point_structs = list(points)
-        elif isinstance(points, models.Batch):
-            batch = points
-            if isinstance(batch.vectors, list):
-                vectors = {DEFAULT_VECTOR_NAME: batch.vectors}
-            else:
-                vectors = batch.vectors
-
-            point_structs = [
-                models.PointStruct(
-                    id=point_id,
-                    payload=batch.payloads[idx] if batch.payloads is not None else None,
-                    vector={name: v[idx] for name, v in vectors.items()},
-                )
-                for idx, point_id in enumerate(batch.ids)
-            ]
-        else:
-            raise ValueError(f"Unsupported type: {type(points)}")
+        point_structs = self._materialize_points(points)
 
         # Validate everything before writing anything: the server rejects the whole request,
         # so a bad point in the middle of a batch must not leave the earlier ones applied.
@@ -2760,9 +2768,10 @@ class LocalCollection:
                 stacklevel=6,
             )
 
-    def _update_named_vectors(
-        self, idx: int, vectors: dict[str, list[float] | SparseVector | list[list[float]]]
-    ) -> None:
+    def _validate_named_vectors(
+        self, vectors: dict[str, list[float] | SparseVector | list[list[float]]]
+    ) -> list[tuple[str, Any]]:
+        """Validate and normalize named vectors, without touching collection state."""
         validated: list[tuple[str, Any]] = []
         for vector_name, vector in vectors.items():
             if vector_name not in self._all_vectors_keys:
@@ -2776,6 +2785,10 @@ class LocalCollection:
             self._validate_dense_or_multivector(vector, vector_name)
             validated.append((vector_name, np.array(vector, dtype=np.float32)))
 
+        return validated
+
+    def _apply_named_vectors(self, idx: int, validated: list[tuple[str, Any]]) -> None:
+        """Apply already validated named vectors. Call `_validate_named_vectors` first."""
         for vector_name, vector_np in validated:
             self.deleted_per_vector[vector_name][idx] = 0
 
@@ -2803,14 +2816,23 @@ class LocalCollection:
     ) -> None:
         validate_filter(update_filter)
 
-        for point in points:
-            point_id = str(point.id) if isinstance(point.id, uuid.UUID) else point.id
+        # Same rule as upsert: validate every point in the request before writing any of it.
+        # The point id itself is looked up in the apply pass, because the server does apply
+        # the points preceding an unknown id before answering 404.
+        prepared = [
+            (
+                str(point.id) if isinstance(point.id, uuid.UUID) else point.id,
+                self._validate_named_vectors(
+                    {DEFAULT_VECTOR_NAME: point.vector}
+                    if isinstance(point.vector, list)
+                    else point.vector
+                ),
+            )
+            for point in points
+        ]
+
+        for point_id, validated in prepared:
             idx = self.ids[point_id]
-            vector_struct = point.vector
-            if isinstance(vector_struct, list):
-                fixed_vectors = {DEFAULT_VECTOR_NAME: vector_struct}
-            else:
-                fixed_vectors = vector_struct
 
             if not self.deleted[idx] and update_filter is not None:
                 has_vector = {}
@@ -2821,7 +2843,7 @@ class LocalCollection:
                     update_filter, self.payload[idx], self.ids_inv[idx], has_vector
                 ):
                     continue
-            self._update_named_vectors(idx, fixed_vectors)
+            self._apply_named_vectors(idx, validated)
             self._persist_by_id(point_id)
 
     def delete_vectors(
@@ -2984,10 +3006,37 @@ class LocalCollection:
             self.payload[idx] = {}
             self._persist_by_id(point_id)
 
+    def _validate_update_operation(self, update_op: types.UpdateOperation) -> None:
+        """Validate the vectors an operation carries, without touching collection state."""
+        if isinstance(update_op, models.UpsertOperation):
+            upsert_struct = update_op.upsert
+            if isinstance(upsert_struct, models.PointsBatch):
+                points: Sequence[models.PointStruct] | models.Batch = upsert_struct.batch
+            elif isinstance(upsert_struct, models.PointsList):
+                points = upsert_struct.points
+            else:
+                raise ValueError(f"Unsupported upsert type: {type(update_op.upsert)}")
+
+            for point in self._materialize_points(points):
+                self._validate_point(point)
+
+        elif isinstance(update_op, models.UpdateVectorsOperation):
+            for point in update_op.update_vectors.points:
+                self._validate_named_vectors(
+                    {DEFAULT_VECTOR_NAME: point.vector}
+                    if isinstance(point.vector, list)
+                    else point.vector
+                )
+
     def batch_update_points(
         self,
         update_operations: Sequence[types.UpdateOperation],
     ) -> None:
+        # The server rejects the whole request, so one bad operation must not leave the
+        # operations before it applied.
+        for update_op in update_operations:
+            self._validate_update_operation(update_op)
+
         for update_op in update_operations:
             if isinstance(update_op, models.UpsertOperation):
                 upsert_struct = update_op.upsert

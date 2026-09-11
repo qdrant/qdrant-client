@@ -1026,3 +1026,50 @@ def test_rejected_upsert_leaves_the_collection_untouched(local_client, remote_cl
             remote_client.upsert(COLLECTION_NAME, batch, wait=True)
 
         compare_collections(local_client, remote_client, UPLOAD_NUM_VECTORS)
+
+
+def test_rejected_update_vectors_leaves_the_collection_untouched(local_client, remote_client):
+    """A rejected point must not take the valid points sent alongside it down with it."""
+    points = generate_fixtures(UPLOAD_NUM_VECTORS)
+    local_client.upload_points(COLLECTION_NAME, points, wait=True)
+    remote_client.upload_points(COLLECTION_NAME, points, wait=True)
+
+    replacement = list(points[1].vector["text"])
+    for bad_vector in (nan_vectors(points[0])["text"], []):
+        batch = [
+            models.PointVectors(id=points[0].id, vector={"text": replacement}),  # valid, first
+            models.PointVectors(id=points[1].id, vector={"text": bad_vector}),  # rejected
+        ]
+        with pytest.raises(ValueError):
+            local_client.update_vectors(COLLECTION_NAME, points=batch)
+        with pytest.raises(qdrant_client.http.exceptions.UnexpectedResponse):
+            remote_client.update_vectors(COLLECTION_NAME, points=batch, wait=True)
+
+        compare_collections(local_client, remote_client, UPLOAD_NUM_VECTORS)
+
+
+def test_rejected_batch_update_leaves_the_collection_untouched(local_client, remote_client):
+    """One bad operation must not leave the operations before it applied."""
+    points = generate_fixtures(UPLOAD_NUM_VECTORS)
+    local_client.upload_points(COLLECTION_NAME, points, wait=True)
+    remote_client.upload_points(COLLECTION_NAME, points, wait=True)
+
+    operations = [
+        models.SetPayloadOperation(
+            set_payload=models.SetPayload(payload={"a": "changed"}, points=[points[0].id])
+        ),
+        models.UpsertOperation(
+            upsert=models.PointsList(
+                points=[
+                    models.PointStruct(id=UPLOAD_NUM_VECTORS + 1, vector=nan_vectors(points[0]))
+                ]
+            )
+        ),
+    ]
+
+    with pytest.raises(ValueError):
+        local_client.batch_update_points(COLLECTION_NAME, update_operations=operations)
+    with pytest.raises(qdrant_client.http.exceptions.UnexpectedResponse):
+        remote_client.batch_update_points(COLLECTION_NAME, update_operations=operations, wait=True)
+
+    compare_collections(local_client, remote_client, UPLOAD_NUM_VECTORS)
