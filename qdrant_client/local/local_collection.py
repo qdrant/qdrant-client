@@ -101,13 +101,16 @@ def to_jsonable_python(x: Any) -> Any:
 
 
 def validate_dense_vector(vector: Any, vector_name: str) -> None:
-    """Reject empty dense vectors, as the server does at write time."""
+    """Reject empty dense vectors and NaN values, as the server does at write time."""
     if len(vector) == 0:
         raise ValueError(f"Wrong input: Dense vector must not be empty for vector '{vector_name}'")
 
+    if np.isnan(np.asarray(vector, dtype=np.float32)).any():
+        raise ValueError("Vector contains NaN values")
+
 
 def validate_multivector(vector: Any, vector_name: str) -> None:
-    """Reject empty multivectors and multivectors holding empty vectors, as the server does."""
+    """Reject empty multivectors, empty sub-vectors and NaN values, as the server does."""
     if len(vector) == 0:
         raise ValueError(f"Wrong input: Multivector must not be empty for vector '{vector_name}'")
 
@@ -117,6 +120,9 @@ def validate_multivector(vector: Any, vector_name: str) -> None:
                 "Wrong input: All vectors of a multivector must be non-empty "
                 f"for vector '{vector_name}'"
             )
+
+    if np.isnan(np.asarray(vector, dtype=np.float32)).any():
+        raise ValueError("Vector contains NaN values")
 
 
 class LocalCollection:
@@ -2496,8 +2502,6 @@ class LocalCollection:
             vector = vectors.get(vector_name)
             if vector is not None:
                 params = self.get_vector_params(vector_name)
-                if np.isnan(vector).any():
-                    raise ValueError("Vector contains NaN values")
                 if params.distance == models.Distance.COSINE:
                     norm = np.linalg.norm(vector)
                     vector = np.array(vector) / norm if norm > EPSILON else vector
@@ -2526,9 +2530,6 @@ class LocalCollection:
             vector = vectors.get(vector_name)
             if vector is not None:
                 params = self.get_vector_params(vector_name)
-                if np.isnan(vector).any():
-                    raise ValueError("Vector contains NaN values")
-
                 if params.distance == models.Distance.COSINE:
                     vector_norm = np.linalg.norm(vector, axis=-1)[:, np.newaxis]
                     vector /= np.where(vector_norm != 0.0, vector_norm, EPSILON)
@@ -2574,8 +2575,6 @@ class LocalCollection:
                 )
             else:
                 vector_np = np.array(vector, dtype=np.float32)
-                if np.isnan(vector_np).any():
-                    raise ValueError("Vector contains NaN values")
                 params = self.get_vector_params(vector_name)
                 if params.distance == models.Distance.COSINE:
                     norm = np.linalg.norm(vector_np)
@@ -2631,8 +2630,6 @@ class LocalCollection:
                 )
             else:
                 vector_np = np.array(vector, dtype=np.float32)
-                if np.isnan(vector_np).any():
-                    raise ValueError("Vector contains NaN values")
                 params = self.get_vector_params(vector_name)
                 if params.distance == models.Distance.COSINE:
                     vector_norm = np.linalg.norm(vector_np, axis=-1)[:, np.newaxis]
@@ -2644,12 +2641,12 @@ class LocalCollection:
 
             self.multivectors[vector_name] = named_vectors
 
-    def _upsert_point(
-        self,
-        point: models.PointStruct,
-        update_filter: types.Filter | None = None,
-        update_mode: types.UpdateMode | None = None,
-    ) -> None:
+    def _validate_point(self, point: models.PointStruct) -> None:
+        """Validate a point and normalize its sparse vectors, without touching collection state.
+
+        Every write path runs this over all of its points before applying any of them, so a
+        rejected point leaves the collection untouched, the way the server does.
+        """
         if isinstance(point.id, str):
             # try to parse as UUID
             try:
@@ -2685,6 +2682,13 @@ class LocalCollection:
                 raise ValueError("Wrong input: Not existing vector name error")
             self._validate_dense_or_multivector(point.vector, DEFAULT_VECTOR_NAME)
 
+    def _upsert_point(
+        self,
+        point: models.PointStruct,
+        update_filter: types.Filter | None = None,
+        update_mode: types.UpdateMode | None = None,
+    ) -> None:
+        """Apply an already validated point. Call `_validate_point` first."""
         if isinstance(point.id, uuid.UUID):
             point.id = str(point.id)
 
@@ -2719,8 +2723,7 @@ class LocalCollection:
         validate_filter(update_filter)
 
         if isinstance(points, list):
-            for point in points:
-                self._upsert_point(point, update_filter=update_filter, update_mode=update_mode)
+            point_structs = list(points)
         elif isinstance(points, models.Batch):
             batch = points
             if isinstance(batch.vectors, list):
@@ -2728,24 +2731,24 @@ class LocalCollection:
             else:
                 vectors = batch.vectors
 
-            for idx, point_id in enumerate(batch.ids):
-                payload = None
-                if batch.payloads is not None:
-                    payload = batch.payloads[idx]
-
-                vector = {name: v[idx] for name, v in vectors.items()}
-
-                self._upsert_point(
-                    models.PointStruct(
-                        id=point_id,
-                        payload=payload,
-                        vector=vector,
-                    ),
-                    update_filter=update_filter,
-                    update_mode=update_mode,
+            point_structs = [
+                models.PointStruct(
+                    id=point_id,
+                    payload=batch.payloads[idx] if batch.payloads is not None else None,
+                    vector={name: v[idx] for name, v in vectors.items()},
                 )
+                for idx, point_id in enumerate(batch.ids)
+            ]
         else:
             raise ValueError(f"Unsupported type: {type(points)}")
+
+        # Validate everything before writing anything: the server rejects the whole request,
+        # so a bad point in the middle of a batch must not leave the earlier ones applied.
+        for point in point_structs:
+            self._validate_point(point)
+
+        for point in point_structs:
+            self._upsert_point(point, update_filter=update_filter, update_mode=update_mode)
 
         if len(self.ids) > self.LARGE_DATA_THRESHOLD:
             show_warning_once(
@@ -2771,11 +2774,7 @@ class LocalCollection:
                 continue
 
             self._validate_dense_or_multivector(vector, vector_name)
-            vector_np = np.array(vector, dtype=np.float32)
-
-            if np.isnan(vector_np).any():
-                raise ValueError("Vector contains NaN values")
-            validated.append((vector_name, vector_np))
+            validated.append((vector_name, np.array(vector, dtype=np.float32)))
 
         for vector_name, vector_np in validated:
             self.deleted_per_vector[vector_name][idx] = 0
@@ -2835,6 +2834,12 @@ class LocalCollection:
             | models.PointIdsList
         ),
     ) -> None:
+        # Check every name up front: the server rejects the whole request on an unknown
+        # vector name, rather than deleting the names it recognizes first.
+        for vector_name in vectors:
+            if vector_name not in self._all_vectors_keys:
+                raise ValueError(f"Wrong input: Not existing vector name error: {vector_name}")
+
         ids = self._selector_to_ids(selector)
         for point_id in ids:
             idx = self.ids[point_id]

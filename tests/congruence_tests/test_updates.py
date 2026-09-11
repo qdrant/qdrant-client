@@ -985,3 +985,44 @@ def test_update_mode(prefer_grpc: bool) -> None:
         assert np.allclose(local_points[0].vector, remote_points[0].vector)
         assert np.allclose(local_points[0].vector, first_point.vector)
         assert len(local_points) == len(remote_points) == 1
+
+
+def nan_vectors(point: models.PointStruct) -> dict:
+    """A copy of the point's vectors with one NaN slipped into the dense 'text' vector."""
+    vectors = deepcopy(point.vector)
+    vectors["text"] = list(vectors["text"])
+    vectors["text"][0] = float("nan")
+    return vectors
+
+
+def test_rejected_upsert_leaves_the_collection_untouched(local_client, remote_client):
+    """A write the client refuses must not change anything, the way the server does.
+
+    Local mode used to validate after mutating, so a NaN vector left a half-added point
+    behind and skewed the per-vector arrays, which broke every later query.
+    """
+    points = generate_fixtures(UPLOAD_NUM_VECTORS)
+    local_client.upload_points(COLLECTION_NAME, points, wait=True)
+    remote_client.upload_points(COLLECTION_NAME, points, wait=True)
+
+    new_point = models.PointStruct(
+        id=UPLOAD_NUM_VECTORS + 1, vector=nan_vectors(points[0]), payload={"a": "new"}
+    )
+    existing_point = models.PointStruct(
+        id=points[0].id, vector=nan_vectors(points[0]), payload={"a": "clobbered"}
+    )
+    healthy_point = models.PointStruct(
+        id=UPLOAD_NUM_VECTORS + 2, vector=deepcopy(points[1].vector)
+    )
+
+    for batch in (
+        [new_point],  # rejected insert
+        [existing_point],  # rejected update
+        [healthy_point, new_point],  # rejected batch, healthy point first
+    ):
+        with pytest.raises(ValueError):
+            local_client.upsert(COLLECTION_NAME, batch)
+        with pytest.raises(qdrant_client.http.exceptions.UnexpectedResponse):
+            remote_client.upsert(COLLECTION_NAME, batch, wait=True)
+
+        compare_collections(local_client, remote_client, UPLOAD_NUM_VECTORS)
