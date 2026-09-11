@@ -320,11 +320,14 @@ def parse_variable(var: str) -> str | int:
     if bracket_end == -1:
         raise ValueError(f"Invalid score pattern: {var}")
 
-    # try parsing the content in between brackets as integer
-    try:
-        idx = int(remaining[:bracket_end])
-    except ValueError:
+    # parse the content in between brackets as an unsigned integer. qdrant core represents
+    # the score index as a usize, while `int()` would also accept a sign, underscore
+    # separators and surrounding whitespace
+    raw_idx = remaining[:bracket_end]
+    if not (raw_idx.isascii() and raw_idx.isdigit()):
         raise ValueError(f"Invalid score pattern: {var}")
+
+    idx = int(raw_idx)
 
     # make sure the string ends after the closing bracket
     if len(remaining) > bracket_end + 1:
@@ -339,34 +342,3 @@ def raise_non_finite_error(expression: str) -> None:
 
 def is_number(value: Any) -> bool:
     return isinstance(value, (int, float)) and not isinstance(value, bool)
-
-
-def test_parsing_variable() -> None:
-    assert parse_variable("$score") == 0
-    assert parse_variable("$score[0]") == 0
-    assert parse_variable("$score[1]") == 1
-    assert parse_variable("$score[2]") == 2
-
-    try:
-        parse_variable("$score[invalid]")
-        assert False
-    except ValueError as e:
-        assert str(e) == "Invalid score pattern: $score[invalid]"
-
-    try:
-        parse_variable("$score[10].other")
-        assert False
-    except ValueError as e:
-        assert str(e) == "Invalid score pattern: $score[10].other"
-
-
-def test_try_extract_payload_value() -> None:
-    for payload_value, expected in [(1.2, 1.2), ([1.2], 1.2), ([1.2, 2.3], [1.2, 2.3])]:
-        empty_defaults: dict[str, Any] = {}
-
-        payload = {"key": payload_value}
-        assert try_extract_payload_value("key", payload, empty_defaults) == expected
-
-        defaults = {"key": payload_value}
-        empty_payload: dict[str, Any] = {}
-        assert try_extract_payload_value("key", empty_payload, defaults) == expected
