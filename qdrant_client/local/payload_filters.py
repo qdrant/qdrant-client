@@ -184,9 +184,11 @@ def check_match(condition: models.Match, value: Any) -> bool:
         document_tokens = set(unindexed_text_tokens(value))
         return bool(query_tokens) and all(token in document_tokens for token in query_tokens)
     if isinstance(condition, models.MatchTextAny):
-        # Unlike text/phrase, the server still resolves this with a substring scan on
-        # unindexed fields.
-        return isinstance(value, str) and any(word in value for word in condition.text_any.split())
+        # Like `MatchText`, but a single query token is enough (qdrant#10526).
+        if not isinstance(value, str):
+            return False
+        document_tokens = set(unindexed_text_tokens(value))
+        return any(token in document_tokens for token in unindexed_text_tokens(condition.text_any))
     if isinstance(condition, models.MatchPhrase):
         # Like `MatchText`, but the query tokens must appear consecutively in document
         # token order (qdrant#10341).

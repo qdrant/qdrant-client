@@ -228,10 +228,23 @@ def test_phrase_match_requires_token_order():
     assert not check_match(phrase("alpha"), None)
 
 
-def test_text_any_match_keeps_substring_semantics():
-    """Unlike text and phrase, the server still resolves `MatchTextAny` on an unindexed
-    field with a substring scan.
+def test_text_any_match_needs_only_one_token():
+    """Like text and phrase, `MatchTextAny` on an unindexed field matches whole tokens
+    rather than substrings (qdrant#10526), but one query token is enough.
     """
-    assert check_match(models.MatchTextAny(text_any="good fly"), "goodness only")
-    assert check_match(models.MatchTextAny(text_any="fly"), "butterfly")
-    assert not check_match(models.MatchTextAny(text_any="cheap"), "goodness only")
+    text_any = models.MatchTextAny
+
+    # a substring of a document token is not a match
+    assert not check_match(text_any(text_any="good fly"), "goodness only")
+    assert not check_match(text_any(text_any="fly"), "butterfly")
+    assert not check_match(text_any(text_any="cheap"), "goodness only")
+
+    # any single query token is enough, unlike `MatchText`, which requires all of them
+    assert check_match(text_any(text_any="good fly"), "good cheap stuff")
+    assert check_match(text_any(text_any="good fly"), "come fly, with me")
+    assert not check_match(text_any(text_any="good fly"), "cheap hardware")
+
+    # tokenization applies to both sides, lowercasing included
+    assert check_match(text_any(text_any="Alpha, Beta!"), "beta")
+    assert not check_match(text_any(text_any=""), "anything")
+    assert not check_match(text_any(text_any="alpha"), None)
