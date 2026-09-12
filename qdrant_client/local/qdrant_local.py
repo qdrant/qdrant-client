@@ -1,3 +1,4 @@
+import atexit
 import importlib.metadata
 import itertools
 import json
@@ -114,6 +115,31 @@ class QdrantLocal(QdrantBase):
             # QdrantLocal instance
             pass
 
+    def _release_lock(self) -> None:
+        """Release the `.lock` file's OS-level lock and close its file handle.
+
+        Registered as an `atexit` hook in `_load()` so the lock is released
+        even when the script exits without an explicit `.close()` call -
+        gradio hot-reloads, one-shot scripts, a worker that the supervisor
+        tears down without running finalizers. Without the hook, the OS
+        lock is only released when the OS reaps the file handle, which on
+        gradio reloads surfaces as a spurious "already accessed"
+        `RuntimeError` on the next process. The hook is idempotent: it
+        early-returns when the handle is already closed, so it composes
+        safely with an explicit `close()`.
+        """
+        if self._flock_file is None or self._flock_file.closed:
+            return
+        try:
+            import portalocker  # same import-deferral rationale as `close()`
+            portalocker.unlock(self._flock_file)
+            self._flock_file.close()
+        except (TypeError, Exception):
+            # Same teardown-safety rationale as `close()`: portalocker can
+            # be GC'd before the instance, and any other shutdown error
+            # must not crash interpreter teardown.
+            pass
+
     def _load(self) -> None:
         deprecated_config_fields = ("init_from",)
 
@@ -173,6 +199,10 @@ class QdrantLocal(QdrantBase):
                 f"Storage folder {self.location} is already accessed by another instance of Qdrant client."
                 f" If you require concurrent access, use Qdrant server instead."
             )
+
+        # Register the atexit hook only after the lock is held, so a
+        # process that loses the race (above) never gets registered.
+        atexit.register(self._release_lock)
 
     def _save(self) -> None:
         if not self.persistent:

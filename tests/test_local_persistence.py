@@ -201,3 +201,45 @@ def test_update_persistence():
             "not_important": "missing",
         }
         client.close()
+
+
+def test_lockfile_released_on_atexit_hook():
+    """Regression test for https://github.com/qdrant/qdrant-client/issues/765.
+
+    QdrantLocal registers an atexit hook that releases the `.lock` file's
+    OS-level lock. Without the hook, a process that exits without calling
+    `.close()` (gradio hot-reload, a one-shot script) leaves the OS lock
+    held until the OS reaps the file handle, and the next process that
+    opens the same path sees a spurious "already accessed" RuntimeError.
+
+    We can't drive the real atexit path in-process (it only fires on
+    interpreter shutdown), so we test the helper directly: call
+    `_release_lock` to simulate the hook running, then verify a second
+    client can acquire the same path.
+    """
+    with tempfile.TemporaryDirectory() as tmpdir:
+        first = QdrantClient(path=tmpdir)
+
+        flock = first._client._flock_file
+        assert flock is not None
+        assert not flock.closed, "lockfile should be held while client is alive"
+
+        first._client._release_lock()
+        assert flock.closed, "_release_lock should close the lockfile handle"
+
+        second = QdrantClient(path=tmpdir)
+        second.close()
+        first.close()
+
+
+def test_lockfile_release_lock_is_idempotent():
+    """`_release_lock` must be a no-op when the handle is already closed,
+    so it composes safely with an explicit `.close()` followed by the
+    atexit hook firing at interpreter shutdown.
+    """
+    with tempfile.TemporaryDirectory() as tmpdir:
+        client = QdrantClient(path=tmpdir)
+        client.close()
+        # Explicit close already released the lock. The atexit hook will
+        # still fire on shutdown; it must not raise.
+        client._client._release_lock()
