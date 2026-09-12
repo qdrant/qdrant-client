@@ -248,3 +248,83 @@ def test_text_any_match_needs_only_one_token():
     assert check_match(text_any(text_any="Alpha, Beta!"), "beta")
     assert not check_match(text_any(text_any=""), "anything")
     assert not check_match(text_any(text_any="alpha"), None)
+
+
+def matching_ids(flt: models.Filter, payloads: dict) -> list:
+    return [
+        idx for idx, payload in payloads.items() if check_filter(flt, payload, idx, has_vector={})
+    ]
+
+
+EMPTY_NULL_PAYLOADS = {
+    1: {"reports": [1, 2]},  # non-empty array: neither empty nor null
+    2: {"reports": []},  # empty array: empty, not null
+    3: {"reports": None},  # null: both empty and null
+    4: {},  # key absent: empty, not null
+    5: {"reports": [None, 1]},  # array holding a null: not empty, but null
+}
+
+
+def is_empty_null_filter(flag: str, value: bool) -> models.Filter:
+    return models.Filter(must=[models.FieldCondition(key="reports", **{flag: value})])
+
+
+def test_field_condition_is_empty():
+    # `FieldCondition.is_empty` is the shorthand syntax for `IsEmptyCondition`, and on a key
+    # holding a single value the two agree.
+    assert matching_ids(is_empty_null_filter("is_empty", True), EMPTY_NULL_PAYLOADS) == [2, 3, 4]
+    assert matching_ids(is_empty_null_filter("is_empty", False), EMPTY_NULL_PAYLOADS) == [1, 5]
+
+    negated = models.Filter(must_not=[models.FieldCondition(key="reports", is_empty=True)])
+    assert matching_ids(negated, EMPTY_NULL_PAYLOADS) == [1, 5]
+
+    verbose = models.Filter(
+        must=[models.IsEmptyCondition(is_empty=models.PayloadField(key="reports"))]
+    )
+    assert matching_ids(verbose, EMPTY_NULL_PAYLOADS) == [2, 3, 4]
+
+
+def test_field_condition_is_null():
+    # `FieldCondition.is_null` matches a null value, or an array containing one. An absent
+    # key is not null.
+    assert matching_ids(is_empty_null_filter("is_null", True), EMPTY_NULL_PAYLOADS) == [3, 5]
+    assert matching_ids(is_empty_null_filter("is_null", False), EMPTY_NULL_PAYLOADS) == [1, 2, 4]
+
+    negated = models.Filter(must_not=[models.FieldCondition(key="reports", is_null=True)])
+    assert matching_ids(negated, EMPTY_NULL_PAYLOADS) == [1, 2, 4]
+
+    verbose = models.Filter(
+        must=[models.IsNullCondition(is_null=models.PayloadField(key="reports"))]
+    )
+    assert matching_ids(verbose, EMPTY_NULL_PAYLOADS) == [3, 5]
+
+
+def test_field_condition_is_empty_is_null_json_path():
+    payloads = {
+        1: {"a": [{"b": 1}, {"b": None}]},
+        2: {"a": [{"b": 1}, {"b": 2}]},
+        3: {"a": []},
+        4: {"a": [{"b": []}, {"b": 1}]},
+        5: {"a": [{"b": []}]},
+    }
+
+    def matches(flag: str, value: bool) -> list:
+        return matching_ids(
+            models.Filter(must=[models.FieldCondition(key="a[].b", **{flag: value})]), payloads
+        )
+
+    assert matches("is_null", True) == [1]
+    assert matches("is_null", False) == [2, 3, 4, 5]
+
+    assert matches("is_empty", True) == [3, 5]
+    assert matches("is_empty", False) == [1, 2, 4]
+
+    verbose_empty = models.Filter(
+        must=[models.IsEmptyCondition(is_empty=models.PayloadField(key="a[].b"))]
+    )
+    assert matching_ids(verbose_empty, payloads) == matches("is_empty", True)
+
+    verbose_null = models.Filter(
+        must=[models.IsNullCondition(is_null=models.PayloadField(key="a[].b"))]
+    )
+    assert matching_ids(verbose_null, payloads) == matches("is_null", True)

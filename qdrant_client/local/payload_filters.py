@@ -47,6 +47,42 @@ def check_values_count(condition: models.ValuesCount, values: list[Any] | None) 
     )
 
 
+def value_is_empty(value: Any) -> bool:
+    """A value is empty when it is null or an empty array."""
+    if value is None:
+        return True
+    if isinstance(value, list):
+        return len(value) == 0
+    return False
+
+
+def value_is_null(value: Any) -> bool:
+    """A value is null when it is null itself, or an array containing a null element,
+    one level deep (qdrant#10101).
+    """
+    if value is None:
+        return True
+    if isinstance(value, list):
+        return any(element is None for element in value)
+    return False
+
+
+def check_is_empty(payload: dict[str, Any], key: str) -> bool:
+    """Whether a key is empty: it resolves to no value at all, or every value it resolves
+    to is empty.
+    """
+    values = value_by_key(payload, key, flat=False)
+    return values is None or len(values) == 0 or all(value_is_empty(value) for value in values)
+
+
+def check_is_null(payload: dict[str, Any], key: str) -> bool:
+    """Whether any value a key resolves to is null."""
+    values = value_by_key(payload, key, flat=False)
+    if values is None:
+        return False
+    return any(value_is_null(value) for value in values)
+
+
 def check_geo_radius(condition: models.GeoRadius, values: Any) -> bool:
     if isinstance(values, dict) and "lat" in values and "lon" in values:
         lat = values["lat"]
@@ -247,21 +283,9 @@ def check_condition(
     has_vector: dict[str, bool],
 ) -> bool:
     if isinstance(condition, models.IsNullCondition):
-        values = value_by_key(payload, condition.is_null.key, flat=False)
-        if values is None:
-            return False
-        # A value is null if it is null itself, or is an array containing a null
-        # element, one level deep (qdrant#10101).
-        if any(v is None or (isinstance(v, list) and any(e is None for e in v)) for v in values):
-            return True
+        return check_is_null(payload, condition.is_null.key)
     elif isinstance(condition, models.IsEmptyCondition):
-        values = value_by_key(payload, condition.is_empty.key, flat=False)
-        if (
-            values is None
-            or len(values) == 0
-            or all((v is None or (isinstance(v, list) and len(v) == 0)) for v in values)
-        ):
-            return True
+        return check_is_empty(payload, condition.is_empty.key)
     elif isinstance(condition, models.HasIdCondition):
         ids = [str(id_) if isinstance(id_, UUID) else id_ for id_ in condition.has_id]
         if point_id in ids:
@@ -276,6 +300,14 @@ def check_condition(
         if condition.has_vector in has_vector and has_vector[condition.has_vector]:
             return True
     elif isinstance(condition, models.FieldCondition):
+        if condition.values_count is not None:
+            return check_values_count(
+                condition.values_count, value_by_key(payload, condition.key, flat=False)
+            )
+        if condition.is_empty is not None:
+            return check_is_empty(payload, condition.key) == condition.is_empty
+        if condition.is_null is not None:
+            return check_is_null(payload, condition.key) == condition.is_null
         values = value_by_key(payload, condition.key)
         if condition.match is not None:
             if values is None:
@@ -293,9 +325,6 @@ def check_condition(
             if values is None:
                 return False
             return any(check_geo_radius(condition.geo_radius, v) for v in values)
-        if condition.values_count is not None:
-            values = value_by_key(payload, condition.key, flat=False)
-            return check_values_count(condition.values_count, values)
         if condition.geo_polygon is not None:
             if values is None:
                 return False
