@@ -300,10 +300,6 @@ def test_field_condition_is_null():
 
 
 def test_field_condition_is_empty_is_null_json_path():
-    # `IsEmptyCondition`
-    # needs every value to be empty, so it parts company with `is_empty=True` exactly on the
-    # points holding values of both kinds - agreeing everywhere else, single-valued keys
-    # included, as `test_field_condition_is_empty` asserts.
     payloads = {
         1: {"a": [{"b": 1}, {"b": None}]},
         2: {"a": [{"b": 1}, {"b": 2}]},
@@ -318,16 +314,15 @@ def test_field_condition_is_empty_is_null_json_path():
         )
 
     assert matches("is_null", True) == [1]
-    # point 1 also holds a non-null value, so it satisfies both directions
-    assert matches("is_null", False) == [1, 2, 3, 4, 5]
-    assert matches("is_empty", True) == [1, 3, 4, 5]
-    # likewise points 1 and 4 hold a non-empty value as well
+    assert matches("is_null", False) == [2, 3, 4, 5]
+
+    assert matches("is_empty", True) == [3, 5]
     assert matches("is_empty", False) == [1, 2, 4]
 
     verbose_empty = models.Filter(
         must=[models.IsEmptyCondition(is_empty=models.PayloadField(key="a[].b"))]
     )
-    assert matching_ids(verbose_empty, payloads) == [3, 5]
+    assert matching_ids(verbose_empty, payloads) == matches("is_empty", True)
 
     verbose_null = models.Filter(
         must=[models.IsNullCondition(is_null=models.PayloadField(key="a[].b"))]

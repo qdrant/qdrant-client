@@ -583,6 +583,12 @@ def is_empty_is_null_clients() -> tuple[QdrantBase, QdrantBase]:
     remote_client = init_remote()
     init_client(remote_client, fixture_points)
 
+    for client in (local_client, remote_client):
+        for key in ("field", "nested.field", "array[].field"):
+            client.create_payload_index(
+                COLLECTION_NAME, key, models.PayloadSchemaType.INTEGER, wait=True
+            )
+
     return local_client, remote_client
 
 
@@ -593,11 +599,6 @@ def test_field_condition_is_empty_is_null(key: str, flag: str, value: bool):
     """`FieldCondition.is_empty` / `is_null` are the shorthand syntax for `IsEmptyCondition` /
     `IsNullCondition`, and local mode used to ignore them outright - matching nothing under
     `must` and everything under `must_not`.
-
-    Each direction takes any one of the values the key resolves to, so `array[].field` over
-    `[{"field": 1}, {"field": []}]` is both empty and non-empty. `is_null=True` coincides with
-    `IsNullCondition`, which is `any` as well; `is_empty=True` does not coincide with
-    `IsEmptyCondition`, which matches only when every value the key resolves to is empty.
     """
     local_client, remote_client = is_empty_is_null_clients()
 

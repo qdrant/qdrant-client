@@ -67,6 +67,22 @@ def value_is_null(value: Any) -> bool:
     return False
 
 
+def check_is_empty(payload: dict[str, Any], key: str) -> bool:
+    """Whether a key is empty: it resolves to no value at all, or every value it resolves
+    to is empty.
+    """
+    values = value_by_key(payload, key, flat=False)
+    return values is None or len(values) == 0 or all(value_is_empty(value) for value in values)
+
+
+def check_is_null(payload: dict[str, Any], key: str) -> bool:
+    """Whether any value a key resolves to is null."""
+    values = value_by_key(payload, key, flat=False)
+    if values is None:
+        return False
+    return any(value_is_null(value) for value in values)
+
+
 def check_geo_radius(condition: models.GeoRadius, values: Any) -> bool:
     if isinstance(values, dict) and "lat" in values and "lon" in values:
         lat = values["lat"]
@@ -267,15 +283,9 @@ def check_condition(
     has_vector: dict[str, bool],
 ) -> bool:
     if isinstance(condition, models.IsNullCondition):
-        values = value_by_key(payload, condition.is_null.key, flat=False)
-        if values is None:
-            return False
-        if any(value_is_null(value) for value in values):
-            return True
+        return check_is_null(payload, condition.is_null.key)
     elif isinstance(condition, models.IsEmptyCondition):
-        values = value_by_key(payload, condition.is_empty.key, flat=False)
-        if values is None or len(values) == 0 or all(value_is_empty(value) for value in values):
-            return True
+        return check_is_empty(payload, condition.is_empty.key)
     elif isinstance(condition, models.HasIdCondition):
         ids = [str(id_) if isinstance(id_, UUID) else id_ for id_ in condition.has_id]
         if point_id in ids:
@@ -294,23 +304,10 @@ def check_condition(
             return check_values_count(
                 condition.values_count, value_by_key(payload, condition.key, flat=False)
             )
-        if condition.is_empty is not None or condition.is_null is not None:
-            # the shorthand syntax for `IsEmptyCondition` / `IsNullCondition`
-            raw_values = value_by_key(payload, condition.key, flat=False)
-            if not raw_values:
-                # nothing stored under the key: the server counts that as empty, not null
-                if condition.is_empty is not None:
-                    return condition.is_empty
-                return not condition.is_null
-            # Each direction asks its question of the values the key resolves to and takes
-            # any one of them, so a key resolving to several values can satisfy both
-            # directions at once: `a[].b` over `[{"b": 1}, {"b": []}]` is both `is_empty=True`
-            # and `is_empty=False`. `is_null=True` coincides with `IsNullCondition`, which is
-            # `any` as well, but `is_empty=True` does not coincide with `IsEmptyCondition`,
-            # which matches only when every value is empty - and so does not match that key.
-            if condition.is_empty is not None:
-                return any(value_is_empty(value) == condition.is_empty for value in raw_values)
-            return any(value_is_null(value) == condition.is_null for value in raw_values)
+        if condition.is_empty is not None:
+            return check_is_empty(payload, condition.key) == condition.is_empty
+        if condition.is_null is not None:
+            return check_is_null(payload, condition.key) == condition.is_null
         values = value_by_key(payload, condition.key)
         if condition.match is not None:
             if values is None:
