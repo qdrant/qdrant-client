@@ -550,3 +550,66 @@ def test_is_null_matches_null_inside_arrays(key: str):
             must=[models.IsNullCondition(is_null=models.PayloadField(key=key))]
         ),
     )
+
+
+def is_empty_is_null_clients() -> tuple[QdrantBase, QdrantBase]:
+    is_empty_is_null_payloads = [
+        {"field": [1, 2]},  # non-empty array: neither empty nor null
+        {"field": []},  # empty array: empty, not null
+        {"field": None},  # null: both empty and null
+        {"other": 1},  # the key absent altogether: empty, not null
+        {"field": [None, 1]},  # array holding a null: not empty, but null
+        {"field": 0},  # scalars and objects are neither
+        {"field": ""},
+        {"field": {"a": 1}},
+        # the same shapes under a nested key, and under a key resolving to several values
+        {"nested": {"field": None}},
+        {"nested": {"field": []}},
+        {"nested": {}},
+        {"nested": {"field": [1, 2]}},
+        {"array": [{"field": 1}, {"field": None}]},
+        {"array": [{"field": 1}, {"field": 2}]},
+        {"array": []},
+        {"array": [{"field": []}, {"field": 1}]},
+    ]
+
+    fixture_points = generate_fixtures(num=len(is_empty_is_null_payloads))
+    for point, payload in zip(fixture_points, is_empty_is_null_payloads):
+        point.payload = payload
+
+    local_client = init_local()
+    init_client(local_client, fixture_points)
+
+    remote_client = init_remote()
+    init_client(remote_client, fixture_points)
+
+    for client in (local_client, remote_client):
+        for key in ("field", "nested.field", "array[].field"):
+            client.create_payload_index(
+                COLLECTION_NAME, key, models.PayloadSchemaType.INTEGER, wait=True
+            )
+
+    return local_client, remote_client
+
+
+@pytest.mark.parametrize("key", ["field", "nested.field", "array[].field"])
+@pytest.mark.parametrize("flag", ["is_empty", "is_null"])
+@pytest.mark.parametrize("value", [True, False])
+def test_field_condition_is_empty_is_null(key: str, flag: str, value: bool):
+    """`FieldCondition.is_empty` / `is_null` are the shorthand syntax for `IsEmptyCondition` /
+    `IsNullCondition`, and local mode used to ignore them outright - matching nothing under
+    `must` and everything under `must_not`.
+    """
+    local_client, remote_client = is_empty_is_null_clients()
+
+    condition = models.FieldCondition(key=key, **{flag: value})
+    for scroll_filter in (
+        models.Filter(must=[condition]),
+        models.Filter(must_not=[condition]),
+    ):
+        compare_client_results(
+            local_client,
+            remote_client,
+            scroll_with_filter,
+            scroll_filter=scroll_filter,
+        )
