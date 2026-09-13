@@ -580,7 +580,7 @@ class LocalCollection:
         }
 
         sparse_vectors = {
-            name: self.sparse_vectors[name][idx]
+            name: deepcopy(self.sparse_vectors[name][idx])
             for name in self.sparse_vectors
             if not self.deleted_per_vector[name][idx]
         }
@@ -2550,7 +2550,7 @@ class LocalCollection:
                 self._update_idf_remove(previous_vector, vector_name)
 
             if vector is not None:
-                self.sparse_vectors[vector_name][idx] = vector
+                self.sparse_vectors[vector_name][idx] = deepcopy(vector)
                 self.deleted_per_vector[vector_name][idx] = 0
                 self._update_idf_append(vector, vector_name)
             else:
@@ -2633,7 +2633,7 @@ class LocalCollection:
                     self.deleted_per_vector[vector_name], 1
                 )
             else:
-                named_vectors[idx] = vector
+                named_vectors[idx] = deepcopy(vector)
                 self._update_idf_append(vector, vector_name)
                 self.deleted_per_vector[vector_name] = np.append(
                     self.deleted_per_vector[vector_name], 0
@@ -2826,7 +2826,7 @@ class LocalCollection:
             if isinstance(vector_np, SparseVector):
                 old_vector = self.sparse_vectors[vector_name][idx]
                 self._update_idf_remove(old_vector, vector_name)
-                self.sparse_vectors[vector_name][idx] = vector_np
+                self.sparse_vectors[vector_name][idx] = deepcopy(vector_np)
                 self._update_idf_append(vector_np, vector_name)
                 continue
 
