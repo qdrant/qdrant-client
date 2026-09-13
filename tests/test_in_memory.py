@@ -294,3 +294,76 @@ def test_fusion_dbsf_score_threshold(qdrant: QdrantClient):
         f"Expected 3 points after filtering (threshold 1.0), got {len(result_with_threshold.points)}. "
         f"Scores: {[p.score for p in result_no_threshold.points]}"
     )
+
+
+def test_reupsert_identical_cosine_vector_preserves_values(qdrant: QdrantClient):
+    # Unnamed dense vector
+    collection_name = "test_cosine_reupsert_unnamed"
+    qdrant.create_collection(
+        collection_name=collection_name,
+        vectors_config=models.VectorParams(size=4, distance=models.Distance.COSINE),
+    )
+    v = [0.1234567901234, -0.98765432109, 0.5555555555, 0.333333333333]
+    point = models.PointStruct(id=1, vector=v, payload={"test": "val"})
+    qdrant.upsert(collection_name=collection_name, points=[point], wait=True)
+    first_retrieved = qdrant.retrieve(collection_name=collection_name, ids=[1], with_vectors=True)[
+        0
+    ].vector
+
+    # Re-upserting identical vector must not drift in floating-point precision
+    qdrant.upsert(collection_name=collection_name, points=[point], wait=True)
+    second_retrieved = qdrant.retrieve(
+        collection_name=collection_name, ids=[1], with_vectors=True
+    )[0].vector
+
+    assert first_retrieved == second_retrieved
+
+    # Named dense vector
+    named_collection = "test_cosine_reupsert_named"
+    qdrant.create_collection(
+        collection_name=named_collection,
+        vectors_config={"dense": models.VectorParams(size=4, distance=models.Distance.COSINE)},
+    )
+    point_named = models.PointStruct(id=2, vector={"dense": v}, payload={"test": "val"})
+    qdrant.upsert(collection_name=named_collection, points=[point_named], wait=True)
+    first_named = qdrant.retrieve(collection_name=named_collection, ids=[2], with_vectors=True)[
+        0
+    ].vector["dense"]
+
+    qdrant.upsert(collection_name=named_collection, points=[point_named], wait=True)
+    second_named = qdrant.retrieve(collection_name=named_collection, ids=[2], with_vectors=True)[
+        0
+    ].vector["dense"]
+
+    assert first_named == second_named
+
+    # Multivector
+    multi_collection = "test_cosine_reupsert_multivector"
+    qdrant.create_collection(
+        collection_name=multi_collection,
+        vectors_config={
+            "multi": models.VectorParams(
+                size=4,
+                distance=models.Distance.COSINE,
+                multivector_config=models.MultiVectorConfig(
+                    comparator=models.MultiVectorComparator.MAX_SIM
+                ),
+            )
+        },
+    )
+    mv = [
+        [0.1234567901234, -0.98765432109, 0.5555555555, 0.333333333333],
+        [0.2, 0.4, 0.6, 0.8],
+    ]
+    point_multi = models.PointStruct(id=3, vector={"multi": mv})
+    qdrant.upsert(collection_name=multi_collection, points=[point_multi], wait=True)
+    first_multi = qdrant.retrieve(collection_name=multi_collection, ids=[3], with_vectors=True)[
+        0
+    ].vector["multi"]
+
+    qdrant.upsert(collection_name=multi_collection, points=[point_multi], wait=True)
+    second_multi = qdrant.retrieve(collection_name=multi_collection, ids=[3], with_vectors=True)[
+        0
+    ].vector["multi"]
+
+    assert first_multi == second_multi
