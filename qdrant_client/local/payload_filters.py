@@ -182,6 +182,10 @@ def check_match(condition: models.Match, value: Any) -> bool:
     if isinstance(condition, models.MatchAny):
         return any(values_match(value, v) for v in condition.any)
     if isinstance(condition, models.MatchExcept):
+        # The server never matches null with MatchExcept
+        # (condition_checker.rs: (Value::Null, _) => false).
+        if value is None:
+            return False
         return not any(values_match(value, v) for v in condition.except_)
     raise ValueError(f"Unknown match condition: {condition}")
 
@@ -221,7 +225,9 @@ def check_condition(
         values = value_by_key(payload, condition.is_null.key, flat=False)
         if values is None:
             return False
-        if any(v is None for v in values):
+        # The server treats an array containing a null element as null
+        # (condition_checker.rs: array.iter().any(|x| x.is_null())).
+        if any(v is None or (isinstance(v, list) and any(e is None for e in v)) for v in values):
             return True
     elif isinstance(condition, models.IsEmptyCondition):
         values = value_by_key(payload, condition.is_empty.key, flat=False)

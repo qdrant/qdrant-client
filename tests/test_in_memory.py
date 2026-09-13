@@ -294,3 +294,58 @@ def test_fusion_dbsf_score_threshold(qdrant: QdrantClient):
         f"Expected 3 points after filtering (threshold 1.0), got {len(result_with_threshold.points)}. "
         f"Scores: {[p.score for p in result_no_threshold.points]}"
     )
+
+
+def test_in_memory_is_null_matches_array_containing_null(qdrant: QdrantClient):
+    """An array with a null element satisfies IsNullCondition, as on the server."""
+    qdrant.create_collection(
+        collection_name="test_collection",
+        vectors_config=models.VectorParams(size=4, distance=models.Distance.DOT),
+    )
+    qdrant.upsert(
+        collection_name="test_collection",
+        wait=True,
+        points=[
+            models.PointStruct(id=1, vector=[0.1, 0.2, 0.3, 0.4], payload={"a": [1, None, 3]}),
+            models.PointStruct(id=2, vector=[0.1, 0.2, 0.3, 0.4], payload={"a": [1, 2, 3]}),
+            models.PointStruct(id=3, vector=[0.1, 0.2, 0.3, 0.4], payload={"a": None}),
+            models.PointStruct(id=4, vector=[0.1, 0.2, 0.3, 0.4], payload={"b": 1}),
+        ],
+    )
+
+    records, _ = qdrant.scroll(
+        collection_name="test_collection",
+        scroll_filter=models.Filter(
+            must=[models.IsNullCondition(is_null=models.PayloadField(key="a"))]
+        ),
+    )
+
+    assert sorted(record.id for record in records) == [1, 3]
+
+
+def test_in_memory_match_except_never_matches_null(qdrant: QdrantClient):
+    """MatchExcept does not match a null payload value, as on the server."""
+    qdrant.create_collection(
+        collection_name="test_collection",
+        vectors_config=models.VectorParams(size=4, distance=models.Distance.DOT),
+    )
+    qdrant.upsert(
+        collection_name="test_collection",
+        wait=True,
+        points=[
+            models.PointStruct(id=1, vector=[0.1, 0.2, 0.3, 0.4], payload={"a": None}),
+            models.PointStruct(id=2, vector=[0.1, 0.2, 0.3, 0.4], payload={"a": 1}),
+            models.PointStruct(id=3, vector=[0.1, 0.2, 0.3, 0.4], payload={"a": 5}),
+        ],
+    )
+
+    records, _ = qdrant.scroll(
+        collection_name="test_collection",
+        scroll_filter=models.Filter(
+            must=[
+                models.FieldCondition(key="a", match=models.MatchExcept(**{"except": [1]}))
+            ]
+        ),
+    )
+
+    assert [record.id for record in records] == [3]
