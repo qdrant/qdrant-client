@@ -2550,7 +2550,7 @@ class LocalCollection:
         # sparse vectors
         for vector_name, _named_vectors in self.sparse_vectors.items():
             vector = vectors.get(vector_name)
-            was_deleted = self.deleted_per_vector[vector_name][idx]
+            was_deleted = self.deleted[idx] or self.deleted_per_vector[vector_name][idx]
             if not was_deleted:
                 previous_vector = self.sparse_vectors[vector_name][idx]
                 self._update_idf_remove(previous_vector, vector_name)
@@ -2838,14 +2838,17 @@ class LocalCollection:
     def _apply_named_vectors(self, idx: int, validated: list[tuple[str, Any]]) -> None:
         """Apply already validated named vectors. Call `_validate_named_vectors` first."""
         for vector_name, vector_np in validated:
+            was_deleted = self.deleted[idx] or self.deleted_per_vector[vector_name][idx]
             self.deleted_per_vector[vector_name][idx] = 0
 
             if isinstance(vector_np, SparseVector):
-                old_vector = self.sparse_vectors[vector_name][idx]
-                self._update_idf_remove(old_vector, vector_name)
+                if not was_deleted:
+                    old_vector = self.sparse_vectors[vector_name][idx]
+                    self._update_idf_remove(old_vector, vector_name)
                 stored_vector = copy_sparse_vector(vector_np)
                 self.sparse_vectors[vector_name][idx] = stored_vector
-                self._update_idf_append(stored_vector, vector_name)
+                if not self.deleted[idx]:
+                    self._update_idf_append(stored_vector, vector_name)
                 continue
 
             params = self.get_vector_params(vector_name)
@@ -2913,6 +2916,12 @@ class LocalCollection:
         for point_id in ids:
             idx = self.ids[point_id]
             for vector_name in vectors:
+                if (
+                    vector_name in self.sparse_vectors
+                    and not self.deleted[idx]
+                    and not self.deleted_per_vector[vector_name][idx]
+                ):
+                    self._update_idf_remove(self.sparse_vectors[vector_name][idx], vector_name)
                 self.deleted_per_vector[vector_name][idx] = 1
             self._persist_by_id(point_id)
 
@@ -2920,6 +2929,10 @@ class LocalCollection:
         for point_id in ids:
             if point_id in self.ids:
                 idx = self.ids[point_id]
+                if not self.deleted[idx]:
+                    for vector_name, vectors in self.sparse_vectors.items():
+                        if not self.deleted_per_vector[vector_name][idx]:
+                            self._update_idf_remove(vectors[idx], vector_name)
                 self.deleted[idx] = 1
 
         if self.storage is not None:
