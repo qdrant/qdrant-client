@@ -83,8 +83,17 @@ def check_is_null(payload: dict[str, Any], key: str) -> bool:
     return any(value_is_null(value) for value in values)
 
 
+def _is_geo_point(value: Any) -> bool:
+    # Like the server's as_f64(), accept JSON numbers but not booleans or strings.
+    return (
+        isinstance(value, dict)
+        and type(value.get("lat")) in (int, float)
+        and type(value.get("lon")) in (int, float)
+    )
+
+
 def check_geo_radius(condition: models.GeoRadius, values: Any) -> bool:
-    if isinstance(values, dict) and "lat" in values and "lon" in values:
+    if _is_geo_point(values):
         lat = values["lat"]
         lon = values["lon"]
 
@@ -101,7 +110,7 @@ def check_geo_radius(condition: models.GeoRadius, values: Any) -> bool:
 
 
 def check_geo_bounding_box(condition: models.GeoBoundingBox, values: Any) -> bool:
-    if isinstance(values, dict) and "lat" in values and "lon" in values:
+    if _is_geo_point(values):
         lat = values["lat"]
         lon = values["lon"]
 
@@ -119,7 +128,7 @@ def check_geo_bounding_box(condition: models.GeoBoundingBox, values: Any) -> boo
 
 
 def check_geo_polygon(condition: models.GeoPolygon, values: Any) -> bool:
-    if isinstance(values, dict) and "lat" in values and "lon" in values:
+    if _is_geo_point(values):
         lat = values["lat"]
         lon = values["lon"]
         exterior = [(point.lat, point.lon) for point in condition.exterior.points]
