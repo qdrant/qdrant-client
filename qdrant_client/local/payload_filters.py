@@ -1,3 +1,4 @@
+import math
 import re
 from datetime import date, datetime, timezone
 from typing import Any
@@ -84,12 +85,16 @@ def check_is_null(payload: dict[str, Any], key: str) -> bool:
 
 
 def _is_geo_point(value: Any) -> bool:
-    # Like the server's as_f64(), accept JSON numbers but not booleans or strings.
-    return (
-        isinstance(value, dict)
-        and type(value.get("lat")) in (int, float)
-        and type(value.get("lon")) in (int, float)
-    )
+    """Accept finite JSON numbers that can be used by the geometry calculations."""
+    if not isinstance(value, dict):
+        return False
+    try:
+        return all(
+            type(coordinate) in (int, float) and math.isfinite(coordinate)
+            for coordinate in (value.get("lat"), value.get("lon"))
+        )
+    except OverflowError:
+        return False
 
 
 def check_geo_radius(condition: models.GeoRadius, values: Any) -> bool:

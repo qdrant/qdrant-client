@@ -322,7 +322,7 @@ def test_fusion_dbsf_score_threshold(qdrant: QdrantClient):
     ],
     ids=["radius", "bounding_box", "polygon"],
 )
-def test_geo_filters_ignore_non_numeric_coordinates(qdrant: QdrantClient, geo_condition):
+def test_geo_filters_ignore_invalid_coordinates(qdrant: QdrantClient, geo_condition):
     qdrant.create_collection(
         "geo", vectors_config=models.VectorParams(size=2, distance=models.Distance.DOT)
     )
@@ -330,7 +330,7 @@ def test_geo_filters_ignore_non_numeric_coordinates(qdrant: QdrantClient, geo_co
     invalid = [
         {**valid[0], coordinate: value}
         for coordinate in ("lon", "lat")
-        for value in (None, "0", False, [], {})
+        for value in (None, "0", False, [], {}, float("nan"), float("inf"), -float("inf"), 10**400)
     ]
     locations = [*valid, *invalid, [invalid[0], valid[0]]]
     qdrant.upsert(
