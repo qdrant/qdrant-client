@@ -3,7 +3,9 @@ from typing import Any
 
 import pytest
 
+from qdrant_client.http import models
 from qdrant_client.hybrid.formula import (
+    evaluate_expression,
     evaluate_variable,
     parse_variable,
     try_extract_payload_value,
@@ -48,6 +50,31 @@ def test_evaluate_variable_rejects_negative_score_index() -> None:
         evaluate_variable("$score[-1]", 1, scores, {}, {})
     with pytest.raises(ValueError):
         evaluate_variable("$score[-9]", 1, scores, {}, {})
+
+
+def _pow(base: float, exponent: float) -> float:
+    expression = models.PowExpression(pow=models.PowParams(base=base, exponent=exponent))
+    return evaluate_expression(expression, 1, [], {}, {}, {})
+
+
+def test_pow_expression() -> None:
+    assert _pow(2.0, 3.0) == 8.0
+    assert _pow(-2.0, 3.0) == -8.0
+    assert _pow(-2.0, 4.0) == 16.0
+    assert _pow(0.0, 0.0) == 1.0
+    assert _pow(0.0, 3.0) == 0.0
+
+    # a negative base with a non-integer exponent is mathematically undefined
+    with pytest.raises(ValueError, match="non-finite"):
+        _pow(-2.0, 2.5)
+
+    # 0 raised to a negative exponent is a pole (division by zero): it must be
+    # rejected the same clean way as any other non-finite result, not leak the
+    # raw "math domain error" ValueError that math.pow(0, negative) raises.
+    with pytest.raises(ValueError, match="non-finite"):
+        _pow(0.0, -1.0)
+    with pytest.raises(ValueError, match="non-finite"):
+        _pow(0.0, -2.5)
 
 
 def test_try_extract_payload_value() -> None:

@@ -110,7 +110,13 @@ def evaluate_expression(
             # `float()` is needed because payload values and formula
             # defaults can be ints, and `int.is_integer()` only exists since Python 3.12.
             # the condition is inside the try-except because too large integers can't be converted to floats.
-            if base >= 0 or (base != 0 and float(exponent).is_integer()):
+            # 0 raised to a negative exponent is a pole (division by zero), same as any other
+            # base > 0 case: only a non-negative exponent keeps it defined.
+            if (
+                base > 0
+                or (base == 0 and exponent >= 0)
+                or (base < 0 and float(exponent).is_integer())
+            ):
                 return math.pow(base, exponent)
         except OverflowError:
             pass
