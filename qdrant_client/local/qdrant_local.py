@@ -67,6 +67,7 @@ class QdrantLocal(QdrantBase):
     """
 
     LARGE_DATA_THRESHOLD = 20_000
+    MMR_CANDIDATES_LIMIT_MAX = 16384
 
     def __init__(self, location: str, force_disable_check_same_thread: bool = False) -> None:
         """
@@ -205,6 +206,47 @@ class QdrantLocal(QdrantBase):
             return self.collections[self.aliases[collection_name]]
         raise ValueError(f"Collection {collection_name} not found")
 
+    @classmethod
+    def _validate_query(cls, query: types.Query | None) -> None:
+        if isinstance(query, rest_models.RrfQuery):
+            if query.rrf.k is not None and query.rrf.k < 1:
+                raise ValueError(f"rrf k value {query.rrf.k} is invalid. Must be 1 or larger.")
+
+        elif isinstance(query, rest_models.NearestQuery):
+            mmr = query.mmr
+            if mmr is not None and mmr.candidates_limit is not None:
+                if mmr.candidates_limit < 0:
+                    raise ValueError(
+                        f"mmr candidates_limit value {mmr.candidates_limit} is invalid."
+                        f" Must be 0 or larger."
+                    )
+                if mmr.candidates_limit > cls.MMR_CANDIDATES_LIMIT_MAX:
+                    raise ValueError(
+                        f"mmr candidates_limit value {mmr.candidates_limit} is invalid."
+                        f" Must be {cls.MMR_CANDIDATES_LIMIT_MAX} or smaller."
+                    )
+
+        elif isinstance(query, rest_models.RelevanceFeedbackQuery):
+            naive = query.relevance_feedback.strategy.naive
+            if naive.b < 0:
+                raise ValueError(
+                    f"naive feedback b value {naive.b} is invalid. Must be 0 or larger."
+                )
+
+    @classmethod
+    def _validate_prefetch(cls, prefetch: types.Prefetch | list[types.Prefetch] | None) -> None:
+        if prefetch is None:
+            return
+
+        prefetches = prefetch if isinstance(prefetch, list) else [prefetch]
+        for item in prefetches:
+            if item.limit is not None and item.limit < 1:
+                raise ValueError(
+                    f"prefetch limit value {item.limit} is invalid. Must be 1 or larger."
+                )
+            cls._validate_query(item.query)
+            cls._validate_prefetch(item.prefetch)
+
     def search_matrix_offsets(
         self,
         collection_name: str,
@@ -214,6 +256,10 @@ class QdrantLocal(QdrantBase):
         using: str | None = None,
         **kwargs: Any,
     ) -> types.SearchMatrixOffsetsResponse:
+        if limit < 1:
+            raise ValueError(f"limit value {limit} is invalid. Must be 1 or larger.")
+        if sample < 2:
+            raise ValueError(f"sample value {sample} is invalid. Must be 2 or larger.")
         collection = self._get_collection(collection_name)
         return collection.search_matrix_offsets(
             query_filter=query_filter, limit=limit, sample=sample, using=using
@@ -230,6 +276,8 @@ class QdrantLocal(QdrantBase):
     ) -> types.SearchMatrixPairsResponse:
         if limit < 1:
             raise ValueError(f"limit value {limit} is invalid. Must be 1 or larger.")
+        if sample < 2:
+            raise ValueError(f"sample value {sample} is invalid. Must be 2 or larger.")
         collection = self._get_collection(collection_name)
         return collection.search_matrix_pairs(
             query_filter=query_filter, limit=limit, sample=sample, using=using
@@ -387,6 +435,10 @@ class QdrantLocal(QdrantBase):
     ) -> types.QueryResponse:
         if limit < 1:
             raise ValueError(f"limit value {limit} is invalid. Must be 1 or larger.")
+        if offset is not None and offset < 0:
+            raise ValueError(f"offset value {offset} is invalid. Must be 0 or larger.")
+        self._validate_query(query)
+        self._validate_prefetch(prefetch)
 
         collection = self._get_collection(collection_name)
 
@@ -473,6 +525,10 @@ class QdrantLocal(QdrantBase):
     ) -> types.GroupsResult:
         if limit < 1:
             raise ValueError(f"limit value {limit} is invalid. Must be 1 or larger.")
+        if group_size < 1:
+            raise ValueError(f"group_size value {group_size} is invalid. Must be 1 or larger.")
+        self._validate_query(query)
+        self._validate_prefetch(prefetch)
 
         collection = self._get_collection(collection_name)
 

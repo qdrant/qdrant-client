@@ -1952,6 +1952,229 @@ def test_query_invalid_vector_type():
         )
 
 
+def test_query_invalid_offset():
+    fixture_points = generate_fixtures(5)
+
+    local_client, http_client, grpc_client = init_clients(fixture_points)
+
+    query_vector = np.random.random(text_vector_size).tolist()
+
+    with pytest.raises(ValueError, match="offset value -1 is invalid"):
+        local_client.query_points(
+            collection_name=COLLECTION_NAME, query=query_vector, using="text", offset=-1
+        )
+
+    with pytest.raises(UnexpectedResponse, match="expected usize"):
+        http_client.query_points(
+            collection_name=COLLECTION_NAME, query=query_vector, using="text", offset=-1
+        )
+
+    # grpc rejects the negative offset while encoding it into a uint64 field
+    with pytest.raises(ValueError, match="out of range"):
+        grpc_client.query_points(
+            collection_name=COLLECTION_NAME, query=query_vector, using="text", offset=-1
+        )
+
+    requests = [
+        models.QueryRequest(query=query_vector, using="text", limit=10, offset=-1),
+    ]
+
+    with pytest.raises(ValueError, match="offset value -1 is invalid"):
+        local_client.query_batch_points(collection_name=COLLECTION_NAME, requests=requests)
+
+    with pytest.raises(UnexpectedResponse, match="expected usize"):
+        http_client.query_batch_points(collection_name=COLLECTION_NAME, requests=requests)
+
+    with pytest.raises(ValueError, match="out of range"):
+        grpc_client.query_batch_points(collection_name=COLLECTION_NAME, requests=requests)
+
+
+def test_query_invalid_prefetch_limit():
+    fixture_points = generate_fixtures(5)
+
+    local_client, http_client, grpc_client = init_clients(fixture_points)
+
+    query_vector = np.random.random(text_vector_size).tolist()
+
+    valid_prefetch = models.Prefetch(query=query_vector, using="text", limit=10)
+    invalid_prefetch = models.Prefetch(query=query_vector, using="text", limit=0)
+
+    prefetches = [
+        invalid_prefetch,
+        # the invalid limit is not the first element, every element has to be checked
+        [valid_prefetch, invalid_prefetch],
+        models.Prefetch(query=query_vector, using="text", limit=10, prefetch=invalid_prefetch),
+        models.Prefetch(
+            query=query_vector,
+            using="text",
+            limit=10,
+            prefetch=[valid_prefetch, invalid_prefetch],
+        ),
+    ]
+
+    for prefetch in prefetches:
+        with pytest.raises(ValueError, match="prefetch limit value 0 is invalid"):
+            local_client.query_points(
+                collection_name=COLLECTION_NAME,
+                query=query_vector,
+                using="text",
+                prefetch=prefetch,
+            )
+
+        with pytest.raises(UnexpectedResponse, match="must be 1 or larger"):
+            http_client.query_points(
+                collection_name=COLLECTION_NAME,
+                query=query_vector,
+                using="text",
+                prefetch=prefetch,
+            )
+
+        with pytest.raises(RpcError, match="must be 1 or larger"):
+            grpc_client.query_points(
+                collection_name=COLLECTION_NAME,
+                query=query_vector,
+                using="text",
+                prefetch=prefetch,
+            )
+
+
+def test_query_groups_invalid_group_size():
+    fixture_points = generate_fixtures(5)
+
+    local_client, http_client, grpc_client = init_clients(fixture_points)
+
+    query_vector = np.random.random(text_vector_size).tolist()
+
+    with pytest.raises(ValueError, match="group_size value 0 is invalid"):
+        local_client.query_points_groups(
+            collection_name=COLLECTION_NAME,
+            query=query_vector,
+            using="text",
+            group_by="city.geo",
+            group_size=0,
+        )
+
+    with pytest.raises(UnexpectedResponse, match="must be 1 or larger"):
+        http_client.query_points_groups(
+            collection_name=COLLECTION_NAME,
+            query=query_vector,
+            using="text",
+            group_by="city.geo",
+            group_size=0,
+        )
+
+    with pytest.raises(RpcError, match="must be 1 or larger"):
+        grpc_client.query_points_groups(
+            collection_name=COLLECTION_NAME,
+            query=query_vector,
+            using="text",
+            group_by="city.geo",
+            group_size=0,
+        )
+
+
+def test_query_invalid_rrf_k():
+    fixture_points = generate_fixtures(5)
+
+    local_client, http_client, grpc_client = init_clients(fixture_points)
+
+    query_vector = np.random.random(text_vector_size).tolist()
+
+    source = models.Prefetch(query=query_vector, using="text", limit=10)
+    invalid_rrf = models.RrfQuery(rrf=models.Rrf(k=0))
+
+    with pytest.raises(ValueError, match="rrf k value 0 is invalid"):
+        local_client.query_points(
+            collection_name=COLLECTION_NAME, query=invalid_rrf, prefetch=source
+        )
+
+    with pytest.raises(UnexpectedResponse, match="must be 1 or larger"):
+        http_client.query_points(
+            collection_name=COLLECTION_NAME, query=invalid_rrf, prefetch=source
+        )
+
+    with pytest.raises(RpcError, match="must be 1 or larger"):
+        grpc_client.query_points(
+            collection_name=COLLECTION_NAME, query=invalid_rrf, prefetch=source
+        )
+
+    # the same query carried by a prefetch has to be rejected as well
+    nested = models.Prefetch(query=invalid_rrf, limit=10, prefetch=source)
+
+    with pytest.raises(ValueError, match="rrf k value 0 is invalid"):
+        local_client.query_points(
+            collection_name=COLLECTION_NAME, query=query_vector, using="text", prefetch=nested
+        )
+
+    with pytest.raises(UnexpectedResponse, match="must be 1 or larger"):
+        http_client.query_points(
+            collection_name=COLLECTION_NAME, query=query_vector, using="text", prefetch=nested
+        )
+
+    with pytest.raises(RpcError, match="must be 1 or larger"):
+        grpc_client.query_points(
+            collection_name=COLLECTION_NAME, query=query_vector, using="text", prefetch=nested
+        )
+
+
+def test_query_invalid_mmr_candidates_limit():
+    fixture_points = generate_fixtures(5)
+
+    local_client, http_client, grpc_client = init_clients(fixture_points)
+
+    query_vector = np.random.random(text_vector_size).tolist()
+
+    too_large = models.NearestQuery(nearest=query_vector, mmr=models.Mmr(candidates_limit=16385))
+
+    with pytest.raises(ValueError, match="mmr candidates_limit value 16385 is invalid"):
+        local_client.query_points(collection_name=COLLECTION_NAME, query=too_large, using="text")
+
+    with pytest.raises(UnexpectedResponse, match="must be 16384 or smaller"):
+        http_client.query_points(collection_name=COLLECTION_NAME, query=too_large, using="text")
+
+    with pytest.raises(RpcError, match="must be 16384 or smaller"):
+        grpc_client.query_points(collection_name=COLLECTION_NAME, query=too_large, using="text")
+
+    negative = models.NearestQuery(nearest=query_vector, mmr=models.Mmr(candidates_limit=-1))
+
+    with pytest.raises(ValueError, match="mmr candidates_limit value -1 is invalid"):
+        local_client.query_points(collection_name=COLLECTION_NAME, query=negative, using="text")
+
+    # the server rejects the negative value while parsing the body, before the bound is reached
+    with pytest.raises(UnexpectedResponse):
+        http_client.query_points(collection_name=COLLECTION_NAME, query=negative, using="text")
+
+    with pytest.raises(ValueError, match="out of range"):
+        grpc_client.query_points(collection_name=COLLECTION_NAME, query=negative, using="text")
+
+
+def test_query_invalid_feedback_strategy():
+    fixture_points = generate_fixtures(5)
+
+    local_client, http_client, grpc_client = init_clients(fixture_points)
+
+    query_vector = np.random.random(text_vector_size).tolist()
+
+    query = models.RelevanceFeedbackQuery(
+        relevance_feedback=models.RelevanceFeedbackInput(
+            target=query_vector,
+            feedback=[models.FeedbackItem(example=1, score=0.9)],
+            strategy=models.NaiveFeedbackStrategy(
+                naive=models.NaiveFeedbackStrategyParams(a=0.5, b=-1.0, c=0.7)
+            ),
+        )
+    )
+
+    with pytest.raises(ValueError, match="naive feedback b value -1.0 is invalid"):
+        local_client.query_points(collection_name=COLLECTION_NAME, query=query, using="text")
+
+    with pytest.raises(UnexpectedResponse, match="must be 0.0 or larger"):
+        http_client.query_points(collection_name=COLLECTION_NAME, query=query, using="text")
+
+    with pytest.raises(RpcError, match="must be 0.0 or larger"):
+        grpc_client.query_points(collection_name=COLLECTION_NAME, query=query, using="text")
+
+
 def test_query_with_nan():
     fixture_points = generate_fixtures()
 
