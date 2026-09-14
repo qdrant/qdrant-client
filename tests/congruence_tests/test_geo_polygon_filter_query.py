@@ -155,3 +155,85 @@ def test_geo_bounding_box_edge_point():
             with_payload=True,
         ),
     )
+
+
+def test_geo_filters_ignore_unusable_coordinates():
+    """A stored location that is not a pair of numbers matches no geo filter, and does not
+    keep the valid locations from matching (qdrant-client#1422). The server applies the
+    geometry only when both coordinates read back as JSON numbers.
+    """
+    local_client = init_local()
+    remote_client = init_remote()
+
+    vectors_config = models.VectorParams(size=2, distance=models.Distance.DOT)
+    initialize_fixture_collection(local_client, COLLECTION_NAME, vectors_config=vectors_config)
+    initialize_fixture_collection(remote_client, COLLECTION_NAME, vectors_config=vectors_config)
+
+    inside = {"lon": 0, "lat": 0}
+    locations = [
+        inside,  # integer coordinates
+        {"lon": 0.0, "lat": 0.0},  # float coordinates
+        # a coordinate the server stores verbatim but never reads as a number
+        {"lon": 0, "lat": None},
+        {"lon": None, "lat": 0},
+        {"lon": 0, "lat": "0"},
+        {"lon": "0", "lat": 0},
+        {"lon": 0, "lat": True},
+        {"lon": True, "lat": 0},
+        {"lon": 0, "lat": False},
+        {"lon": 0, "lat": []},
+        {"lon": 0, "lat": [0]},
+        {"lon": 0, "lat": {}},
+        # a location that is not a geo point
+        {"lat": 0},
+        {"lon": 0},
+        {},
+        "0,0",
+        0,
+        [],
+        [{"lon": 0, "lat": None}, inside],  # an array matches on its valid location
+    ]
+    points = [
+        models.PointStruct(id=i, vector=[0.1, 0.1], payload={"location": location})
+        for i, location in enumerate(locations, start=1)
+    ]
+    local_client.upload_points(COLLECTION_NAME, points, wait=True)
+    remote_client.upload_points(COLLECTION_NAME, points, wait=True)
+
+    conditions = [
+        {"geo_radius": models.GeoRadius(center=models.GeoPoint(lon=0, lat=0), radius=1000)},
+        {
+            "geo_bounding_box": models.GeoBoundingBox(
+                top_left=models.GeoPoint(lon=-1, lat=1),
+                bottom_right=models.GeoPoint(lon=1, lat=-1),
+            )
+        },
+        {
+            "geo_polygon": models.GeoPolygon(
+                exterior=models.GeoLineString(
+                    points=[
+                        models.GeoPoint(lon=-1, lat=-1),
+                        models.GeoPoint(lon=1, lat=-1),
+                        models.GeoPoint(lon=1, lat=1),
+                        models.GeoPoint(lon=-1, lat=1),
+                        models.GeoPoint(lon=-1, lat=-1),
+                    ]
+                )
+            )
+        },
+    ]
+
+    for condition in conditions:
+        geo_filter = models.Filter(must=[models.FieldCondition(key="location", **condition)])
+
+        def scroll(client):
+            return client.scroll(
+                collection_name=COLLECTION_NAME,
+                scroll_filter=geo_filter,
+                limit=len(locations),
+                with_payload=True,
+            )
+
+        compare_client_results(local_client, remote_client, scroll)
+        # the two valid locations and the array, so the comparison above is not vacuous
+        assert [point.id for point in scroll(local_client)[0]] == [1, 2, len(locations)]

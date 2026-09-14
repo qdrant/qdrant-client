@@ -1,3 +1,4 @@
+import math
 import re
 from datetime import date, datetime, timezone
 from typing import Any
@@ -83,8 +84,21 @@ def check_is_null(payload: dict[str, Any], key: str) -> bool:
     return any(value_is_null(value) for value in values)
 
 
+def _is_geo_point(value: Any) -> bool:
+    """Accept finite JSON numbers that can be used by the geometry calculations."""
+    if not isinstance(value, dict):
+        return False
+    try:
+        return all(
+            type(coordinate) in (int, float) and math.isfinite(coordinate)
+            for coordinate in (value.get("lat"), value.get("lon"))
+        )
+    except OverflowError:
+        return False
+
+
 def check_geo_radius(condition: models.GeoRadius, values: Any) -> bool:
-    if isinstance(values, dict) and "lat" in values and "lon" in values:
+    if _is_geo_point(values):
         lat = values["lat"]
         lon = values["lon"]
 
@@ -101,7 +115,7 @@ def check_geo_radius(condition: models.GeoRadius, values: Any) -> bool:
 
 
 def check_geo_bounding_box(condition: models.GeoBoundingBox, values: Any) -> bool:
-    if isinstance(values, dict) and "lat" in values and "lon" in values:
+    if _is_geo_point(values):
         lat = values["lat"]
         lon = values["lon"]
 
@@ -119,7 +133,7 @@ def check_geo_bounding_box(condition: models.GeoBoundingBox, values: Any) -> boo
 
 
 def check_geo_polygon(condition: models.GeoPolygon, values: Any) -> bool:
-    if isinstance(values, dict) and "lat" in values and "lon" in values:
+    if _is_geo_point(values):
         lat = values["lat"]
         lon = values["lon"]
         exterior = [(point.lat, point.lon) for point in condition.exterior.points]
