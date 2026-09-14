@@ -1,4 +1,5 @@
 import warnings
+from types import TracebackType
 from typing import (
     Any,
     Awaitable,
@@ -166,6 +167,17 @@ class QdrantClient(QdrantFastembedMixin):
         # Httpx has specific set of params, which it accepts and will raise an error if it receives any other params.
 
     def __del__(self) -> None:
+        self.close()
+
+    def __enter__(self) -> "QdrantClient":
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> None:
         self.close()
 
     def close(self, grpc_grace: float | None = None, **kwargs: Any) -> None:
