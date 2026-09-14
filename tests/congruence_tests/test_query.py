@@ -1062,6 +1062,34 @@ class TestSimpleSearcher:
             limit=10,
         )
 
+    def mmr_query_parametrized_offset(
+        self, client: QdrantBase, offset: int
+    ) -> models.QueryResponse:
+        return client.query_points(
+            collection_name=COLLECTION_NAME,
+            query=models.NearestQuery(
+                nearest=self.dense_vector_query_text,
+                mmr=models.Mmr(diversity=0.3, candidates_limit=30),
+            ),
+            using="text",
+            limit=10,
+            offset=offset,
+        )
+
+    def default_mmr_query_offset(self, client: QdrantBase, offset: int) -> models.QueryResponse:
+        # `candidates_limit` defaults to `limit`, so the candidate pool runs out before
+        # `limit + offset` picks are made and the page is short. Core behaves the same way.
+        return client.query_points(
+            collection_name=COLLECTION_NAME,
+            query=models.NearestQuery(
+                nearest=self.dense_vector_query_text,
+                mmr=models.Mmr(),
+            ),
+            using="text",
+            limit=10,
+            offset=offset,
+        )
+
     def mmr_query_parametrized_score_threshold(self, client: QdrantBase) -> models.QueryResponse:
         return client.query_points(
             collection_name=COLLECTION_NAME,
@@ -2489,6 +2517,21 @@ def test_mmr_queries():
     compare_clients_results(
         local_client, http_client, grpc_client, searcher.mmr_query_parametrized_score_threshold
     )
+
+    # `offset` must paginate the re-ranked output, not the candidate pool
+    for offset in (0, 10, 20):
+        compare_clients_results(
+            local_client,
+            http_client,
+            grpc_client,
+            searcher.mmr_query_parametrized_offset,
+            offset=offset,
+        )
+
+    compare_clients_results(
+        local_client, http_client, grpc_client, searcher.default_mmr_query_offset, offset=5
+    )
+
     compare_clients_results(
         local_client, http_client, grpc_client, searcher.mmr_query_parametrized_dot
     )

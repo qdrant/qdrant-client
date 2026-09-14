@@ -2262,11 +2262,16 @@ class LocalCollection:
     ) -> list[models.ScoredPoint]:
         search_limit = mmr.candidates_limit if mmr.candidates_limit is not None else limit
         using = using or DEFAULT_VECTOR_NAME
+        # MMR reorders the candidates, so `offset` has to be applied to its output, not to the
+        # candidate search: fetch candidates from 0, re-rank `limit + offset` points, then drop
+        # the offset. Same order as core. Offsetting the candidate search instead would hide the
+        # top `offset` nearest points from MMR, which are exactly the ones it should pick from.
+        offset = offset or 0
         search_results = self.search(
             query_vector=(using, query_vector),
             query_filter=query_filter,
             limit=search_limit,
-            offset=offset,
+            offset=0,
             with_payload=with_payload,
             with_vectors=with_vectors,
             score_threshold=score_threshold,
@@ -2276,7 +2281,7 @@ class LocalCollection:
         diversity = mmr.diversity if mmr.diversity is not None else 0.5
         lambda_ = 1.0 - diversity
 
-        return self._mmr(search_results, query_vector, using, lambda_, limit)
+        return self._mmr(search_results, query_vector, using, lambda_, limit + offset)[offset:]
 
     def _mmr(
         self,
