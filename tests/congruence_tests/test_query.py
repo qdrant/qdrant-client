@@ -194,7 +194,7 @@ class TestSimpleSearcher:
             collection_name=COLLECTION_NAME,
             query=self.dense_vector_query_text,
             using="text",
-            with_payload=["text_array", "nested.id"],
+            with_payload=("text_array", "nested.id"),
             limit=10,
         )
 
@@ -213,7 +213,7 @@ class TestSimpleSearcher:
             query=self.dense_vector_query_image,
             using="image",
             with_payload=False,
-            with_vectors=["image", "code"],
+            with_vectors=("image", "code"),
             limit=10,
         )
 

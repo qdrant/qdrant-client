@@ -111,6 +111,8 @@ Mmr: TypeAlias = rest.Mmr
 ReadConsistency: TypeAlias = rest.ReadConsistency
 WriteOrdering: TypeAlias = rest.WriteOrdering
 WithLookupInterface: TypeAlias = rest.WithLookupInterface
+WithPayloadInterface: TypeAlias = rest.WithPayloadInterface | grpc.WithPayloadSelector
+WithVector: TypeAlias = rest.WithVector
 
 GroupsResult: TypeAlias = rest.GroupsResult
 QueryResponse: TypeAlias = rest.QueryResponse

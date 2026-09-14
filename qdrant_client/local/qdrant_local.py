@@ -427,8 +427,8 @@ class QdrantLocal(QdrantBase):
         search_params: types.SearchParams | None = None,
         limit: int = 10,
         offset: int | None = None,
-        with_payload: bool | Sequence[str] | types.PayloadSelector = True,
-        with_vectors: bool | Sequence[str] = False,
+        with_payload: types.WithPayloadInterface = True,
+        with_vectors: types.WithVector = False,
         score_threshold: float | None = None,
         lookup_from: types.LookupLocation | None = None,
         **kwargs: Any,
@@ -516,8 +516,8 @@ class QdrantLocal(QdrantBase):
         search_params: types.SearchParams | None = None,
         limit: int = 10,
         group_size: int = 3,
-        with_payload: bool | Sequence[str] | types.PayloadSelector = True,
-        with_vectors: bool | Sequence[str] = False,
+        with_payload: types.WithPayloadInterface = True,
+        with_vectors: types.WithVector = False,
         score_threshold: float | None = None,
         with_lookup: types.WithLookupInterface | None = None,
         lookup_from: types.LookupLocation | None = None,
@@ -575,8 +575,8 @@ class QdrantLocal(QdrantBase):
         limit: int = 10,
         order_by: types.OrderBy | None = None,
         offset: types.PointId | None = None,
-        with_payload: bool | Sequence[str] | types.PayloadSelector = True,
-        with_vectors: bool | Sequence[str] = False,
+        with_payload: types.WithPayloadInterface = True,
+        with_vectors: types.WithVector = False,
         **kwargs: Any,
     ) -> tuple[list[types.Record], types.PointId | None]:
         if limit < 1:
@@ -653,8 +653,8 @@ class QdrantLocal(QdrantBase):
         self,
         collection_name: str,
         ids: Sequence[types.PointId],
-        with_payload: bool | Sequence[str] | types.PayloadSelector = True,
-        with_vectors: bool | Sequence[str] = False,
+        with_payload: types.WithPayloadInterface = True,
+        with_vectors: types.WithVector = False,
         **kwargs: Any,
     ) -> list[types.Record]:
         collection = self._get_collection(collection_name)
