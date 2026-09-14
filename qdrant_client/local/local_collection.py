@@ -516,7 +516,7 @@ class LocalCollection:
     def _process_payload(
         cls,
         payload: dict,
-        with_payload: bool | Sequence[str] | types.PayloadSelector = True,
+        with_payload: types.WithPayloadInterface = True,
     ) -> dict | None:
         if not with_payload:
             return None
@@ -525,27 +525,9 @@ class LocalCollection:
             return payload
 
         if isinstance(with_payload, str):
-            # a bare string names a single payload key pattern, it is a valid
-            # Sequence[str] element-wise but must not be iterated as characters
-            with_payload = [with_payload]
-
-        if isinstance(with_payload, Sequence):
-            return cls._filter_payload(
-                payload,
-                lambda key: any(
-                    map(lambda pattern: cls._check_include_pattern(pattern, key), with_payload)  # type: ignore
-                ),
-            )
-
-        if isinstance(with_payload, models.PayloadSelectorInclude):
-            return cls._filter_payload(
-                payload,
-                lambda key: any(
-                    map(
-                        lambda pattern: cls._check_include_pattern(pattern, key),
-                        with_payload.include,  # type: ignore
-                    )
-                ),
+            raise ValueError(
+                "with_payload must be a bool, a list of payload keys or a PayloadSelector, "
+                f"got a str: {with_payload!r}"
             )
 
         if isinstance(with_payload, models.PayloadSelectorExclude):
@@ -559,12 +541,26 @@ class LocalCollection:
                 ),
             )
 
-        return payload
+        include = (
+            with_payload.include
+            if isinstance(with_payload, models.PayloadSelectorInclude)
+            else list(with_payload)  # type: ignore
+        )
+
+        return cls._filter_payload(
+            payload,
+            lambda key: any(
+                map(
+                    lambda pattern: cls._check_include_pattern(pattern, key),
+                    include,  # type: ignore
+                )
+            ),
+        )
 
     def _get_payload(
         self,
         idx: int,
-        with_payload: bool | Sequence[str] | types.PayloadSelector = True,
+        with_payload: types.WithPayloadInterface = True,
         return_copy: bool = True,
     ) -> models.Payload:
         payload = self.payload[idx]
@@ -572,7 +568,7 @@ class LocalCollection:
         return deepcopy(processed_payload) if return_copy else processed_payload
 
     def _get_vectors(
-        self, idx: int, with_vectors: bool | Sequence[str] | None = False
+        self, idx: int, with_vectors: types.WithVector | None = False
     ) -> models.VectorStruct | None:
         if with_vectors is False or with_vectors is None:
             return None
@@ -599,11 +595,12 @@ class LocalCollection:
         all_vectors = {**dense_vectors, **sparse_vectors, **multivectors}
 
         if isinstance(with_vectors, str):
-            # a bare string names a single vector, it is a valid Sequence[str]
-            # element-wise but must not be iterated as characters
-            with_vectors = [with_vectors]
+            raise ValueError(
+                "with_vectors must be a bool or a list of vector names, "
+                f"got a str: {with_vectors!r}"
+            )
 
-        if isinstance(with_vectors, Sequence):
+        if not isinstance(with_vectors, bool):
             all_vectors = {name: all_vectors[name] for name in with_vectors if name in all_vectors}
 
         if len(all_vectors) == 1 and DEFAULT_VECTOR_NAME in all_vectors:
@@ -665,8 +662,8 @@ class LocalCollection:
         query_filter: types.Filter | None = None,
         limit: int = 10,
         offset: int | None = None,
-        with_payload: bool | Sequence[str] | types.PayloadSelector = True,
-        with_vectors: bool | Sequence[str] = False,
+        with_payload: types.WithPayloadInterface = True,
+        with_vectors: types.WithVector = False,
         score_threshold: float | None = None,
         idf_corpus: types.Filter | None = None,
     ) -> list[models.ScoredPoint]:
@@ -832,8 +829,8 @@ class LocalCollection:
         query_filter: types.Filter | None = None,
         limit: int = 10,
         offset: int = 0,
-        with_payload: bool | Sequence[str] | types.PayloadSelector = True,
-        with_vectors: bool | Sequence[str] = False,
+        with_payload: types.WithPayloadInterface = True,
+        with_vectors: types.WithVector = False,
         score_threshold: float | None = None,
         using: str | None = None,
         search_params: types.SearchParams | None = None,
@@ -943,8 +940,8 @@ class LocalCollection:
         using: str | None = None,
         query_filter: types.Filter | None = None,
         score_threshold: float | None = None,
-        with_payload: bool | Sequence[str] | types.PayloadSelector = True,
-        with_vectors: bool | Sequence[str] = False,
+        with_payload: types.WithPayloadInterface = True,
+        with_vectors: types.WithVector = False,
         idf_corpus: types.Filter | None = None,
     ) -> list[types.ScoredPoint]:
         if isinstance(query, (models.FusionQuery, models.RrfQuery)):
@@ -1031,8 +1028,8 @@ class LocalCollection:
         query_filter: types.Filter | None = None,
         limit: int | None = None,
         offset: int | None = None,
-        with_payload: bool | Sequence[str] | types.PayloadSelector = False,
-        with_vectors: bool | Sequence[str] = False,
+        with_payload: types.WithPayloadInterface = False,
+        with_vectors: types.WithVector = False,
         score_threshold: float | None = None,
         idf_corpus: types.Filter | None = None,
     ) -> list[types.ScoredPoint]:
@@ -1207,8 +1204,8 @@ class LocalCollection:
         query_filter: types.Filter | None = None,
         limit: int = 10,
         group_size: int = 3,
-        with_payload: bool | Sequence[str] | types.PayloadSelector = True,
-        with_vectors: bool | Sequence[str] = False,
+        with_payload: types.WithPayloadInterface = True,
+        with_vectors: types.WithVector = False,
         score_threshold: float | None = None,
         with_lookup: types.WithLookupInterface | None = None,
         with_lookup_collection: "LocalCollection | None" = None,
@@ -1289,8 +1286,8 @@ class LocalCollection:
         query_filter: models.Filter | None = None,
         limit: int = 10,
         group_size: int = 1,
-        with_payload: bool | Sequence[str] | models.PayloadSelector = True,
-        with_vectors: bool | Sequence[str] = False,
+        with_payload: models.WithPayloadInterface = True,
+        with_vectors: types.WithVector = False,
         score_threshold: float | None = None,
         with_lookup: types.WithLookupInterface | None = None,
         with_lookup_collection: "LocalCollection | None" = None,
@@ -1406,8 +1403,8 @@ class LocalCollection:
     def retrieve(
         self,
         ids: Sequence[types.PointId],
-        with_payload: bool | Sequence[str] | types.PayloadSelector = True,
-        with_vectors: bool | Sequence[str] = False,
+        with_payload: types.WithPayloadInterface = True,
+        with_vectors: types.WithVector = False,
     ) -> list[models.Record]:
         result = []
         ids = [str(id_) if isinstance(id_, uuid.UUID) else id_ for id_ in ids]
@@ -1658,8 +1655,8 @@ class LocalCollection:
         query_filter: types.Filter | None = None,
         limit: int = 10,
         offset: int = 0,
-        with_payload: bool | Sequence[str] | types.PayloadSelector = True,
-        with_vectors: bool | Sequence[str] = False,
+        with_payload: types.WithPayloadInterface = True,
+        with_vectors: types.WithVector = False,
         score_threshold: float | None = None,
         using: str | None = None,
         lookup_from_collection: "LocalCollection | None" = None,
@@ -1698,8 +1695,8 @@ class LocalCollection:
         limit: int = 10,
         group_size: int = 1,
         score_threshold: float | None = None,
-        with_payload: bool | Sequence[str] | models.PayloadSelector = True,
-        with_vectors: bool | Sequence[str] = False,
+        with_payload: models.WithPayloadInterface = True,
+        with_vectors: types.WithVector = False,
         using: str | None = None,
         lookup_from_collection: "LocalCollection | None" = None,
         lookup_from_vector_name: str | None = None,
@@ -1810,7 +1807,7 @@ class LocalCollection:
                 search_filter.must.append(has_vector)
             else:
                 search_filter.must = [search_filter.must, has_vector]
-        samples = self._sample_randomly(sample, search_filter, False, search_in_vector_name)
+        samples = self._sample_randomly(sample, search_filter, False, [search_in_vector_name])
 
         # can't build a matrix with less than 2 results
         if len(samples) < 2:
@@ -1993,8 +1990,8 @@ class LocalCollection:
         query_filter: types.Filter | None = None,
         limit: int = 10,
         offset: int = 0,
-        with_payload: bool | Sequence[str] | types.PayloadSelector = True,
-        with_vectors: bool | Sequence[str] = False,
+        with_payload: types.WithPayloadInterface = True,
+        with_vectors: types.WithVector = False,
         using: str | None = None,
         lookup_from_collection: "LocalCollection | None" = None,
         lookup_from_vector_name: str | None = None,
@@ -2066,8 +2063,8 @@ class LocalCollection:
         limit: int = 10,
         order_by: types.OrderBy | None = None,
         offset: types.PointId | None = None,
-        with_payload: bool | Sequence[str] | types.PayloadSelector = True,
-        with_vectors: bool | Sequence[str] = False,
+        with_payload: types.WithPayloadInterface = True,
+        with_vectors: types.WithVector = False,
     ) -> tuple[list[types.Record], types.PointId | None]:
         if len(self.ids) == 0:
             validate_filter(
@@ -2109,8 +2106,8 @@ class LocalCollection:
         scroll_filter: types.Filter | None = None,
         limit: int = 10,
         offset: types.PointId | None = None,
-        with_payload: bool | Sequence[str] | types.PayloadSelector = True,
-        with_vectors: bool | Sequence[str] = False,
+        with_payload: types.WithPayloadInterface = True,
+        with_vectors: types.WithVector = False,
     ) -> tuple[list[types.Record], types.PointId | None]:
         sorted_ids = sorted(self.ids.items(), key=lambda x: self._universal_id(x[0]))
 
@@ -2146,8 +2143,8 @@ class LocalCollection:
         order_by: types.OrderBy,
         scroll_filter: types.Filter | None = None,
         limit: int = 10,
-        with_payload: bool | Sequence[str] | types.PayloadSelector = True,
-        with_vectors: bool | Sequence[str] = False,
+        with_payload: types.WithPayloadInterface = True,
+        with_vectors: types.WithVector = False,
     ) -> tuple[list[types.Record], types.PointId | None]:
         if isinstance(order_by, grpc.OrderBy):
             order_by = GrpcToRest.convert_order_by(order_by)
@@ -2219,8 +2216,8 @@ class LocalCollection:
         self,
         limit: int,
         query_filter: types.Filter | None,
-        with_payload: bool | Sequence[str] | types.PayloadSelector = True,
-        with_vectors: bool | Sequence[str] = False,
+        with_payload: types.WithPayloadInterface = True,
+        with_vectors: types.WithVector = False,
     ) -> list[types.ScoredPoint]:
         mask = self._payload_and_non_deleted_mask(query_filter)
 
@@ -2258,8 +2255,8 @@ class LocalCollection:
         query_filter: types.Filter | None = None,
         limit: int = 10,
         offset: int | None = None,
-        with_payload: bool | Sequence[str] | types.PayloadSelector = True,
-        with_vectors: bool | Sequence[str] = False,
+        with_payload: types.WithPayloadInterface = True,
+        with_vectors: types.WithVector = False,
         score_threshold: float | None = None,
         idf_corpus: types.Filter | None = None,
     ) -> list[models.ScoredPoint]:
@@ -2409,8 +2406,8 @@ class LocalCollection:
         query: models.FormulaQuery,
         prefetches_results: list[list[models.ScoredPoint]],
         limit: int,
-        with_payload: bool | Sequence[str] | types.PayloadSelector,
-        with_vectors: bool | Sequence[str],
+        with_payload: types.WithPayloadInterface,
+        with_vectors: types.WithVector,
     ) -> list[models.ScoredPoint]:
         # collect prefetches in vec of dicts for faster lookup
         prefetches_scores = [
@@ -2465,8 +2462,8 @@ class LocalCollection:
         query_filter: types.Filter | None = None,
         limit: int = 10,
         offset: int | None = None,
-        with_payload: bool | Sequence[str] | types.PayloadSelector = True,
-        with_vectors: bool | Sequence[str] = False,
+        with_payload: types.WithPayloadInterface = True,
+        with_vectors: types.WithVector = False,
         score_threshold: float | None = None,
         idf_corpus: types.Filter | None = None,
     ) -> list[models.ScoredPoint]:

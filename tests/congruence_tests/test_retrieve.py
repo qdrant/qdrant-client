@@ -1,5 +1,7 @@
 import random
 
+import pytest
+
 from qdrant_client.http.models import PayloadSelectorExclude, PayloadSelectorInclude
 from tests.congruence_tests.test_common import (
     COLLECTION_NAME,
@@ -37,7 +39,7 @@ def test_retrieve(local_client, remote_client) -> None:
     compare_client_results(
         local_client,
         remote_client,
-        lambda c: c.retrieve(COLLECTION_NAME, [id_], with_vectors=["image", "code"]),
+        lambda c: c.retrieve(COLLECTION_NAME, [id_], with_vectors=("image", "code")),
     )
     compare_client_results(
         local_client,
@@ -51,7 +53,7 @@ def test_retrieve(local_client, remote_client) -> None:
     compare_client_results(
         local_client,
         remote_client,
-        lambda c: c.retrieve(COLLECTION_NAME, [id_], with_payload=sample_keys),
+        lambda c: c.retrieve(COLLECTION_NAME, [id_], with_payload=tuple(sample_keys)),
     )
     compare_client_results(
         local_client,
@@ -71,6 +73,14 @@ def test_retrieve(local_client, remote_client) -> None:
             with_payload=PayloadSelectorExclude(exclude=sample_keys),
         ),
     )
+
+    # a bare string is not a selector, it is rejected instead of selecting everything
+    for client in (local_client, remote_client):
+        with pytest.raises(ValueError):
+            client.retrieve(COLLECTION_NAME, [id_], with_payload=sample_keys[0])
+
+        with pytest.raises(ValueError):
+            client.retrieve(COLLECTION_NAME, [id_], with_vectors="image")
 
 
 def test_sparse_retrieve() -> None:
