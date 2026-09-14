@@ -107,13 +107,14 @@ def evaluate_expression(
         )
 
         try:
-            # `float()` is needed because payload values and formula
-            # defaults can be ints, and `int.is_integer()` only exists since Python 3.12.
-            # the condition is inside the try-except because too large integers can't be converted to floats.
-            if base >= 0 or (base != 0 and float(exponent).is_integer()):
-                return math.pow(base, exponent)
-        except OverflowError:
+            # OverflowError: the result, or a too large integer operand, doesn't fit in a float.
+            # ValueError: undefined, e.g. a negative base with a non-integer exponent.
+            result = math.pow(base, exponent)
+        except (OverflowError, ValueError):
             pass
+        else:
+            if math.isfinite(result):
+                return result
 
         raise_non_finite_error(f"{base}^{exponent}")
 
