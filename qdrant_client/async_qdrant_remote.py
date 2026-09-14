@@ -274,6 +274,11 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         )
         return (scheme, host, port, prefix)
 
+    @staticmethod
+    def _normalize_selector(selector: Any) -> Any:
+        """Accept a tuple of names where the REST models declare a list of names"""
+        return list(selector) if isinstance(selector, tuple) else selector
+
     def _get_grpc_pool_size(self) -> int:
         """
         Returns the pool size to use for GRPC connection pool.
@@ -422,8 +427,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         search_params: types.SearchParams | None = None,
         limit: int = 10,
         offset: int | None = None,
-        with_payload: bool | Sequence[str] | types.PayloadSelector = True,
-        with_vectors: bool | Sequence[str] = False,
+        with_payload: types.WithPayloadInterface = True,
+        with_vectors: types.WithVector = False,
         score_threshold: float | None = None,
         lookup_from: types.LookupLocation | None = None,
         consistency: types.ReadConsistency | None = None,
@@ -431,6 +436,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         timeout: int | None = None,
         **kwargs: Any,
     ) -> types.QueryResponse:
+        with_payload = self._normalize_selector(with_payload)
+        with_vectors = self._normalize_selector(with_vectors)
         if self._prefer_grpc:
             if query is not None:
                 query = RestToGrpc.convert_query(query)
@@ -574,8 +581,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         search_params: types.SearchParams | None = None,
         limit: int = 10,
         group_size: int = 3,
-        with_payload: bool | Sequence[str] | types.PayloadSelector = True,
-        with_vectors: bool | Sequence[str] = False,
+        with_payload: types.WithPayloadInterface = True,
+        with_vectors: types.WithVector = False,
         score_threshold: float | None = None,
         with_lookup: types.WithLookupInterface | None = None,
         lookup_from: types.LookupLocation | None = None,
@@ -584,6 +591,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         timeout: int | None = None,
         **kwargs: Any,
     ) -> types.GroupsResult:
+        with_payload = self._normalize_selector(with_payload)
+        with_vectors = self._normalize_selector(with_vectors)
         if self._prefer_grpc:
             if query is not None:
                 query = RestToGrpc.convert_query(query)
@@ -782,13 +791,15 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         limit: int = 10,
         order_by: types.OrderBy | None = None,
         offset: types.PointId | None = None,
-        with_payload: bool | Sequence[str] | types.PayloadSelector = True,
-        with_vectors: bool | Sequence[str] = False,
+        with_payload: types.WithPayloadInterface = True,
+        with_vectors: types.WithVector = False,
         consistency: types.ReadConsistency | None = None,
         shard_key_selector: types.ShardKeySelector | None = None,
         timeout: int | None = None,
         **kwargs: Any,
     ) -> tuple[list[types.Record], types.PointId | None]:
+        with_payload = self._normalize_selector(with_payload)
+        with_vectors = self._normalize_selector(with_vectors)
         if self._prefer_grpc:
             if isinstance(offset, get_args_subscribed(models.ExtendedPointId)):
                 offset = RestToGrpc.convert_extended_point_id(offset)
@@ -1157,13 +1168,15 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         self,
         collection_name: str,
         ids: Sequence[types.PointId],
-        with_payload: bool | Sequence[str] | types.PayloadSelector = True,
-        with_vectors: bool | Sequence[str] = False,
+        with_payload: types.WithPayloadInterface = True,
+        with_vectors: types.WithVector = False,
         consistency: types.ReadConsistency | None = None,
         shard_key_selector: types.ShardKeySelector | None = None,
         timeout: int | None = None,
         **kwargs: Any,
     ) -> list[types.Record]:
+        with_payload = self._normalize_selector(with_payload)
+        with_vectors = self._normalize_selector(with_vectors)
         if self._prefer_grpc:
             if isinstance(with_payload, get_args_subscribed(models.WithPayloadInterface)):
                 with_payload = RestToGrpc.convert_with_payload_interface(with_payload)

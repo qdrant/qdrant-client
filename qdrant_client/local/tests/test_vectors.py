@@ -16,6 +16,6 @@ def test_get_vectors():
         ]
     )
 
-    assert collection._get_vectors(idx=1, with_vectors=DEFAULT_VECTOR_NAME)
+    assert collection._get_vectors(idx=1, with_vectors=[DEFAULT_VECTOR_NAME])
     assert collection._get_vectors(idx=2, with_vectors=True)
     assert collection._get_vectors(idx=3, with_vectors=False) is None
