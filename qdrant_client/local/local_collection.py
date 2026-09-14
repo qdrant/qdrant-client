@@ -2262,10 +2262,10 @@ class LocalCollection:
     ) -> list[models.ScoredPoint]:
         search_limit = mmr.candidates_limit if mmr.candidates_limit is not None else limit
         using = using or DEFAULT_VECTOR_NAME
-        # `offset` paginates the MMR-reranked output, not the candidate pool: core builds the
-        # candidate list with offset 0, re-ranks `limit + offset` points and only then cuts off
-        # the offset. Fetching candidates with an offset would instead hide the top `offset`
-        # nearest points from MMR entirely.
+        # MMR reorders the candidates, so `offset` has to be applied to its output, not to the
+        # candidate search: fetch candidates from 0, re-rank `limit + offset` points, then drop
+        # the offset. Same order as core. Offsetting the candidate search instead would hide the
+        # top `offset` nearest points from MMR, which are exactly the ones it should pick from.
         offset = offset or 0
         search_results = self.search(
             query_vector=(using, query_vector),
