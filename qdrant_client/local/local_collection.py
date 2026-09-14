@@ -524,7 +524,12 @@ class LocalCollection:
         if isinstance(with_payload, bool):
             return payload
 
-        if isinstance(with_payload, list):
+        if isinstance(with_payload, str):
+            # a bare string names a single payload key pattern, it is a valid
+            # Sequence[str] element-wise but must not be iterated as characters
+            with_payload = [with_payload]
+
+        if isinstance(with_payload, Sequence):
             return cls._filter_payload(
                 payload,
                 lambda key: any(
@@ -593,7 +598,12 @@ class LocalCollection:
         # merge vectors
         all_vectors = {**dense_vectors, **sparse_vectors, **multivectors}
 
-        if isinstance(with_vectors, list):
+        if isinstance(with_vectors, str):
+            # a bare string names a single vector, it is a valid Sequence[str]
+            # element-wise but must not be iterated as characters
+            with_vectors = [with_vectors]
+
+        if isinstance(with_vectors, Sequence):
             all_vectors = {name: all_vectors[name] for name in with_vectors if name in all_vectors}
 
         if len(all_vectors) == 1 and DEFAULT_VECTOR_NAME in all_vectors:
