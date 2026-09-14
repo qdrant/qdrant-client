@@ -328,3 +328,56 @@ def test_field_condition_is_empty_is_null_json_path():
         must=[models.IsNullCondition(is_null=models.PayloadField(key="a[].b"))]
     )
     assert matching_ids(verbose_null, payloads) == matches("is_null", True)
+
+
+def test_geo_filters_ignore_nonfinite_coordinates():
+    """A coordinate outside the float range matches nothing and does not stop the other
+    stored locations from matching (qdrant-client#1422): the geometry raises ValueError on
+    an infinity and OverflowError on an oversized integer. Only local mode sees these
+    values, since the server reads NaN and the infinities back as null and rejects an
+    out-of-range integer, so the congruence tests cover what both sides can store.
+    """
+    inside = {"lon": 0, "lat": 0}
+
+    def matching(geo_filter: models.Filter, nonfinite: dict) -> list:
+        return matching_ids(
+            geo_filter,
+            {
+                1: {"location": inside},
+                2: {"location": nonfinite},
+                3: {"location": [nonfinite, inside]},  # matches on the valid location
+            },
+        )
+
+    def location_filter(**condition) -> models.Filter:
+        return models.Filter(must=[models.FieldCondition(key="location", **condition)])
+
+    filters = {
+        "radius": location_filter(
+            geo_radius=models.GeoRadius(center=models.GeoPoint(lon=0, lat=0), radius=1000)
+        ),
+        "bounding_box": location_filter(
+            geo_bounding_box=models.GeoBoundingBox(
+                top_left=models.GeoPoint(lon=-1, lat=1),
+                bottom_right=models.GeoPoint(lon=1, lat=-1),
+            )
+        ),
+        "polygon": location_filter(
+            geo_polygon=models.GeoPolygon(
+                exterior=models.GeoLineString(
+                    points=[
+                        models.GeoPoint(lon=-1, lat=-1),
+                        models.GeoPoint(lon=1, lat=-1),
+                        models.GeoPoint(lon=1, lat=1),
+                        models.GeoPoint(lon=-1, lat=1),
+                        models.GeoPoint(lon=-1, lat=-1),
+                    ]
+                )
+            )
+        ),
+    }
+
+    for name, geo_filter in filters.items():
+        for value in (float("nan"), float("inf"), -float("inf"), 10**400):
+            assert matching(geo_filter, {"lon": 0, "lat": value}) == [1, 3], f"{name} lat={value}"
+            assert matching(geo_filter, {"lon": value, "lat": 0}) == [1, 3], f"{name} lon={value}"
