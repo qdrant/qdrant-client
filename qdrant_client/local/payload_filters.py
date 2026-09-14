@@ -90,7 +90,7 @@ def _is_geo_point(value: Any) -> bool:
         return False
     try:
         return all(
-            type(coordinate) in (int, float) and math.isfinite(coordinate)
+            (type(coordinate) is int or type(coordinate) is float) and math.isfinite(coordinate)
             for coordinate in (value.get("lat"), value.get("lon"))
         )
     except OverflowError:
