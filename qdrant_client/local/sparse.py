@@ -1,5 +1,6 @@
 import numpy as np
 
+from qdrant_client._pydantic_compat import construct
 from qdrant_client.http.models import SparseVector
 
 
@@ -8,6 +9,15 @@ def empty_sparse_vector() -> SparseVector:
         indices=[],
         values=[],
     )
+
+
+def copy_sparse_vector(vector: SparseVector) -> SparseVector:
+    """Return a sparse vector sharing no lists with `vector`.
+
+    Two flat lists, so `deepcopy` is an order of magnitude slower for the same result, and
+    this runs per sparse vector per point on every read.
+    """
+    return construct(SparseVector, indices=list(vector.indices), values=list(vector.values))
 
 
 def validate_sparse_vector(vector: SparseVector) -> None:

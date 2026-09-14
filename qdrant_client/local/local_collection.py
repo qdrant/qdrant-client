@@ -69,6 +69,7 @@ from qdrant_client.local.payload_value_setter import delete_value_by_key, set_va
 from qdrant_client.local.persistence import CollectionPersistence
 from qdrant_client.local.utils import last_argmax, swap_remove
 from qdrant_client.local.sparse import (
+    copy_sparse_vector,
     empty_sparse_vector,
     sort_sparse_vector,
     validate_sparse_vector,
@@ -573,32 +574,37 @@ class LocalCollection:
         if with_vectors is False or with_vectors is None:
             return None
 
-        dense_vectors = {
-            name: self.vectors[name][idx].tolist()
-            for name in self.vectors
-            if not self.deleted_per_vector[name][idx]
-        }
-
-        sparse_vectors = {
-            name: deepcopy(self.sparse_vectors[name][idx])
-            for name in self.sparse_vectors
-            if not self.deleted_per_vector[name][idx]
-        }
-
-        multivectors = {
-            name: self.multivectors[name][idx].tolist()
-            for name in self.multivectors
-            if not self.deleted_per_vector[name][idx]
-        }
-
-        # merge vectors
-        all_vectors = {**dense_vectors, **sparse_vectors, **multivectors}
-
         if isinstance(with_vectors, str):
             raise ValueError(
                 "with_vectors must be a bool or a list of vector names, "
                 f"got a str: {with_vectors!r}"
             )
+
+        requested_names = None if with_vectors is True else set(with_vectors)
+
+        def included(name: str) -> bool:
+            if requested_names is not None and name not in requested_names:
+                return False
+            return not self.deleted_per_vector[name][idx]
+
+        dense_vectors = {
+            name: self.vectors[name][idx].tolist() for name in self.vectors if included(name)
+        }
+
+        sparse_vectors = {
+            name: copy_sparse_vector(self.sparse_vectors[name][idx])
+            for name in self.sparse_vectors
+            if included(name)
+        }
+
+        multivectors = {
+            name: self.multivectors[name][idx].tolist()
+            for name in self.multivectors
+            if included(name)
+        }
+
+        # merge vectors
+        all_vectors = {**dense_vectors, **sparse_vectors, **multivectors}
 
         if not isinstance(with_vectors, bool):
             all_vectors = {name: all_vectors[name] for name in with_vectors if name in all_vectors}
@@ -1851,7 +1857,7 @@ class LocalCollection:
         if vector_name in self.vectors:
             vector = self.vectors[vector_name][idx].tolist()
         elif vector_name in self.sparse_vectors:
-            vector = self.sparse_vectors[vector_name][idx]
+            vector = copy_sparse_vector(self.sparse_vectors[vector_name][idx])
         elif vector_name in self.multivectors:
             vector = self.multivectors[vector_name][idx].tolist()
         else:
@@ -2550,9 +2556,10 @@ class LocalCollection:
                 self._update_idf_remove(previous_vector, vector_name)
 
             if vector is not None:
-                self.sparse_vectors[vector_name][idx] = deepcopy(vector)
+                stored_vector = copy_sparse_vector(vector)
+                self.sparse_vectors[vector_name][idx] = stored_vector
                 self.deleted_per_vector[vector_name][idx] = 0
-                self._update_idf_append(vector, vector_name)
+                self._update_idf_append(stored_vector, vector_name)
             else:
                 self.deleted_per_vector[vector_name][idx] = 1
 
@@ -2633,8 +2640,9 @@ class LocalCollection:
                     self.deleted_per_vector[vector_name], 1
                 )
             else:
-                named_vectors[idx] = deepcopy(vector)
-                self._update_idf_append(vector, vector_name)
+                stored_vector = copy_sparse_vector(vector)
+                named_vectors[idx] = stored_vector
+                self._update_idf_append(stored_vector, vector_name)
                 self.deleted_per_vector[vector_name] = np.append(
                     self.deleted_per_vector[vector_name], 0
                 )
@@ -2672,11 +2680,14 @@ class LocalCollection:
 
             self.multivectors[vector_name] = named_vectors
 
-    def _validate_point(self, point: models.PointStruct) -> None:
-        """Validate a point and normalize its sparse vectors, without touching collection state.
+    def _validate_point(self, point: models.PointStruct) -> models.PointStruct:
+        """Validate a point and return a normalized copy, without touching collection state.
 
         Every write path runs this over all of its points before applying any of them, so a
         rejected point leaves the collection untouched, the way the server does.
+
+        Normalization (sorting sparse vectors, stringifying UUID ids) goes into the returned
+        copy: remote mode does not rewrite the caller's point either.
         """
         if isinstance(point.id, str):
             # try to parse as UUID
@@ -2685,8 +2696,12 @@ class LocalCollection:
             except ValueError as e:
                 raise ValueError(f"Point id {point.id} is not a valid UUID") from e
 
+        point_id = str(point.id) if isinstance(point.id, uuid.UUID) else point.id
+
+        normalized_vector: models.VectorStruct = point.vector
+
         if isinstance(point.vector, dict):
-            updated_sparse_vectors = {}
+            normalized_vectors = dict(point.vector)
             for vector_name, vector in point.vector.items():
                 if vector_name not in self._all_vectors_keys:
                     raise ValueError(f"Wrong input: Not existing vector name error: {vector_name}")
@@ -2694,11 +2709,10 @@ class LocalCollection:
                     # validate sparse vector
                     validate_sparse_vector(vector)
                     # sort sparse vector by indices before persistence
-                    updated_sparse_vectors[vector_name] = sort_sparse_vector(vector)
+                    normalized_vectors[vector_name] = sort_sparse_vector(vector)
                 else:
                     self._validate_dense_or_multivector(vector, vector_name)
-            # update point.vector with the modified values after iteration
-            point.vector.update(updated_sparse_vectors)
+            normalized_vector = normalized_vectors
         else:
             vector_names = list(self.vectors.keys())
             multivector_names = list(self.multivectors.keys())
@@ -2713,16 +2727,20 @@ class LocalCollection:
                 raise ValueError("Wrong input: Not existing vector name error")
             self._validate_dense_or_multivector(point.vector, DEFAULT_VECTOR_NAME)
 
+        return construct(
+            models.PointStruct,
+            id=point_id,
+            vector=normalized_vector,
+            payload=point.payload,
+        )
+
     def _upsert_point(
         self,
         point: models.PointStruct,
         update_filter: types.Filter | None = None,
         update_mode: types.UpdateMode | None = None,
     ) -> None:
-        """Apply an already validated point. Call `_validate_point` first."""
-        if isinstance(point.id, uuid.UUID):
-            point.id = str(point.id)
-
+        """Apply a point returned by `_validate_point`, never a caller's own point."""
         if point.id in self.ids:
             if update_mode == models.UpdateMode.INSERT_ONLY:
                 return None
@@ -2783,10 +2801,9 @@ class LocalCollection:
 
         # Validate everything before writing anything: the server rejects the whole request,
         # so a bad point in the middle of a batch must not leave the earlier ones applied.
-        for point in point_structs:
-            self._validate_point(point)
+        validated_points = [self._validate_point(point) for point in point_structs]
 
-        for point in point_structs:
+        for point in validated_points:
             self._upsert_point(point, update_filter=update_filter, update_mode=update_mode)
 
         if len(self.ids) > self.LARGE_DATA_THRESHOLD:
@@ -2826,8 +2843,9 @@ class LocalCollection:
             if isinstance(vector_np, SparseVector):
                 old_vector = self.sparse_vectors[vector_name][idx]
                 self._update_idf_remove(old_vector, vector_name)
-                self.sparse_vectors[vector_name][idx] = deepcopy(vector_np)
-                self._update_idf_append(vector_np, vector_name)
+                stored_vector = copy_sparse_vector(vector_np)
+                self.sparse_vectors[vector_name][idx] = stored_vector
+                self._update_idf_append(stored_vector, vector_name)
                 continue
 
             params = self.get_vector_params(vector_name)
