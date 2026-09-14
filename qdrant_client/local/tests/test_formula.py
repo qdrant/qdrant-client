@@ -1,9 +1,12 @@
+import math
 import re
 from typing import Any
 
 import pytest
 
+from qdrant_client.http import models
 from qdrant_client.hybrid.formula import (
+    evaluate_expression,
     evaluate_variable,
     parse_variable,
     try_extract_payload_value,
@@ -48,6 +51,46 @@ def test_evaluate_variable_rejects_negative_score_index() -> None:
         evaluate_variable("$score[-1]", 1, scores, {}, {})
     with pytest.raises(ValueError):
         evaluate_variable("$score[-9]", 1, scores, {}, {})
+
+
+def _pow(
+    base: models.Expression, exponent: models.Expression, payload: models.Payload | None = None
+) -> float:
+    expression = models.PowExpression(pow=models.PowParams(base=base, exponent=exponent))
+    return evaluate_expression(expression, 1, [], payload or {}, {}, {})
+
+
+def test_pow_expression() -> None:
+    assert _pow(2.0, 3.0) == 8.0
+    assert _pow(-2.0, 3.0) == -8.0
+    assert _pow(-2.0, 4.0) == 16.0
+    assert _pow(0.0, 0.0) == 1.0
+    assert _pow(0.0, 3.0) == 0.0
+
+    # qdrant core computes `base.powf(exponent)` and rejects anything non-finite,
+    # so every case below must surface as the same non-finite error
+
+    # a negative base with a non-integer exponent is undefined
+    with pytest.raises(ValueError, match="non-finite"):
+        _pow(-2.0, 2.5)
+
+    # 0 raised to a negative exponent is a pole (division by zero)
+    with pytest.raises(ValueError, match="non-finite"):
+        _pow(0.0, -1.0)
+    with pytest.raises(ValueError, match="non-finite"):
+        _pow(0.0, -2.5)
+
+    # the result overflows a float
+    with pytest.raises(ValueError, match="non-finite"):
+        _pow(10.0, 400.0)
+
+    # an infinite operand, reachable through a sum/product that overflowed
+    with pytest.raises(ValueError, match="non-finite"):
+        _pow(2.0, math.inf)
+
+    # an integer payload value too large to be converted to a float
+    with pytest.raises(ValueError, match="non-finite"):
+        _pow(-2.0, "exponent", payload={"exponent": 10**400})
 
 
 def test_try_extract_payload_value() -> None:
