@@ -28,6 +28,12 @@ from qdrant_client.local.payload_value_setter import delete_value_by_key, set_va
             "items[0][0].metadata",
             ["red", "blue", "blue", "blue"],
         ),
+        (
+            {"items": [{"sub": [{}, {}]}, {"sub": [{}]}]},
+            "items[].sub[]",
+            "items[0].sub[0].metadata",
+            ["red", "blue", "blue"],
+        ),
     ],
 )
 def test_wildcard_set_keeps_array_elements_independent(
