@@ -10,6 +10,7 @@ cd $CLIENT_DIR
 
 async_files=$(ls -1 async*)
 async_files+=" local/async_qdrant_local.py"
+async_files+=" serverless/async_client.py"
 
 for file in $async_files ; do
     cp $file{,.diff}
