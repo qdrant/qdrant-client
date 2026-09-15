@@ -1,3 +1,4 @@
+from copy import deepcopy
 from typing import Any, Type
 
 from qdrant_client.local.json_path_parser import JsonPathItem, JsonPathItemType
@@ -282,15 +283,15 @@ class WildcardIndexSetter(_ListSetter):
         if len(k_list) == 0:
             for i, item in enumerate(data):
                 if isinstance(item, dict):
-                    data[i].update(value)
+                    data[i].update(deepcopy(value))
                 else:
-                    data[i] = value
+                    data[i] = deepcopy(value)
         else:
             for i, item in enumerate(data):
                 cls.set(
                     item,
                     k_list.copy(),
-                    value,
+                    deepcopy(value),
                     data,
                     JsonPathItem(item_type=JsonPathItemType.INDEX, index=i),
                 )

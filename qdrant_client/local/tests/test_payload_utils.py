@@ -11,6 +11,34 @@ from qdrant_client.local.payload_value_extractor import value_by_key
 from qdrant_client.local.payload_value_setter import delete_value_by_key, set_value_by_key
 
 
+@pytest.mark.parametrize(
+    "payload,key,target_key,expected_colors",
+    [
+        ({"items": [{}, {}]}, "items[]", "items[0].metadata", ["red", "blue"]),
+        ({"items": [None, None]}, "items[]", "items[0].metadata", ["red", "blue"]),
+        (
+            {"items": [{}, {}]},
+            "items[].nested",
+            "items[0].nested.metadata",
+            ["red", "blue"],
+        ),
+        (
+            {"items": [[{}, {}], [{}, {}]]},
+            "items[][]",
+            "items[0][0].metadata",
+            ["red", "blue", "blue", "blue"],
+        ),
+    ],
+)
+def test_wildcard_set_keeps_array_elements_independent(
+    payload: dict[str, Any], key: str, target_key: str, expected_colors: list[str]
+) -> None:
+    set_value_by_key(payload, parse_json_path(key), {"metadata": {"color": "blue"}})
+    set_value_by_key(payload, parse_json_path(target_key), {"color": "red"})
+
+    assert value_by_key(payload, f"{key}.metadata.color") == expected_colors
+
+
 def test_parse_json_path() -> None:
     jp_key = "a"
     keys = parse_json_path(jp_key)

@@ -10,6 +10,23 @@ def qdrant() -> QdrantClient:
     return QdrantClient(":memory:")
 
 
+def test_set_payload_keeps_array_elements_independent(qdrant: QdrantClient) -> None:
+    qdrant.create_collection("items", vectors_config={})
+    qdrant.upsert(
+        "items",
+        [models.PointStruct(id=1, vector={}, payload={"items": [{"id": 1}, {"id": 2}]})],
+    )
+    qdrant.set_payload("items", payload={"metadata": {"color": "blue"}}, points=[1], key="items[]")
+    qdrant.set_payload("items", payload={"color": "red"}, points=[1], key="items[0].metadata")
+
+    assert qdrant.retrieve("items", [1])[0].payload == {
+        "items": [
+            {"id": 1, "metadata": {"color": "red"}},
+            {"id": 2, "metadata": {"color": "blue"}},
+        ]
+    }
+
+
 def test_dense_in_memory_key_filter_returns_results(qdrant: QdrantClient):
     qdrant.create_collection(
         collection_name="test_collection",
