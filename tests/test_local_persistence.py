@@ -201,3 +201,60 @@ def test_update_persistence():
             "not_important": "missing",
         }
         client.close()
+
+
+@pytest.mark.parametrize("operation", ["points", "vectors"])
+def test_idf_persistence_after_deletion(operation: str):
+    """Reopening a collection must not move the scores a deletion left behind.
+
+    IDF statistics are maintained incrementally while the client is open and rebuilt from the
+    stored points when it reopens. A deletion that misses the live statistics therefore scores
+    one way before a restart and another way after.
+    """
+    collection_name = "idf_persistence"
+    vector = rest.SparseVector(indices=[0], values=[1.0])
+
+    def scores(client: QdrantClient) -> list[float]:
+        collected = []
+        for idf in (rest.IdfScope.GLOBAL, rest.IdfCorpusParams(corpus=rest.Filter())):
+            points = client.query_points(
+                collection_name,
+                using="text",
+                query=vector,
+                search_params=rest.SearchParams(idf=idf),
+            ).points
+            collected.append([point.score for point in points])
+        assert collected[0] == pytest.approx(
+            collected[1]
+        ), "the global scope disagrees with a corpus of every live point"
+        return collected[0]
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        client = QdrantClient(path=tmpdir)
+        client.create_collection(
+            collection_name,
+            vectors_config={},
+            sparse_vectors_config={"text": rest.SparseVectorParams(modifier=rest.Modifier.IDF)},
+        )
+        client.upsert(
+            collection_name,
+            [rest.PointStruct(id=i, vector={"text": vector}) for i in range(4)],
+        )
+
+        if operation == "points":
+            client.delete(collection_name, points_selector=[1, 2, 3])
+        else:
+            client.delete_vectors(collection_name, vectors=["text"], points=[1, 2, 3])
+
+        before_reopen = scores(client)
+        assert len(before_reopen) == 1
+        client.close()
+
+        client = QdrantClient(path=tmpdir)
+        assert scores(client) == pytest.approx(
+            before_reopen
+        ), "reopening the collection changed the IDF scores"
+        # deleting the vectors leaves the points themselves in place
+        surviving = [0] if operation == "points" else [0, 1, 2, 3]
+        assert [point.id for point in client.scroll(collection_name, limit=10)[0]] == surviving
+        client.close()
