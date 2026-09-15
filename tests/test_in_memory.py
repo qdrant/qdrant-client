@@ -1,3 +1,5 @@
+import math
+
 import pytest
 
 from qdrant_client import QdrantClient, models
@@ -294,3 +296,62 @@ def test_fusion_dbsf_score_threshold(qdrant: QdrantClient):
         f"Expected 3 points after filtering (threshold 1.0), got {len(result_with_threshold.points)}. "
         f"Scores: {[p.score for p in result_no_threshold.points]}"
     )
+
+
+@pytest.mark.parametrize("operation", ["points", "vectors_upsert", "vectors_update"])
+def test_idf_statistics_after_deletion(qdrant: QdrantClient, operation: str):
+    """Deleting points or their sparse vectors has to take them out of the IDF statistics.
+
+    Only the local client can be held to this. `IdfScope.GLOBAL` reads the sparse index on
+    the server, which goes on counting deleted points for as long as they sit in it, so the
+    two are expected to differ here and a congruence test cannot pin it down. What can be
+    pinned down is that the global scope agrees with a corpus selecting every live point,
+    and that both match the IDF formula.
+    """
+    qdrant.create_collection(
+        collection_name="test_collection",
+        vectors_config={},
+        sparse_vectors_config={"text": models.SparseVectorParams(modifier=models.Modifier.IDF)},
+    )
+    vector = models.SparseVector(indices=[0], values=[1.0])
+    qdrant.upsert(
+        collection_name="test_collection",
+        points=[models.PointStruct(id=i, vector={"text": vector}) for i in range(3)]
+        # a point without the sparse vector is not part of the corpus to begin with
+        + [models.PointStruct(id=3, vector={})],
+    )
+
+    def assert_scores(corpus_size: int):
+        # ((n - df + 0.5) / (df + 0.5) + 1).ln() with every document holding the one term
+        expected = math.log((corpus_size + 1) / (corpus_size + 0.5))
+        for idf in (models.IdfScope.GLOBAL, models.IdfCorpusParams(corpus=models.Filter())):
+            points = qdrant.query_points(
+                collection_name="test_collection",
+                using="text",
+                query=vector,
+                search_params=models.SearchParams(idf=idf),
+            ).points
+            assert len(points) == corpus_size
+            assert [point.score for point in points] == pytest.approx([expected] * corpus_size)
+
+    assert_scores(3)
+
+    # repeating a deletion must not take the same document frequencies out twice
+    for _ in range(2):
+        if operation == "points":
+            qdrant.delete("test_collection", points_selector=[1, 2, 3])
+        else:
+            qdrant.delete_vectors("test_collection", vectors=["text"], points=[1, 2, 3])
+        assert_scores(1)
+
+    if operation == "vectors_update":
+        qdrant.update_vectors(
+            "test_collection",
+            [models.PointVectors(id=i, vector={"text": vector}) for i in (1, 2)],
+        )
+    else:
+        qdrant.upsert(
+            "test_collection",
+            [models.PointStruct(id=i, vector={"text": vector}) for i in (1, 2)],
+        )
+    assert_scores(3)
