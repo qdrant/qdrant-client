@@ -13,6 +13,7 @@ from tests.congruence_tests.test_common import (
     init_local,
     init_remote,
 )
+from tests.utils import read_version
 
 
 def test_nested_query():
@@ -480,6 +481,10 @@ def test_text_match_on_unindexed_field(match: models.Match):
     substrings, so "fly" does not match "butterfly". `MatchText` accepts the query tokens in
     any order, `MatchPhrase` only consecutively, and `MatchTextAny` needs just one of them.
     """
+    major, minor, patch, dev = read_version()
+    if not dev and None not in (major, minor, patch) and (major, minor, patch) < (1, 19, 2):
+        pytest.skip("Unindexed text match stops matching substrings as of qdrant 1.19.2")
+
     values = [
         "goodness only",  # substring of the query, not a token
         "good cheap stuff",
