@@ -231,6 +231,28 @@ class LocalCollection:
         for idx in vector.indices:
             self.sparse_vectors_idf[vector_name][idx] -= 1
 
+    def _drop_idf_contribution(self, idx: int, vector_name: str) -> None:
+        """Take point `idx` out of the IDF counters of `vector_name`.
+
+        `sparse_vectors_idf` must stay in sync with the corpus `_rescore_idf` measures, which
+        is every point that is alive and actually has the vector. A point that is already
+        deleted, point-wise or vector-wise, never counted, so dropping it again is a no-op.
+        """
+        if self.deleted[idx] or self.deleted_per_vector[vector_name][idx]:
+            return
+        self._update_idf_remove(self.sparse_vectors[vector_name][idx], vector_name)
+
+    def _existing_idx(self, point_id: types.PointId) -> int | None:
+        """Internal id of a point the collection still holds, `None` if it holds none.
+
+        Deleted points keep their slot so that internal ids stay stable, but the server
+        answers 404 for them exactly as it does for ids it has never seen.
+        """
+        idx = self.ids.get(point_id)
+        if idx is None or self.deleted[idx]:
+            return None
+        return idx
+
     @staticmethod
     def _idf_corpus_of(search_params: types.SearchParams | None) -> types.Filter | None:
         """Corpus filter scoping IDF statistics, if `search_params` asks for a narrowed scope.
@@ -278,6 +300,12 @@ class LocalCollection:
 
         # IDF statistics only take into account points which actually have this sparse vector,
         # points missing it are not part of the corpus. `idf_corpus` narrows it down further.
+        #
+        # Deleted points leave the corpus right away. `IdfScope.GLOBAL` on the server reads
+        # the sparse index rather than the live points, so it goes on counting deleted ones
+        # for as long as they sit in that index; local mode has no index to go stale and
+        # answers from live statistics immediately. The two agree on `IdfCorpusParams`, which
+        # is measured over live points either way - that is what the congruence tests pin.
         mask = self._payload_and_non_deleted_mask(idf_corpus, vector_name=vector_name)
         num_docs = int(np.count_nonzero(mask))
 
@@ -1850,10 +1878,10 @@ class LocalCollection:
     def _vector_by_point_id(
         self, vector_name: str, point_id: types.PointId
     ) -> list[float] | SparseVector | list[list[float]]:
-        if point_id not in self.ids:
+        idx = self._existing_idx(point_id)
+        if idx is None:
             raise ValueError(f"Point {point_id} is not found in the collection")
 
-        idx = self.ids[point_id]
         if vector_name in self.vectors:
             vector = self.vectors[vector_name][idx].tolist()
         elif vector_name in self.sparse_vectors:
@@ -2550,15 +2578,16 @@ class LocalCollection:
         # sparse vectors
         for vector_name, _named_vectors in self.sparse_vectors.items():
             vector = vectors.get(vector_name)
-            was_deleted = self.deleted[idx] or self.deleted_per_vector[vector_name][idx]
-            if not was_deleted:
-                previous_vector = self.sparse_vectors[vector_name][idx]
-                self._update_idf_remove(previous_vector, vector_name)
+            # we need to drop it even if the vector exists, because idf is computed over each vector value
+            # and if the vector has changed - the idf should be recalculated
+            self._drop_idf_contribution(idx, vector_name)
 
             if vector is not None:
                 stored_vector = copy_sparse_vector(vector)
                 self.sparse_vectors[vector_name][idx] = stored_vector
                 self.deleted_per_vector[vector_name][idx] = 0
+                # An upsert revives a deleted point, so this counts even when `deleted[idx]`
+                # is still set - it is cleared at the end of this method.
                 self._update_idf_append(stored_vector, vector_name)
             else:
                 self.deleted_per_vector[vector_name][idx] = 1
@@ -2838,18 +2867,18 @@ class LocalCollection:
     def _apply_named_vectors(self, idx: int, validated: list[tuple[str, Any]]) -> None:
         """Apply already validated named vectors. Call `_validate_named_vectors` first."""
         for vector_name, vector_np in validated:
-            was_deleted = self.deleted[idx] or self.deleted_per_vector[vector_name][idx]
-            self.deleted_per_vector[vector_name][idx] = 0
-
             if isinstance(vector_np, SparseVector):
-                if not was_deleted:
-                    old_vector = self.sparse_vectors[vector_name][idx]
-                    self._update_idf_remove(old_vector, vector_name)
+                # this has to come first: the deletion flag is what tells
+                # `_drop_idf_contribution` whether this point counts at all, and the stored
+                # vector is the one it takes back out of the counters
+                self._drop_idf_contribution(idx, vector_name)
+                self.deleted_per_vector[vector_name][idx] = 0
                 stored_vector = copy_sparse_vector(vector_np)
                 self.sparse_vectors[vector_name][idx] = stored_vector
-                if not self.deleted[idx]:
-                    self._update_idf_append(stored_vector, vector_name)
+                self._update_idf_append(stored_vector, vector_name)
                 continue
+
+            self.deleted_per_vector[vector_name][idx] = 0
 
             params = self.get_vector_params(vector_name)
             if vector_name in self.vectors:
@@ -2869,8 +2898,9 @@ class LocalCollection:
         validate_filter(update_filter)
 
         # Same rule as upsert: validate every point in the request before writing any of it.
-        # The point id itself is looked up in the apply pass, because the server does apply
-        # the points preceding an unknown id before answering 404.
+        # The point ids are looked up in the apply pass, because a request naming one the
+        # collection does not hold is not rejected outright: the server writes every other
+        # point in it, and only then answers 404 for the first id it could not find.
         prepared = [
             (
                 str(point.id) if isinstance(point.id, uuid.UUID) else point.id,
@@ -2883,10 +2913,14 @@ class LocalCollection:
             for point in points
         ]
 
+        missing: types.PointId | None = None
         for point_id, validated in prepared:
-            idx = self.ids[point_id]
+            idx = self._existing_idx(point_id)
+            if idx is None:
+                missing = point_id if missing is None else missing
+                continue
 
-            if not self.deleted[idx] and update_filter is not None:
+            if update_filter is not None:
                 has_vector = {}
                 for vector_name, deleted in self.deleted_per_vector.items():
                     if not deleted[idx]:
@@ -2897,6 +2931,9 @@ class LocalCollection:
                     continue
             self._apply_named_vectors(idx, validated)
             self._persist_by_id(point_id)
+
+        if missing is not None:
+            raise KeyError(missing)
 
     def delete_vectors(
         self,
@@ -2912,27 +2949,30 @@ class LocalCollection:
         # failing. The server errors either way, but whether it deletes first varies.
         self._validate_vector_names(vectors)
 
+        # Like `update_vectors`, a point the collection does not hold does not stop the rest
+        # of the request: everything else is deleted, and the 404 comes afterwards.
         ids = self._selector_to_ids(selector)
+        missing: types.PointId | None = None
         for point_id in ids:
-            idx = self.ids[point_id]
+            idx = self._existing_idx(point_id)
+            if idx is None:
+                missing = point_id if missing is None else missing
+                continue
             for vector_name in vectors:
-                if (
-                    vector_name in self.sparse_vectors
-                    and not self.deleted[idx]
-                    and not self.deleted_per_vector[vector_name][idx]
-                ):
-                    self._update_idf_remove(self.sparse_vectors[vector_name][idx], vector_name)
+                if vector_name in self.sparse_vectors:
+                    self._drop_idf_contribution(idx, vector_name)
                 self.deleted_per_vector[vector_name][idx] = 1
             self._persist_by_id(point_id)
+
+        if missing is not None:
+            raise KeyError(missing)
 
     def _delete_ids(self, ids: list[types.PointId]) -> None:
         for point_id in ids:
             if point_id in self.ids:
                 idx = self.ids[point_id]
-                if not self.deleted[idx]:
-                    for vector_name, vectors in self.sparse_vectors.items():
-                        if not self.deleted_per_vector[vector_name][idx]:
-                            self._update_idf_remove(vectors[idx], vector_name)
+                for vector_name in self.sparse_vectors:
+                    self._drop_idf_contribution(idx, vector_name)
                 self.deleted[idx] = 1
 
         if self.storage is not None:
@@ -2998,13 +3038,21 @@ class LocalCollection:
         ),
         key: str | None = None,
     ) -> None:
+        # A point the collection does not hold does not stop the rest of the request: the
+        # server applies every other point in it and answers 404 afterwards, naming the first
+        # id it could not find. Deleted points count as missing - writing to one would also
+        # persist it, bringing it back the next time the collection is opened.
         ids = self._selector_to_ids(selector)
         base_payload = to_jsonable_python(payload)
 
         keys: list[JsonPathItem] | None = parse_json_path(key) if key is not None else None
 
+        missing: types.PointId | None = None
         for point_id in ids:
-            idx = self.ids[point_id]
+            idx = self._existing_idx(point_id)
+            if idx is None:
+                missing = point_id if missing is None else missing
+                continue
             # Deep-copy per point: a shared object graph here would let a later,
             # differently-scoped set_payload(key=...) call mutate other points'
             # payloads in place via set_value_by_key's dict.update().
@@ -3017,6 +3065,9 @@ class LocalCollection:
 
             self._persist_by_id(point_id)
 
+        if missing is not None:
+            raise KeyError(missing)
+
     def overwrite_payload(
         self,
         payload: models.Payload,
@@ -3027,11 +3078,22 @@ class LocalCollection:
             | models.PointIdsList
         ),
     ) -> None:
+        # A point the collection does not hold does not stop the rest of the request: the
+        # server applies every other point in it and answers 404 afterwards, naming the first
+        # id it could not find. Deleted points count as missing - writing to one would also
+        # persist it, bringing it back the next time the collection is opened.
         ids = self._selector_to_ids(selector)
+        missing: types.PointId | None = None
         for point_id in ids:
-            idx = self.ids[point_id]
+            idx = self._existing_idx(point_id)
+            if idx is None:
+                missing = point_id if missing is None else missing
+                continue
             self.payload[idx] = deepcopy(to_jsonable_python(payload)) or {}
             self._persist_by_id(point_id)
+
+        if missing is not None:
+            raise KeyError(missing)
 
     def delete_payload(
         self,
@@ -3044,12 +3106,23 @@ class LocalCollection:
         ),
     ) -> None:
         parsed_keys = [parse_json_path(key) for key in keys]
+        # A point the collection does not hold does not stop the rest of the request: the
+        # server applies every other point in it and answers 404 afterwards, naming the first
+        # id it could not find. Deleted points count as missing - writing to one would also
+        # persist it, bringing it back the next time the collection is opened.
         ids = self._selector_to_ids(selector)
+        missing: types.PointId | None = None
         for point_id in ids:
-            idx = self.ids[point_id]
+            idx = self._existing_idx(point_id)
+            if idx is None:
+                missing = point_id if missing is None else missing
+                continue
             for parsed_key in parsed_keys:
                 delete_value_by_key(self.payload[idx], parsed_key)
             self._persist_by_id(point_id)
+
+        if missing is not None:
+            raise KeyError(missing)
 
     def clear_payload(
         self,
@@ -3060,11 +3133,22 @@ class LocalCollection:
             | models.PointIdsList
         ),
     ) -> None:
+        # A point the collection does not hold does not stop the rest of the request: the
+        # server applies every other point in it and answers 404 afterwards, naming the first
+        # id it could not find. Deleted points count as missing - writing to one would also
+        # persist it, bringing it back the next time the collection is opened.
         ids = self._selector_to_ids(selector)
+        missing: types.PointId | None = None
         for point_id in ids:
-            idx = self.ids[point_id]
+            idx = self._existing_idx(point_id)
+            if idx is None:
+                missing = point_id if missing is None else missing
+                continue
             self.payload[idx] = {}
             self._persist_by_id(point_id)
+
+        if missing is not None:
+            raise KeyError(missing)
 
     def _validate_vector_names(self, vector_names: Sequence[str]) -> None:
         for vector_name in vector_names:
