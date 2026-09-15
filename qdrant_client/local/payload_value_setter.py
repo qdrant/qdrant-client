@@ -1,3 +1,4 @@
+from copy import deepcopy
 from typing import Any, Type
 
 from qdrant_client.local.json_path_parser import JsonPathItem, JsonPathItemType
@@ -279,18 +280,21 @@ class WildcardIndexSetter(_ListSetter):
         k_list: list[JsonPathItem],
         value: dict[str, Any],
     ) -> None:
-        if len(k_list) == 0:
-            for i, item in enumerate(data):
+        for i, item in enumerate(data):
+            # a wildcard is the one path item that writes the same value to several places,
+            # so each element takes its own copy. Sharing a single object would make a later
+            # write scoped to one element, e.g. set_payload(key="arr[0].x"), reach them all.
+            item_value = deepcopy(value)
+            if len(k_list) == 0:
                 if isinstance(item, dict):
-                    data[i].update(value)
+                    item.update(item_value)
                 else:
-                    data[i] = value
-        else:
-            for i, item in enumerate(data):
+                    data[i] = item_value
+            else:
                 cls.set(
                     item,
                     k_list.copy(),
-                    value,
+                    item_value,
                     data,
                     JsonPathItem(item_type=JsonPathItemType.INDEX, index=i),
                 )
