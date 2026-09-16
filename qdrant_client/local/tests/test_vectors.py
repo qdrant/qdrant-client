@@ -61,3 +61,14 @@ def test_query_vector_kind_mismatch_error():
         points=[models.PointStruct(id=1, vector={"dense_vec": [1.0, 0.0]})]
     )
     assert collection.search(("dense_vec", [1.0, 0.0]))[0].id == 1
+
+
+def test_query_vector_kind_mismatch_unnamed():
+    """The unnamed default vector is rendered explicitly in the error message."""
+    collection = LocalCollection(
+        models.CreateCollection(
+            vectors=models.VectorParams(size=2, distance=models.Distance.COSINE)
+        )
+    )
+    with pytest.raises(ValueError, match="unnamed vector"):
+        collection.search([[1.0, 0.0]])
