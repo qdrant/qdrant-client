@@ -412,6 +412,7 @@ class LocalCollection:
         1-D query against a multivector, or a 2-D query against a dense vector),
         the generic "not found" error would be misleading.
         """
+        display_name = name if name else "unnamed vector (default)"
         for kind, mapping in (
             ("dense", self.vectors),
             ("sparse", self.sparse_vectors),
@@ -419,9 +420,9 @@ class LocalCollection:
         ):
             if name in mapping and kind != expected_kind:
                 return (
-                    f"Vector '{name}' is a {kind} vector, but the query vector is "
-                    f"{expected_format}. A {kind} collection requires a matching "
-                    "query format."
+                    f"Vector '{display_name}' is a {kind} vector, but the query "
+                    f"vector is {expected_format}. A {kind} collection requires a "
+                    "matching query format."
                 )
         kind_labels = {
             "dense": "Dense vector",
