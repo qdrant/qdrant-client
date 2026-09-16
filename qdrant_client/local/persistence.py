@@ -3,7 +3,9 @@ import dbm
 import logging
 import pickle
 import sqlite3
+from contextlib import closing
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from typing import Iterable
 
 from qdrant_client.http import models
@@ -23,31 +25,27 @@ def try_migrate_to_sqlite(location: str) -> None:
         return
 
     try:
-        dbm_storage = dbm.open(str(dbm_path), "c")
+        # An existing destination means migration is complete. Publish it only after
+        # every point is committed, so a failed migration can be retried safely.
+        with TemporaryDirectory(dir=location) as staging_dir:
+            staged_path = Path(staging_dir) / STORAGE_FILE_NAME
+            with dbm.open(str(dbm_path), "r") as dbm_storage:
+                with closing(sqlite3.connect(str(staged_path))) as con:
+                    cur = con.cursor()
+                    cur.execute("CREATE TABLE points (id TEXT PRIMARY KEY, point BLOB)")
 
-        con = sqlite3.connect(str(sql_path))
-        cur = con.cursor()
-
-        # Create table
-        cur.execute("CREATE TABLE IF NOT EXISTS points (id TEXT PRIMARY KEY, point BLOB)")
-
-        for key in dbm_storage.keys():
-            value = dbm_storage[key]
-            if isinstance(key, str):
-                key = key.encode("utf-8")
-            key = pickle.loads(key)
-            sqlite_key = CollectionPersistence.encode_key(key)
-            # Insert a row of data
-            cur.execute(
-                "INSERT INTO points VALUES (?, ?)",
-                (
-                    sqlite_key,
-                    sqlite3.Binary(value),
-                ),
-            )
-        con.commit()
-        con.close()
-        dbm_storage.close()
+                    for key in dbm_storage.keys():
+                        value = dbm_storage[key]
+                        if isinstance(key, str):
+                            key = key.encode("utf-8")
+                        key = pickle.loads(key)
+                        sqlite_key = CollectionPersistence.encode_key(key)
+                        cur.execute(
+                            "INSERT INTO points VALUES (?, ?)",
+                            (sqlite_key, sqlite3.Binary(value)),
+                        )
+                    con.commit()
+            staged_path.replace(sql_path)
         dbm_path.unlink()
     except Exception as e:
         logging.error("Failed to migrate dbm to sqlite:", e)

@@ -1,3 +1,6 @@
+import dbm
+import logging
+import pickle
 import random
 import tempfile
 
@@ -7,9 +10,41 @@ import pytest
 from qdrant_client import QdrantClient
 import qdrant_client.http.models as rest
 from qdrant_client._pydantic_compat import construct
+from qdrant_client.local.persistence import (
+    CollectionPersistence,
+    STORAGE_FILE_NAME,
+    STORAGE_FILE_NAME_OLD,
+)
 from tests.fixtures.points import generate_random_sparse_vector_list
 
 default_collection_name = "example"
+
+
+def test_failed_dbm_migration_can_be_retried(tmp_path, caplog):
+    legacy_path = tmp_path / STORAGE_FILE_NAME_OLD
+    points = [rest.PointStruct(id=i, vector=[float(i)], payload={"index": i}) for i in (1, 2)]
+    with dbm.open(str(legacy_path), "c") as legacy:
+        for point in points:
+            legacy[pickle.dumps(point.id)] = pickle.dumps(point)
+        legacy[b"invalid pickle"] = b"invalid point"
+    if not legacy_path.exists():
+        pytest.skip("Migration requires a single-file DBM backend")
+
+    # The existing migration error logger has a separate formatting bug (#1335).
+    with caplog.at_level(logging.CRITICAL), pytest.raises(pickle.UnpicklingError):
+        CollectionPersistence(str(tmp_path))
+
+    assert legacy_path.exists()
+    assert not (tmp_path / STORAGE_FILE_NAME).exists()
+
+    with dbm.open(str(legacy_path), "w") as legacy:
+        del legacy[b"invalid pickle"]
+    storage = CollectionPersistence(str(tmp_path))
+    try:
+        assert sorted(storage.load(), key=lambda point: point.id) == points
+    finally:
+        storage.close()
+    assert not legacy_path.exists()
 
 
 def ingest_dense_vector_data(
