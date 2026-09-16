@@ -2176,6 +2176,31 @@ def test_query_invalid_mmr_candidates_limit():
         grpc_client.query_points(collection_name=COLLECTION_NAME, query=negative, using="text")
 
 
+def test_query_empty_feedback():
+    fixture_points = generate_fixtures(5)
+
+    local_client, http_client, grpc_client = init_clients(fixture_points)
+
+    query = models.RelevanceFeedbackQuery(
+        relevance_feedback=models.RelevanceFeedbackInput(
+            target=np.random.random(text_vector_size).tolist(),
+            feedback=[],
+            strategy=models.NaiveFeedbackStrategy(
+                naive=models.NaiveFeedbackStrategyParams(a=0.5, b=1.0, c=0.7)
+            ),
+        )
+    )
+
+    with pytest.raises(ValueError, match="relevance feedback must not be empty"):
+        local_client.query_points(collection_name=COLLECTION_NAME, query=query, using="text")
+
+    with pytest.raises(UnexpectedResponse, match="feedback elements must be non-empty"):
+        http_client.query_points(collection_name=COLLECTION_NAME, query=query, using="text")
+
+    with pytest.raises(RpcError):
+        grpc_client.query_points(collection_name=COLLECTION_NAME, query=query, using="text")
+
+
 def test_query_invalid_feedback_strategy():
     fixture_points = generate_fixtures(5)
 
