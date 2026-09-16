@@ -2518,15 +2518,18 @@ def test_mmr_queries():
         local_client, http_client, grpc_client, searcher.mmr_query_parametrized_score_threshold
     )
 
-    # `offset` must paginate the re-ranked output, not the candidate pool
-    for offset in (0, 10, 20):
-        compare_clients_results(
-            local_client,
-            http_client,
-            grpc_client,
-            searcher.mmr_query_parametrized_offset,
-            offset=offset,
-        )
+    # `offset` must paginate the re-ranked output, not the candidate pool. Until qdrant 1.19.2
+    # the server applied it to the candidate pool instead, which exhausted it and returned nothing
+    major, minor, patch, dev = read_version()
+    if dev or None in (major, minor, patch) or (major, minor, patch) >= (1, 19, 2):
+        for offset in (0, 10, 20):
+            compare_clients_results(
+                local_client,
+                http_client,
+                grpc_client,
+                searcher.mmr_query_parametrized_offset,
+                offset=offset,
+            )
 
     compare_clients_results(
         local_client, http_client, grpc_client, searcher.default_mmr_query_offset, offset=5
