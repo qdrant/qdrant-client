@@ -227,6 +227,8 @@ class QdrantLocal(QdrantBase):
                     )
 
         elif isinstance(query, rest_models.RelevanceFeedbackQuery):
+            if not query.relevance_feedback.feedback:
+                raise ValueError("relevance feedback must not be empty")
             naive = query.relevance_feedback.strategy.naive
             if naive.b < 0:
                 raise ValueError(
