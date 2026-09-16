@@ -403,6 +403,33 @@ class LocalCollection:
 
             self.deleted = np.zeros(len(self.payload), dtype=bool)
 
+    def _query_vector_mismatch_error(
+        self, name: str, expected_kind: str, expected_format: str
+    ) -> str:
+        """Error message for a query whose vector kind doesn't match the named vector.
+
+        When the name exists but is configured as a different vector kind (e.g. a
+        1-D query against a multivector, or a 2-D query against a dense vector),
+        the generic "not found" error would be misleading.
+        """
+        for kind, mapping in (
+            ("dense", self.vectors),
+            ("sparse", self.sparse_vectors),
+            ("multivector", self.multivectors),
+        ):
+            if name in mapping and kind != expected_kind:
+                return (
+                    f"Vector '{name}' is a {kind} vector, but the query vector is "
+                    f"{expected_format}. A {kind} collection requires a matching "
+                    "query format."
+                )
+        kind_labels = {
+            "dense": "Dense vector",
+            "sparse": "Sparse vector",
+            "multivector": "Multivector",
+        }
+        return f"{kind_labels[expected_kind]} {name} is not found in the collection"
+
     @classmethod
     def _resolve_query_vector_name(
         cls,
@@ -709,7 +736,9 @@ class LocalCollection:
         # early exit if the named vector does not exist
         if isinstance(query_vector, get_args(SparseQueryVector)):
             if name not in self.sparse_vectors:
-                raise ValueError(f"Sparse vector {name} is not found in the collection")
+                raise ValueError(
+                    self._query_vector_mismatch_error(name, "sparse", "a sparse vector")
+                )
             vectors = self.sparse_vectors[name]
             if self.config.sparse_vectors[name].modifier == models.Modifier.IDF:
                 rescore_idf = True
@@ -719,12 +748,20 @@ class LocalCollection:
             isinstance(query_vector, np.ndarray) and len(query_vector.shape) == 2
         ):
             if name not in self.multivectors:
-                raise ValueError(f"Multivector {name} is not found in the collection")
+                raise ValueError(
+                    self._query_vector_mismatch_error(
+                        name, "multivector", "a list of vectors (2-D)"
+                    )
+                )
             vectors = self.multivectors[name]
             distance = self.get_vector_params(name).distance
         else:
             if name not in self.vectors:
-                raise ValueError(f"Dense vector {name} is not found in the collection")
+                raise ValueError(
+                    self._query_vector_mismatch_error(
+                        name, "dense", "a single vector (1-D)"
+                    )
+                )
             vectors = self.vectors[name]
             distance = self.get_vector_params(name).distance
 
