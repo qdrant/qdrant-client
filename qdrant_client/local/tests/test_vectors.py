@@ -63,6 +63,50 @@ def test_query_vector_kind_mismatch_error():
     assert collection.search(("dense_vec", [1.0, 0.0]))[0].id == 1
 
 
+def test_query_vector_kind_mismatch_sparse():
+    """Sparse queries routed to a dense/multivector name (or a missing name)
+    produce the accurate mismatch / not-found messages."""
+    multivector_config = models.MultiVectorConfig(
+        comparator=models.MultiVectorComparator.MAX_SIM
+    )
+    collection = LocalCollection(
+        models.CreateCollection(
+            vectors={
+                "dense_vec": models.VectorParams(
+                    size=2, distance=models.Distance.COSINE
+                ),
+                "multi_vec": models.VectorParams(
+                    size=2,
+                    distance=models.Distance.COSINE,
+                    multivector_config=multivector_config,
+                ),
+            },
+            sparse_vectors={"sparse_vec": models.SparseVectorParams()},
+        )
+    )
+    sparse = models.SparseVector(indices=[0], values=[1.0])
+
+    with pytest.raises(ValueError, match="is a dense vector"):
+        collection.search(("dense_vec", sparse))
+
+    with pytest.raises(ValueError, match="is a multivector vector"):
+        collection.search(("multi_vec", sparse))
+
+    with pytest.raises(ValueError, match="Sparse vector missing is not found"):
+        collection.search(("missing", sparse))
+
+    # sparse queries against a configured sparse name still work
+    collection.upsert(
+        points=[
+            models.PointStruct(
+                id=1,
+                vector={"sparse_vec": models.SparseVector(indices=[0], values=[1.0])},
+            )
+        ]
+    )
+    assert collection.search(("sparse_vec", sparse))[0].id == 1
+
+
 def test_query_vector_kind_mismatch_unnamed():
     """The unnamed default vector is rendered explicitly in the error message."""
     collection = LocalCollection(
