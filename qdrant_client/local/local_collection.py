@@ -2460,6 +2460,21 @@ class LocalCollection:
             for point in prefetch:
                 points_to_rescore.add(point.id)
 
+        # Ensure points matching filter conditions in the formula are not starved by
+        # prefetch limits when multiple prefetches are present. The union of prefetches
+        # can be smaller than the set of filter-matching points otherwise.
+        for condition in _collect_formula_conditions(query.formula):
+            if isinstance(condition, models.Filter):
+                mask = self._payload_and_non_deleted_mask(condition)
+            else:
+                # Wrap single condition as a filter for mask computation
+                mask = self._payload_and_non_deleted_mask(
+                    models.Filter(must=[condition])  # type: ignore[arg-type]
+                )
+            for idx, matched in enumerate(mask):
+                if matched:
+                    points_to_rescore.add(self.ids_inv[idx])
+
         # Evaluate formula for each point
         rescored: list[models.ScoredPoint] = []
         for point_id in points_to_rescore:
@@ -3467,6 +3482,61 @@ def _include_ids_in_filter(
             query_filter.must = [query_filter.must, include_ids]
 
     return query_filter
+
+
+def _collect_formula_conditions(expression: models.Expression) -> list[models.Condition]:
+    """Collect filter-like conditions referenced inside a formula expression.
+
+    The formula can boost points that match a filter (e.g. Mult([5, filter])),
+    so the candidate set must contain those points even if no prefetch returned
+    them. This mirrors the server's candidate-set construction for formula
+    queries with multiple prefetches.
+    """
+    conditions: list[models.Condition] = []
+    stack: list[models.Expression] = [expression]
+    while stack:
+        cur = stack.pop()
+        if isinstance(cur, (float, int, str)):
+            continue
+        if isinstance(cur, get_args_subscribed(models.Condition)):
+            conditions.append(cur)  # type: ignore[arg-type]
+            continue
+        if isinstance(cur, models.MultExpression):
+            stack.extend(cur.mult)
+        elif isinstance(cur, models.SumExpression):
+            stack.extend(cur.sum)
+        elif isinstance(cur, models.NegExpression):
+            stack.append(cur.neg)
+        elif isinstance(cur, models.AbsExpression):
+            stack.append(cur.abs)
+        elif isinstance(cur, models.DivExpression):
+            stack.append(cur.div.left)
+            stack.append(cur.div.right)
+        elif isinstance(cur, models.SqrtExpression):
+            stack.append(cur.sqrt)
+        elif isinstance(cur, models.PowExpression):
+            stack.append(cur.pow.base)
+            stack.append(cur.pow.exponent)
+        elif isinstance(cur, models.ExpExpression):
+            stack.append(cur.exp)
+        elif isinstance(cur, models.Log10Expression):
+            stack.append(cur.log10)
+        elif isinstance(cur, models.LnExpression):
+            stack.append(cur.ln)
+        elif isinstance(cur, models.LinDecayExpression):
+            stack.append(cur.lin_decay.x)
+            if cur.lin_decay.target is not None:
+                stack.append(cur.lin_decay.target)
+        elif isinstance(cur, models.ExpDecayExpression):
+            stack.append(cur.exp_decay.x)
+            if cur.exp_decay.target is not None:
+                stack.append(cur.exp_decay.target)
+        elif isinstance(cur, models.GaussDecayExpression):
+            stack.append(cur.gauss_decay.x)
+            if cur.gauss_decay.target is not None:
+                stack.append(cur.gauss_decay.target)
+        # GeoDistance, DatetimeExpression etc. contain no filter conditions
+    return conditions
 
 
 def record_to_scored_point(record: types.Record) -> types.ScoredPoint:
