@@ -2559,6 +2559,8 @@ class LocalCollection:
 
         if isinstance(point.vector, list):
             vectors = {DEFAULT_VECTOR_NAME: point.vector}
+        elif point.vector is None:
+            vectors = {}
         else:
             vectors = point.vector
 
@@ -2623,6 +2625,8 @@ class LocalCollection:
 
         if isinstance(point.vector, list):
             vectors = {DEFAULT_VECTOR_NAME: point.vector}
+        elif point.vector is None:
+            vectors = {}
         else:
             vectors = point.vector
 
@@ -2729,7 +2733,9 @@ class LocalCollection:
 
         normalized_vector: models.VectorStruct = point.vector
 
-        if isinstance(point.vector, dict):
+        if point.vector is None:
+            normalized_vector = None
+        elif isinstance(point.vector, dict):
             normalized_vectors = dict(point.vector)
             for vector_name, vector in point.vector.items():
                 if vector_name not in self._all_vectors_keys:
@@ -2908,6 +2914,8 @@ class LocalCollection:
                     {DEFAULT_VECTOR_NAME: point.vector}
                     if isinstance(point.vector, list)
                     else point.vector
+                    if point.vector is not None
+                    else {}
                 ),
             )
             for point in points

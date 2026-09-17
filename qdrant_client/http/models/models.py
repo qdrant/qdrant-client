@@ -2319,7 +2319,7 @@ class PointRequest(BaseModel, extra="forbid"):
 
 class PointStruct(BaseModel, extra="forbid"):
     id: "ExtendedPointId" = Field(..., description="")
-    vector: "VectorStruct" = Field(..., description="")
+    vector: Optional["VectorStruct"] = Field(default=None, description="")
     payload: Optional["Payload"] = Field(default=None, description="Payload values (optional)")
 
 
