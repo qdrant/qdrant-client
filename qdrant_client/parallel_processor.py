@@ -7,6 +7,7 @@ from multiprocessing.context import BaseContext
 from multiprocessing.process import BaseProcess
 from multiprocessing.sharedctypes import Synchronized as BaseValue
 from queue import Empty
+from time import monotonic
 from typing import Any, Iterable, Type
 
 # Single item should be processed in less than:
@@ -162,7 +163,7 @@ class ParallelWorkerPool:
                         out_item = None
                 else:
                     try:
-                        out_item = self.output_queue.get(timeout=processing_timeout)
+                        out_item = self._get_output()
                     except Empty as e:
                         self.join_or_terminate()
                         raise e
@@ -180,7 +181,7 @@ class ParallelWorkerPool:
                 self.input_queue.put(QueueSignals.stop)
 
             while read < pushed:
-                out_item = self.output_queue.get(timeout=processing_timeout)
+                out_item = self._get_output()
                 if out_item == QueueSignals.error:
                     self.join_or_terminate()
                     raise RuntimeError("Thread unexpectedly terminated")
@@ -211,6 +212,19 @@ class ParallelWorkerPool:
             while next_expected in buffer:
                 yield buffer.pop(next_expected)
                 next_expected += 1
+
+    def _get_output(self) -> Any:
+        assert self.output_queue is not None, "Output queue was not initialized"
+        deadline = monotonic() + processing_timeout
+        while True:
+            self.check_worker_health()
+            timeout = min(1.0, deadline - monotonic())
+            if timeout <= 0:
+                raise Empty
+            try:
+                return self.output_queue.get(timeout=timeout)
+            except Empty:
+                pass
 
     def check_worker_health(self) -> None:
         """
