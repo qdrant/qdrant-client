@@ -1,0 +1,32 @@
+name: Ruff Linting
+
+on:
+  push:
+    branches: [dev, master]
+  pull_request:
+    branches: [dev, master]
+
+jobs:
+  ruff:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.9"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install Poetry and lint deps
+        run: |
+          python -m pip install poetry
+          poetry config virtualenvs.create false
+          poetry install --no-interaction --no-ansi --only dev
+
+      - name: Run Ruff
+        run: |
+          poetry run ruff check .  --output-format=github
