@@ -25,8 +25,12 @@ def validate_sparse_vector(vector: SparseVector) -> None:
     # which would let a malformed vector into the collection
     if len(vector.indices) != len(vector.values):
         raise ValueError("Indices and values must have the same length")
-    if np.isnan(vector.values).any():
-        raise ValueError("Values must not contain NaN")
+    # `values` are used as float32 downstream, so anything finite for Python but not for
+    # float32 (1e40) is rejected too - it lands in scoring as infinity either way
+    with np.errstate(over="ignore", invalid="ignore"):
+        finite = bool(np.isfinite(np.asarray(vector.values, dtype=np.float32)).all())
+    if not finite:
+        raise ValueError("Values must not contain NaN or infinite values")
     if len(vector.indices) != len(set(vector.indices)):
         raise ValueError("Indices must be unique")
 

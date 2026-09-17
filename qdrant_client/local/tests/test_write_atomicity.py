@@ -10,7 +10,7 @@ successful upsert then broke every query with a shape mismatch.
 import pytest
 
 from qdrant_client import models
-from qdrant_client.local.local_collection import LocalCollection
+from qdrant_client.local.local_collection import LocalCollection, VECTOR_MUST_BE_FINITE
 
 NAN_VECTOR = [1.0, float("nan"), 3.0]
 GOOD_VECTOR = [1.0, 2.0, 3.0]
@@ -32,7 +32,7 @@ def test_rejected_add_keeps_internal_arrays_aligned() -> None:
     )
     collection.upsert([models.PointStruct(id=1, vector={"d": GOOD_VECTOR})])
 
-    with pytest.raises(ValueError, match="Vector contains NaN values"):
+    with pytest.raises(ValueError, match=VECTOR_MUST_BE_FINITE):
         collection.upsert([models.PointStruct(id=2, vector={"d": NAN_VECTOR})])
 
     assert_internally_consistent(collection)
@@ -58,7 +58,7 @@ def test_rejected_multivector_add_keeps_internal_arrays_aligned() -> None:
     )
     collection.upsert([models.PointStruct(id=1, vector={"m": [GOOD_VECTOR]})])
 
-    with pytest.raises(ValueError, match="Vector contains NaN values"):
+    with pytest.raises(ValueError, match=VECTOR_MUST_BE_FINITE):
         collection.upsert([models.PointStruct(id=2, vector={"m": [NAN_VECTOR]})])
 
     assert_internally_consistent(collection)

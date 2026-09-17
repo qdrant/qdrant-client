@@ -101,13 +101,30 @@ def to_jsonable_python(x: Any) -> Any:
         return json.loads(json.dumps(x, allow_nan=True, default=_to_jsonable_python))
 
 
+VECTOR_MUST_BE_FINITE = "Vector must not contain NaN or infinite values"
+
+
+def _all_values_finite(vector: Any) -> bool:
+    """True unless the float32 values that would actually be stored are NaN or +-inf.
+
+    The check runs on the cast values, not on the input: a finite float such as 1e40 has no
+    float32 representative and silently becomes infinity on cast, which poisons every
+    distance it takes part in just as an explicit infinity does.
+    """
+    values = np.asarray(vector, dtype=np.float64)
+    # The cast may overflow (1e40 -> inf) or be invalid (None -> nan); both are exactly the
+    # garbage this check exists to catch, and neither should reach the user as a numpy warning.
+    with np.errstate(over="ignore", invalid="ignore"):
+        return bool(np.isfinite(values.astype(np.float32)).all())
+
+
 def validate_dense_vector(vector: Any, vector_name: str) -> None:
-    """Reject empty dense vectors and NaN values, as the server does at write time."""
+    """Reject empty dense vectors and non-finite values, as the server does at write time."""
     if len(vector) == 0:
         raise ValueError(f"Wrong input: Dense vector must not be empty for vector '{vector_name}'")
 
-    if np.isnan(np.asarray(vector, dtype=np.float32)).any():
-        raise ValueError("Vector contains NaN values")
+    if not _all_values_finite(vector):
+        raise ValueError(VECTOR_MUST_BE_FINITE)
 
 
 def validate_vector_dimension(got: int, expected: int, vector_name: str) -> None:
@@ -124,7 +141,7 @@ def validate_vector_dimension(got: int, expected: int, vector_name: str) -> None
 
 
 def validate_multivector(vector: Any, vector_name: str) -> None:
-    """Reject empty multivectors, empty sub-vectors and NaN values, as the server does."""
+    """Reject empty multivectors, empty sub-vectors and non-finite values, as the server does."""
     if len(vector) == 0:
         raise ValueError(f"Wrong input: Multivector must not be empty for vector '{vector_name}'")
 
@@ -135,8 +152,8 @@ def validate_multivector(vector: Any, vector_name: str) -> None:
                 f"for vector '{vector_name}'"
             )
 
-    if np.isnan(np.asarray(vector, dtype=np.float32)).any():
-        raise ValueError("Vector contains NaN values")
+    if not _all_values_finite(vector):
+        raise ValueError(VECTOR_MUST_BE_FINITE)
 
 
 class LocalCollection:
