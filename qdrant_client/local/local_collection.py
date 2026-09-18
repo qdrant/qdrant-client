@@ -73,6 +73,7 @@ from qdrant_client.local.sparse import (
     empty_sparse_vector,
     sort_sparse_vector,
     validate_sparse_vector,
+    validate_sparse_vector_at_write,
 )
 from qdrant_client.local.sparse_distances import (
     SparseContextPair,
@@ -95,6 +96,7 @@ EPSILON = 1.1920929e-7  # https://doc.rust-lang.org/std/f32/constant.EPSILON.htm
 
 
 def to_jsonable_python(x: Any) -> Any:
+    """Convert numpy scalars/arrays and other JSON-hostile values to plain Python."""
     try:
         return json.loads(json.dumps(x, allow_nan=True))
     except Exception:
@@ -2752,8 +2754,9 @@ class LocalCollection:
                 if vector_name not in self._all_vectors_keys:
                     raise ValueError(f"Wrong input: Not existing vector name error: {vector_name}")
                 if isinstance(vector, SparseVector):
-                    # validate sparse vector
-                    validate_sparse_vector(vector)
+                    # validate sparse vector; this is a write path, so stored
+                    # values must be finite
+                    validate_sparse_vector_at_write(vector)
                     # sort sparse vector by indices before persistence
                     normalized_vectors[vector_name] = sort_sparse_vector(vector)
                 else:
@@ -2872,7 +2875,7 @@ class LocalCollection:
                 raise ValueError(f"Wrong input: Not existing vector name error: {vector_name}")
 
             if isinstance(vector, SparseVector):
-                validate_sparse_vector(vector)
+                validate_sparse_vector_at_write(vector)
                 validated.append((vector_name, sort_sparse_vector(vector)))
                 continue
 

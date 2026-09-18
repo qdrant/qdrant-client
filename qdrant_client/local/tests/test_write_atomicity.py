@@ -17,6 +17,7 @@ GOOD_VECTOR = [1.0, 2.0, 3.0]
 
 
 def assert_internally_consistent(collection: LocalCollection) -> None:
+    """All internal index arrays must agree on the number of live points."""
     assert len(collection.ids) == len(collection.ids_inv)
     assert len(collection.payload) == len(collection.ids_inv)
     assert len(collection.deleted) == len(collection.ids_inv)
@@ -25,6 +26,7 @@ def assert_internally_consistent(collection: LocalCollection) -> None:
 
 
 def test_rejected_add_keeps_internal_arrays_aligned() -> None:
+    """A rejected write must not skew the internal index arrays."""
     collection = LocalCollection(
         models.CreateCollection(
             vectors={"d": models.VectorParams(size=3, distance=models.Distance.DOT)}
@@ -43,6 +45,7 @@ def test_rejected_add_keeps_internal_arrays_aligned() -> None:
 
 
 def test_rejected_multivector_add_keeps_internal_arrays_aligned() -> None:
+    """Same as the dense case, for the multivector index arrays."""
     collection = LocalCollection(
         models.CreateCollection(
             vectors={

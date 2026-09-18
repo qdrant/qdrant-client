@@ -16,7 +16,10 @@ from qdrant_client.local.local_collection import (
     validate_dense_vector,
     validate_multivector,
 )
-from qdrant_client.local.sparse import validate_sparse_vector
+from qdrant_client.local.sparse import (
+    validate_sparse_vector,
+    validate_sparse_vector_at_write,
+)
 
 INF = float("inf")
 
@@ -27,20 +30,52 @@ NON_FINITE_VALUES = [float("nan"), INF, -INF, 1e40]
 
 @pytest.mark.parametrize("value", NON_FINITE_VALUES)
 def test_dense_vector_rejects_non_finite(value: float) -> None:
+    """Dense write validation must refuse every value float32 cannot store."""
     with pytest.raises(ValueError, match=VECTOR_MUST_BE_FINITE):
         validate_dense_vector([1.0, value, 3.0], "d")
 
 
 @pytest.mark.parametrize("value", NON_FINITE_VALUES)
 def test_multivector_rejects_non_finite(value: float) -> None:
+    """Multivector write validation must refuse every value float32 cannot store."""
     with pytest.raises(ValueError, match=VECTOR_MUST_BE_FINITE):
         validate_multivector([[1.0, value, 3.0], [4.0, 5.0, 6.0]], "m")
 
 
 @pytest.mark.parametrize("value", NON_FINITE_VALUES)
-def test_sparse_vector_rejects_non_finite(value: float) -> None:
+def test_sparse_vector_rejects_non_finite_at_write(value: float) -> None:
+    """Sparse write validation must refuse every value float32 cannot store."""
     with pytest.raises(ValueError, match="NaN or infinite"):
-        validate_sparse_vector(SparseVector(indices=[1, 2], values=[0.5, value]))
+        validate_sparse_vector_at_write(SparseVector(indices=[1, 2], values=[0.5, value]))
+
+
+def test_sparse_query_paths_still_accept_infinity() -> None:
+    """Query-time validation is deliberately unchanged: +-inf stays legal there.
+
+    `validate_sparse_vector` runs on search/recommend inputs too, so rejecting
+    infinity in it would change query behaviour this PR does not touch. An inf
+    value in a query simply scores +-inf against the stored points.
+    """
+    validate_sparse_vector(SparseVector(indices=[1, 2], values=[0.5, INF]))  # must not raise
+
+    collection = LocalCollection(
+        models.CreateCollection(
+            vectors={},
+            sparse_vectors={"s": models.SparseVectorParams()},
+        )
+    )
+    collection.upsert(
+        [
+            models.PointStruct(
+                id=1,
+                vector={"s": models.SparseVector(indices=[1], values=[1.0])},
+            )
+        ]
+    )
+    hits = collection.search(
+        query_vector=("s", models.SparseVector(indices=[1], values=[INF])), limit=5
+    )
+    assert [hit.id for hit in hits] == [1]
 
 
 def test_rejected_write_leaves_later_search_clean() -> None:
