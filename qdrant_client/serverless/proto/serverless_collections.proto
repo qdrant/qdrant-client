@@ -3,7 +3,6 @@
 // name, and "collections.proto" is already taken by the regular qdrant client proto.
 // Client copy: buf.validate options are stripped (server-side only; wire format unchanged).
 // Regenerate with tools/generate_serverless_grpc_client.sh
-
 syntax = "proto3";
 
 package qdrant.serverless;
@@ -225,6 +224,8 @@ message CreateCollectionResponse {
   string collection_name = 1;
   // Outcome, e.g. "created", "already exists".
   string result = 2;
+  // Time spent to process
+  double time = 3;
 }
 
 // Names the collection to delete.
@@ -239,6 +240,8 @@ message DeleteCollectionResponse {
   bool deleted = 1;
   // Number of storage objects removed.
   uint32 objects_deleted = 2;
+  // Time spent to process
+  double time = 3;
 }
 
 // Names the collection to fetch.
@@ -256,6 +259,8 @@ message GetCollectionResponse {
   // Available points as of the last applied write (eventually consistent);
   // absent until the updater has written stats for the collection.
   optional uint64 point_count = 3;
+  // Time spent to process
+  double time = 4;
 }
 
 // Lists the caller's collections. The tenant travels in metadata.
@@ -284,4 +289,6 @@ message ListCollectionsResponse {
   // Opaque token to pass as `offset_token` to retrieve the next page. Absent
   // when there are no more results.
   optional string next_offset_token = 2;
+  // Time spent to process
+  double time = 3;
 }
