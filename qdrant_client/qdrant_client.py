@@ -168,6 +168,15 @@ class QdrantClient(QdrantFastembedMixin):
     def __del__(self) -> None:
         self.close()
 
+    @property
+    def closed(self) -> bool:
+        """Whether the connection to Qdrant has been closed
+
+        Returns:
+            True once close() has been called, False otherwise
+        """
+        return self._client.closed
+
     def close(self, grpc_grace: float | None = None, **kwargs: Any) -> None:
         """Closes the connection to Qdrant
 
