@@ -355,3 +355,60 @@ def test_idf_statistics_after_deletion(qdrant: QdrantClient, operation: str):
             [models.PointStruct(id=i, vector={"text": vector}) for i in (1, 2)],
         )
     assert_scores(3)
+
+
+@pytest.mark.parametrize("distance", [models.Distance.EUCLID, models.Distance.MANHATTAN])
+def test_dbsf_fusion_respects_score_direction(qdrant: QdrantClient, distance: models.Distance):
+    """DBSF must rank nearest-first on metrics where a lower score is a better match.
+
+    Core normalizes the internal similarity, which is oriented "bigger is better" for
+    every metric, so the fused order has to stay nearest-first on Euclid/Manhattan.
+    """
+    qdrant.create_collection(
+        collection_name="test_collection",
+        vectors_config={
+            "dense": models.VectorParams(size=2, distance=distance),
+            "cosine": models.VectorParams(size=2, distance=models.Distance.COSINE),
+        },
+    )
+    qdrant.upsert(
+        collection_name="test_collection",
+        points=[
+            models.PointStruct(id=i, vector={"dense": [float(i), 0.0], "cosine": [1.0, float(i)]})
+            for i in range(5)
+        ],
+    )
+
+    # a plain search is nearest-first: ids 0, 1, 2, 3, 4
+    plain = qdrant.query_points(
+        collection_name="test_collection", query=[0.0, 0.0], using="dense", limit=5
+    ).points
+    assert [point.id for point in plain] == [0, 1, 2, 3, 4]
+
+    def fuse(prefetch: list[models.Prefetch]) -> list[int]:
+        points = qdrant.query_points(
+            collection_name="test_collection",
+            prefetch=prefetch,
+            query=models.FusionQuery(fusion=models.Fusion.DBSF),
+            limit=5,
+        ).points
+        return [point.id for point in points]
+
+    # both sources agree on nearest-first, so the fused order must agree too
+    assert fuse(
+        [
+            models.Prefetch(query=[0.0, 0.0], using="dense", limit=5),
+            models.Prefetch(query=[0.1, 0.0], using="dense", limit=5),
+        ]
+    ) == [0, 1, 2, 3, 4]
+
+    # mixing with a bigger-is-better source must not flip the smaller-is-better one either
+    assert (
+        fuse(
+            [
+                models.Prefetch(query=[0.0, 0.0], using="dense", limit=5),
+                models.Prefetch(query=[1.0, 0.0], using="cosine", limit=5),
+            ]
+        )[0]
+        == 0
+    )
