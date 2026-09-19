@@ -899,6 +899,9 @@ class LocalCollection:
                 with_vectors=with_vectors,
                 score_threshold=score_threshold,
                 idf_corpus=self._idf_corpus_of(search_params),
+                sources_smaller_is_better=[
+                    self._prefetch_scores_are_smaller_better(prefetch_) for prefetch_ in prefetches
+                ],
             )
         else:
             # It is a base query
@@ -950,6 +953,10 @@ class LocalCollection:
                 with_vectors=False,
                 score_threshold=prefetch.score_threshold,
                 idf_corpus=self._idf_corpus_of(prefetch.params),
+                sources_smaller_is_better=[
+                    self._prefetch_scores_are_smaller_better(inner_prefetch)
+                    for inner_prefetch in inner_prefetches
+                ],
             )
         else:
             # Base case: fetch from collection
@@ -965,6 +972,26 @@ class LocalCollection:
                 idf_corpus=self._idf_corpus_of(prefetch.params),
             )
 
+    def _prefetch_scores_are_smaller_better(self, prefetch: types.Prefetch) -> bool:
+        """Whether a prefetch branch yields scores where a lower value is a better match.
+
+        Only plain nearest-neighbour queries inherit the score direction of the
+        collection's metric. Every other query kind (fusion, recommend, discovery,
+        context, formula, order_by, ...) produces a score where bigger is better,
+        and sparse vectors always score with dot product.
+        """
+        if not isinstance(prefetch.query, models.NearestQuery):
+            return False
+
+        name = prefetch.using if prefetch.using is not None else DEFAULT_VECTOR_NAME
+        if name in self.sparse_vectors:
+            return False
+
+        return (
+            distance_to_order(self.get_vector_params(name).distance)
+            is DistanceOrder.SMALLER_IS_BETTER
+        )
+
     def _merge_sources(
         self,
         sources: list[list[types.ScoredPoint]],
@@ -977,6 +1004,7 @@ class LocalCollection:
         with_payload: types.WithPayloadInterface = True,
         with_vectors: types.WithVector = False,
         idf_corpus: types.Filter | None = None,
+        sources_smaller_is_better: list[bool] | None = None,
     ) -> list[types.ScoredPoint]:
         if isinstance(query, (models.FusionQuery, models.RrfQuery)):
             # Fuse results
@@ -994,7 +1022,9 @@ class LocalCollection:
                 elif query.fusion == models.Fusion.DBSF:
                     # DBSF: Distribution-Based Score Fusion
                     fused = distribution_based_score_fusion(
-                        responses=sources, limit=limit + offset
+                        responses=sources,
+                        limit=limit + offset,
+                        smaller_is_better=sources_smaller_is_better,
                     )
                 else:
                     raise ValueError(f"Fusion method {query.fusion} does not exist")
