@@ -2566,11 +2566,12 @@ class LocalCollection:
         for vector_name, _named_vectors in self.vectors.items():
             vector = vectors.get(vector_name)
             if vector is not None:
+                vector_np = np.array(vector, dtype=np.float32)
                 params = self.get_vector_params(vector_name)
                 if params.distance == models.Distance.COSINE:
-                    norm = np.linalg.norm(vector)
-                    vector = np.array(vector) / norm if norm > EPSILON else vector
-                self.vectors[vector_name][idx] = vector
+                    norm = np.linalg.norm(vector_np)
+                    vector_np = vector_np / norm if norm > EPSILON else vector_np
+                self.vectors[vector_name][idx] = vector_np
                 self.deleted_per_vector[vector_name][idx] = 0
             else:
                 self.deleted_per_vector[vector_name][idx] = 1
