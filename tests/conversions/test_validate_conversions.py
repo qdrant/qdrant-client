@@ -725,3 +725,57 @@ def test_convert_collection_info_points_count_presence():
     round_tripped = RestToGrpc.convert_collection_info(GrpcToRest.convert_collection_info(zero))
     assert round_tripped.HasField("points_count")
     assert round_tripped.points_count == 0
+
+
+def test_field_condition_keeps_every_sub_condition():
+    from qdrant_client import grpc
+    from qdrant_client.conversions.conversion import GrpcToRest, RestToGrpc
+    from qdrant_client.http.models import models as rest
+
+    # The REST model lets one `FieldCondition` hold several sub-conditions at once, and the
+    # server evaluates all of them. Converting only the first one that is set would make the
+    # same filter select different points over gRPC than over REST.
+    condition = rest.FieldCondition(
+        key="location",
+        match=rest.MatchValue(value="berlin"),
+        range=rest.Range(gte=10.0),
+        geo_radius=rest.GeoRadius(center=rest.GeoPoint(lon=1.0, lat=2.0), radius=100.0),
+        values_count=rest.ValuesCount(gte=2),
+        is_empty=False,
+        is_null=False,
+    )
+
+    converted = RestToGrpc.convert_field_condition(condition)
+    assert converted.HasField("match")
+    assert converted.HasField("range")
+    assert converted.HasField("geo_radius")
+    assert converted.HasField("values_count")
+    assert converted.HasField("is_empty")
+    assert converted.HasField("is_null")
+    assert GrpcToRest.convert_field_condition(converted) == condition
+
+    # `datetime_range` is the other half of the REST `range` field
+    with_datetime = rest.FieldCondition(
+        key="created",
+        match=rest.MatchValue(value="berlin"),
+        range=rest.DatetimeRange(gte=datetime(2021, 1, 1, tzinfo=timezone.utc)),
+    )
+    converted = RestToGrpc.convert_field_condition(with_datetime)
+    assert converted.HasField("match")
+    assert converted.HasField("datetime_range")
+    assert GrpcToRest.convert_field_condition(converted) == with_datetime
+
+    only_geo_polygon = rest.FieldCondition(
+        key="area",
+        geo_polygon=rest.GeoPolygon(
+            exterior=rest.GeoLineString(
+                points=[
+                    rest.GeoPoint(lon=-1.0, lat=-1.0),
+                    rest.GeoPoint(lon=1.0, lat=-1.0),
+                    rest.GeoPoint(lon=1.0, lat=1.0),
+                    rest.GeoPoint(lon=-1.0, lat=-1.0),
+                ]
+            )
+        ),
+    )
+    assert isinstance(RestToGrpc.convert_field_condition(only_geo_polygon), grpc.FieldCondition)
