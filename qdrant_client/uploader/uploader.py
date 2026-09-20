@@ -1,5 +1,5 @@
 from abc import ABC
-from itertools import count, islice
+from itertools import islice
 from typing import Any, Generator, Iterable
 
 import numpy as np
@@ -21,6 +21,39 @@ def iter_batch(iterable: Iterable | Generator, size: int) -> Iterable:
         if len(b) == 0:
             break
         yield b
+
+
+def iterate_upload_items(
+    vectors: Iterable[Any],
+    ids: Iterable[Any] | None,
+    payload: Iterable[Any] | None,
+) -> Iterable[tuple[Any, Any, Any]]:
+    """Yield upload fields together and reject auxiliary iterables that end before vectors.
+
+    Vectors determine the number of uploaded points. IDs and payloads may be infinite iterables,
+    which is useful for generated values, so values remaining after vectors are intentionally ignored.
+    """
+    ids_iterator = iter(ids) if ids is not None else None
+    payload_iterator = iter(payload) if payload is not None else None
+
+    for vector in vectors:
+        if ids_iterator is None:
+            point_id = None
+        else:
+            try:
+                point_id = next(ids_iterator)
+            except StopIteration as exc:
+                raise ValueError("ids iterable is shorter than vectors iterable") from exc
+
+        if payload_iterator is None:
+            point_payload = None
+        else:
+            try:
+                point_payload = next(payload_iterator)
+            except StopIteration as exc:
+                raise ValueError("payload iterable is shorter than vectors iterable") from exc
+
+        yield point_id, vector, point_payload
 
 
 class BaseUploader(Worker, ABC):
@@ -49,16 +82,6 @@ class BaseUploader(Worker, ABC):
         ids: Iterable[ExtendedPointId] | None,
         batch_size: int,
     ) -> Iterable:
-        if ids is None:
-            ids_batches: Iterable = (None for _ in count())
-        else:
-            ids_batches = iter_batch(ids, batch_size)
-
-        if payload is None:
-            payload_batches: Iterable = (None for _ in count())
-        else:
-            payload_batches = iter_batch(payload, batch_size)
-
         if isinstance(vectors, np.ndarray):
             vector_batches: Iterable[Any] = cls._vector_batches_from_numpy(vectors, batch_size)
         elif isinstance(vectors, dict) and any(
@@ -68,7 +91,15 @@ class BaseUploader(Worker, ABC):
         else:
             vector_batches = iter_batch(vectors, batch_size)
 
-        yield from zip(ids_batches, vector_batches, payload_batches)
+        vector_items = (vector for vector_batch in vector_batches for vector in vector_batch)
+        upload_items = iterate_upload_items(vector_items, ids, payload)
+
+        for upload_batch in iter_batch(upload_items, batch_size):
+            yield (
+                None if ids is None else [item[0] for item in upload_batch],
+                [item[1] for item in upload_batch],
+                None if payload is None else [item[2] for item in upload_batch],
+            )
 
     @staticmethod
     def _vector_batches_from_numpy(vectors: types.NumpyArray, batch_size: int) -> Iterable[float]:

@@ -28,6 +28,7 @@ from qdrant_client.local.local_collection import (
     DEFAULT_VECTOR_NAME,
     ignore_mentioned_ids_filter,
 )
+from qdrant_client.uploader.uploader import iterate_upload_items
 
 META_INFO_FILENAME = "meta.json"
 
@@ -965,10 +966,10 @@ class QdrantLocal(QdrantBase):
                     vector=(vector.tolist() if isinstance(vector, np.ndarray) else vector) or {},
                     payload=payload or {},
                 )
-                for (point_id, vector, payload) in zip(
-                    ids or uuid_generator(),
+                for (point_id, vector, payload) in iterate_upload_items(
                     iter(vectors),
-                    payload or itertools.cycle([{}]),
+                    uuid_generator() if ids is None else ids,
+                    itertools.cycle([{}]) if payload is None else payload,
                 )
             ],
             update_filter=update_filter,
