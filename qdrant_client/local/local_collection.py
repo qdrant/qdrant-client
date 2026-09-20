@@ -2109,6 +2109,11 @@ class LocalCollection:
     ) -> tuple[list[types.Record], types.PointId | None]:
         self._validate_with_payload(with_payload)
 
+        if order_by is not None and offset is not None:
+            raise ValueError(
+                "Offset is not supported in conjunction with `order_by` scroll parameter"
+            )
+
         if len(self.ids) == 0:
             validate_filter(
                 scroll_filter
@@ -2126,11 +2131,6 @@ class LocalCollection:
             )
 
         # order by value
-        if offset is not None:
-            raise ValueError(
-                "Offset is not supported in conjunction with `order_by` scroll parameter"
-            )
-
         return self._scroll_by_value(
             order_by=order_by,
             scroll_filter=scroll_filter,
