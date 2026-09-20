@@ -1,4 +1,5 @@
 from copy import deepcopy
+from typing import Any
 
 import pytest
 
@@ -516,3 +517,47 @@ def test_recreate_collection(remote_client: QdrantClient):
     collection_before_migrate = remote_client.get_collection(collection_name)
     remote_client.migrate(remote_client, recreate_on_collision=True)
     assert collection_before_migrate == remote_client.get_collection(collection_name)
+
+
+def test_migrate_forwards_batch_size_to_upload(monkeypatch: pytest.MonkeyPatch) -> None:
+    """`batch_size` is documented to cover the upsert operations, not only scrolling.
+
+    Both `migrate()` and `QdrantClient.migrate()` say the value is used for scroll and
+    upload, but `_migrate_collection` never passed it to `upload_points`, so every write
+    request was sized by `upload_points`' own default of 64 regardless of what the caller
+    asked for.
+    """
+    batch_size = 25
+    collection_name = "migrate_batch_size_collection"
+
+    source_client = QdrantClient(":memory:")
+    dest_client = QdrantClient(":memory:")
+
+    source_client.create_collection(
+        collection_name,
+        vectors_config=models.VectorParams(size=2, distance=models.Distance.DOT),
+    )
+    source_client.upsert(
+        collection_name,
+        points=[
+            models.PointStruct(id=idx, vector=[idx / 1000, idx / 500])
+            for idx in range(1, VECTOR_NUMBER + 1)
+        ],
+    )
+
+    requested_batch_sizes: list[int | None] = []
+    real_upload_points = dest_client.upload_points
+
+    def spy_upload_points(*args: Any, **kwargs: Any) -> None:
+        requested_batch_sizes.append(kwargs.get("batch_size"))
+        real_upload_points(*args, **kwargs)
+
+    monkeypatch.setattr(dest_client, "upload_points", spy_upload_points)
+
+    source_client.migrate(dest_client, batch_size=batch_size)
+
+    assert requested_batch_sizes, "destination client received no upload call"
+    assert set(requested_batch_sizes) == {
+        batch_size
+    }, f"`migrate(batch_size={batch_size})` forwarded {sorted(set(requested_batch_sizes))!r}"
+    assert dest_client.count(collection_name).count == VECTOR_NUMBER

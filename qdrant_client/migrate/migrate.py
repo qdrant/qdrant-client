@@ -12,6 +12,7 @@ def upload_with_retry(
     points: Iterable[models.PointStruct],
     max_attempts: int = 3,
     pause: float = 3.0,
+    batch_size: int = 64,
 ) -> None:
     attempts = 1
     while attempts <= max_attempts:
@@ -19,6 +20,7 @@ def upload_with_retry(
             client.upload_points(
                 collection_name=collection_name,
                 points=points,
+                batch_size=batch_size,
                 wait=True,
             )
             return
@@ -169,12 +171,22 @@ def _migrate_collection(
         batch_size (int, optional): Batch size for scrolling and uploading vectors. Defaults to 100.
     """
     records, next_offset = source_client.scroll(collection_name, limit=2, with_vectors=True)
-    upload_with_retry(client=dest_client, collection_name=collection_name, points=records)  # type: ignore
+    upload_with_retry(
+        client=dest_client,
+        collection_name=collection_name,
+        points=records,
+        batch_size=batch_size,
+    )  # type: ignore
     while next_offset is not None:
         records, next_offset = source_client.scroll(
             collection_name, offset=next_offset, limit=batch_size, with_vectors=True
         )
-        upload_with_retry(client=dest_client, collection_name=collection_name, points=records)  # type: ignore
+        upload_with_retry(
+            client=dest_client,
+            collection_name=collection_name,
+            points=records,
+            batch_size=batch_size,
+        )  # type: ignore
     source_client_vectors_count = source_client.count(collection_name).count
     dest_client_vectors_count = dest_client.count(collection_name).count
     assert (
