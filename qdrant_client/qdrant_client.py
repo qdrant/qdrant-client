@@ -247,7 +247,10 @@ class QdrantClient(QdrantFastembedMixin):
 
         Returns:
             List of query responses
+        Raises:
+        AssertionError: If unknown arguments are passed in kwargs.
         """
+       
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
 
         requests = self._resolve_query_batch_request(requests)
