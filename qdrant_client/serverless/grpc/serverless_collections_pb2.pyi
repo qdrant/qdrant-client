@@ -610,17 +610,21 @@ class CreateCollectionResponse(google.protobuf.message.Message):
 
     COLLECTION_NAME_FIELD_NUMBER: builtins.int
     RESULT_FIELD_NUMBER: builtins.int
+    TIME_FIELD_NUMBER: builtins.int
     collection_name: builtins.str
     """Tenant-facing name of the collection."""
     result: builtins.str
     """Outcome, e.g. "created", "already exists"."""
+    time: builtins.float
+    """Time spent to process"""
     def __init__(
         self,
         *,
         collection_name: builtins.str = ...,
         result: builtins.str = ...,
+        time: builtins.float = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["collection_name", b"collection_name", "result", b"result"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["collection_name", b"collection_name", "result", b"result", "time", b"time"]) -> None: ...
 
 global___CreateCollectionResponse = CreateCollectionResponse
 
@@ -647,18 +651,18 @@ class DeleteCollectionResponse(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
     DELETED_FIELD_NUMBER: builtins.int
-    OBJECTS_DELETED_FIELD_NUMBER: builtins.int
+    TIME_FIELD_NUMBER: builtins.int
     deleted: builtins.bool
     """Whether the collection existed and was deleted."""
-    objects_deleted: builtins.int
-    """Number of storage objects removed."""
+    time: builtins.float
+    """Time spent to process"""
     def __init__(
         self,
         *,
         deleted: builtins.bool = ...,
-        objects_deleted: builtins.int = ...,
+        time: builtins.float = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["deleted", b"deleted", "objects_deleted", b"objects_deleted"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["deleted", b"deleted", "time", b"time"]) -> None: ...
 
 global___DeleteCollectionResponse = DeleteCollectionResponse
 
@@ -687,6 +691,7 @@ class GetCollectionResponse(google.protobuf.message.Message):
     EXISTS_FIELD_NUMBER: builtins.int
     CONFIG_FIELD_NUMBER: builtins.int
     POINT_COUNT_FIELD_NUMBER: builtins.int
+    TIME_FIELD_NUMBER: builtins.int
     exists: builtins.bool
     """Whether the collection exists."""
     @property
@@ -696,15 +701,18 @@ class GetCollectionResponse(google.protobuf.message.Message):
     """Available points as of the last applied write (eventually consistent);
     absent until the updater has written stats for the collection.
     """
+    time: builtins.float
+    """Time spent to process"""
     def __init__(
         self,
         *,
         exists: builtins.bool = ...,
         config: global___CollectionConfig | None = ...,
         point_count: builtins.int | None = ...,
+        time: builtins.float = ...,
     ) -> None: ...
     def HasField(self, field_name: typing_extensions.Literal["_config", b"_config", "_point_count", b"_point_count", "config", b"config", "point_count", b"point_count"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_config", b"_config", "_point_count", b"_point_count", "config", b"config", "exists", b"exists", "point_count", b"point_count"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_config", b"_config", "_point_count", b"_point_count", "config", b"config", "exists", b"exists", "point_count", b"point_count", "time", b"time"]) -> None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_config", b"_config"]) -> typing_extensions.Literal["config"] | None: ...
     @typing.overload
@@ -774,6 +782,7 @@ class ListCollectionsResponse(google.protobuf.message.Message):
 
     COLLECTIONS_FIELD_NUMBER: builtins.int
     NEXT_OFFSET_TOKEN_FIELD_NUMBER: builtins.int
+    TIME_FIELD_NUMBER: builtins.int
     @property
     def collections(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___CollectionSummary]:
         """Collections in this page."""
@@ -781,14 +790,17 @@ class ListCollectionsResponse(google.protobuf.message.Message):
     """Opaque token to pass as `offset_token` to retrieve the next page. Absent
     when there are no more results.
     """
+    time: builtins.float
+    """Time spent to process"""
     def __init__(
         self,
         *,
         collections: collections.abc.Iterable[global___CollectionSummary] | None = ...,
         next_offset_token: builtins.str | None = ...,
+        time: builtins.float = ...,
     ) -> None: ...
     def HasField(self, field_name: typing_extensions.Literal["_next_offset_token", b"_next_offset_token", "next_offset_token", b"next_offset_token"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_next_offset_token", b"_next_offset_token", "collections", b"collections", "next_offset_token", b"next_offset_token"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_next_offset_token", b"_next_offset_token", "collections", b"collections", "next_offset_token", b"next_offset_token", "time", b"time"]) -> None: ...
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_next_offset_token", b"_next_offset_token"]) -> typing_extensions.Literal["next_offset_token"] | None: ...
 
 global___ListCollectionsResponse = ListCollectionsResponse
