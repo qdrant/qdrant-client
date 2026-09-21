@@ -830,8 +830,8 @@ class LocalCollection:
                 continue
 
             score = scores[idx]
-            # skip undefined scores from sparse vectors
-            if sparse_scoring and score == -np.inf:
+            # skip undefined/zero scores from sparse vectors (matches indexed search path)
+            if sparse_scoring and (score == -np.inf or score == 0.0):
                 continue
             point_id = self.ids_inv[idx]
 
