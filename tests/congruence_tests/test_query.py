@@ -2203,6 +2203,34 @@ def test_query_invalid_feedback_strategy():
         grpc_client.query_points(collection_name=COLLECTION_NAME, query=query, using="text")
 
 
+def test_query_invalid_empty_feedback():
+    fixture_points = generate_fixtures(5)
+
+    local_client, http_client, grpc_client = init_clients(fixture_points)
+
+    query_vector = np.random.random(text_vector_size).tolist()
+
+    query = models.RelevanceFeedbackQuery(
+        relevance_feedback=models.RelevanceFeedbackInput(
+            target=query_vector,
+            feedback=[],
+            strategy=models.NaiveFeedbackStrategy(
+                naive=models.NaiveFeedbackStrategyParams(a=0.5, b=1.0, c=0.7)
+            ),
+        )
+    )
+
+    with pytest.raises(ValueError, match="feedback elements must be non-empty"):
+        local_client.query_points(collection_name=COLLECTION_NAME, query=query, using="text")
+
+    # the server rejects the empty feedback list during request validation
+    with pytest.raises(UnexpectedResponse, match="non-empty"):
+        http_client.query_points(collection_name=COLLECTION_NAME, query=query, using="text")
+
+    with pytest.raises(RpcError, match="non-empty"):
+        grpc_client.query_points(collection_name=COLLECTION_NAME, query=query, using="text")
+
+
 def test_query_with_nan():
     fixture_points = generate_fixtures()
 

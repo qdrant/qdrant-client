@@ -206,7 +206,10 @@ class AsyncQdrantLocal(AsyncQdrantBase):
                         f"mmr candidates_limit value {mmr.candidates_limit} is invalid. Must be {cls.MMR_CANDIDATES_LIMIT_MAX} or smaller."
                     )
         elif isinstance(query, rest_models.RelevanceFeedbackQuery):
-            naive = query.relevance_feedback.strategy.naive
+            relevance_feedback = query.relevance_feedback
+            if not relevance_feedback.feedback:
+                raise ValueError("feedback elements must be non-empty")
+            naive = relevance_feedback.strategy.naive
             if naive.b < 0:
                 raise ValueError(
                     f"naive feedback b value {naive.b} is invalid. Must be 0 or larger."
