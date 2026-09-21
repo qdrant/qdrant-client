@@ -154,6 +154,21 @@ class CollectionConfig(BaseModel):
     payload_indexes: dict[str, PayloadIndex] = Field(default_factory=dict)
 
 
+class CreateCollectionResult(BaseModel):
+    """Result of `create_collection`."""
+
+    collection_name: str
+    result: str
+    time: float
+
+
+class DeleteCollectionResult(BaseModel):
+    """Result of `delete_collection`."""
+
+    deleted: bool
+    time: float
+
+
 class CollectionInfo(BaseModel):
     """A collection's configuration and stats, as returned by `get_collection`.
 
@@ -164,6 +179,7 @@ class CollectionInfo(BaseModel):
     exists: bool
     config: Optional[CollectionConfig] = None
     point_count: Optional[int] = None
+    time: float
 
 
 class CollectionSummary(BaseModel):
@@ -178,3 +194,4 @@ class CollectionsList(BaseModel):
 
     collections: list[CollectionSummary]
     next_offset_token: Optional[str] = None
+    time: float

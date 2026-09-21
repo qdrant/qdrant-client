@@ -120,7 +120,7 @@ class QdrantServerless:
         | None = None,
         payload_indexes: dict[str, serverless_models.PayloadIndex] | None = None,
         timeout: Optional[int] = None,
-    ) -> str:
+    ) -> serverless_models.CreateCollectionResult:
         """Creates a collection with the given tenant-facing configuration.
 
         At least one dense or sparse vector is required. Unlike the regular
@@ -149,7 +149,8 @@ class QdrantServerless:
             timeout: Overrides global timeout for this request. Unit is seconds.
 
         Returns:
-            Outcome of the operation, e.g. `"created"`
+            `CreateCollectionResult` with the outcome string (e.g. `"created"`)
+            and processing `time` in seconds.
 
         Raises:
             grpc.RpcError: with `StatusCode.ALREADY_EXISTS` if the collection already exists
@@ -170,9 +171,15 @@ class QdrantServerless:
             ),
             timeout=self._collections_timeout(timeout),
         )
-        return response.result
+        return serverless_models.CreateCollectionResult(
+            collection_name=response.collection_name,
+            result=response.result,
+            time=response.time,
+        )
 
-    def delete_collection(self, collection_name: str, timeout: Optional[int] = None) -> bool:
+    def delete_collection(
+        self, collection_name: str, timeout: Optional[int] = None
+    ) -> serverless_models.DeleteCollectionResult:
         """Deletes a collection and all of its data.
 
         Args:
@@ -180,14 +187,17 @@ class QdrantServerless:
             timeout: Overrides global timeout for this request. Unit is seconds.
 
         Returns:
-            `True` if the collection existed and was deleted, `False` if there
-            was no such collection
+            `DeleteCollectionResult` with whether the collection was deleted
+            and processing `time` in seconds.
         """
         response = self._collections.DeleteCollection(
             pb2.DeleteCollectionRequest(collection_name=collection_name),
             timeout=self._collections_timeout(timeout),
         )
-        return response.deleted
+        return serverless_models.DeleteCollectionResult(
+            deleted=response.deleted,
+            time=response.time,
+        )
 
     def get_collection(
         self, collection_name: str, timeout: Optional[int] = None
@@ -205,9 +215,9 @@ class QdrantServerless:
             timeout: Overrides global timeout for this request. Unit is seconds.
 
         Returns:
-            `CollectionInfo` with `exists`, the creation-time `config` and an
+            `CollectionInfo` with `exists`, the creation-time `config`, an
             eventually consistent `point_count` (absent until stats have been
-            written for the collection)
+            written for the collection), and processing `time` in seconds.
         """
         response = self._collections.GetCollection(
             pb2.GetCollectionRequest(collection_name=collection_name),
@@ -219,8 +229,8 @@ class QdrantServerless:
             if response.HasField("config")
             else None,
             point_count=response.point_count if response.HasField("point_count") else None,
+            time=response.time,
         )
-
     def collection_exists(self, collection_name: str, timeout: Optional[int] = None) -> bool:
         """Checks whether a collection exists.
 
@@ -274,6 +284,7 @@ class QdrantServerless:
             next_offset_token=response.next_offset_token
             if response.HasField("next_offset_token")
             else None,
+            time=response.time,
         )
 
     # endregion
