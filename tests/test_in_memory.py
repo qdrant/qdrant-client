@@ -355,3 +355,20 @@ def test_idf_statistics_after_deletion(qdrant: QdrantClient, operation: str):
             [models.PointStruct(id=i, vector={"text": vector}) for i in (1, 2)],
         )
     assert_scores(3)
+
+
+def test_reupserting_identical_cosine_vector_is_idempotent(qdrant: QdrantClient):
+    collection_name = "cosine_upsert"
+    vector = [0.1234567901234, -0.98765432109, 0.5555555555, 0.333333333333]
+    point = models.PointStruct(id=1, vector=vector)
+    qdrant.create_collection(
+        collection_name=collection_name,
+        vectors_config=models.VectorParams(size=4, distance=models.Distance.COSINE),
+    )
+
+    qdrant.upsert(collection_name=collection_name, points=[point])
+    first = qdrant.retrieve(collection_name, ids=[1], with_vectors=True)[0].vector
+    qdrant.upsert(collection_name=collection_name, points=[point])
+    second = qdrant.retrieve(collection_name, ids=[1], with_vectors=True)[0].vector
+
+    assert second == first
