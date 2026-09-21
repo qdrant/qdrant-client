@@ -190,15 +190,15 @@ class AsyncQdrantServerless:
             timeout: Overrides global timeout for this request. Unit is seconds.
 
         Returns:
-            `DeleteCollectionResult` with whether the collection was deleted,
-            objects removed, and processing `time` in seconds.
+            `DeleteCollectionResult` with whether the collection was deleted
+            and processing `time` in seconds.
         """
         response = await self._collections.DeleteCollection(
             pb2.DeleteCollectionRequest(collection_name=collection_name),
             timeout=self._collections_timeout(timeout),
         )
         return serverless_models.DeleteCollectionResult(
-            deleted=response.deleted, objects_deleted=response.objects_deleted, time=response.time
+            deleted=response.deleted, time=response.time
         )
 
     async def get_collection(

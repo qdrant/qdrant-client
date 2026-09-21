@@ -166,7 +166,6 @@ class DeleteCollectionResult(BaseModel):
     """Result of `delete_collection`."""
 
     deleted: bool
-    objects_deleted: int
     time: float
 
 

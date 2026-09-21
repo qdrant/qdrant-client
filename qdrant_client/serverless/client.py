@@ -187,8 +187,8 @@ class QdrantServerless:
             timeout: Overrides global timeout for this request. Unit is seconds.
 
         Returns:
-            `DeleteCollectionResult` with whether the collection was deleted,
-            objects removed, and processing `time` in seconds.
+            `DeleteCollectionResult` with whether the collection was deleted
+            and processing `time` in seconds.
         """
         response = self._collections.DeleteCollection(
             pb2.DeleteCollectionRequest(collection_name=collection_name),
@@ -196,7 +196,6 @@ class QdrantServerless:
         )
         return serverless_models.DeleteCollectionResult(
             deleted=response.deleted,
-            objects_deleted=response.objects_deleted,
             time=response.time,
         )
 

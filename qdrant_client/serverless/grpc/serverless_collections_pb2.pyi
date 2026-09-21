@@ -651,22 +651,18 @@ class DeleteCollectionResponse(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
     DELETED_FIELD_NUMBER: builtins.int
-    OBJECTS_DELETED_FIELD_NUMBER: builtins.int
     TIME_FIELD_NUMBER: builtins.int
     deleted: builtins.bool
     """Whether the collection existed and was deleted."""
-    objects_deleted: builtins.int
-    """Number of storage objects removed."""
     time: builtins.float
     """Time spent to process"""
     def __init__(
         self,
         *,
         deleted: builtins.bool = ...,
-        objects_deleted: builtins.int = ...,
         time: builtins.float = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["deleted", b"deleted", "objects_deleted", b"objects_deleted", "time", b"time"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["deleted", b"deleted", "time", b"time"]) -> None: ...
 
 global___DeleteCollectionResponse = DeleteCollectionResponse
 

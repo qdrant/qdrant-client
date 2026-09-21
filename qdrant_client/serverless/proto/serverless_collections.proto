@@ -238,8 +238,8 @@ message DeleteCollectionRequest {
 message DeleteCollectionResponse {
   // Whether the collection existed and was deleted.
   bool deleted = 1;
-  // Number of storage objects removed.
-  uint32 objects_deleted = 2;
+  reserved 2;
+  reserved "objects_deleted";
   // Time spent to process
   double time = 3;
 }
