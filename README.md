@@ -113,7 +113,6 @@ Qdrant Client has Inference API that allows to seamlessly create embeddings and 
 Inference API can be used locally with FastEmbed or remotely with models available in Qdrant Cloud.
 
 ### Local Inference with FastEmbed
-
 ```
 pip install qdrant-client[fastembed]
 ```
