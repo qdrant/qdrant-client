@@ -2718,6 +2718,9 @@ class LocalCollection:
         Normalization (sorting sparse vectors, stringifying UUID ids) goes into the returned
         copy: remote mode does not rewrite the caller's point either.
         """
+        if isinstance(point.id, int) and not 0 <= point.id < 2**64:
+            raise ValueError(f"Point id {point.id} is not an unsigned 64-bit integer")
+
         if isinstance(point.id, str):
             # try to parse as UUID
             try:
