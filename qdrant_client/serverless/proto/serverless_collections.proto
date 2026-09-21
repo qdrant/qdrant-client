@@ -238,10 +238,8 @@ message DeleteCollectionRequest {
 message DeleteCollectionResponse {
   // Whether the collection existed and was deleted.
   bool deleted = 1;
-  reserved 2;
-  reserved "objects_deleted";
   // Time spent to process
-  double time = 3;
+  double time = 2;
 }
 
 // Names the collection to fetch.
