@@ -2212,8 +2212,10 @@ class LocalCollection:
 
         start_from = to_order_value(order_by.start_from)
 
-        # dedup by (value, external_id)
-        seen_tuples: set[tuple[OrderValue, ExtendedPointId]] = set()
+        # A point can have multiple values for the order-by key, but scroll
+        # returns each point at most once. Since values are sorted already, the
+        # first eligible value is the point's order value for this direction.
+        seen_ids: set[ExtendedPointId] = set()
 
         for value, external_id, internal_id in value_and_ids:
             if start_from is not None:
@@ -2230,10 +2232,10 @@ class LocalCollection:
             if not mask[internal_id]:
                 continue
 
-            if (value, external_id) in seen_tuples:
+            if external_id in seen_ids:
                 continue
 
-            seen_tuples.add((value, external_id))
+            seen_ids.add(external_id)
 
             result.append(
                 models.Record(

@@ -149,6 +149,25 @@ def test_scroll_duplicated_values():
     compare_client_results(local_client, http_client, scroll_all_integer_arrays)
 
 
+def test_scroll_array_values_return_each_point_once() -> None:
+    client = init_local()
+    fixture_points = [
+        models.PointStruct(id=1, vector=[], payload={"rank": [1, 2]}),
+        models.PointStruct(id=2, vector=[], payload={"rank": [3]}),
+    ]
+    init_client(client, fixture_points, vectors_config={})
+
+    ascending, _ = client.scroll(COLLECTION_NAME, order_by="rank", limit=10)
+    descending, _ = client.scroll(
+        COLLECTION_NAME,
+        order_by=models.OrderBy(key="rank", direction=models.Direction.DESC),
+        limit=10,
+    )
+
+    assert [(record.id, record.order_value) for record in ascending] == [(1, 1), (2, 3)]
+    assert [(record.id, record.order_value) for record in descending] == [(2, 3), (1, 2)]
+
+
 def scroll_all_bools_and_ints(client: QdrantBase) -> list[models.Record]:
     return scroll_all_with_key(client, "bool_and_int")
 
