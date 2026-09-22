@@ -19,11 +19,11 @@ def try_migrate_to_sqlite(location: str) -> None:
     if sql_path.exists():
         return
 
-    if not dbm_path.exists():
+    if not dbm.whichdb(str(dbm_path)):
         return
 
     try:
-        dbm_storage = dbm.open(str(dbm_path), "c")
+        dbm_storage = dbm.open(str(dbm_path), "r")
 
         con = sqlite3.connect(str(sql_path))
         cur = con.cursor()
@@ -48,7 +48,8 @@ def try_migrate_to_sqlite(location: str) -> None:
         con.commit()
         con.close()
         dbm_storage.close()
-        dbm_path.unlink()
+        for sidecar in dbm_path.parent.glob(dbm_path.name + "*"):
+            sidecar.unlink()
     except Exception as e:
         logging.error("Failed to migrate dbm to sqlite:", e)
         logging.error(
