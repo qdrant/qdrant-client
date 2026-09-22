@@ -11,7 +11,10 @@ from tools.async_client_generator.transformers import (
 from tools.async_client_generator.transformers.client import (
     ClientFunctionDefTransformer,
 )
-from tools.async_client_generator.transformers.local import LocalCallTransformer
+from tools.async_client_generator.transformers.local import (
+    LocalCallTransformer,
+    LocalEnsureImportTransformer,
+)
 
 
 class LocalGenerator(BaseGenerator):
@@ -46,6 +49,7 @@ class LocalGenerator(BaseGenerator):
                 import_replace_map=import_replace_map,
             )
         )
+        self.transformers.append(LocalEnsureImportTransformer())
 
     @property
     def async_methods(self) -> list[str]:
