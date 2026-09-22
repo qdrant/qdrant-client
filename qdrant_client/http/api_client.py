@@ -157,6 +157,7 @@ class ApiClient:
 class AsyncApiClient:
     def __init__(self, host: str = None, **kwargs: Any) -> None:
         self.host = host
+        self._kwargs: dict[str, Any] = kwargs
         self.middleware: AsyncMiddlewareT = BaseAsyncMiddleware()
         self._async_client = AsyncClient(**kwargs)
 
@@ -226,12 +227,38 @@ class AsyncApiClient:
     async def send_inner(self, request: Request) -> Response:
         try:
             response = await self._async_client.send(request)
+        except RuntimeError as e:
+            if "Event loop is closed" in str(e):
+                # The underlying httpcore connection pool tried to close
+                # idle connections on a closed event loop (reused AsyncClient
+                # across asyncio.run calls). Recreate client bound to the
+                # current running loop and retry once.
+                try:
+                    await self._async_client.aclose()
+                except Exception:
+                    pass
+                try:
+                    self._async_client = AsyncClient(**self._kwargs)
+                except Exception:
+                    pass
+                try:
+                    response = await self._async_client.send(request)
+                except Exception as e2:
+                    raise ResponseHandlingException(e2)
+                return response
+            raise ResponseHandlingException(e)
         except Exception as e:
             raise ResponseHandlingException(e)
         return response
 
     async def aclose(self) -> None:
-        await self._async_client.aclose()
+        try:
+            await self._async_client.aclose()
+        except RuntimeError as e:
+            if "Event loop is closed" not in str(e):
+                raise
+        except Exception:
+            pass
 
     def add_middleware(self, middleware: AsyncMiddlewareT) -> None:
         current_middleware = self.middleware
