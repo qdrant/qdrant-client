@@ -13,6 +13,12 @@ STORAGE_FILE_NAME = "storage.sqlite"
 
 
 def try_migrate_to_sqlite(location: str) -> None:
+    """Migrate legacy DBM storage to SQLite, if present.
+
+    Detection is backend-aware via dbm.whichdb so sidecar backends
+    (ndbm .db, dumb .dat/.dir/.bak) are not skipped. Cleanup removes
+    only known sidecar files after the SQLite commit succeeds.
+    """
     dbm_path = Path(location) / STORAGE_FILE_NAME_OLD
     sql_path = Path(location) / STORAGE_FILE_NAME
 
@@ -48,8 +54,10 @@ def try_migrate_to_sqlite(location: str) -> None:
         con.commit()
         con.close()
         dbm_storage.close()
-        for sidecar in dbm_path.parent.glob(dbm_path.name + "*"):
-            sidecar.unlink()
+        for suffix in ("", ".db", ".dat", ".dir", ".bak", ".pag"):
+            sidecar = dbm_path.with_name(dbm_path.name + suffix)
+            if sidecar.is_file():
+                sidecar.unlink()
     except Exception as e:
         logging.error("Failed to migrate dbm to sqlite:", e)
         logging.error(
