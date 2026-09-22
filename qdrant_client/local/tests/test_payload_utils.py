@@ -276,6 +276,8 @@ def test_value_by_key() -> None:
     assert value_by_key(payload, "double-nest-array[0][0]") == [1]
     assert value_by_key(payload, "double-nest-array[0][0]") == [1]
     assert value_by_key(payload, "double-nest-array[][1]") == [2, 4, 6]
+    assert value_by_key(payload, "double-nest-array[]") == [1, 2, 3, 4, 5, 6]
+    assert value_by_key(payload, "double-nest-array[0]") == [1, 2]
     # endregion
 
     # region flat=False
@@ -299,6 +301,8 @@ def test_value_by_key() -> None:
     ]
     assert value_by_key(payload, "nested[].empty", flat=False) == [[], [], None]
     assert value_by_key(payload, "the_null", flat=False) == [None]
+    assert value_by_key(payload, "double-nest-array[]", flat=False) == [[1, 2], [3, 4], [5, 6]]
+    assert value_by_key(payload, "double-nest-array[0]", flat=False) == [[1, 2]]
 
     assert value_by_key(payload, "age.nested.not_exist") is None
     # endregion
