@@ -3,7 +3,7 @@ from functools import lru_cache
 from typing import Any, Awaitable, Callable, Dict, Generic, Type, TypeVar, overload
 from urllib.parse import urljoin
 
-from httpx import AsyncClient, Client, Request, Response
+from httpx2 import AsyncClient, Client, Request, Response
 from pydantic import ValidationError
 from qdrant_client.common.client_exceptions import ResourceExhaustedResponse
 from qdrant_client.http.api.aliases_api import AsyncAliasesApi, SyncAliasesApi
