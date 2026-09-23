@@ -279,3 +279,40 @@ def test_uuid_input(prefer_grpc):
     compare_collections(
         local_client, remote_client, num_vectors=1000, collection_name=COLLECTION_NAME
     )
+
+
+@pytest.mark.parametrize("prefer_grpc", (True, False))
+def test_uuid_payload_values(prefer_grpc):
+    remote_client = init_remote(prefer_grpc=prefer_grpc)
+    local_client = init_local()
+
+    ref = uuid.uuid4()
+    payload = {"ref": ref, "refs": [ref], "nested": {"ref": ref}}
+
+    for cl in (remote_client, local_client):
+        if cl.collection_exists(COLLECTION_NAME):
+            cl.delete_collection(COLLECTION_NAME)
+
+        cl.create_collection(
+            COLLECTION_NAME,
+            vectors_config=models.VectorParams(size=2, distance=models.Distance.DOT),
+        )
+        cl.create_payload_index(COLLECTION_NAME, "ref", models.PayloadSchemaType.UUID)
+        cl.upsert(COLLECTION_NAME, [models.PointStruct(id=1, vector=[1.0, 0.0], payload=payload)])
+        cl.set_payload(COLLECTION_NAME, payload={"other_ref": ref}, points=[1])
+        cl.upload_collection(COLLECTION_NAME, ids=[2], vectors=[[0.0, 1.0]], payload=[payload])
+
+    def retrieve_uuid_payload(client: QdrantClient):
+        return client.retrieve(COLLECTION_NAME, ids=[1, 2])
+
+    compare_client_results(local_client, remote_client, retrieve_uuid_payload)
+
+    def scroll_uuid_payload_filter(client: QdrantClient):
+        return client.scroll(
+            COLLECTION_NAME,
+            scroll_filter=models.Filter(
+                must=models.FieldCondition(key="ref", match=models.MatchValue(value=str(ref)))
+            ),
+        )
+
+    compare_client_results(local_client, remote_client, scroll_uuid_payload_filter)
