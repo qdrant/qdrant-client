@@ -51,7 +51,7 @@ def json_to_value(payload: Any) -> Value:
         return Value(
             struct_value=Struct(fields=dict((k, json_to_value(v)) for k, v in payload.items()))
         )
-    if isinstance(payload, datetime) or isinstance(payload, date):
+    if isinstance(payload, (datetime, date, uuid.UUID)):
         return Value(string_value=to_jsonable_python(payload))
     raise ValueError(f"Not supported json value: {payload}")  # pragma: no cover
 
