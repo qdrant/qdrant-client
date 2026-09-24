@@ -10,6 +10,23 @@ from qdrant_client.http import models
 
 STORAGE_FILE_NAME_OLD = "storage.dbm"
 STORAGE_FILE_NAME = "storage.sqlite"
+_DBM_FILE_SUFFIXES = {
+    "dbm.dumb": (".dat", ".dir", ".bak"),
+    "dbm.gnu": ("",),
+    "dbm.sqlite3": ("",),
+}
+
+
+def _dbm_file_suffixes(dbm_path: Path, backend: str) -> tuple[str, ...]:
+    if backend != "dbm.ndbm":
+        return _DBM_FILE_SUFFIXES.get(backend, ())
+
+    layouts = [
+        suffixes
+        for suffixes in ((".db",), (".dir", ".pag"))
+        if all(dbm_path.with_name(f"{dbm_path.name}{suffix}").is_file() for suffix in suffixes)
+    ]
+    return layouts[0] if len(layouts) == 1 else ()
 
 
 def try_migrate_to_sqlite(location: str) -> None:
@@ -19,11 +36,12 @@ def try_migrate_to_sqlite(location: str) -> None:
     if sql_path.exists():
         return
 
-    if not dbm_path.exists():
+    backend = dbm.whichdb(str(dbm_path))
+    if not backend:
         return
 
     try:
-        dbm_storage = dbm.open(str(dbm_path), "c")
+        dbm_storage = dbm.open(str(dbm_path), "r")
 
         con = sqlite3.connect(str(sql_path))
         cur = con.cursor()
@@ -48,7 +66,10 @@ def try_migrate_to_sqlite(location: str) -> None:
         con.commit()
         con.close()
         dbm_storage.close()
-        dbm_path.unlink()
+        for suffix in _dbm_file_suffixes(dbm_path, backend):
+            dbm_file = dbm_path.with_name(f"{dbm_path.name}{suffix}")
+            if dbm_file.is_file():
+                dbm_file.unlink()
     except Exception as e:
         logging.error("Failed to migrate dbm to sqlite:", e)
         logging.error(
