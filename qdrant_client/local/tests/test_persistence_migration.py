@@ -136,7 +136,11 @@ def test_ignores_unrecognized_legacy_file(tmp_path: Path) -> None:
 
 
 def test_rejects_conflicting_dumb_ndbm_sidecars(tmp_path: Path) -> None:
-    """Conflicting .dat/.dir/.pag layout is skipped without modification."""
+    """Conflicting .dat/.dir/.pag layout raises without modification.
+
+    Raising (instead of silently skipping) prevents CollectionPersistence
+    from creating an empty storage.sqlite that would block future migration.
+    """
     location = tmp_path / "legacy"
     location.mkdir()
     dbm_path = location / STORAGE_FILE_NAME_OLD
@@ -149,7 +153,16 @@ def test_rejects_conflicting_dumb_ndbm_sidecars(tmp_path: Path) -> None:
     conflict.write_bytes(b"stray pag from another backend")
     assert dbm.whichdb(str(dbm_path)) == "dbm.ndbm"
 
-    try_migrate_to_sqlite(str(location))
+    with pytest.raises(RuntimeError, match="conflicting"):
+        try_migrate_to_sqlite(str(location))
+
+    assert not (location / "storage.sqlite").exists()
+    assert (location / f"{STORAGE_FILE_NAME_OLD}.dat").is_file()
+    assert (location / f"{STORAGE_FILE_NAME_OLD}.dir").is_file()
+    assert conflict.is_file()
+
+    with pytest.raises(RuntimeError, match="conflicting"):
+        CollectionPersistence(str(location))
 
     assert not (location / "storage.sqlite").exists()
     assert (location / f"{STORAGE_FILE_NAME_OLD}.dat").is_file()
@@ -168,15 +181,15 @@ def test_failed_migration_removes_incomplete_sqlite(tmp_path: Path) -> None:
         storage[pickle.dumps(point.id)] = pickle.dumps(point)
         storage[b"corrupt-key-not-pickle"] = pickle.dumps(point)
 
-    import pytest as _pytest
-
-    with _pytest.raises(Exception):
+    with pytest.raises(pickle.UnpicklingError):
         try_migrate_to_sqlite(str(location))
 
     assert not (location / "storage.sqlite").exists()
+    assert list(location.glob("storage.sqlite.migrating-*.tmp")) == []
     assert (location / f"{STORAGE_FILE_NAME_OLD}.dat").is_file()
     assert (location / f"{STORAGE_FILE_NAME_OLD}.dir").is_file()
 
-    with _pytest.raises(Exception):
+    with pytest.raises(pickle.UnpicklingError):
         try_migrate_to_sqlite(str(location))
     assert not (location / "storage.sqlite").exists()
+    assert list(location.glob("storage.sqlite.migrating-*.tmp")) == []
