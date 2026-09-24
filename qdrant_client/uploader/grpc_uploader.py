@@ -138,19 +138,22 @@ class GrpcBatchUploader(BaseUploader):
 
     def process_upload(self, items: Iterable[Any]) -> Generator[bool, None, None]:
         channel = get_channel(host=self._host, port=self._port, **self._kwargs)
-        points_client = grpc.PointsStub(channel)
-        for batch in items:
-            yield upload_batch_grpc(
-                points_client,
-                self.collection_name,
-                batch,
-                shard_key_selector=self._shard_key_selector,
-                update_filter=self._update_filter,
-                update_mode=self._update_mode,
-                max_retries=self.max_retries,
-                wait=self._wait,
-                timeout=self._timeout,
-            )
+        try:
+            points_client = grpc.PointsStub(channel)
+            for batch in items:
+                yield upload_batch_grpc(
+                    points_client,
+                    self.collection_name,
+                    batch,
+                    shard_key_selector=self._shard_key_selector,
+                    update_filter=self._update_filter,
+                    update_mode=self._update_mode,
+                    max_retries=self.max_retries,
+                    wait=self._wait,
+                    timeout=self._timeout,
+                )
+        finally:
+            channel.close()
 
     def process(self, items: Iterable[Any]) -> Iterable[bool]:
         yield from self.process_upload(items)
