@@ -114,35 +114,13 @@ class AsyncQdrantLocal(AsyncQdrantBase):
             pass
 
     def _load(self) -> None:
+        """Load persisted collections, holding the exclusive storage lock."""
         deprecated_config_fields = ("init_from",)
         if not self.persistent:
             return
-        meta_path = os.path.join(self.location, META_INFO_FILENAME)
-        if not os.path.exists(meta_path):
-            os.makedirs(self.location, exist_ok=True)
-            with open(meta_path, "w") as f:
-                f.write(json.dumps({"collections": {}, "aliases": {}}))
-        else:
-            with open(meta_path, "r") as f:
-                meta = json.load(f)
-                for collection_name, config_json in meta["collections"].items():
-                    for key in deprecated_config_fields:
-                        config_json.pop(key, None)
-                    config = rest_models.CreateCollection(**config_json)
-                    collection_path = self._collection_path(collection_name)
-                    collection = LocalCollection(
-                        config,
-                        collection_path,
-                        force_disable_check_same_thread=self.force_disable_check_same_thread,
-                    )
-                    self.collections[collection_name] = collection
-                    if len(collection.ids) > self.LARGE_DATA_THRESHOLD:
-                        show_warning(
-                            f"Local mode is not recommended for collections with more than {self.LARGE_DATA_THRESHOLD:,} points. Collection <{collection_name}> contains {len(collection.ids)} points. Consider using Qdrant in Docker or Qdrant Cloud for better performance with large datasets.",
-                            category=UserWarning,
-                            stacklevel=5,
-                        )
-                self.aliases = meta["aliases"]
+        # Acquire the exclusive lock before loading collections so that
+        # CollectionPersistence DBM->SQLite migrations cannot run concurrently
+        # in two instances.
         lock_file_path = os.path.join(self.location, ".lock")
         if not os.path.exists(lock_file_path):
             os.makedirs(self.location, exist_ok=True)
@@ -157,9 +135,58 @@ class AsyncQdrantLocal(AsyncQdrantBase):
                 portalocker.LockFlags.EXCLUSIVE | portalocker.LockFlags.NON_BLOCKING,
             )
         except portalocker.exceptions.LockException:
+            try:
+                self._flock_file.close()
+            except Exception:
+                pass
+            self._flock_file = None
             raise RuntimeError(
                 f"Storage folder {self.location} is already accessed by another instance of Qdrant client. If you require concurrent access, use Qdrant server instead."
             )
+        try:
+            meta_path = os.path.join(self.location, META_INFO_FILENAME)
+            if not os.path.exists(meta_path):
+                os.makedirs(self.location, exist_ok=True)
+                with open(meta_path, "w") as f:
+                    f.write(json.dumps({"collections": {}, "aliases": {}}))
+            else:
+                with open(meta_path, "r") as f:
+                    meta = json.load(f)
+                    for collection_name, config_json in meta["collections"].items():
+                        for key in deprecated_config_fields:
+                            config_json.pop(key, None)
+                        config = rest_models.CreateCollection(**config_json)
+                        collection_path = self._collection_path(collection_name)
+                        collection = LocalCollection(
+                            config,
+                            collection_path,
+                            force_disable_check_same_thread=self.force_disable_check_same_thread,
+                        )
+                        self.collections[collection_name] = collection
+                        if len(collection.ids) > self.LARGE_DATA_THRESHOLD:
+                            show_warning(
+                                f"Local mode is not recommended for collections with more than {self.LARGE_DATA_THRESHOLD:,} points. Collection <{collection_name}> contains {len(collection.ids)} points. Consider using Qdrant in Docker or Qdrant Cloud for better performance with large datasets.",
+                                category=UserWarning,
+                                stacklevel=5,
+                            )
+                    self.aliases = meta["aliases"]
+        except Exception:
+            for collection in self.collections.values():
+                try:
+                    collection.close()
+                except Exception:
+                    pass
+            self.collections = {}
+            try:
+                portalocker.unlock(self._flock_file)
+            except Exception:
+                pass
+            try:
+                self._flock_file.close()
+            except Exception:
+                pass
+            self._flock_file = None
+            raise
 
     def _save(self) -> None:
         if not self.persistent:

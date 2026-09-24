@@ -1,8 +1,10 @@
 import base64
 import dbm
 import logging
+import os
 import pickle
 import sqlite3
+import tempfile
 from pathlib import Path
 from typing import Iterable
 
@@ -11,21 +13,99 @@ from qdrant_client.http import models
 STORAGE_FILE_NAME_OLD = "storage.dbm"
 STORAGE_FILE_NAME = "storage.sqlite"
 
+_DBM_FILE_SUFFIXES = {
+    "dbm.dumb": (".dat", ".dir", ".bak"),
+    "dbm.gnu": ("",),
+    "dbm.sqlite3": ("",),
+}
+
+
+def _dbm_file_suffixes(dbm_path: Path, backend: str) -> tuple[str, ...]:
+    """Return sidecar suffixes owned by the detected DBM backend.
+
+    Only files belonging to the detected backend may be removed after
+    migration. Unknown backends return an empty tuple so unrelated files
+    are preserved. Ambiguous NDBM layouts are also preserved.
+    """
+    if backend != "dbm.ndbm":
+        return _DBM_FILE_SUFFIXES.get(backend, ())
+
+    layouts = [
+        suffixes
+        for suffixes in ((".db",), (".dir", ".pag"))
+        if all(dbm_path.with_name(f"{dbm_path.name}{suffix}").is_file() for suffix in suffixes)
+    ]
+    return layouts[0] if len(layouts) == 1 else ()
+
+
+def _has_conflicting_dbm_sidecars(dbm_path: Path) -> bool:
+    """Detect a dumb/NDBM sidecar conflict that whichdb misclassifies.
+
+    whichdb checks `.dir`+`.pag` (NDBM) before `.dat`+`.dir` (dumb), so
+    `.dat`+`.dir`+`.pag` is reported as `dbm.ndbm` even though a dumb
+    store is present. Migrating as NDBM could delete `.dir`/`.pag` and
+    orphan `.dat`. Return True so the caller raises and preserves everything
+    without creating an empty storage.sqlite.
+    """
+    return all(
+        dbm_path.with_name(f"{dbm_path.name}{suffix}").is_file()
+        for suffix in (".dat", ".dir", ".pag")
+    )
+
 
 def try_migrate_to_sqlite(location: str) -> None:
+    """Migrate legacy DBM storage to SQLite, if present.
+
+    Detection is backend-aware via dbm.whichdb so sidecar backends
+    (ndbm .db, dumb .dat/.dir/.bak) are not skipped. Cleanup removes
+    only sidecars owned by the detected backend after the SQLite
+    commit succeeds, preserving unrelated files. Conflicting sidecar
+    layouts raise without creating storage.sqlite so a later retry
+    cannot be blocked by an empty database. Migration copies into a
+    private temp file and publishes atomically, so a failed migration
+    never deletes another instance's database and stays retryable.
+    """
     dbm_path = Path(location) / STORAGE_FILE_NAME_OLD
     sql_path = Path(location) / STORAGE_FILE_NAME
 
     if sql_path.exists():
         return
 
-    if not dbm_path.exists():
+    if _has_conflicting_dbm_sidecars(dbm_path):
+        raise RuntimeError(
+            f"Conflicting DBM sidecar files for {dbm_path} (.dat/.dir/.pag): "
+            "whichdb misreports this layout as ndbm. Resolve manually before migration."
+        )
+
+    backend = dbm.whichdb(str(dbm_path))
+    if not backend:
         return
 
-    try:
-        dbm_storage = dbm.open(str(dbm_path), "c")
+    if backend == "dbm.ndbm" and all(
+        dbm_path.with_name(f"{dbm_path.name}{suffix}").is_file() for suffix in (".dat", ".dir")
+    ):
+        raise RuntimeError(
+            f"Conflicting DBM sidecar files for {dbm_path} (.dat/.dir with .db): "
+            "whichdb selects ndbm so dumb records would be stranded. "
+            "Resolve manually before migration."
+        )
 
-        con = sqlite3.connect(str(sql_path))
+    con: sqlite3.Connection | None = None
+    dbm_storage = None
+    tmp_sql_path: Path | None = None
+    migration_succeeded = False
+    try:
+        fd, tmp_name = tempfile.mkstemp(
+            dir=str(Path(location)),
+            prefix=f"{STORAGE_FILE_NAME}.migrating-",
+            suffix=".tmp",
+        )
+        os.close(fd)
+        tmp_sql_path = Path(tmp_name)
+
+        dbm_storage = dbm.open(str(dbm_path), "r")
+
+        con = sqlite3.connect(str(tmp_sql_path))
         cur = con.cursor()
 
         # Create table
@@ -46,15 +126,50 @@ def try_migrate_to_sqlite(location: str) -> None:
                 ),
             )
         con.commit()
-        con.close()
-        dbm_storage.close()
-        dbm_path.unlink()
+        migration_succeeded = True
     except Exception as e:
-        logging.error("Failed to migrate dbm to sqlite:", e)
+        logging.error("Failed to migrate dbm to sqlite: %s", e)
         logging.error(
             "Please try to use previous version of qdrant-client or re-create collection"
         )
-        raise e
+        raise
+    finally:
+        if dbm_storage is not None:
+            try:
+                dbm_storage.close()
+            except Exception:
+                pass
+        if con is not None:
+            try:
+                con.close()
+            except Exception:
+                pass
+        if not migration_succeeded and tmp_sql_path is not None and tmp_sql_path.is_file():
+            try:
+                tmp_sql_path.unlink()
+            except OSError:
+                pass
+
+    if migration_succeeded and tmp_sql_path is not None:
+        if sql_path.exists():
+            # Another instance published first; discard ours without touching it.
+            try:
+                tmp_sql_path.unlink()
+            except OSError:
+                pass
+            return
+        try:
+            tmp_sql_path.replace(sql_path)
+        except OSError:
+            try:
+                tmp_sql_path.unlink()
+            except OSError:
+                pass
+            raise
+        for suffix in _dbm_file_suffixes(dbm_path, backend):
+            sidecar = dbm_path.with_name(dbm_path.name + suffix)
+            if sidecar.is_file():
+                sidecar.unlink()
 
 
 class CollectionPersistence:
