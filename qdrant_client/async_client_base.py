@@ -48,7 +48,7 @@ class AsyncQdrantBase:
         self,
         collection_name: str,
         query: types.PointId
-        | list[float]
+        | Sequence[float]
         | list[list[float]]
         | types.SparseVector
         | types.Query
@@ -76,7 +76,7 @@ class AsyncQdrantBase:
         collection_name: str,
         group_by: str,
         query: types.PointId
-        | list[float]
+        | Sequence[float]
         | list[list[float]]
         | types.SparseVector
         | types.Query
