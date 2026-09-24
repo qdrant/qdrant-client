@@ -170,6 +170,30 @@ def test_rejects_conflicting_dumb_ndbm_sidecars(tmp_path: Path) -> None:
     assert conflict.is_file()
 
 
+def test_rejects_ndbm_db_beside_dumb_store(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Valid .db beside dumb .dat/.dir raises instead of stranding dumb records."""
+    location = tmp_path / "legacy"
+    location.mkdir()
+    dbm_path = location / STORAGE_FILE_NAME_OLD
+    point = models.PointStruct(id=1, vector=[1.0, 2.0], payload={"source": "legacy"})
+
+    with dbm.dumb.open(str(dbm_path), "c") as storage:
+        storage[pickle.dumps(point.id)] = pickle.dumps(point)
+    (location / f"{STORAGE_FILE_NAME_OLD}.db").write_bytes(b"valid-ndbm-stand-in")
+
+    monkeypatch.setattr(dbm, "whichdb", lambda _: "dbm.ndbm")
+
+    with pytest.raises(RuntimeError, match="onflicting"):
+        try_migrate_to_sqlite(str(location))
+
+    assert not (location / "storage.sqlite").exists()
+    assert (location / f"{STORAGE_FILE_NAME_OLD}.dat").is_file()
+    assert (location / f"{STORAGE_FILE_NAME_OLD}.dir").is_file()
+    assert (location / f"{STORAGE_FILE_NAME_OLD}.db").is_file()
+
+
 def test_failed_migration_removes_incomplete_sqlite(tmp_path: Path) -> None:
     """A failed copy removes incomplete SQLite so migration stays retryable."""
     location = tmp_path / "legacy"
