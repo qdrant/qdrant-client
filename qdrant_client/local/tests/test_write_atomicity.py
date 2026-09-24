@@ -172,3 +172,40 @@ def test_wrong_vector_dimension_is_rejected_before_writing(vectors_config, good,
         collection.update_vectors([models.PointVectors(id=1, vector=bad)])
 
     assert collection._get_vectors(idx=0, with_vectors=True) == good
+
+@pytest.mark.parametrize("operation", ["upsert", "update_vectors"])
+def test_wrong_named_vector_type_is_rejected_before_writing(operation: str) -> None:
+    collection = LocalCollection(
+        models.CreateCollection(
+            vectors={"dense": models.VectorParams(size=2, distance=models.Distance.DOT)},
+            sparse_vectors={"sparse": models.SparseVectorParams()},
+        )
+    )
+    collection.upsert(
+        [
+            models.PointStruct(
+                id=1,
+                vector={
+                    "dense": [1.0, 2.0],
+                    "sparse": models.SparseVector(indices=[0], values=[1.0]),
+                },
+            )
+        ]
+    )
+
+    wrong_vectors = {
+        "dense": models.SparseVector(indices=[0], values=[3.0]),
+        "sparse": [3.0, 4.0],
+    }
+    with pytest.raises(ValueError, match="vector is not configured for vector name"):
+        if operation == "upsert":
+            collection.upsert([models.PointStruct(id=2, vector=wrong_vectors)])
+        else:
+            collection.update_vectors([models.PointVectors(id=1, vector=wrong_vectors)])
+
+    assert len(collection.ids) == 1
+    assert_internally_consistent(collection)
+    assert collection._get_vectors(idx=0, with_vectors=True) == {
+        "dense": [1.0, 2.0],
+        "sparse": models.SparseVector(indices=[0], values=[1.0]),
+    }
