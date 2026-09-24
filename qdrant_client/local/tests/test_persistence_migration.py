@@ -133,3 +133,50 @@ def test_ignores_unrecognized_legacy_file(tmp_path: Path) -> None:
     assert list(persistence.load()) == []
     assert legacy_file.read_text() == "not a DBM store"
     persistence.close()
+
+
+def test_rejects_conflicting_dumb_ndbm_sidecars(tmp_path: Path) -> None:
+    """Conflicting .dat/.dir/.pag layout is skipped without modification."""
+    location = tmp_path / "legacy"
+    location.mkdir()
+    dbm_path = location / STORAGE_FILE_NAME_OLD
+    point = models.PointStruct(id=1, vector=[1.0, 2.0], payload={"source": "legacy"})
+
+    with dbm.dumb.open(str(dbm_path), "c") as storage:
+        storage[pickle.dumps(point.id)] = pickle.dumps(point)
+
+    conflict = location / f"{STORAGE_FILE_NAME_OLD}.pag"
+    conflict.write_bytes(b"stray pag from another backend")
+    assert dbm.whichdb(str(dbm_path)) == "dbm.ndbm"
+
+    try_migrate_to_sqlite(str(location))
+
+    assert not (location / "storage.sqlite").exists()
+    assert (location / f"{STORAGE_FILE_NAME_OLD}.dat").is_file()
+    assert (location / f"{STORAGE_FILE_NAME_OLD}.dir").is_file()
+    assert conflict.is_file()
+
+
+def test_failed_migration_removes_incomplete_sqlite(tmp_path: Path) -> None:
+    """A failed copy removes incomplete SQLite so migration stays retryable."""
+    location = tmp_path / "legacy"
+    location.mkdir()
+    dbm_path = location / STORAGE_FILE_NAME_OLD
+    point = models.PointStruct(id=1, vector=[1.0, 2.0], payload={"source": "legacy"})
+
+    with dbm.dumb.open(str(dbm_path), "c") as storage:
+        storage[pickle.dumps(point.id)] = pickle.dumps(point)
+        storage[b"corrupt-key-not-pickle"] = pickle.dumps(point)
+
+    import pytest as _pytest
+
+    with _pytest.raises(Exception):
+        try_migrate_to_sqlite(str(location))
+
+    assert not (location / "storage.sqlite").exists()
+    assert (location / f"{STORAGE_FILE_NAME_OLD}.dat").is_file()
+    assert (location / f"{STORAGE_FILE_NAME_OLD}.dir").is_file()
+
+    with _pytest.raises(Exception):
+        try_migrate_to_sqlite(str(location))
+    assert not (location / "storage.sqlite").exists()
