@@ -81,6 +81,15 @@ def try_migrate_to_sqlite(location: str) -> None:
     if not backend:
         return
 
+    if backend == "dbm.ndbm" and all(
+        dbm_path.with_name(f"{dbm_path.name}{suffix}").is_file() for suffix in (".dat", ".dir")
+    ):
+        raise RuntimeError(
+            f"Conflicting DBM sidecar files for {dbm_path} (.dat/.dir with .db): "
+            "whichdb selects ndbm so dumb records would be stranded. "
+            "Resolve manually before migration."
+        )
+
     con: sqlite3.Connection | None = None
     dbm_storage = None
     tmp_sql_path: Path | None = None
