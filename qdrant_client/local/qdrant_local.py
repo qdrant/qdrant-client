@@ -120,6 +120,36 @@ class QdrantLocal(QdrantBase):
 
         if not self.persistent:
             return
+
+        # Acquire the exclusive lock before loading collections so that
+        # CollectionPersistence DBM->SQLite migrations cannot run concurrently
+        # in two instances.
+        lock_file_path = os.path.join(self.location, ".lock")
+        if not os.path.exists(lock_file_path):
+            os.makedirs(self.location, exist_ok=True)
+            with open(lock_file_path, "w") as f:
+                f.write("tmp lock file")
+        self._flock_file = open(lock_file_path, "r+")
+
+        import portalocker  # `portalocker` can't be imported at the top level: it checks for writeable directories
+        # on import and crashes in read-only systems even if local mode is not used
+
+        try:
+            portalocker.lock(
+                self._flock_file,
+                portalocker.LockFlags.EXCLUSIVE | portalocker.LockFlags.NON_BLOCKING,
+            )
+        except portalocker.exceptions.LockException:
+            try:
+                self._flock_file.close()
+            except Exception:
+                pass
+            self._flock_file = None
+            raise RuntimeError(
+                f"Storage folder {self.location} is already accessed by another instance of Qdrant client."
+                f" If you require concurrent access, use Qdrant server instead."
+            )
+
         meta_path = os.path.join(self.location, META_INFO_FILENAME)
         if not os.path.exists(meta_path):
             os.makedirs(self.location, exist_ok=True)
@@ -153,27 +183,6 @@ class QdrantLocal(QdrantBase):
                             stacklevel=5,
                         )
                 self.aliases = meta["aliases"]
-
-        lock_file_path = os.path.join(self.location, ".lock")
-        if not os.path.exists(lock_file_path):
-            os.makedirs(self.location, exist_ok=True)
-            with open(lock_file_path, "w") as f:
-                f.write("tmp lock file")
-        self._flock_file = open(lock_file_path, "r+")
-
-        import portalocker  # `portalocker` can't be imported at the top level: it checks for writeable directories
-        # on import and crashes in read-only systems even if local mode is not used
-
-        try:
-            portalocker.lock(
-                self._flock_file,
-                portalocker.LockFlags.EXCLUSIVE | portalocker.LockFlags.NON_BLOCKING,
-            )
-        except portalocker.exceptions.LockException:
-            raise RuntimeError(
-                f"Storage folder {self.location} is already accessed by another instance of Qdrant client."
-                f" If you require concurrent access, use Qdrant server instead."
-            )
 
     def _save(self) -> None:
         if not self.persistent:
