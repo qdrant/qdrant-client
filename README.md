@@ -71,6 +71,12 @@ Local mode is useful for development, prototyping and testing.
 - Run it in Colab or Jupyter Notebook, no extra dependencies required. See an [example](https://colab.research.google.com/drive/1Bz8RSVHwnNDaNtDwotfPj0w7AYzsdXZ-?usp=sharing)
 - When you need to scale, simply switch to server mode.
 
+Local mode treats alternate UUID spellings as the same point ID and returns canonical
+UUID strings. Existing non-canonical IDs remain readable without rewriting storage on
+open. If a persisted collection contains multiple spellings of the same UUID, opening
+it raises an error rather than discarding a record. Back up the storage and use the
+previous client version to resolve those duplicates before reopening it.
+
 ## Connect to Qdrant server
 
 To connect to Qdrant server, simply specify host and port:
