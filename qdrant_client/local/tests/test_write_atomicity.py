@@ -174,7 +174,16 @@ def test_wrong_vector_dimension_is_rejected_before_writing(vectors_config, good,
     assert collection._get_vectors(idx=0, with_vectors=True) == good
 
 @pytest.mark.parametrize("operation", ["upsert", "update_vectors"])
-def test_wrong_named_vector_type_is_rejected_before_writing(operation: str) -> None:
+@pytest.mark.parametrize(
+    ("wrong_vector_name", "wrong_vector"),
+    [
+        ("dense", models.SparseVector(indices=[0], values=[3.0])),
+        ("sparse", [3.0, 4.0]),
+    ],
+)
+def test_wrong_named_vector_type_is_rejected_before_writing(
+    operation: str, wrong_vector_name: str, wrong_vector
+) -> None:
     collection = LocalCollection(
         models.CreateCollection(
             vectors={"dense": models.VectorParams(size=2, distance=models.Distance.DOT)},
@@ -193,10 +202,7 @@ def test_wrong_named_vector_type_is_rejected_before_writing(operation: str) -> N
         ]
     )
 
-    wrong_vectors = {
-        "dense": models.SparseVector(indices=[0], values=[3.0]),
-        "sparse": [3.0, 4.0],
-    }
+    wrong_vectors = {wrong_vector_name: wrong_vector}
     with pytest.raises(ValueError, match="vector is not configured for vector name"):
         if operation == "upsert":
             collection.upsert([models.PointStruct(id=2, vector=wrong_vectors)])
