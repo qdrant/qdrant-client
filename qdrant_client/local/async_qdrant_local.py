@@ -670,8 +670,10 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         aliases = self.aliases.copy()
         for operation in change_aliases_operations:
             if isinstance(operation, rest_models.CreateAliasOperation):
-                self._get_collection(operation.create_alias.collection_name)
-                aliases[operation.create_alias.alias_name] = operation.create_alias.collection_name
+                collection_name = operation.create_alias.collection_name
+                if collection_name not in self.collections:
+                    raise ValueError(f"Collection {collection_name} not found")
+                aliases[operation.create_alias.alias_name] = collection_name
             elif isinstance(operation, rest_models.DeleteAliasOperation):
                 aliases.pop(operation.delete_alias.alias_name, None)
             elif isinstance(operation, rest_models.RenameAliasOperation):

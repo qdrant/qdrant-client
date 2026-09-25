@@ -1,3 +1,6 @@
+import threading
+from concurrent.futures import ThreadPoolExecutor
+
 import pytest
 
 from qdrant_client import AsyncQdrantClient, QdrantClient, models
@@ -58,3 +61,56 @@ async def test_async_failed_alias_batch_preserves_existing_alias():
     ]
     assert (await client.get_collection_aliases("docs_v2")).aliases == []
     await client.close()
+
+
+@pytest.mark.asyncio
+async def test_alias_cannot_target_another_alias_async():
+    client = AsyncQdrantClient(":memory:")
+    await client.create_collection("docs", vectors_config={})
+    await client.update_collection_aliases([_create_alias("docs", "old")])
+    with pytest.raises(ValueError, match="Collection old not found"):
+        await client.update_collection_aliases([_create_alias("old", "new")])
+    assert (await client.get_aliases()).aliases == [
+        models.AliasDescription(alias_name="old", collection_name="docs")
+    ]
+    await client.close()
+
+
+def test_alias_cannot_target_another_alias():
+    client = QdrantClient(":memory:")
+    client.create_collection("docs", vectors_config={})
+    client.update_collection_aliases([_create_alias("docs", "old")])
+    with pytest.raises(ValueError, match="Collection old not found"):
+        client.update_collection_aliases([_create_alias("old", "new")])
+    assert client.get_aliases().aliases == [
+        models.AliasDescription(alias_name="old", collection_name="docs")
+    ]
+    client.close()
+
+
+def test_concurrent_alias_batches_keep_both_results():
+    class PausingAliases(dict):
+        def __init__(self):
+            super().__init__()
+            self.barrier = threading.Barrier(2)
+
+        def copy(self):
+            try:
+                self.barrier.wait(timeout=0.05)
+            except threading.BrokenBarrierError:
+                pass
+            return super().copy()
+
+    client = QdrantClient(":memory:")
+    client.create_collection("docs", vectors_config={})
+    for _ in range(20):
+        client._client.aliases = PausingAliases()
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            futures = [
+                pool.submit(client.update_collection_aliases, [_create_alias("docs", name)])
+                for name in ("first", "second")
+            ]
+            for future in futures:
+                assert future.result()
+        assert {alias.alias_name for alias in client.get_aliases().aliases} == {"first", "second"}
+    client.close()

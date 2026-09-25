@@ -6,6 +6,7 @@ import shutil
 import uuid
 from copy import deepcopy
 from io import TextIOWrapper
+from threading import RLock
 from typing import (
     Any,
     Generator,
@@ -83,6 +84,7 @@ class QdrantLocal(QdrantBase):
         self.persistent = location != ":memory:"
         self.collections: dict[str, LocalCollection] = {}
         self.aliases: dict[str, str] = {}
+        self._aliases_lock = RLock()
         self._flock_file: TextIOWrapper | None = None
         self._load()
         self._closed: bool = False
@@ -728,22 +730,25 @@ class QdrantLocal(QdrantBase):
     def update_collection_aliases(
         self, change_aliases_operations: Sequence[types.AliasOperations], **kwargs: Any
     ) -> bool:
-        aliases = self.aliases.copy()
-        for operation in change_aliases_operations:
-            if isinstance(operation, rest_models.CreateAliasOperation):
-                self._get_collection(operation.create_alias.collection_name)
-                aliases[operation.create_alias.alias_name] = operation.create_alias.collection_name
-            elif isinstance(operation, rest_models.DeleteAliasOperation):
-                aliases.pop(operation.delete_alias.alias_name, None)
-            elif isinstance(operation, rest_models.RenameAliasOperation):
-                new_name = operation.rename_alias.new_alias_name
-                old_name = operation.rename_alias.old_alias_name
-                aliases[new_name] = aliases.pop(old_name)
-            else:
-                raise ValueError(f"Unknown operation: {operation}")
-        self.aliases = aliases
-        self._save()
-        return True
+        with self._aliases_lock:
+            aliases = self.aliases.copy()
+            for operation in change_aliases_operations:
+                if isinstance(operation, rest_models.CreateAliasOperation):
+                    collection_name = operation.create_alias.collection_name
+                    if collection_name not in self.collections:
+                        raise ValueError(f"Collection {collection_name} not found")
+                    aliases[operation.create_alias.alias_name] = collection_name
+                elif isinstance(operation, rest_models.DeleteAliasOperation):
+                    aliases.pop(operation.delete_alias.alias_name, None)
+                elif isinstance(operation, rest_models.RenameAliasOperation):
+                    new_name = operation.rename_alias.new_alias_name
+                    old_name = operation.rename_alias.old_alias_name
+                    aliases[new_name] = aliases.pop(old_name)
+                else:
+                    raise ValueError(f"Unknown operation: {operation}")
+            self.aliases = aliases
+            self._save()
+            return True
 
     def get_collection_aliases(
         self, collection_name: str, **kwargs: Any
