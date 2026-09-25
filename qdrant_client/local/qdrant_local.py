@@ -3,6 +3,7 @@ import itertools
 import json
 import os
 import shutil
+import tempfile
 import uuid
 from copy import deepcopy
 from io import TextIOWrapper
@@ -178,25 +179,31 @@ class QdrantLocal(QdrantBase):
             )
 
     def _save(self, aliases: dict[str, str] | None = None) -> None:
-        if not self.persistent:
-            return
+        with self._aliases_lock:
+            if not self.persistent:
+                return
 
-        if self.closed:
-            raise RuntimeError("QdrantLocal instance is closed. Please create a new instance.")
+            if self.closed:
+                raise RuntimeError("QdrantLocal instance is closed. Please create a new instance.")
 
-        meta_path = os.path.join(self.location, META_INFO_FILENAME)
-        with open(meta_path, "w") as f:
-            f.write(
-                json.dumps(
-                    {
-                        "collections": {
-                            collection_name: to_dict(collection.config)
-                            for collection_name, collection in self.collections.items()
-                        },
-                        "aliases": self.aliases if aliases is None else aliases,
-                    }
-                )
+            meta_path = os.path.join(self.location, META_INFO_FILENAME)
+            content = json.dumps(
+                {
+                    "collections": {
+                        collection_name: to_dict(collection.config)
+                        for collection_name, collection in self.collections.items()
+                    },
+                    "aliases": self.aliases if aliases is None else aliases,
+                }
             )
+            fd, temp_path = tempfile.mkstemp(dir=self.location, prefix=".meta-", suffix=".tmp")
+            try:
+                with os.fdopen(fd, "w") as f:
+                    f.write(content)
+                os.replace(temp_path, meta_path)
+            finally:
+                if os.path.exists(temp_path):
+                    os.unlink(temp_path)
 
     def _get_collection(self, collection_name: str) -> LocalCollection:
         if self.closed:

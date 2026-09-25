@@ -183,3 +183,87 @@ def test_collection_delete_cannot_race_with_alias_batch():
         assert deletion.result(timeout=2)
     assert client.get_aliases().aliases == []
     client.close()
+
+
+@pytest.mark.parametrize("async_client", [False, True])
+def test_failed_metadata_replace_keeps_previous_aliases(tmp_path, async_client):
+    if async_client:
+        import asyncio
+
+        async def run():
+            client = AsyncQdrantClient(path=str(tmp_path))
+            await client.create_collection("docs", vectors_config={})
+            await client.update_collection_aliases([_create_alias("docs", "old")])
+            meta_path = tmp_path / "meta.json"
+            before = meta_path.read_bytes()
+            with patch(
+                "qdrant_client.local.async_qdrant_local.os.replace",
+                side_effect=OSError("disk full"),
+            ):
+                with pytest.raises(OSError, match="disk full"):
+                    await client.update_collection_aliases([_create_alias("docs", "new")])
+            assert client._client.aliases == {"old": "docs"}
+            assert meta_path.read_bytes() == before
+            assert not list(tmp_path.glob(".meta-*.tmp"))
+            await client.close()
+            reopened = AsyncQdrantClient(path=str(tmp_path))
+            assert (await reopened.get_aliases()).aliases == [
+                models.AliasDescription(alias_name="old", collection_name="docs")
+            ]
+            await reopened.close()
+
+        asyncio.run(run())
+    else:
+        client = QdrantClient(path=str(tmp_path))
+        client.create_collection("docs", vectors_config={})
+        client.update_collection_aliases([_create_alias("docs", "old")])
+        meta_path = tmp_path / "meta.json"
+        before = meta_path.read_bytes()
+        with patch(
+            "qdrant_client.local.qdrant_local.os.replace", side_effect=OSError("disk full")
+        ):
+            with pytest.raises(OSError, match="disk full"):
+                client.update_collection_aliases([_create_alias("docs", "new")])
+        assert client._client.aliases == {"old": "docs"}
+        assert meta_path.read_bytes() == before
+        assert not list(tmp_path.glob(".meta-*.tmp"))
+        client.close()
+        reopened = QdrantClient(path=str(tmp_path))
+        assert reopened.get_aliases().aliases == [
+            models.AliasDescription(alias_name="old", collection_name="docs")
+        ]
+        reopened.close()
+
+
+def test_concurrent_create_cannot_lose_persisted_alias(tmp_path):
+    client = QdrantClient(path=str(tmp_path))
+    client.create_collection("docs", vectors_config={})
+    published = threading.Event()
+    proceed = threading.Event()
+    original_save = client._client._save
+
+    def pause_after_candidate_save(*args, **kwargs):
+        result = original_save(*args, **kwargs)
+        if kwargs.get("aliases") is not None:
+            published.set()
+            if not proceed.wait(timeout=2):
+                raise TimeoutError("collection create was not released")
+        return result
+
+    with patch.object(client._client, "_save", side_effect=pause_after_candidate_save):
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            alias_update = pool.submit(
+                client.update_collection_aliases, [_create_alias("docs", "live")]
+            )
+            assert published.wait(timeout=2)
+            create = pool.submit(client.create_collection, "other", vectors_config={})
+            proceed.set()
+            assert alias_update.result(timeout=2)
+            assert create.result(timeout=2)
+    client.close()
+    reopened = QdrantClient(path=str(tmp_path))
+    assert reopened.get_aliases().aliases == [
+        models.AliasDescription(alias_name="live", collection_name="docs")
+    ]
+    assert reopened.collection_exists("other")
+    reopened.close()
