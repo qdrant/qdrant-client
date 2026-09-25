@@ -871,28 +871,29 @@ class QdrantLocal(QdrantBase):
         payload: types.PayloadStorageParams | None = None,
         **kwargs: Any,
     ) -> bool:
-        if self.closed:
-            raise RuntimeError("QdrantLocal instance is closed. Please create a new instance.")
+        with self._aliases_lock:
+            if self.closed:
+                raise RuntimeError("QdrantLocal instance is closed. Please create a new instance.")
 
-        if collection_name in self.collections:
-            raise ValueError(f"Collection {collection_name} already exists")
-        collection_path = self._collection_path(collection_name)
-        if collection_path is not None:
-            os.makedirs(collection_path, exist_ok=True)
+            if collection_name in self.collections:
+                raise ValueError(f"Collection {collection_name} already exists")
+            collection_path = self._collection_path(collection_name)
+            if collection_path is not None:
+                os.makedirs(collection_path, exist_ok=True)
 
-        collection = LocalCollection(
-            rest_models.CreateCollection(
-                vectors=vectors_config or {},
-                sparse_vectors=sparse_vectors_config,
-                metadata=deepcopy(metadata),
-            ),
-            location=collection_path,
-            force_disable_check_same_thread=self.force_disable_check_same_thread,
-        )
-        self.collections[collection_name] = collection
+            collection = LocalCollection(
+                rest_models.CreateCollection(
+                    vectors=vectors_config or {},
+                    sparse_vectors=sparse_vectors_config,
+                    metadata=deepcopy(metadata),
+                ),
+                location=collection_path,
+                force_disable_check_same_thread=self.force_disable_check_same_thread,
+            )
+            self.collections[collection_name] = collection
 
-        self._save()
-        return True
+            self._save()
+            return True
 
     def recreate_collection(
         self,
