@@ -1,4 +1,5 @@
 # flake8: noqa E501
+import asyncio
 from typing import TYPE_CHECKING, Any, Dict, Set, TypeVar, Union
 
 from pydantic import BaseModel
@@ -42,6 +43,12 @@ def jsonable_encoder(
         )
 
     return obj
+
+
+async def offload_build(build: Any, **kwargs: Any) -> Any:
+    # Serialize the request body in a worker thread to avoid blocking the event loop
+    request = await asyncio.to_thread(build, **kwargs)
+    return await request
 
 
 if TYPE_CHECKING:
@@ -562,7 +569,8 @@ class AsyncPointsApi(_PointsApi):
         """
         Apply a series of update operations for points, vectors and payloads
         """
-        return await self._build_for_batch_update(
+        return await offload_build(
+            self._build_for_batch_update,
             collection_name=collection_name,
             wait=wait,
             ordering=ordering,
@@ -581,7 +589,8 @@ class AsyncPointsApi(_PointsApi):
         """
         Remove all payload for specified points
         """
-        return await self._build_for_clear_payload(
+        return await offload_build(
+            self._build_for_clear_payload,
             collection_name=collection_name,
             wait=wait,
             ordering=ordering,
@@ -599,7 +608,8 @@ class AsyncPointsApi(_PointsApi):
         """
         Count points which matches given filtering condition
         """
-        return await self._build_for_count_points(
+        return await offload_build(
+            self._build_for_count_points,
             collection_name=collection_name,
             consistency=consistency,
             timeout=timeout,
@@ -617,7 +627,8 @@ class AsyncPointsApi(_PointsApi):
         """
         Delete specified key payload for points
         """
-        return await self._build_for_delete_payload(
+        return await offload_build(
+            self._build_for_delete_payload,
             collection_name=collection_name,
             wait=wait,
             ordering=ordering,
@@ -636,7 +647,8 @@ class AsyncPointsApi(_PointsApi):
         """
         Delete points
         """
-        return await self._build_for_delete_points(
+        return await offload_build(
+            self._build_for_delete_points,
             collection_name=collection_name,
             wait=wait,
             ordering=ordering,
@@ -655,7 +667,8 @@ class AsyncPointsApi(_PointsApi):
         """
         Delete named vectors from the given points.
         """
-        return await self._build_for_delete_vectors(
+        return await offload_build(
+            self._build_for_delete_vectors,
             collection_name=collection_name,
             wait=wait,
             ordering=ordering,
@@ -673,7 +686,8 @@ class AsyncPointsApi(_PointsApi):
         """
         Count points that satisfy the given filter for each unique value of a payload key.
         """
-        return await self._build_for_facet(
+        return await offload_build(
+            self._build_for_facet,
             collection_name=collection_name,
             consistency=consistency,
             timeout=timeout,
@@ -705,7 +719,8 @@ class AsyncPointsApi(_PointsApi):
         """
         Retrieve multiple points by specified IDs
         """
-        return await self._build_for_get_points(
+        return await offload_build(
+            self._build_for_get_points,
             collection_name=collection_name,
             consistency=consistency,
             timeout=timeout,
@@ -723,7 +738,8 @@ class AsyncPointsApi(_PointsApi):
         """
         Replace full payload of points with new one
         """
-        return await self._build_for_overwrite_payload(
+        return await offload_build(
+            self._build_for_overwrite_payload,
             collection_name=collection_name,
             wait=wait,
             ordering=ordering,
@@ -741,7 +757,8 @@ class AsyncPointsApi(_PointsApi):
         """
         Scroll request - paginate over all points which matches given filtering condition
         """
-        return await self._build_for_scroll_points(
+        return await offload_build(
+            self._build_for_scroll_points,
             collection_name=collection_name,
             consistency=consistency,
             timeout=timeout,
@@ -759,7 +776,8 @@ class AsyncPointsApi(_PointsApi):
         """
         Set payload values for points
         """
-        return await self._build_for_set_payload(
+        return await offload_build(
+            self._build_for_set_payload,
             collection_name=collection_name,
             wait=wait,
             ordering=ordering,
@@ -778,7 +796,8 @@ class AsyncPointsApi(_PointsApi):
         """
         Update specified named vectors on points, keep unspecified vectors intact.
         """
-        return await self._build_for_update_vectors(
+        return await offload_build(
+            self._build_for_update_vectors,
             collection_name=collection_name,
             wait=wait,
             ordering=ordering,
@@ -797,7 +816,8 @@ class AsyncPointsApi(_PointsApi):
         """
         Perform insert + updates on points. If point with given ID already exists - it will be overwritten.
         """
-        return await self._build_for_upsert_points(
+        return await offload_build(
+            self._build_for_upsert_points,
             collection_name=collection_name,
             wait=wait,
             ordering=ordering,
