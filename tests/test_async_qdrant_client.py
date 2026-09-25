@@ -583,3 +583,39 @@ async def test_custom_sharding(prefer_grpc):
 
     assert collection_info.config.params.shard_number == 1
     assert collection_info.config.params.sharding_method == models.ShardingMethod.CUSTOM
+
+
+@pytest.mark.asyncio
+async def test_async_upsert_serializes_off_event_loop():
+    import threading
+    from unittest.mock import patch
+
+    import httpx
+
+    from qdrant_client.http.api import points_api
+
+    loop_thread = threading.get_ident()
+    encoder_threads = []
+    original_encoder = points_api.jsonable_encoder
+
+    def recording_encoder(*args, **kwargs):
+        encoder_threads.append(threading.get_ident())
+        return original_encoder(*args, **kwargs)
+
+    async def ok_response(*_args, **_kwargs):
+        return httpx.Response(
+            200,
+            json={"result": {"operation_id": 1, "status": "completed"}, "status": "ok", "time": 0},
+        )
+
+    client = AsyncQdrantClient(url="http://localhost:6333", check_compatibility=False)
+    async_client = client._client.openapi_client.points_api.api_client._async_client
+    with patch.object(points_api, "jsonable_encoder", recording_encoder), patch.object(
+        async_client, "send", side_effect=ok_response
+    ):
+        await client.upsert(
+            COLLECTION_NAME, points=[models.PointStruct(id=1, vector=[0.1, 0.2])], wait=False
+        )
+    await client.close()
+
+    assert encoder_threads and loop_thread not in encoder_threads
