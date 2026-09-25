@@ -1,4 +1,5 @@
 import threading
+from unittest.mock import patch
 from concurrent.futures import ThreadPoolExecutor
 
 import pytest
@@ -113,4 +114,72 @@ def test_concurrent_alias_batches_keep_both_results():
             for future in futures:
                 assert future.result()
         assert {alias.alias_name for alias in client.get_aliases().aliases} == {"first", "second"}
+    client.close()
+
+
+@pytest.mark.parametrize("persistent", [False, True])
+def test_create_alias_after_close_is_rejected(tmp_path, persistent):
+    client = QdrantClient(path=str(tmp_path)) if persistent else QdrantClient(":memory:")
+    client.create_collection("docs", vectors_config={})
+    client.close()
+    with pytest.raises(RuntimeError, match="closed"):
+        client.update_collection_aliases([_create_alias("docs", "live")])
+    assert client._client.aliases == {}
+
+
+@pytest.mark.asyncio
+async def test_async_create_alias_after_close_is_rejected():
+    client = AsyncQdrantClient(":memory:")
+    await client.create_collection("docs", vectors_config={})
+    await client.close()
+    with pytest.raises(RuntimeError, match="closed"):
+        await client.update_collection_aliases([_create_alias("docs", "live")])
+    assert client._client.aliases == {}
+
+
+@pytest.mark.asyncio
+async def test_async_save_failure_leaves_aliases_unchanged(tmp_path):
+    client = AsyncQdrantClient(path=str(tmp_path))
+    await client.create_collection("docs", vectors_config={})
+    with patch.object(client._client, "_save", side_effect=OSError("disk full")):
+        with pytest.raises(OSError, match="disk full"):
+            await client.update_collection_aliases([_create_alias("docs", "live")])
+    assert client._client.aliases == {}
+    await client.close()
+
+
+def test_save_failure_leaves_aliases_unchanged(tmp_path):
+    client = QdrantClient(path=str(tmp_path))
+    client.create_collection("docs", vectors_config={})
+    with patch.object(client._client, "_save", side_effect=OSError("disk full")):
+        with pytest.raises(OSError, match="disk full"):
+            client.update_collection_aliases([_create_alias("docs", "live")])
+    assert client._client.aliases == {}
+    client.close()
+
+
+def test_collection_delete_cannot_race_with_alias_batch():
+    class PausingAliases(dict):
+        copied = threading.Event()
+        proceed = threading.Event()
+
+        def copy(self):
+            result = super().copy()
+            self.copied.set()
+            if not self.proceed.wait(timeout=2):
+                raise TimeoutError("alias update was not released")
+            return result
+
+    client = QdrantClient(":memory:")
+    client.create_collection("docs", vectors_config={})
+    aliases = PausingAliases()
+    client._client.aliases = aliases
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        update = pool.submit(client.update_collection_aliases, [_create_alias("docs", "live")])
+        assert aliases.copied.wait(timeout=2)
+        deletion = pool.submit(client.delete_collection, "docs")
+        aliases.proceed.set()
+        assert update.result(timeout=2)
+        assert deletion.result(timeout=2)
+    assert client.get_aliases().aliases == []
     client.close()

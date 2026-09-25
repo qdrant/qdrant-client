@@ -177,7 +177,7 @@ class QdrantLocal(QdrantBase):
                 f" If you require concurrent access, use Qdrant server instead."
             )
 
-    def _save(self) -> None:
+    def _save(self, aliases: dict[str, str] | None = None) -> None:
         if not self.persistent:
             return
 
@@ -193,7 +193,7 @@ class QdrantLocal(QdrantBase):
                             collection_name: to_dict(collection.config)
                             for collection_name, collection in self.collections.items()
                         },
-                        "aliases": self.aliases,
+                        "aliases": self.aliases if aliases is None else aliases,
                     }
                 )
             )
@@ -731,6 +731,8 @@ class QdrantLocal(QdrantBase):
         self, change_aliases_operations: Sequence[types.AliasOperations], **kwargs: Any
     ) -> bool:
         with self._aliases_lock:
+            if self.closed:
+                raise RuntimeError("QdrantLocal instance is closed. Please create a new instance.")
             aliases = self.aliases.copy()
             for operation in change_aliases_operations:
                 if isinstance(operation, rest_models.CreateAliasOperation):
@@ -746,8 +748,8 @@ class QdrantLocal(QdrantBase):
                     aliases[new_name] = aliases.pop(old_name)
                 else:
                     raise ValueError(f"Unknown operation: {operation}")
+            self._save(aliases=aliases)
             self.aliases = aliases
-            self._save()
             return True
 
     def get_collection_aliases(
@@ -834,21 +836,22 @@ class QdrantLocal(QdrantBase):
             return None
 
     def delete_collection(self, collection_name: str, **kwargs: Any) -> bool:
-        if self.closed:
-            raise RuntimeError("QdrantLocal instance is closed. Please create a new instance.")
+        with self._aliases_lock:
+            if self.closed:
+                raise RuntimeError("QdrantLocal instance is closed. Please create a new instance.")
 
-        _collection = self.collections.pop(collection_name, None)
-        del _collection
-        self.aliases = {
-            alias_name: name
-            for alias_name, name in self.aliases.items()
-            if name != collection_name
-        }
-        collection_path = self._collection_path(collection_name)
-        if collection_path is not None:
-            shutil.rmtree(collection_path, ignore_errors=True)
-        self._save()
-        return True
+            _collection = self.collections.pop(collection_name, None)
+            del _collection
+            self.aliases = {
+                alias_name: name
+                for alias_name, name in self.aliases.items()
+                if name != collection_name
+            }
+            collection_path = self._collection_path(collection_name)
+            if collection_path is not None:
+                shutil.rmtree(collection_path, ignore_errors=True)
+            self._save()
+            return True
 
     def create_collection(
         self,

@@ -161,7 +161,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
                 f"Storage folder {self.location} is already accessed by another instance of Qdrant client. If you require concurrent access, use Qdrant server instead."
             )
 
-    def _save(self) -> None:
+    def _save(self, aliases: dict[str, str] | None = None) -> None:
         if not self.persistent:
             return
         if self.closed:
@@ -175,7 +175,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
                             collection_name: to_dict(collection.config)
                             for (collection_name, collection) in self.collections.items()
                         },
-                        "aliases": self.aliases,
+                        "aliases": self.aliases if aliases is None else aliases,
                     }
                 )
             )
@@ -667,6 +667,8 @@ class AsyncQdrantLocal(AsyncQdrantBase):
     async def update_collection_aliases(
         self, change_aliases_operations: Sequence[types.AliasOperations], **kwargs: Any
     ) -> bool:
+        if self.closed:
+            raise RuntimeError("QdrantLocal instance is closed. Please create a new instance.")
         aliases = self.aliases.copy()
         for operation in change_aliases_operations:
             if isinstance(operation, rest_models.CreateAliasOperation):
@@ -682,8 +684,8 @@ class AsyncQdrantLocal(AsyncQdrantBase):
                 aliases[new_name] = aliases.pop(old_name)
             else:
                 raise ValueError(f"Unknown operation: {operation}")
+        self._save(aliases=aliases)
         self.aliases = aliases
-        self._save()
         return True
 
     async def get_collection_aliases(
