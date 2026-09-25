@@ -33,9 +33,20 @@ class UnexpectedResponse(ApiException):
         else:
             reason_phrase_str = f"({self.reason_phrase})"
         status_str = f"{status_code_str} {reason_phrase_str}".strip()
+        error = self._server_error()
+        if error is not None:
+            return f"Unexpected Response: {status_str}\nError: {error}"
         short_content = self.content if len(self.content) <= MAX_CONTENT else self.content[: MAX_CONTENT - 3] + b" ..."
         raw_content_str = f"Raw response content:\n{short_content!r}"
         return f"Unexpected Response: {status_str}\n{raw_content_str}"
+
+    def _server_error(self) -> Optional[str]:
+        """Return `status.error` from a Qdrant JSON error body, or None if absent or unparsable."""
+        try:
+            error = json.loads(self.content).get("status", {}).get("error")
+        except (ValueError, TypeError, AttributeError):
+            return None
+        return error if isinstance(error, str) and error else None
 
     def structured(self) -> Dict[str, Any]:
         return json.loads(self.content)
