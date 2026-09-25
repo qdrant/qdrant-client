@@ -3,9 +3,11 @@ import itertools
 import json
 import os
 import shutil
+import tempfile
 import uuid
 from copy import deepcopy
 from io import TextIOWrapper
+from threading import RLock
 from typing import (
     Any,
     Generator,
@@ -83,6 +85,7 @@ class QdrantLocal(QdrantBase):
         self.persistent = location != ":memory:"
         self.collections: dict[str, LocalCollection] = {}
         self.aliases: dict[str, str] = {}
+        self._aliases_lock = RLock()
         self._flock_file: TextIOWrapper | None = None
         self._load()
         self._closed: bool = False
@@ -175,26 +178,32 @@ class QdrantLocal(QdrantBase):
                 f" If you require concurrent access, use Qdrant server instead."
             )
 
-    def _save(self) -> None:
-        if not self.persistent:
-            return
+    def _save(self, aliases: dict[str, str] | None = None) -> None:
+        with self._aliases_lock:
+            if not self.persistent:
+                return
 
-        if self.closed:
-            raise RuntimeError("QdrantLocal instance is closed. Please create a new instance.")
+            if self.closed:
+                raise RuntimeError("QdrantLocal instance is closed. Please create a new instance.")
 
-        meta_path = os.path.join(self.location, META_INFO_FILENAME)
-        with open(meta_path, "w") as f:
-            f.write(
-                json.dumps(
-                    {
-                        "collections": {
-                            collection_name: to_dict(collection.config)
-                            for collection_name, collection in self.collections.items()
-                        },
-                        "aliases": self.aliases,
-                    }
-                )
+            meta_path = os.path.join(self.location, META_INFO_FILENAME)
+            content = json.dumps(
+                {
+                    "collections": {
+                        collection_name: to_dict(collection.config)
+                        for collection_name, collection in self.collections.items()
+                    },
+                    "aliases": self.aliases if aliases is None else aliases,
+                }
             )
+            fd, temp_path = tempfile.mkstemp(dir=self.location, prefix=".meta-", suffix=".tmp")
+            try:
+                with os.fdopen(fd, "w") as f:
+                    f.write(content)
+                os.replace(temp_path, meta_path)
+            finally:
+                if os.path.exists(temp_path):
+                    os.unlink(temp_path)
 
     def _get_collection(self, collection_name: str) -> LocalCollection:
         if self.closed:
@@ -728,22 +737,27 @@ class QdrantLocal(QdrantBase):
     def update_collection_aliases(
         self, change_aliases_operations: Sequence[types.AliasOperations], **kwargs: Any
     ) -> bool:
-        for operation in change_aliases_operations:
-            if isinstance(operation, rest_models.CreateAliasOperation):
-                self._get_collection(operation.create_alias.collection_name)
-                self.aliases[operation.create_alias.alias_name] = (
-                    operation.create_alias.collection_name
-                )
-            elif isinstance(operation, rest_models.DeleteAliasOperation):
-                self.aliases.pop(operation.delete_alias.alias_name, None)
-            elif isinstance(operation, rest_models.RenameAliasOperation):
-                new_name = operation.rename_alias.new_alias_name
-                old_name = operation.rename_alias.old_alias_name
-                self.aliases[new_name] = self.aliases.pop(old_name)
-            else:
-                raise ValueError(f"Unknown operation: {operation}")
-        self._save()
-        return True
+        with self._aliases_lock:
+            if self.closed:
+                raise RuntimeError("QdrantLocal instance is closed. Please create a new instance.")
+            aliases = self.aliases.copy()
+            for operation in change_aliases_operations:
+                if isinstance(operation, rest_models.CreateAliasOperation):
+                    collection_name = operation.create_alias.collection_name
+                    if collection_name not in self.collections:
+                        raise ValueError(f"Collection {collection_name} not found")
+                    aliases[operation.create_alias.alias_name] = collection_name
+                elif isinstance(operation, rest_models.DeleteAliasOperation):
+                    aliases.pop(operation.delete_alias.alias_name, None)
+                elif isinstance(operation, rest_models.RenameAliasOperation):
+                    new_name = operation.rename_alias.new_alias_name
+                    old_name = operation.rename_alias.old_alias_name
+                    aliases[new_name] = aliases.pop(old_name)
+                else:
+                    raise ValueError(f"Unknown operation: {operation}")
+            self._save(aliases=aliases)
+            self.aliases = aliases
+            return True
 
     def get_collection_aliases(
         self, collection_name: str, **kwargs: Any
@@ -829,21 +843,22 @@ class QdrantLocal(QdrantBase):
             return None
 
     def delete_collection(self, collection_name: str, **kwargs: Any) -> bool:
-        if self.closed:
-            raise RuntimeError("QdrantLocal instance is closed. Please create a new instance.")
+        with self._aliases_lock:
+            if self.closed:
+                raise RuntimeError("QdrantLocal instance is closed. Please create a new instance.")
 
-        _collection = self.collections.pop(collection_name, None)
-        del _collection
-        self.aliases = {
-            alias_name: name
-            for alias_name, name in self.aliases.items()
-            if name != collection_name
-        }
-        collection_path = self._collection_path(collection_name)
-        if collection_path is not None:
-            shutil.rmtree(collection_path, ignore_errors=True)
-        self._save()
-        return True
+            _collection = self.collections.pop(collection_name, None)
+            del _collection
+            self.aliases = {
+                alias_name: name
+                for alias_name, name in self.aliases.items()
+                if name != collection_name
+            }
+            collection_path = self._collection_path(collection_name)
+            if collection_path is not None:
+                shutil.rmtree(collection_path, ignore_errors=True)
+            self._save()
+            return True
 
     def create_collection(
         self,
@@ -856,28 +871,29 @@ class QdrantLocal(QdrantBase):
         payload: types.PayloadStorageParams | None = None,
         **kwargs: Any,
     ) -> bool:
-        if self.closed:
-            raise RuntimeError("QdrantLocal instance is closed. Please create a new instance.")
+        with self._aliases_lock:
+            if self.closed:
+                raise RuntimeError("QdrantLocal instance is closed. Please create a new instance.")
 
-        if collection_name in self.collections:
-            raise ValueError(f"Collection {collection_name} already exists")
-        collection_path = self._collection_path(collection_name)
-        if collection_path is not None:
-            os.makedirs(collection_path, exist_ok=True)
+            if collection_name in self.collections:
+                raise ValueError(f"Collection {collection_name} already exists")
+            collection_path = self._collection_path(collection_name)
+            if collection_path is not None:
+                os.makedirs(collection_path, exist_ok=True)
 
-        collection = LocalCollection(
-            rest_models.CreateCollection(
-                vectors=vectors_config or {},
-                sparse_vectors=sparse_vectors_config,
-                metadata=deepcopy(metadata),
-            ),
-            location=collection_path,
-            force_disable_check_same_thread=self.force_disable_check_same_thread,
-        )
-        self.collections[collection_name] = collection
+            collection = LocalCollection(
+                rest_models.CreateCollection(
+                    vectors=vectors_config or {},
+                    sparse_vectors=sparse_vectors_config,
+                    metadata=deepcopy(metadata),
+                ),
+                location=collection_path,
+                force_disable_check_same_thread=self.force_disable_check_same_thread,
+            )
+            self.collections[collection_name] = collection
 
-        self._save()
-        return True
+            self._save()
+            return True
 
     def recreate_collection(
         self,

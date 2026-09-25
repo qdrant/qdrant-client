@@ -14,6 +14,7 @@ import itertools
 import json
 import os
 import shutil
+import tempfile
 import uuid
 from copy import deepcopy
 from io import TextIOWrapper
@@ -161,24 +162,29 @@ class AsyncQdrantLocal(AsyncQdrantBase):
                 f"Storage folder {self.location} is already accessed by another instance of Qdrant client. If you require concurrent access, use Qdrant server instead."
             )
 
-    def _save(self) -> None:
+    def _save(self, aliases: dict[str, str] | None = None) -> None:
         if not self.persistent:
             return
         if self.closed:
             raise RuntimeError("QdrantLocal instance is closed. Please create a new instance.")
         meta_path = os.path.join(self.location, META_INFO_FILENAME)
-        with open(meta_path, "w") as f:
-            f.write(
-                json.dumps(
-                    {
-                        "collections": {
-                            collection_name: to_dict(collection.config)
-                            for (collection_name, collection) in self.collections.items()
-                        },
-                        "aliases": self.aliases,
-                    }
-                )
-            )
+        content = json.dumps(
+            {
+                "collections": {
+                    collection_name: to_dict(collection.config)
+                    for (collection_name, collection) in self.collections.items()
+                },
+                "aliases": self.aliases if aliases is None else aliases,
+            }
+        )
+        fd, temp_path = tempfile.mkstemp(dir=self.location, prefix=".meta-", suffix=".tmp")
+        try:
+            with os.fdopen(fd, "w") as f:
+                f.write(content)
+            os.replace(temp_path, meta_path)
+        finally:
+            if os.path.exists(temp_path):
+                os.unlink(temp_path)
 
     def _get_collection(self, collection_name: str) -> LocalCollection:
         if self.closed:
@@ -667,21 +673,25 @@ class AsyncQdrantLocal(AsyncQdrantBase):
     async def update_collection_aliases(
         self, change_aliases_operations: Sequence[types.AliasOperations], **kwargs: Any
     ) -> bool:
+        if self.closed:
+            raise RuntimeError("QdrantLocal instance is closed. Please create a new instance.")
+        aliases = self.aliases.copy()
         for operation in change_aliases_operations:
             if isinstance(operation, rest_models.CreateAliasOperation):
-                self._get_collection(operation.create_alias.collection_name)
-                self.aliases[operation.create_alias.alias_name] = (
-                    operation.create_alias.collection_name
-                )
+                collection_name = operation.create_alias.collection_name
+                if collection_name not in self.collections:
+                    raise ValueError(f"Collection {collection_name} not found")
+                aliases[operation.create_alias.alias_name] = collection_name
             elif isinstance(operation, rest_models.DeleteAliasOperation):
-                self.aliases.pop(operation.delete_alias.alias_name, None)
+                aliases.pop(operation.delete_alias.alias_name, None)
             elif isinstance(operation, rest_models.RenameAliasOperation):
                 new_name = operation.rename_alias.new_alias_name
                 old_name = operation.rename_alias.old_alias_name
-                self.aliases[new_name] = self.aliases.pop(old_name)
+                aliases[new_name] = aliases.pop(old_name)
             else:
                 raise ValueError(f"Unknown operation: {operation}")
-        self._save()
+        self._save(aliases=aliases)
+        self.aliases = aliases
         return True
 
     async def get_collection_aliases(
