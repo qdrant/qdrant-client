@@ -728,20 +728,20 @@ class QdrantLocal(QdrantBase):
     def update_collection_aliases(
         self, change_aliases_operations: Sequence[types.AliasOperations], **kwargs: Any
     ) -> bool:
+        aliases = self.aliases.copy()
         for operation in change_aliases_operations:
             if isinstance(operation, rest_models.CreateAliasOperation):
                 self._get_collection(operation.create_alias.collection_name)
-                self.aliases[operation.create_alias.alias_name] = (
-                    operation.create_alias.collection_name
-                )
+                aliases[operation.create_alias.alias_name] = operation.create_alias.collection_name
             elif isinstance(operation, rest_models.DeleteAliasOperation):
-                self.aliases.pop(operation.delete_alias.alias_name, None)
+                aliases.pop(operation.delete_alias.alias_name, None)
             elif isinstance(operation, rest_models.RenameAliasOperation):
                 new_name = operation.rename_alias.new_alias_name
                 old_name = operation.rename_alias.old_alias_name
-                self.aliases[new_name] = self.aliases.pop(old_name)
+                aliases[new_name] = aliases.pop(old_name)
             else:
                 raise ValueError(f"Unknown operation: {operation}")
+        self.aliases = aliases
         self._save()
         return True
 
