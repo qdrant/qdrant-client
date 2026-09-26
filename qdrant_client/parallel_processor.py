@@ -167,7 +167,7 @@ class ParallelWorkerPool:
                         out_item = None
                 else:
                     try:
-                        out_item = self.output_queue.get(timeout=processing_timeout)
+                        out_item = self._get_output()
                     except Empty as e:
                         self.join_or_terminate()
                         raise e
@@ -185,7 +185,7 @@ class ParallelWorkerPool:
                 self.input_queue.put(QueueSignals.stop)
 
             while read < pushed:
-                out_item = self.output_queue.get(timeout=processing_timeout)
+                out_item = self._get_output()
                 if out_item == QueueSignals.error:
                     self.join_or_terminate()
                     raise RuntimeError("Thread unexpectedly terminated")
@@ -228,6 +228,24 @@ class ParallelWorkerPool:
             while next_expected in buffer:
                 yield buffer.pop(next_expected)
                 next_expected += 1
+
+    def _get_output(self) -> Any:
+        """
+        Wait for output, checking worker health after each one-second queue timeout.
+        A worker that dies without reporting an error (e.g. killed by the OOM killer)
+        would otherwise leave us waiting the whole timeout for results that never come.
+        Successful reads do not scan the workers.
+        """
+        assert self.output_queue is not None, "Output queue was not initialized"
+        deadline = time.monotonic() + processing_timeout
+        while True:
+            remaining = deadline - time.monotonic()
+            try:
+                return self.output_queue.get(timeout=min(1.0, max(0.0, remaining)))
+            except Empty:
+                self.check_worker_health()
+                if remaining <= 1.0:
+                    raise
 
     def check_worker_health(self) -> None:
         """
