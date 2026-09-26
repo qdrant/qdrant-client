@@ -203,10 +203,16 @@ class ParallelWorkerPool:
                 # have not necessarily received their stop signals and a normal join would
                 # wait forever for processes blocked on the input queue.
                 self.join_or_terminate()
-                # Nothing reads the input pipe anymore, so the feeder thread can be stuck writing
-                # to it, holding every item it hasn't sent. Closing our read end fails that write
-                # with EPIPE and lets the thread exit, same as Queue._terminate_broken() in 3.12+.
-                self.input_queue._reader.close()  # type: ignore[attr-defined]
+                # Nothing reads the input pipe anymore, so the feeder thread can be stuck
+                # writing to it, holding every item it hasn't sent. On POSIX, closing our
+                # read end fails that write with EPIPE; Windows also needs to cancel the send.
+                terminate_broken = getattr(self.input_queue, "_terminate_broken", None)
+                if terminate_broken is not None:
+                    terminate_broken()
+                else:
+                    # Best effort on older Python. Windows before Python 3.12.1
+                    # can still leave a feeder blocked in send_bytes().
+                    self.input_queue._reader.close()  # type: ignore[attr-defined]
             self.input_queue.close()
             self.output_queue.close()
             if self.emergency_shutdown:
