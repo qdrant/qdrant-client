@@ -18,13 +18,15 @@ SPELLINGS = [
     CANONICAL.upper(),
     CANONICAL.replace("-", ""),
     "urn:uuid:" + CANONICAL,
+    "{" + CANONICAL + "}",
     uuid.UUID(CANONICAL),
 ]
 
 
 def create_collection(client):
     client.create_collection(
-        "points", vectors_config=models.VectorParams(size=2, distance=models.Distance.DOT)
+        "points",
+        vectors_config=models.VectorParams(size=2, distance=models.Distance.DOT),
     )
 
 
@@ -40,7 +42,10 @@ def client():
 def test_upsert_same_identity(client, spelling):
     client.upsert("points", [models.PointStruct(id=spelling, vector=[0.0, 1.0])])
     assert client.count("points").count == 1
-    assert client.retrieve("points", [CANONICAL], with_vectors=True)[0].vector == [0.0, 1.0]
+    assert client.retrieve("points", [CANONICAL], with_vectors=True)[0].vector == [
+        0.0,
+        1.0,
+    ]
 
 
 @pytest.mark.parametrize("spelling", SPELLINGS)
@@ -92,7 +97,10 @@ def test_update_and_delete_vectors(client, spelling):
     original = copy.deepcopy(point)
     client.update_vectors("points", [point])
     assert point == original
-    assert client.retrieve("points", [CANONICAL], with_vectors=True)[0].vector == [0.0, 1.0]
+    assert client.retrieve("points", [CANONICAL], with_vectors=True)[0].vector == [
+        0.0,
+        1.0,
+    ]
     client.delete_vectors("points", vectors=[""], points=[spelling])
     assert client.retrieve("points", [CANONICAL], with_vectors=True)[0].vector == {}
 
@@ -133,6 +141,35 @@ def test_integer_id_is_not_uuid(client):
 def test_invalid_uuid_still_rejected_on_upsert(client):
     with pytest.raises(ValueError, match="not a valid UUID"):
         client.upsert("points", [models.PointStruct(id="not-a-uuid", vector=[1.0, 0.0])])
+    assert client.count("points").count == 1
+
+
+@pytest.mark.parametrize(
+    "spelling",
+    [
+        "936da01-f9abd-4d9d-80c7-02af85c822a8",
+        CANONICAL.replace("-", "--"),
+        "-" + CANONICAL,
+        "{" + CANONICAL.replace("-", "") + "}",
+        "urn:uuid:" + CANONICAL.replace("-", ""),
+        "uuid:" + CANONICAL,
+        "{{" + CANONICAL + "}}",
+    ],
+)
+def test_malformed_uuid_cannot_identify_existing_point(client, spelling):
+    """Python UUID's permissive parser must not alias malformed IDs to stored points."""
+    assert uuid.UUID(spelling) == uuid.UUID(CANONICAL)
+    assert client.retrieve("points", [spelling]) == []
+    condition = models.Filter(must=[models.HasIdCondition(has_id=[spelling])])
+    assert client.count("points", count_filter=condition).count == 0
+    with pytest.raises(KeyError):
+        client.set_payload("points", {"unexpected": True}, points=[spelling])
+    client.delete("points", [spelling])
+    point = client.retrieve("points", [CANONICAL], with_vectors=True)[0]
+    assert point.payload == {}
+    assert point.vector == [1.0, 0.0]
+    with pytest.raises(ValueError, match="not a valid UUID"):
+        client.upsert("points", [models.PointStruct(id=spelling, vector=[0.0, 1.0])])
     assert client.count("points").count == 1
 
 
@@ -231,7 +268,8 @@ async def test_async_client_shares_uuid_identity():
     client = AsyncQdrantClient(":memory:")
     try:
         await client.create_collection(
-            "points", vectors_config=models.VectorParams(size=2, distance=models.Distance.DOT)
+            "points",
+            vectors_config=models.VectorParams(size=2, distance=models.Distance.DOT),
         )
         await client.upsert(
             "points", [models.PointStruct(id=CANONICAL.upper(), vector=[1.0, 0.0])]
