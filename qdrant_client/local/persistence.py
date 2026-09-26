@@ -7,6 +7,8 @@ from pathlib import Path
 from typing import Iterable
 
 from qdrant_client.http import models
+from qdrant_client._pydantic_compat import construct
+from qdrant_client.local.point_id import normalize_point_id
 
 STORAGE_FILE_NAME_OLD = "storage.dbm"
 STORAGE_FILE_NAME = "storage.sqlite"
@@ -97,6 +99,8 @@ class CollectionPersistence:
         )
 
         self._ensure_table()
+        # Only legacy, non-canonical keys need an alias. Reading never rewrites storage.
+        self._legacy_keys: dict[models.ExtendedPointId, str] = {}
 
     def close(self) -> None:
         self.storage.close()
@@ -112,20 +116,21 @@ class CollectionPersistence:
         Args:
             point: point to persist
         """
-        key = self.encode_key(point.id)
+        point_id = normalize_point_id(point.id)
+        point = construct(
+            models.PointStruct, id=point_id, vector=point.vector, payload=point.payload
+        )
+        key = self.encode_key(point_id)
         value = pickle.dumps(point)
 
-        cursor = self.storage.cursor()
-        # Insert or update by key
-        cursor.execute(
-            "INSERT OR REPLACE INTO points VALUES (?, ?)",
-            (
-                key,
-                sqlite3.Binary(value),
-            ),
-        )
-
-        self.storage.commit()
+        with self.storage:
+            legacy_key = self._legacy_keys.get(point_id)
+            if legacy_key is not None:
+                self.storage.execute("DELETE FROM points WHERE id = ?", (legacy_key,))
+            self.storage.execute(
+                "INSERT OR REPLACE INTO points VALUES (?, ?)", (key, sqlite3.Binary(value))
+            )
+        self._legacy_keys.pop(point_id, None)
 
     def delete(self, point_id: models.ExtendedPointId) -> None:
         """
@@ -133,13 +138,15 @@ class CollectionPersistence:
         Args:
             point_id: id of the point to delete
         """
-        key = self.encode_key(point_id)
+        point_id = normalize_point_id(point_id)
+        key = self._legacy_keys.get(point_id, self.encode_key(point_id))
         cursor = self.storage.cursor()
         cursor.execute(
             "DELETE FROM points WHERE id = ?",
             (key,),
         )
         self.storage.commit()
+        self._legacy_keys.pop(point_id, None)
 
     def load(self) -> Iterable[models.PointStruct]:
         """
@@ -148,9 +155,29 @@ class CollectionPersistence:
             point: loaded point
         """
         cursor = self.storage.cursor()
-        cursor.execute("SELECT point FROM points")
-        for row in cursor.fetchall():
-            yield pickle.loads(row[0])
+        cursor.execute("SELECT id, point FROM points")
+        points = []
+        seen = set()
+        legacy_keys = {}
+        for key, value in cursor.fetchall():
+            point = pickle.loads(value)
+            point_id = normalize_point_id(point.id)
+            if point_id in seen:
+                raise ValueError(
+                    f"Duplicate UUID identity {point_id!r} in local storage {self.location}. "
+                    "No points have been changed. Back up the storage and resolve duplicate "
+                    "UUID spellings using the previous client version before reopening."
+                )
+            seen.add(point_id)
+            if key != self.encode_key(point_id):
+                legacy_keys[point_id] = key
+            points.append(
+                construct(
+                    models.PointStruct, id=point_id, vector=point.vector, payload=point.payload
+                )
+            )
+        self._legacy_keys = legacy_keys
+        yield from points
 
 
 def test_persistence() -> None:

@@ -67,6 +67,7 @@ from qdrant_client.local.payload_filters import (
 from qdrant_client.local.payload_value_extractor import value_by_key, parse_uuid
 from qdrant_client.local.payload_value_setter import delete_value_by_key, set_value_by_key
 from qdrant_client.local.persistence import CollectionPersistence
+from qdrant_client.local.point_id import normalize_point_id
 from qdrant_client.local.utils import last_argmax, swap_remove
 from qdrant_client.local.sparse import (
     copy_sparse_vector,
@@ -194,7 +195,11 @@ class LocalCollection:
         self.config = config
         if location is not None:
             self.storage = CollectionPersistence(location, force_disable_check_same_thread)
-        self.load_vectors()
+        try:
+            self.load_vectors()
+        except Exception:
+            self.close()
+            raise
 
     @staticmethod
     def _resolve_vectors_config(
@@ -248,7 +253,7 @@ class LocalCollection:
         Deleted points keep their slot so that internal ids stay stable, but the server
         answers 404 for them exactly as it does for ids it has never seen.
         """
-        idx = self.ids.get(point_id)
+        idx = self.ids.get(normalize_point_id(point_id))
         if idx is None or self.deleted[idx]:
             return None
         return idx
@@ -1441,7 +1446,7 @@ class LocalCollection:
         with_vectors: types.WithVector = False,
     ) -> list[models.Record]:
         result = []
-        ids = [str(id_) if isinstance(id_, uuid.UUID) else id_ for id_ in ids]
+        ids = [normalize_point_id(id_) for id_ in ids]
         for point_id in ids:
             if point_id not in self.ids:
                 continue
@@ -2084,7 +2089,8 @@ class LocalCollection:
         )
 
     @classmethod
-    def _universal_id(cls, point_id: models.ExtendedPointId) -> tuple[str, int]:
+    def _universal_id(cls, point_id: types.PointId) -> tuple[str, int]:
+        point_id = normalize_point_id(point_id)
         if isinstance(point_id, str):
             return point_id, 0
         elif isinstance(point_id, int):
@@ -2715,17 +2721,10 @@ class LocalCollection:
         Every write path runs this over all of its points before applying any of them, so a
         rejected point leaves the collection untouched, the way the server does.
 
-        Normalization (sorting sparse vectors, stringifying UUID ids) goes into the returned
+        Normalization (sorting sparse vectors, canonicalizing UUID ids) goes into the returned
         copy: remote mode does not rewrite the caller's point either.
         """
-        if isinstance(point.id, str):
-            # try to parse as UUID
-            try:
-                _uuid = uuid.UUID(point.id)
-            except ValueError as e:
-                raise ValueError(f"Point id {point.id} is not a valid UUID") from e
-
-        point_id = str(point.id) if isinstance(point.id, uuid.UUID) else point.id
+        point_id = normalize_point_id(point.id, validate=True)
 
         normalized_vector: models.VectorStruct = point.vector
 
@@ -2903,7 +2902,7 @@ class LocalCollection:
         # point in it, and only then answers 404 for the first id it could not find.
         prepared = [
             (
-                str(point.id) if isinstance(point.id, uuid.UUID) else point.id,
+                normalize_point_id(point.id),
                 self._validate_named_vectors(
                     {DEFAULT_VECTOR_NAME: point.vector}
                     if isinstance(point.vector, list)
@@ -2995,11 +2994,11 @@ class LocalCollection:
         ),
     ) -> list[models.ExtendedPointId]:
         if isinstance(selector, list):
-            return [str(id_) if isinstance(id_, uuid.UUID) else id_ for id_ in selector]
+            return [normalize_point_id(id_) for id_ in selector]
         elif isinstance(selector, models.Filter):
             return self._filter_to_ids(selector)
         elif isinstance(selector, models.PointIdsList):
-            return [str(id_) if isinstance(id_, uuid.UUID) else id_ for id_ in selector.points]
+            return [normalize_point_id(id_) for id_ in selector.points]
         elif isinstance(selector, models.FilterSelector):
             return self._filter_to_ids(selector.filter)
         else:
