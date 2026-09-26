@@ -136,6 +136,7 @@ def _recreate_collection(
         wal_config=models.WalConfigDiff(**to_dict(src_config.wal_config)),
         quantization_config=src_config.quantization_config,
         strict_mode_config=strict_mode_config,
+        metadata=src_config.metadata,
     )
 
     _recreate_payload_schema(dest_client, collection_name, src_payload_schema)
