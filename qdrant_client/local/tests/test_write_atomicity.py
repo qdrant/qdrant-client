@@ -173,6 +173,7 @@ def test_wrong_vector_dimension_is_rejected_before_writing(vectors_config, good,
 
     assert collection._get_vectors(idx=0, with_vectors=True) == good
 
+
 @pytest.mark.parametrize("operation", ["upsert", "update_vectors"])
 @pytest.mark.parametrize(
     ("wrong_vector_name", "wrong_vector"),
@@ -215,3 +216,47 @@ def test_wrong_named_vector_type_is_rejected_before_writing(
         "dense": [1.0, 2.0],
         "sparse": models.SparseVector(indices=[0], values=[1.0]),
     }
+
+
+@pytest.mark.parametrize("operation", ["upsert", "update_vectors"])
+@pytest.mark.parametrize(
+    ("wrong_vector_name", "wrong_vector"),
+    [
+        ("dense", models.SparseVector(indices=[0], values=[3.0])),
+        ("sparse", [3.0, 4.0]),
+    ],
+)
+def test_rejected_batch_named_vector_type_applies_nothing(
+    operation: str, wrong_vector_name: str, wrong_vector
+) -> None:
+    """A bad vector must fail in preflight, before the valid payload operation applies."""
+    collection = LocalCollection(
+        models.CreateCollection(
+            vectors={"dense": models.VectorParams(size=2, distance=models.Distance.DOT)},
+            sparse_vectors={"sparse": models.SparseVectorParams()},
+        )
+    )
+    good_vectors = {
+        "dense": [1.0, 2.0],
+        "sparse": models.SparseVector(indices=[0], values=[1.0]),
+    }
+    collection.upsert([models.PointStruct(id=1, vector=good_vectors, payload={"p": "orig"})])
+    wrong_vectors = {wrong_vector_name: wrong_vector}
+    if operation == "upsert":
+        bad_operation = models.UpsertOperation(
+            upsert=models.PointsList(points=[models.PointStruct(id=2, vector=wrong_vectors)])
+        )
+    else:
+        bad_operation = models.UpdateVectorsOperation(
+            update_vectors=models.UpdateVectors(
+                points=[models.PointVectors(id=1, vector=wrong_vectors)]
+            )
+        )
+
+    with pytest.raises(ValueError, match="vector is not configured for vector name"):
+        collection.batch_update_points([touch_payload(), bad_operation])
+
+    assert len(collection.ids) == 1
+    assert collection.payload[0] == {"p": "orig"}
+    assert collection._get_vectors(idx=0, with_vectors=True) == good_vectors
+    assert_internally_consistent(collection)
