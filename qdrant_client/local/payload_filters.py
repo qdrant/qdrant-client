@@ -1,7 +1,7 @@
 import math
 import re
 from datetime import date, datetime, timezone
-from typing import Any
+from typing import Any, Callable
 from uuid import UUID
 
 import numpy as np
@@ -323,26 +323,26 @@ def check_condition(
         if condition.is_null is not None:
             return check_is_null(payload, condition.key) == condition.is_null
         values = value_by_key(payload, condition.key)
+        if values is None:
+            return False
+
+        # A `FieldCondition` may carry several of these at once, and the server ORs them
+        # (`ValueChecker for FieldCondition` in
+        # lib/segment/src/payload_storage/condition_checker.rs): returning on the first one
+        # that happens to be set would silently ignore the rest.
+        sub_conditions: list[tuple[Callable[[Any, Any], bool], Any]] = []
         if condition.match is not None:
-            if values is None:
-                return False
-            return any(check_match(condition.match, v) for v in values)
+            sub_conditions.append((check_match, condition.match))
         if condition.range is not None:
-            if values is None:
-                return False
-            return any(check_range_interface(condition.range, v) for v in values)
+            sub_conditions.append((check_range_interface, condition.range))
         if condition.geo_bounding_box is not None:
-            if values is None:
-                return False
-            return any(check_geo_bounding_box(condition.geo_bounding_box, v) for v in values)
+            sub_conditions.append((check_geo_bounding_box, condition.geo_bounding_box))
         if condition.geo_radius is not None:
-            if values is None:
-                return False
-            return any(check_geo_radius(condition.geo_radius, v) for v in values)
+            sub_conditions.append((check_geo_radius, condition.geo_radius))
         if condition.geo_polygon is not None:
-            if values is None:
-                return False
-            return any(check_geo_polygon(condition.geo_polygon, v) for v in values)
+            sub_conditions.append((check_geo_polygon, condition.geo_polygon))
+
+        return any(check(sub, value) for value in values for check, sub in sub_conditions)
     elif isinstance(condition, models.NestedCondition):
         return check_nested_filter(
             condition.nested.filter, nested_filter_values(payload, condition.nested.key)

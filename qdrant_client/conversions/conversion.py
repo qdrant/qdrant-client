@@ -3269,39 +3269,37 @@ class RestToGrpc:
 
     @classmethod
     def convert_field_condition(cls, model: rest.FieldCondition) -> grpc.FieldCondition:
+        # Every sub-condition is carried over, not just the first one that is set: the REST
+        # model lets a single `FieldCondition` hold several of them at once, and the server
+        # evaluates all of them (`ValueChecker for FieldCondition` in
+        # lib/segment/src/payload_storage/condition_checker.rs). Dropping the rest would make
+        # the same filter select different points over gRPC than over REST.
+        sub_conditions: dict[str, Any] = {}
         if model.match is not None:
-            return grpc.FieldCondition(key=model.key, match=cls.convert_match(model.match))
+            sub_conditions["match"] = cls.convert_match(model.match)
         if model.range is not None:
             if isinstance(model.range, rest.Range):
-                return grpc.FieldCondition(key=model.key, range=cls.convert_range(model.range))
-            if isinstance(model.range, rest.DatetimeRange):
-                return grpc.FieldCondition(
-                    key=model.key,
-                    datetime_range=cls.convert_datetime_range(model.range),
-                )
+                sub_conditions["range"] = cls.convert_range(model.range)
+            elif isinstance(model.range, rest.DatetimeRange):
+                sub_conditions["datetime_range"] = cls.convert_datetime_range(model.range)
         if model.geo_bounding_box is not None:
-            return grpc.FieldCondition(
-                key=model.key,
-                geo_bounding_box=cls.convert_geo_bounding_box(model.geo_bounding_box),
+            sub_conditions["geo_bounding_box"] = cls.convert_geo_bounding_box(
+                model.geo_bounding_box
             )
         if model.geo_radius is not None:
-            return grpc.FieldCondition(
-                key=model.key, geo_radius=cls.convert_geo_radius(model.geo_radius)
-            )
+            sub_conditions["geo_radius"] = cls.convert_geo_radius(model.geo_radius)
         if model.geo_polygon is not None:
-            return grpc.FieldCondition(
-                key=model.key, geo_polygon=cls.convert_geo_polygon(model.geo_polygon)
-            )
+            sub_conditions["geo_polygon"] = cls.convert_geo_polygon(model.geo_polygon)
         if model.values_count is not None:
-            return grpc.FieldCondition(
-                key=model.key, values_count=cls.convert_values_count(model.values_count)
-            )
+            sub_conditions["values_count"] = cls.convert_values_count(model.values_count)
         if model.is_empty is not None:
-            return grpc.FieldCondition(key=model.key, is_empty=model.is_empty)
-
+            sub_conditions["is_empty"] = model.is_empty
         if model.is_null is not None:
-            return grpc.FieldCondition(key=model.key, is_null=model.is_null)
-        raise ValueError(f"invalid FieldCondition model: {model}")  # pragma: no cover
+            sub_conditions["is_null"] = model.is_null
+
+        if not sub_conditions:
+            raise ValueError(f"invalid FieldCondition model: {model}")  # pragma: no cover
+        return grpc.FieldCondition(key=model.key, **sub_conditions)
 
     @classmethod
     def convert_wal_config_diff(cls, model: rest.WalConfigDiff) -> grpc.WalConfigDiff:
