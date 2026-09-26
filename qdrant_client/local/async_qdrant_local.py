@@ -684,6 +684,8 @@ class AsyncQdrantLocal(AsyncQdrantBase):
             elif isinstance(operation, rest_models.RenameAliasOperation):
                 new_name = operation.rename_alias.new_alias_name
                 old_name = operation.rename_alias.old_alias_name
+                if old_name not in aliases:
+                    raise ValueError(f"Alias {old_name} does not exist")
                 aliases[new_name] = aliases.pop(old_name)
             else:
                 raise ValueError(f"Unknown operation: {operation}")
@@ -792,6 +794,8 @@ class AsyncQdrantLocal(AsyncQdrantBase):
             raise RuntimeError("QdrantLocal instance is closed. Please create a new instance.")
         if collection_name in self.collections:
             raise ValueError(f"Collection {collection_name} already exists")
+        if collection_name in self.aliases:
+            raise ValueError(f"Alias {collection_name} already exists")
         collection_path = self._collection_path(collection_name)
         if collection_path is not None:
             os.makedirs(collection_path, exist_ok=True)

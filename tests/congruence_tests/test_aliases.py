@@ -150,7 +150,7 @@ def test_rejected_alias_changes_leave_aliases_untouched():
         ),
     ]
 
-    with pytest.raises(KeyError):
+    with pytest.raises(ValueError):
         local_client.update_collection_aliases(change_aliases_operations=ops)
     with pytest.raises(UnexpectedResponse):
         remote_client.update_collection_aliases(change_aliases_operations=ops)
@@ -209,6 +209,41 @@ def test_rejected_alias_changes_leave_aliases_untouched():
         local_client.update_collection_aliases(change_aliases_operations=ops)
     with pytest.raises(UnexpectedResponse):
         remote_client.update_collection_aliases(change_aliases_operations=ops)
+
+    compare_client_results(local_client, remote_client, retriever.list_aliases)
+    compare_client_results(local_client, remote_client, retriever.list_collection_aliases)
+
+
+def test_collection_cannot_take_alias_name():
+    """A new collection must not take the name of an existing alias."""
+    fixture_points = generate_fixtures(10)
+
+    retriever = TestAliasRetriever()
+
+    local_client = init_local()
+    init_client(local_client, fixture_points)
+
+    remote_client = init_remote()
+    init_client(remote_client, fixture_points)
+
+    alias_name = "test_alias"
+
+    ops = [
+        models.CreateAliasOperation(
+            create_alias=models.CreateAlias(
+                collection_name=COLLECTION_NAME,
+                alias_name=alias_name,
+            )
+        )
+    ]
+
+    local_client.update_collection_aliases(change_aliases_operations=ops)
+    remote_client.update_collection_aliases(change_aliases_operations=ops)
+
+    with pytest.raises(ValueError):
+        local_client.create_collection(alias_name, vectors_config={})
+    with pytest.raises(UnexpectedResponse):
+        remote_client.create_collection(alias_name, vectors_config={})
 
     compare_client_results(local_client, remote_client, retriever.list_aliases)
     compare_client_results(local_client, remote_client, retriever.list_collection_aliases)

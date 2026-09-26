@@ -289,7 +289,7 @@ def test_alias_persistence():
         client.update_collection_aliases([create_alias("docs_v1", "live")])
 
         # the rename is rejected, so `live` must not switch to docs_v2 either
-        with pytest.raises(KeyError):
+        with pytest.raises(ValueError):
             client.update_collection_aliases([create_alias("docs_v2", "live"), missing_rename])
         # any successful write saves the aliases along with the collections
         client.create_collection("unrelated", vectors_config={})
