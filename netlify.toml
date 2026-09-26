@@ -2,6 +2,9 @@
   command = "mkdir -p public"
   publish = "public"
 
+[build.environment]
+  PYTHON_VERSION = "3.12"
+
 [[redirects]]
   from = "/*"
   to = "https://qdrant.tech/documentation/"
