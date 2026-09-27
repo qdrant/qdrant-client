@@ -525,6 +525,10 @@ def test_is_null_matches_null_inside_arrays(key: str):
     """A value counts as null when it is null itself or is an array holding a null element,
     one level deep - so `[null, 1]` matches while `[[null]]` does not.
     """
+    major, minor, patch, dev = read_version()
+    if not dev and None not in (major, minor, patch) and (major, minor, patch) < (1, 19, 1):
+        pytest.skip("is_null matches an array holding a null as of qdrant 1.19.1")
+
     payloads = [
         {"a": [None, 1]},
         {"a": [1, None]},

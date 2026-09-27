@@ -408,6 +408,32 @@ def test_vector_params(
     assert local_collection_vector_params == remote_collection_vector_params
 
 
+@pytest.mark.parametrize(
+    "source_client,dest_client",
+    [
+        ("local_client", "remote_client"),
+        ("remote_client", "local_client"),
+        ("local_client", "second_local_client"),
+    ],
+)
+def test_collection_metadata(source_client, dest_client, request) -> None:
+    major, minor, patch, dev = read_version()
+    if not dev and None not in (major, minor, patch) and (major, minor, patch) < (1, 16, 0):
+        pytest.skip("Collection metadata is supported as of v1.16.0")
+
+    source_client: QdrantClient = request.getfixturevalue(source_client)
+    dest_client: QdrantClient = request.getfixturevalue(dest_client)
+    collection_name = "metadata_collection"
+    metadata = {"owner": "team-a", "version": 3, "tags": ["x", "y"]}
+    source_client.create_collection(
+        collection_name,
+        vectors_config=models.VectorParams(size=10, distance=models.Distance.COSINE),
+        metadata=metadata,
+    )
+    source_client.migrate(dest_client)
+    assert dest_client.get_collection(collection_name).config.metadata == metadata
+
+
 def test_migrate_missing_collections(
     local_client: QdrantClient, second_local_client: QdrantClient
 ):

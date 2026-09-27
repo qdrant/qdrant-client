@@ -1,5 +1,6 @@
 import dbm
 import logging
+import os
 import pickle
 import random
 import tempfile
@@ -292,4 +293,72 @@ def test_idf_persistence_after_deletion(operation: str):
         # deleting the vectors leaves the points themselves in place
         surviving = [0] if operation == "points" else [0, 1, 2, 3]
         assert [point.id for point in client.scroll(collection_name, limit=10)[0]] == surviving
+        client.close()
+
+
+def test_alias_persistence():
+    """Alias changes must survive a restart, and a rejected batch of them must leave no trace.
+
+    Regression: a rejected batch kept the operations before the rejected one in memory, so the
+    next save of any kind wrote them to disk.
+    """
+
+    def aliases(client: QdrantClient) -> list[tuple[str, str]]:
+        return [
+            (alias.alias_name, alias.collection_name) for alias in client.get_aliases().aliases
+        ]
+
+    def create_alias(collection_name: str, alias_name: str) -> rest.CreateAliasOperation:
+        return rest.CreateAliasOperation(
+            create_alias=rest.CreateAlias(collection_name=collection_name, alias_name=alias_name)
+        )
+
+    missing_rename = rest.RenameAliasOperation(
+        rename_alias=rest.RenameAlias(old_alias_name="missing", new_alias_name="other")
+    )
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        client = QdrantClient(path=tmpdir)
+        client.create_collection("docs_v1", vectors_config={})
+        client.create_collection("docs_v2", vectors_config={})
+        client.update_collection_aliases([create_alias("docs_v1", "live")])
+
+        # the rename is rejected, so `live` must not switch to docs_v2 either
+        with pytest.raises(ValueError):
+            client.update_collection_aliases([create_alias("docs_v2", "live"), missing_rename])
+        # any successful write saves the aliases along with the collections
+        client.create_collection("unrelated", vectors_config={})
+        client.close()
+
+        client = QdrantClient(path=tmpdir)
+        assert aliases(client) == [("live", "docs_v1")]
+        client.update_collection_aliases([create_alias("docs_v2", "live")])
+        client.close()
+
+        client = QdrantClient(path=tmpdir)
+        assert aliases(client) == [("live", "docs_v2")]
+        client.close()
+
+
+def test_failed_alias_save_keeps_aliases():
+    """A batch whose save fails must not change the aliases in memory either."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        client = QdrantClient(path=tmpdir)
+        client.create_collection("docs", vectors_config={})
+
+        # a directory in place of meta.json makes the next save fail
+        meta_path = os.path.join(tmpdir, "meta.json")
+        os.remove(meta_path)
+        os.mkdir(meta_path)
+
+        with pytest.raises(OSError):
+            client.update_collection_aliases(
+                [
+                    rest.CreateAliasOperation(
+                        create_alias=rest.CreateAlias(collection_name="docs", alias_name="live")
+                    )
+                ]
+            )
+
+        assert client.get_aliases().aliases == []
         client.close()
