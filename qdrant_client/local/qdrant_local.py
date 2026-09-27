@@ -5,6 +5,7 @@ import shutil
 import uuid
 from copy import deepcopy
 from io import TextIOWrapper
+from itertools import islice
 from typing import (
     Any,
     Iterable,
@@ -957,7 +958,7 @@ class QdrantLocal(QdrantBase):
         # Validate that iterable arguments have matching lengths to avoid silent
         # truncation from zip() stopping at the shortest iterable (#1486).
         if ids is not None:
-            ids_list = list(ids)
+            ids_list = list(islice(ids, len(vectors) + 1))
             if len(ids_list) != len(vectors):
                 raise ValueError(
                     f"Number of ids ({len(ids_list)}) does not match "
@@ -968,7 +969,7 @@ class QdrantLocal(QdrantBase):
             ids = [str(uuid4()) for _ in range(len(vectors))]
 
         if payload is not None:
-            payload_list = list(payload)
+            payload_list = list(islice(payload, len(vectors) + 1))
             if len(payload_list) != len(vectors):
                 raise ValueError(
                     f"Number of payloads ({len(payload_list)}) does not match "

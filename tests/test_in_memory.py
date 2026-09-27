@@ -2,7 +2,7 @@ import math
 
 import pytest
 
-from qdrant_client import QdrantClient, models
+from qdrant_client import AsyncQdrantClient, QdrantClient, models
 
 
 @pytest.fixture
@@ -414,3 +414,40 @@ def test_upload_collection_succeeds_with_payload_none(
     qdrant.upload_collection(collection_with_vectors, vectors=vectors, ids=ids)
 
     assert qdrant.count(collection_with_vectors).count == 2
+
+
+@pytest.mark.asyncio
+async def test_async_upload_collection_validates_mismatched_lengths() -> None:
+    client = AsyncQdrantClient(":memory:")
+    name = "async_upload_validation"
+    await client.create_collection(
+        name, vectors_config=models.VectorParams(size=4, distance=models.Distance.COSINE)
+    )
+    vectors = [[0.1, 0.2, 0.3, 0.4], [0.5, 0.6, 0.7, 0.8]]
+
+    with pytest.raises(ValueError, match="ids"):
+        client.upload_collection(name, vectors=vectors, ids=[1])
+    with pytest.raises(ValueError, match="payloads"):
+        client.upload_collection(name, vectors=vectors, ids=[1, 2], payload=[{"a": 1}])
+    assert (await client.count(name)).count == 0
+    await client.close()
+
+
+def test_upload_collection_bounds_unending_ids_and_payload() -> None:
+    client = QdrantClient(":memory:")
+    name = "bounded_upload_validation"
+    client.create_collection(
+        name, vectors_config=models.VectorParams(size=4, distance=models.Distance.COSINE)
+    )
+    vectors = [[0.1, 0.2, 0.3, 0.4]]
+
+    def unending():
+        while True:
+            yield 1
+
+    with pytest.raises(ValueError, match="ids"):
+        client.upload_collection(name, vectors=vectors, ids=unending())
+    with pytest.raises(ValueError, match="payloads"):
+        client.upload_collection(name, vectors=vectors, ids=[1], payload=unending())
+    assert client.count(name).count == 0
+    client.close()
