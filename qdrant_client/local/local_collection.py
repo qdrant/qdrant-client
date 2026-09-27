@@ -2771,18 +2771,22 @@ class LocalCollection:
     ) -> None:
         """Apply a point returned by `_validate_point`, never a caller's own point."""
         if point.id in self.ids:
-            if update_mode == models.UpdateMode.INSERT_ONLY:
-                return None
             idx = self.ids[point.id]
-            if not self.deleted[idx] and update_filter is not None:
-                has_vector = {}
-                for vector_name, deleted in self.deleted_per_vector.items():
-                    if not deleted[idx]:
-                        has_vector[vector_name] = True
-                if not check_filter(
-                    update_filter, self.payload[idx], self.ids_inv[idx], has_vector
-                ):
+            if self.deleted[idx]:
+                if update_mode == models.UpdateMode.UPDATE_ONLY:
                     return None
+            else:
+                if update_mode == models.UpdateMode.INSERT_ONLY:
+                    return None
+                if update_filter is not None:
+                    has_vector = {}
+                    for vector_name, deleted in self.deleted_per_vector.items():
+                        if not deleted[idx]:
+                            has_vector[vector_name] = True
+                    if not check_filter(
+                        update_filter, self.payload[idx], self.ids_inv[idx], has_vector
+                    ):
+                        return None
             self._update_point(point)
         else:
             if update_mode == models.UpdateMode.UPDATE_ONLY:
@@ -3207,9 +3211,17 @@ class LocalCollection:
             if isinstance(update_op, models.UpsertOperation):
                 upsert_struct = update_op.upsert
                 if isinstance(upsert_struct, models.PointsBatch):
-                    self.upsert(upsert_struct.batch, update_filter=upsert_struct.update_filter)
+                    self.upsert(
+                        upsert_struct.batch,
+                        update_filter=upsert_struct.update_filter,
+                        update_mode=upsert_struct.update_mode,
+                    )
                 elif isinstance(upsert_struct, models.PointsList):
-                    self.upsert(upsert_struct.points, update_filter=upsert_struct.update_filter)
+                    self.upsert(
+                        upsert_struct.points,
+                        update_filter=upsert_struct.update_filter,
+                        update_mode=upsert_struct.update_mode,
+                    )
                 else:
                     raise ValueError(f"Unsupported upsert type: {type(update_op.upsert)}")
             elif isinstance(update_op, models.DeleteOperation):
