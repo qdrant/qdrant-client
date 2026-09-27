@@ -281,6 +281,9 @@ def test_alias_persistence():
     missing_rename = rest.RenameAliasOperation(
         rename_alias=rest.RenameAlias(old_alias_name="missing", new_alias_name="other")
     )
+    colliding_rename = rest.RenameAliasOperation(
+        rename_alias=rest.RenameAlias(old_alias_name="live", new_alias_name="docs_v1")
+    )
 
     with tempfile.TemporaryDirectory() as tmpdir:
         client = QdrantClient(path=tmpdir)
@@ -291,6 +294,8 @@ def test_alias_persistence():
         # the rename is rejected, so `live` must not switch to docs_v2 either
         with pytest.raises(ValueError):
             client.update_collection_aliases([create_alias("docs_v2", "live"), missing_rename])
+        with pytest.raises(ValueError, match="Collection docs_v1 already exists"):
+            client.update_collection_aliases([create_alias("docs_v2", "live"), colliding_rename])
         # any successful write saves the aliases along with the collections
         client.create_collection("unrelated", vectors_config={})
         client.close()

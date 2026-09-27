@@ -751,6 +751,8 @@ class QdrantLocal(QdrantBase):
                 old_name = operation.rename_alias.old_alias_name
                 if old_name not in aliases:
                     raise ValueError(f"Alias {old_name} does not exist")
+                if new_name in self.collections:
+                    raise ValueError(f"Collection {new_name} already exists")
                 aliases[new_name] = aliases.pop(old_name)
             else:
                 raise ValueError(f"Unknown operation: {operation}")

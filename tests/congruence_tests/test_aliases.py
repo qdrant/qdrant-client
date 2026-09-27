@@ -194,6 +194,24 @@ def test_rejected_alias_changes_leave_aliases_untouched():
     compare_client_results(local_client, remote_client, retriever.list_aliases)
     compare_client_results(local_client, remote_client, retriever.list_collection_aliases)
 
+    # renaming an alias to the name of an existing collection must also be rejected
+    ops = [
+        models.RenameAliasOperation(
+            rename_alias=models.RenameAlias(
+                old_alias_name=alias_name,
+                new_alias_name=COLLECTION_NAME,
+            )
+        )
+    ]
+
+    with pytest.raises(ValueError):
+        local_client.update_collection_aliases(change_aliases_operations=ops)
+    with pytest.raises(UnexpectedResponse):
+        remote_client.update_collection_aliases(change_aliases_operations=ops)
+
+    compare_client_results(local_client, remote_client, retriever.list_aliases)
+    compare_client_results(local_client, remote_client, retriever.list_collection_aliases)
+
     # the create is rejected, so the delete before it must not be applied either
     ops = [
         models.DeleteAliasOperation(delete_alias=models.DeleteAlias(alias_name=alias_name)),
