@@ -1,5 +1,4 @@
 import importlib.metadata
-import itertools
 import json
 import os
 import shutil
@@ -8,7 +7,6 @@ from copy import deepcopy
 from io import TextIOWrapper
 from typing import (
     Any,
-    Generator,
     Iterable,
     Mapping,
     Sequence,
@@ -942,10 +940,6 @@ class QdrantLocal(QdrantBase):
         **kwargs: Any,
     ) -> None:
         # upload_collection in local mode behaves like upload_collection with wait=True in server mode
-        def uuid_generator() -> Generator[str, None, None]:
-            while True:
-                yield str(uuid4())
-
         collection = self._get_collection(collection_name)
         if isinstance(vectors, dict) and any(isinstance(v, np.ndarray) for v in vectors.values()):
             if len(set([arr.shape[0] for arr in vectors.values()])) != 1:
@@ -957,19 +951,39 @@ class QdrantLocal(QdrantBase):
                 {name: vectors[name][i].tolist() for name in vectors.keys()}
                 for i in range(num_vectors)
             ]
+        else:
+            vectors = list(vectors)
+
+        # Validate that iterable arguments have matching lengths to avoid silent
+        # truncation from zip() stopping at the shortest iterable (#1486).
+        if ids is not None:
+            ids_list = list(ids)
+            if len(ids_list) != len(vectors):
+                raise ValueError(
+                    f"Number of ids ({len(ids_list)}) does not match "
+                    f"number of vectors ({len(vectors)})"
+                )
+            ids = ids_list
+        else:
+            ids = [str(uuid4()) for _ in range(len(vectors))]
+
+        if payload is not None:
+            payload_list = list(payload)
+            if len(payload_list) != len(vectors):
+                raise ValueError(
+                    f"Number of payloads ({len(payload_list)}) does not match "
+                    f"number of vectors ({len(vectors)})"
+                )
+            payload = payload_list
 
         collection.upsert(
             [
                 rest_models.PointStruct(
                     id=str(point_id) if isinstance(point_id, uuid.UUID) else point_id,
                     vector=(vector.tolist() if isinstance(vector, np.ndarray) else vector) or {},
-                    payload=payload or {},
+                    payload=payload[i] if payload is not None else {},
                 )
-                for (point_id, vector, payload) in zip(
-                    ids or uuid_generator(),
-                    iter(vectors),
-                    payload or itertools.cycle([{}]),
-                )
+                for i, (vector, point_id) in enumerate(zip(vectors, ids))
             ],
             update_filter=update_filter,
             update_mode=update_mode,

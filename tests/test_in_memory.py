@@ -355,3 +355,62 @@ def test_idf_statistics_after_deletion(qdrant: QdrantClient, operation: str):
             [models.PointStruct(id=i, vector={"text": vector}) for i in (1, 2)],
         )
     assert_scores(3)
+
+
+@pytest.fixture
+def collection_with_vectors(qdrant: QdrantClient) -> str:
+    qdrant.create_collection(
+        collection_name="test_collection",
+        vectors_config=models.VectorParams(size=4, distance=models.Distance.COSINE),
+    )
+    return "test_collection"
+
+
+def test_upload_collection_validates_mismatched_ids_length(
+    qdrant: QdrantClient, collection_with_vectors: str
+) -> None:
+    """upload_collection must reject ids whose length does not match vectors (#1486)."""
+    vectors = [[0.1, 0.2, 0.3, 0.4], [0.5, 0.6, 0.7, 0.8], [0.9, 1.0, 1.1, 1.2]]
+    ids = [1, 2]  # one fewer than vectors
+
+    with pytest.raises(ValueError, match="ids"):
+        qdrant.upload_collection(collection_with_vectors, vectors=vectors, ids=ids)
+
+
+def test_upload_collection_validates_mismatched_payload_length(
+    qdrant: QdrantClient, collection_with_vectors: str
+) -> None:
+    """upload_collection must reject payload whose length does not match vectors (#1486)."""
+    vectors = [[0.1, 0.2, 0.3, 0.4], [0.5, 0.6, 0.7, 0.8], [0.9, 1.0, 1.1, 1.2]]
+    ids = [1, 2, 3]
+    payload = [{"a": 1}, {"a": 2}]  # one fewer than vectors
+
+    with pytest.raises(ValueError, match="payloads"):
+        qdrant.upload_collection(
+            collection_with_vectors, vectors=vectors, ids=ids, payload=payload
+        )
+
+
+def test_upload_collection_succeeds_with_matching_lengths(
+    qdrant: QdrantClient, collection_with_vectors: str
+) -> None:
+    """upload_collection still works when ids and payload lengths match vectors."""
+    vectors = [[0.1, 0.2, 0.3, 0.4], [0.5, 0.6, 0.7, 0.8], [0.9, 1.0, 1.1, 1.2]]
+    ids = [1, 2, 3]
+    payload = [{"a": 1}, {"a": 2}, {"a": 3}]
+
+    qdrant.upload_collection(collection_with_vectors, vectors=vectors, ids=ids, payload=payload)
+
+    assert qdrant.count(collection_with_vectors).count == 3
+
+
+def test_upload_collection_succeeds_with_payload_none(
+    qdrant: QdrantClient, collection_with_vectors: str
+) -> None:
+    """upload_collection still works when payload is None and ids match vectors."""
+    vectors = [[0.1, 0.2, 0.3, 0.4], [0.5, 0.6, 0.7, 0.8]]
+    ids = [1, 2]
+
+    qdrant.upload_collection(collection_with_vectors, vectors=vectors, ids=ids)
+
+    assert qdrant.count(collection_with_vectors).count == 2
