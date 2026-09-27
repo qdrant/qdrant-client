@@ -7,6 +7,10 @@ class QdrantBase:
     def __init__(self, **kwargs: Any):
         pass
 
+    @property
+    def closed(self) -> bool:
+        raise NotImplementedError
+
     def search_matrix_offsets(
         self,
         collection_name: str,

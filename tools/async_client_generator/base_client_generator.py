@@ -28,7 +28,7 @@ if __name__ == "__main__":
 
     # Parse the code into an AST
     base_client_generator = BaseClientGenerator(
-        keep_sync=["__init__", "upload_collection", "upload_points", "migrate"],
+        keep_sync=["__init__", "closed", "upload_collection", "upload_points", "migrate"],
         class_replace_map={"QdrantBase": "AsyncQdrantBase"},
         constant_replace_map={"QdrantBase": "AsyncQdrantBase"},
     )

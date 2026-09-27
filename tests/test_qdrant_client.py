@@ -1895,6 +1895,13 @@ def test_facade_closed_property_local():
     assert client.closed is True
 
 
+def test_facade_closed_property_on_disk(tmp_path):
+    client = QdrantClient(path=str(tmp_path / "qdrant"))
+    assert client.closed is False
+    client.close()
+    assert client.closed is True
+
+
 def test_facade_closed_property_remote():
     # Remote clients (HTTP/gRPC) also expose `closed` without requiring a live server,
     # since the property only reflects the underlying `_closed` flag.
