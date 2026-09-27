@@ -1888,6 +1888,22 @@ def test_client_close():
     # endregion local
 
 
+def test_facade_closed_property_local():
+    client = QdrantClient(":memory:")
+    assert client.closed is False
+    client.close()
+    assert client.closed is True
+
+
+def test_facade_closed_property_remote():
+    # Remote clients (HTTP/gRPC) also expose `closed` without requiring a live server,
+    # since the property only reflects the underlying `_closed` flag.
+    client_http = QdrantClient(check_compatibility=False)
+    assert client_http.closed is False
+    client_http.close()
+    assert client_http.closed is True
+
+
 def test_timeout_propagation():
     client = QdrantClient()
     vectors_config = models.VectorParams(size=2, distance=models.Distance.COSINE)
