@@ -759,8 +759,29 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         self._save()
         return updated
 
+    @staticmethod
+    def _validate_new_collection_name(collection_name: str) -> None:
+        invalid_chars = ("<", ">", ":", '"', "/", "\\", "|", "?", "*", "\x00", "\x1f")
+        for char in invalid_chars:
+            if char in collection_name:
+                raise ValueError(f"Collection name cannot contain {char!r} char")
+        if collection_name in ("", ".", ".."):
+            raise ValueError(f"Collection name cannot be {collection_name!r}")
+
     def _collection_path(self, collection_name: str) -> str | None:
         if self.persistent:
+            base_path = os.path.realpath(os.path.join(self.location, "collection"))
+            path = os.path.realpath(os.path.join(base_path, collection_name))
+            try:
+                is_inside = (
+                    path != base_path and os.path.commonpath([base_path, path]) == base_path
+                )
+            except ValueError:
+                is_inside = False
+            if not is_inside:
+                raise ValueError(
+                    f"Collection name {collection_name!r} is not allowed, it points outside of the storage folder"
+                )
             return os.path.join(self.location, "collection", collection_name)
         else:
             return None
@@ -792,6 +813,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
     ) -> bool:
         if self.closed:
             raise RuntimeError("QdrantLocal instance is closed. Please create a new instance.")
+        self._validate_new_collection_name(collection_name)
         if collection_name in self.collections:
             raise ValueError(f"Collection {collection_name} already exists")
         if collection_name in self.aliases:
@@ -821,6 +843,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         payload: types.PayloadStorageParams | None = None,
         **kwargs: Any,
     ) -> bool:
+        self._validate_new_collection_name(collection_name)
         await self.delete_collection(collection_name)
         return await self.create_collection(
             collection_name,
