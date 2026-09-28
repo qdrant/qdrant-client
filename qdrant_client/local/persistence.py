@@ -50,7 +50,7 @@ def try_migrate_to_sqlite(location: str) -> None:
         dbm_storage.close()
         dbm_path.unlink()
     except Exception as e:
-        logging.error("Failed to migrate dbm to sqlite:", e)
+        logging.error("Failed to migrate dbm to sqlite: %s", e)
         logging.error(
             "Please try to use previous version of qdrant-client or re-create collection"
         )
