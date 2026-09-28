@@ -1,10 +1,12 @@
 from typing import Sequence
 
 import numpy as np
+import pytest
 
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.conversions import common_types as types
 from qdrant_client.http.models import models
+from qdrant_client.local.local_collection import LocalCollection
 from tests.congruence_tests.test_common import (
     COLLECTION_NAME,
     code_vector_size,
@@ -375,6 +377,107 @@ def test_search_with_persistence():
             except AssertionError as e:
                 print(f"\nFailed with filter {query_filter}")
                 raise e
+
+
+@pytest.mark.parametrize("client_factory", [init_local, init_remote], ids=["local", "http"])
+@pytest.mark.parametrize(
+    "with_lookup, expected_payload",
+    [
+        (LOOKUP_COLLECTION_NAME, {"title": "Document A", "body": "Full text"}),
+        (
+            models.WithLookup(collection=LOOKUP_COLLECTION_NAME),
+            {"title": "Document A", "body": "Full text"},
+        ),
+        (
+            models.WithLookup(collection=LOOKUP_COLLECTION_NAME, with_payload=True),
+            {"title": "Document A", "body": "Full text"},
+        ),
+        (models.WithLookup(collection=LOOKUP_COLLECTION_NAME, with_payload=False), None),
+        (
+            models.WithLookup(collection=LOOKUP_COLLECTION_NAME, with_payload=["title"]),
+            {"title": "Document A"},
+        ),
+        (
+            models.WithLookup(
+                collection=LOOKUP_COLLECTION_NAME,
+                with_payload=models.PayloadSelectorInclude(include=[]),
+            ),
+            {},
+        ),
+        (
+            models.WithLookup(
+                collection=LOOKUP_COLLECTION_NAME,
+                with_payload=models.PayloadSelectorExclude(exclude=["body"]),
+            ),
+            {"title": "Document A"},
+        ),
+    ],
+    ids=["collection", "defaults", "true", "false", "include", "empty-selector", "exclude"],
+)
+def test_group_lookup_payload(client_factory, with_lookup, expected_payload):
+    client = client_factory()
+    try:
+        config = models.VectorParams(size=2, distance=models.Distance.DOT)
+        init_client(
+            client,
+            [models.PointStruct(id=1, vector=[1.0, 0.0], payload={"document_id": 1})],
+            vectors_config=config,
+        )
+        init_client(
+            client,
+            [
+                models.PointStruct(
+                    id=1,
+                    vector=[1.0, 0.0],
+                    payload={"title": "Document A", "body": "Full text"},
+                )
+            ],
+            collection_name=LOOKUP_COLLECTION_NAME,
+            vectors_config=config,
+        )
+        result = client.query_points_groups(
+            COLLECTION_NAME,
+            query=[1.0, 0.0],
+            group_by="document_id",
+            with_payload=False,
+            with_lookup=with_lookup,
+        )
+        assert len(result.groups) == 1
+        group = result.groups[0]
+        assert group.id == 1
+        assert group.hits[0].payload is None
+        assert group.lookup is not None
+        assert group.lookup.id == 1
+        assert group.lookup.payload == expected_payload
+        assert group.lookup.vector is None
+    finally:
+        client.close()
+
+
+@pytest.mark.parametrize("as_object", [False, True])
+def test_local_search_groups_lookup_payload_default(as_object):
+    config = models.CreateCollection(
+        vectors=models.VectorParams(size=2, distance=models.Distance.DOT)
+    )
+    collection = LocalCollection(config)
+    lookup_collection = LocalCollection(config)
+    collection.upsert([models.PointStruct(id=1, vector=[1.0, 0.0], payload={"document_id": 1})])
+    lookup_collection.upsert(
+        [models.PointStruct(id=1, vector=[1.0, 0.0], payload={"title": "Document A"})]
+    )
+    with_lookup = (
+        models.WithLookup(collection=LOOKUP_COLLECTION_NAME)
+        if as_object
+        else LOOKUP_COLLECTION_NAME
+    )
+    result = collection.search_groups(
+        query_vector=[1.0, 0.0],
+        group_by="document_id",
+        with_lookup=with_lookup,
+        with_lookup_collection=lookup_collection,
+    )
+    assert result.groups[0].lookup is not None
+    assert result.groups[0].lookup.payload == {"title": "Document A"}
 
 
 def test_group_search_value_types():
