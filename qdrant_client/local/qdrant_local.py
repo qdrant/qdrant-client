@@ -846,6 +846,8 @@ class QdrantLocal(QdrantBase):
                 raise ValueError(f"Collection name cannot contain {char!r} char")
         if collection_name in ("", ".", ".."):
             raise ValueError(f"Collection name cannot be {collection_name!r}")
+        if len(collection_name) > 255:
+            raise ValueError("Collection name must be at most 255 characters long")
 
     def _collection_path(self, collection_name: str) -> str | None:
         if self.persistent:
