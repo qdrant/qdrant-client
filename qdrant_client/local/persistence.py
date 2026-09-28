@@ -15,7 +15,7 @@ def check_legacy_storage(location: str) -> None:
     dbm_path = Path(location) / STORAGE_FILE_NAME_OLD
     sql_path = Path(location) / STORAGE_FILE_NAME
 
-    if not sql_path.exists() and dbm.whichdb(str(dbm_path)):
+    if not sql_path.exists() and (dbm_path.exists() or dbm.whichdb(str(dbm_path))):
         raise ValueError(
             f"Collection at {location} uses the legacy dbm storage format (qdrant-client < 1.1.7), "
             "which is no longer supported. Open it once with an older version of qdrant-client to "
