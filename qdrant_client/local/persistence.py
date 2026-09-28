@@ -1,6 +1,5 @@
 import base64
 import dbm
-import logging
 import pickle
 import sqlite3
 from pathlib import Path
@@ -12,49 +11,16 @@ STORAGE_FILE_NAME_OLD = "storage.dbm"
 STORAGE_FILE_NAME = "storage.sqlite"
 
 
-def try_migrate_to_sqlite(location: str) -> None:
+def check_legacy_storage(location: str) -> None:
     dbm_path = Path(location) / STORAGE_FILE_NAME_OLD
     sql_path = Path(location) / STORAGE_FILE_NAME
 
-    if sql_path.exists():
-        return
-
-    if not dbm_path.exists():
-        return
-
-    try:
-        dbm_storage = dbm.open(str(dbm_path), "c")
-
-        con = sqlite3.connect(str(sql_path))
-        cur = con.cursor()
-
-        # Create table
-        cur.execute("CREATE TABLE IF NOT EXISTS points (id TEXT PRIMARY KEY, point BLOB)")
-
-        for key in dbm_storage.keys():
-            value = dbm_storage[key]
-            if isinstance(key, str):
-                key = key.encode("utf-8")
-            key = pickle.loads(key)
-            sqlite_key = CollectionPersistence.encode_key(key)
-            # Insert a row of data
-            cur.execute(
-                "INSERT INTO points VALUES (?, ?)",
-                (
-                    sqlite_key,
-                    sqlite3.Binary(value),
-                ),
-            )
-        con.commit()
-        con.close()
-        dbm_storage.close()
-        dbm_path.unlink()
-    except Exception as e:
-        logging.error("Failed to migrate dbm to sqlite:", e)
-        logging.error(
-            "Please try to use previous version of qdrant-client or re-create collection"
+    if not sql_path.exists() and dbm.whichdb(str(dbm_path)):
+        raise ValueError(
+            f"Collection at {location} uses the legacy dbm storage format (qdrant-client < 1.1.7), "
+            "which is no longer supported. Open it once with an older version of qdrant-client to "
+            "migrate it to sqlite, or re-create the collection."
         )
-        raise e
 
 
 class CollectionPersistence:
@@ -71,7 +37,7 @@ class CollectionPersistence:
             location: path to the collection directory.
         """
 
-        try_migrate_to_sqlite(location)
+        check_legacy_storage(location)
 
         self.location = Path(location) / STORAGE_FILE_NAME
         self.location.parent.mkdir(exist_ok=True, parents=True)
