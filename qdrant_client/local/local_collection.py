@@ -3257,14 +3257,30 @@ class LocalCollection:
         self.config.sparse_vectors[vector_name] = new_config
 
     def create_dense_vector_name(self, vector_name: str, config: models.DenseVectorConfig) -> None:
-        if vector_name in self._all_vectors_keys:
-            raise ValueError(f"Vector {vector_name} already exists in the collection")
-
         params = models.VectorParams(
             size=config.size,
             distance=config.distance,
             multivector_config=config.multivector_config,
         )
+
+        if vector_name in self.sparse_vectors:
+            raise ValueError(f"Vector {vector_name} already exists as a sparse vector")
+
+        existing = self.vectors_config.get(vector_name) or self.multivectors_config.get(
+            vector_name
+        )
+        if existing is not None:
+            # like the server, re-creating a vector with the same schema is a no-op,
+            # datatype is not compared: local mode does not apply it
+            if (
+                existing.size != params.size
+                or existing.distance != params.distance
+                or existing.multivector_config != params.multivector_config
+            ):
+                raise ValueError(
+                    f"Vector {vector_name} already exists with a different configuration"
+                )
+            return
 
         num_points = len(self.ids_inv)
 
@@ -3289,12 +3305,21 @@ class LocalCollection:
     def create_sparse_vector_name(
         self, vector_name: str, config: models.SparseVectorConfig
     ) -> None:
-        if vector_name in self._all_vectors_keys:
-            raise ValueError(f"Vector {vector_name} already exists in the collection")
-
         params = models.SparseVectorParams(
             modifier=config.modifier,
         )
+
+        if vector_name in self.vectors_config or vector_name in self.multivectors_config:
+            raise ValueError(f"Vector {vector_name} already exists as a dense vector")
+
+        if vector_name in self.sparse_vectors:
+            # like the server, re-creating a vector with the same schema is a no-op,
+            # datatype is not compared: local mode does not apply it
+            if self.config.sparse_vectors[vector_name].modifier != params.modifier:
+                raise ValueError(
+                    f"Sparse vector {vector_name} already exists with a different configuration"
+                )
+            return
 
         num_points = len(self.ids_inv)
 
@@ -3307,10 +3332,13 @@ class LocalCollection:
         self.config.sparse_vectors[vector_name] = params
 
     def delete_vector_name(self, vector_name: str) -> None:
+        # like the server, deleting a vector that does not exist is a no-op
         if vector_name not in self._all_vectors_keys:
-            raise ValueError(f"Vector {vector_name} does not exist in the collection")
+            return
 
-        if isinstance(self.config.vectors, models.VectorParams):
+        if vector_name == DEFAULT_VECTOR_NAME and isinstance(
+            self.config.vectors, models.VectorParams
+        ):
             raise ValueError(
                 "Cannot delete the unnamed vector when it is the only dense vector in the collection"
             )
