@@ -880,8 +880,6 @@ def test_update_mode(prefer_grpc: bool) -> None:
         update_mode: models.UpdateMode,
         method: str = "upsert",
     ) -> None:
-        # method: `upsert`, `upload_points`, `upload_collection`
-        print(method)
         if method == "upsert":
             client.upsert(collection_name, points, update_mode=update_mode)
         elif method == "upload_points":
@@ -901,8 +899,39 @@ def test_update_mode(prefer_grpc: bool) -> None:
                 payload=payloads,
                 update_mode=update_mode,
             )
+        elif method == "batch_update_points_list":
+            client.batch_update_points(
+                collection_name,
+                update_operations=[
+                    models.UpsertOperation(
+                        upsert=models.PointsList(points=points, update_mode=update_mode)
+                    )
+                ],
+            )
+        elif method == "batch_update_points_batch":
+            client.batch_update_points(
+                collection_name,
+                update_operations=[
+                    models.UpsertOperation(
+                        upsert=models.PointsBatch(
+                            batch=models.Batch(
+                                ids=[p.id for p in points],
+                                vectors=[p.vector for p in points],
+                                payloads=[p.payload for p in points],
+                            ),
+                            update_mode=update_mode,
+                        )
+                    )
+                ],
+            )
 
-    for method in ("upsert", "upload_points", "upload_collection"):
+    for method in (
+        "upsert",
+        "upload_points",
+        "upload_collection",
+        "batch_update_points_list",
+        "batch_update_points_batch",
+    ):
         local_client = init_local()
         remote_client = init_remote()
         vector_params = models.VectorParams(size=50, distance=models.Distance.DOT)
@@ -985,6 +1014,44 @@ def test_update_mode(prefer_grpc: bool) -> None:
         assert np.allclose(local_points[0].vector, remote_points[0].vector)
         assert np.allclose(local_points[0].vector, first_point.vector)
         assert len(local_points) == len(remote_points) == 1
+
+        # Deleted points must behave like non-existent points for UPDATE_ONLY and INSERT_ONLY
+        local_client.delete(COLLECTION_NAME, points_selector=[first_point.id, second_point.id])
+        remote_client.delete(COLLECTION_NAME, points_selector=[first_point.id, second_point.id])
+
+        upload(
+            client=local_client,
+            collection_name=COLLECTION_NAME,
+            points=[first_point],
+            update_mode=models.UpdateMode.UPDATE_ONLY,
+            method=method,
+        )
+        upload(
+            client=remote_client,
+            collection_name=COLLECTION_NAME,
+            points=[first_point],
+            update_mode=models.UpdateMode.UPDATE_ONLY,
+            method=method,
+        )
+        assert local_client.retrieve(COLLECTION_NAME, ids=[first_point.id]) == []
+        assert remote_client.retrieve(COLLECTION_NAME, ids=[first_point.id]) == []
+
+        upload(
+            client=local_client,
+            collection_name=COLLECTION_NAME,
+            points=[second_point],
+            update_mode=models.UpdateMode.INSERT_ONLY,
+            method=method,
+        )
+        upload(
+            client=remote_client,
+            collection_name=COLLECTION_NAME,
+            points=[second_point],
+            update_mode=models.UpdateMode.INSERT_ONLY,
+            method=method,
+        )
+        assert len(local_client.retrieve(COLLECTION_NAME, ids=[second_point.id])) == 1
+        assert len(remote_client.retrieve(COLLECTION_NAME, ids=[second_point.id])) == 1
 
 
 def nan_vectors(point: models.PointStruct) -> dict:
