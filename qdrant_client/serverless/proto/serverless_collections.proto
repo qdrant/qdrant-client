@@ -47,8 +47,10 @@ enum PrecisionTier {
   LOW = 1;
   // Moderate compression with a small accuracy trade-off.
   MEDIUM = 2;
-  // No lossy compression: exact stored vectors.
+  // Light compression, near-exact results.
   HIGH = 3;
+  // No lossy compression: exact vectors, fully in memory. Highest cost.
+  FULL = 4;
 }
 
 // Configuration of a single dense (embedding) vector.
