@@ -880,8 +880,6 @@ def test_update_mode(prefer_grpc: bool) -> None:
         update_mode: models.UpdateMode,
         method: str = "upsert",
     ) -> None:
-        # method: `upsert`, `upload_points`, `upload_collection`
-        print(method)
         if method == "upsert":
             client.upsert(collection_name, points, update_mode=update_mode)
         elif method == "upload_points":
@@ -1054,7 +1052,6 @@ def test_update_mode(prefer_grpc: bool) -> None:
         )
         assert len(local_client.retrieve(COLLECTION_NAME, ids=[second_point.id])) == 1
         assert len(remote_client.retrieve(COLLECTION_NAME, ids=[second_point.id])) == 1
-
 
 
 def nan_vectors(point: models.PointStruct) -> dict:

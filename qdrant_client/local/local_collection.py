@@ -2775,18 +2775,17 @@ class LocalCollection:
             if self.deleted[idx]:
                 if update_mode == models.UpdateMode.UPDATE_ONLY:
                     return None
-            else:
-                if update_mode == models.UpdateMode.INSERT_ONLY:
+            elif update_mode == models.UpdateMode.INSERT_ONLY:
+                return None
+            if not self.deleted[idx] and update_filter is not None:
+                has_vector = {}
+                for vector_name, deleted in self.deleted_per_vector.items():
+                    if not deleted[idx]:
+                        has_vector[vector_name] = True
+                if not check_filter(
+                    update_filter, self.payload[idx], self.ids_inv[idx], has_vector
+                ):
                     return None
-                if update_filter is not None:
-                    has_vector = {}
-                    for vector_name, deleted in self.deleted_per_vector.items():
-                        if not deleted[idx]:
-                            has_vector[vector_name] = True
-                    if not check_filter(
-                        update_filter, self.payload[idx], self.ids_inv[idx], has_vector
-                    ):
-                        return None
             self._update_point(point)
         else:
             if update_mode == models.UpdateMode.UPDATE_ONLY:
