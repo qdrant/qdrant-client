@@ -875,6 +875,7 @@ class QdrantLocal(QdrantBase):
         if self.closed:
             raise RuntimeError("QdrantLocal instance is closed. Please create a new instance.")
 
+        existed = collection_name in self.collections
         _collection = self.collections.pop(collection_name, None)
         del _collection
         self.aliases = {
@@ -886,7 +887,7 @@ class QdrantLocal(QdrantBase):
         if collection_path is not None:
             shutil.rmtree(collection_path, ignore_errors=True)
         self._save()
-        return True
+        return existed
 
     def create_collection(
         self,

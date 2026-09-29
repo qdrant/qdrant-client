@@ -791,6 +791,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
     async def delete_collection(self, collection_name: str, **kwargs: Any) -> bool:
         if self.closed:
             raise RuntimeError("QdrantLocal instance is closed. Please create a new instance.")
+        existed = collection_name in self.collections
         _collection = self.collections.pop(collection_name, None)
         del _collection
         self.aliases = {
@@ -802,7 +803,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         if collection_path is not None:
             shutil.rmtree(collection_path, ignore_errors=True)
         self._save()
-        return True
+        return existed
 
     async def create_collection(
         self,
