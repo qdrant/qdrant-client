@@ -1,5 +1,7 @@
 import numpy as np
 
+from qdrant_client import QdrantClient
+
 from qdrant_client.http import models
 from tests.congruence_tests.test_common import (
     COLLECTION_NAME,
@@ -114,3 +116,36 @@ def test_create_and_delete_vector_name():
     grpc_info = grpc_client.get_collection(COLLECTION_NAME)
     assert "multi-image" not in grpc_info.config.params.vectors
     assert "sparse-idf" not in (grpc_info.config.params.sparse_vectors or {})
+
+
+def test_delete_sparse_vector_name_with_unnamed_dense_vector():
+    local_client = init_local()
+    http_client = init_remote()
+    dense_config = models.VectorParams(size=2, distance=models.Distance.DOT)
+
+    def delete_sparse_vector(client: QdrantClient):
+        client.delete_collection(COLLECTION_NAME)
+        client.create_collection(
+            COLLECTION_NAME,
+            vectors_config=dense_config,
+            sparse_vectors_config={"text": models.SparseVectorParams()},
+        )
+        client.upsert(
+            COLLECTION_NAME,
+            [
+                models.PointStruct(
+                    id=1,
+                    vector={
+                        "": [1.0, 0.0],
+                        "text": models.SparseVector(indices=[1], values=[1.0]),
+                    },
+                )
+            ],
+            wait=True,
+        )
+        client.delete_vector_name(COLLECTION_NAME, "text")
+        params = client.get_collection(COLLECTION_NAME).config.params
+        assert "text" not in (params.sparse_vectors or {})
+        return client.retrieve(COLLECTION_NAME, [1], with_vectors=True)
+
+    compare_client_results(local_client, http_client, delete_sparse_vector)
