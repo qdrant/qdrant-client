@@ -68,7 +68,9 @@ class _PrecisionTierEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._
     MEDIUM: _PrecisionTier.ValueType  # 2
     """Moderate compression with a small accuracy trade-off."""
     HIGH: _PrecisionTier.ValueType  # 3
-    """No lossy compression: exact stored vectors."""
+    """Light compression, near-exact results."""
+    FULL: _PrecisionTier.ValueType  # 4
+    """No lossy compression: exact vectors, fully in memory. Highest cost."""
 
 class PrecisionTier(_PrecisionTier, metaclass=_PrecisionTierEnumTypeWrapper):
     """How much of the original vector precision may be traded for cost. The manager
@@ -83,7 +85,9 @@ LOW: PrecisionTier.ValueType  # 1
 MEDIUM: PrecisionTier.ValueType  # 2
 """Moderate compression with a small accuracy trade-off."""
 HIGH: PrecisionTier.ValueType  # 3
-"""No lossy compression: exact stored vectors."""
+"""Light compression, near-exact results."""
+FULL: PrecisionTier.ValueType  # 4
+"""No lossy compression: exact vectors, fully in memory. Highest cost."""
 global___PrecisionTier = PrecisionTier
 
 class _Tokenizer:
