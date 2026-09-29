@@ -1,6 +1,7 @@
 from time import sleep
 from typing import Callable
 
+import grpc
 import pytest
 
 from qdrant_client.http import models
@@ -157,6 +158,50 @@ def test_config_variations():
     check_variation({"text": vectors_config}, sparse_vectors_config)
     check_variation({"text": vectors_config}, None)
     check_variation(None, None)
+
+
+def test_create_collection_empty_sparse_vector_name():
+    collection_name = "test_empty_sparse_vector_name"
+    error_message = "Sparse vector name cannot be empty"
+
+    local_client = init_local()
+    http_client = init_remote()
+    grpc_client = init_remote(prefer_grpc=True)
+
+    if http_client.collection_exists(collection_name):
+        http_client.delete_collection(collection_name)
+
+    dense_params = models.VectorParams(size=2, distance=models.Distance.COSINE)
+    configs = [
+        (None, {"": models.SparseVectorParams()}),
+        (None, {"sparse": models.SparseVectorParams(), "": models.SparseVectorParams()}),
+        (dense_params, {"": models.SparseVectorParams()}),
+        ({"text": dense_params}, {"": models.SparseVectorParams()}),
+    ]
+
+    for vectors_config, sparse_vectors_config in configs:
+        with pytest.raises(ValueError, match=error_message):
+            local_client.create_collection(
+                collection_name,
+                vectors_config=vectors_config,
+                sparse_vectors_config=sparse_vectors_config,
+            )
+        assert not local_client.collection_exists(collection_name)
+
+        with pytest.raises(UnexpectedResponse, match=error_message):
+            http_client.create_collection(
+                collection_name,
+                vectors_config=vectors_config,
+                sparse_vectors_config=sparse_vectors_config,
+            )
+
+        with pytest.raises(grpc.RpcError, match=error_message):
+            grpc_client.create_collection(
+                collection_name,
+                vectors_config=vectors_config,
+                sparse_vectors_config=sparse_vectors_config,
+            )
+        assert not http_client.collection_exists(collection_name)
 
 
 def wait_for(condition: Callable, *args, **kwargs):
