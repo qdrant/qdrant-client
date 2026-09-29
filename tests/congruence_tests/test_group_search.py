@@ -284,8 +284,6 @@ def test_simple_group_search():
     compare_client_results(local_client, remote_client, searcher.group_search_text)
     compare_client_results(local_client, remote_client, searcher.group_search_image)
     compare_client_results(local_client, remote_client, searcher.group_search_code)
-    compare_client_results(local_client, remote_client, searcher.group_search_image_with_lookup)
-    compare_client_results(local_client, remote_client, searcher.group_search_image_with_lookup_2)
     compare_client_results(local_client, remote_client, searcher.group_search_score_threshold)
     compare_client_results(local_client, remote_client, searcher.group_search_text_select_payload)
     compare_client_results(local_client, remote_client, searcher.group_search_image_select_vector)
@@ -303,6 +301,12 @@ def test_simple_group_search():
         except AssertionError as e:
             print(f"\nFailed with filter {query_filter}")
             raise e
+
+    # lookup points have ids 0..6: group by all 10 digits so most groups have a lookup
+    searcher.group_by = "rand_digit"
+    searcher.limit = 10
+    compare_client_results(local_client, remote_client, searcher.group_search_image_with_lookup)
+    compare_client_results(local_client, remote_client, searcher.group_search_image_with_lookup_2)
 
 
 def test_single_vector():

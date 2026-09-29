@@ -268,9 +268,7 @@ def compare_group_hits(hits_1: list, hits_2: list, rel_tol: float = 1e-4) -> Non
     may be worse, but never better, and the remote group may not be larger.
     """
     compare_scored_record(hits_1[0], hits_2[0], 0)
-    assert len(hits_2) <= len(
-        hits_1
-    ), f"len(hits_1) = {len(hits_1)}, len(hits_2) = {len(hits_2)}"
+    assert len(hits_2) <= len(hits_1), f"len(hits_1) = {len(hits_1)}, len(hits_2) = {len(hits_2)}"
 
     # infer score ordering from the exact side
     larger_is_better = hits_1[0].score >= hits_1[-1].score
@@ -402,6 +400,12 @@ def compare_client_results(
 
             if group_1.id == group_2.id:
                 compare_group_hits(group_1.hits, group_2.hits)
+                if group_1.lookup is None or group_2.lookup is None:
+                    assert (
+                        group_1.lookup == group_2.lookup
+                    ), f"groups_1[{i}].lookup = {group_1.lookup}, groups_2[{i}].lookup = {group_2.lookup}"
+                else:
+                    compare_records([group_1.lookup], [group_2.lookup])
             else:
                 # If group ids are different, but scores are the same, we assume that the top hits are the same
                 compare_scored_record(group_1.hits[0], group_2.hits[0], 0)
