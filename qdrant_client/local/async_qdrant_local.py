@@ -817,6 +817,8 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         if self.closed:
             raise RuntimeError("QdrantLocal instance is closed. Please create a new instance.")
         self._validate_new_collection_name(collection_name)
+        if sparse_vectors_config is not None and "" in sparse_vectors_config:
+            raise ValueError("Sparse vector name cannot be empty")
         if collection_name in self.collections:
             raise ValueError(f"Collection {collection_name} already exists")
         if collection_name in self.aliases:

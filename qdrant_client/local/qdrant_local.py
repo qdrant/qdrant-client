@@ -904,6 +904,9 @@ class QdrantLocal(QdrantBase):
             raise RuntimeError("QdrantLocal instance is closed. Please create a new instance.")
 
         self._validate_new_collection_name(collection_name)
+        # the server reserves the empty name for the default dense vector
+        if sparse_vectors_config is not None and "" in sparse_vectors_config:
+            raise ValueError("Sparse vector name cannot be empty")
         if collection_name in self.collections:
             raise ValueError(f"Collection {collection_name} already exists")
         # a collection must not take the name of an existing alias either
