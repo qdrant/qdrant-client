@@ -3306,7 +3306,9 @@ class LocalCollection:
         if vector_name not in self._all_vectors_keys:
             raise ValueError(f"Vector {vector_name} does not exist in the collection")
 
-        if isinstance(self.config.vectors, models.VectorParams):
+        if vector_name == DEFAULT_VECTOR_NAME and isinstance(
+            self.config.vectors, models.VectorParams
+        ):
             raise ValueError(
                 "Cannot delete the unnamed vector when it is the only dense vector in the collection"
             )
