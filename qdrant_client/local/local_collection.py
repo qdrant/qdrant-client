@@ -1298,7 +1298,9 @@ class LocalCollection:
             for group in groups_result:
                 lookup = with_lookup_collection.retrieve(
                     ids=[group.id],
-                    with_payload=with_lookup.with_payload,
+                    with_payload=(
+                        True if with_lookup.with_payload is None else with_lookup.with_payload
+                    ),
                     with_vectors=with_lookup.with_vectors,
                 )
                 group.lookup = next(iter(lookup), None)
@@ -1369,7 +1371,9 @@ class LocalCollection:
             for group in groups_result:
                 lookup = with_lookup_collection.retrieve(
                     ids=[group.id],
-                    with_payload=with_lookup.with_payload,
+                    with_payload=(
+                        True if with_lookup.with_payload is None else with_lookup.with_payload
+                    ),
                     with_vectors=with_lookup.with_vectors,
                 )
                 group.lookup = next(iter(lookup), None)
