@@ -25,6 +25,7 @@ class PrecisionTier(str, Enum):
     LOW = "low"
     MEDIUM = "medium"
     HIGH = "high"
+    FULL = "full"
 
 
 class DenseVectorConfig(BaseModel):

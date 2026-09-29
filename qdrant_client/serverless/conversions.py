@@ -24,6 +24,7 @@ _PRECISION_TO_GRPC = {
     models.PrecisionTier.LOW: pb2.LOW,
     models.PrecisionTier.MEDIUM: pb2.MEDIUM,
     models.PrecisionTier.HIGH: pb2.HIGH,
+    models.PrecisionTier.FULL: pb2.FULL,
 }
 _PRECISION_FROM_GRPC = {v: k for k, v in _PRECISION_TO_GRPC.items()}
 
