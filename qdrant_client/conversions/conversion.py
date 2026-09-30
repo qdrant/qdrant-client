@@ -1,9 +1,9 @@
+import math
 import uuid
 from datetime import date, datetime, timezone
 from typing import Any, Mapping, Sequence, get_args
 
 from google.protobuf.internal.containers import MessageMap
-from google.protobuf.json_format import MessageToDict
 from google.protobuf.timestamp_pb2 import Timestamp
 
 try:
@@ -16,22 +16,6 @@ from qdrant_client.grpc import NullValue, Struct, Value
 from qdrant_client.http.models import models as rest
 from qdrant_client._pydantic_compat import construct, to_jsonable_python
 from qdrant_client.conversions.common_types import get_args_subscribed
-
-
-def has_field(message: Any, field: str) -> bool:
-    """
-    Same as protobuf HasField, but also works for primitive values
-    (https://stackoverflow.com/questions/51918871/check-if-a-field-has-been-set-in-protocol-buffer-3)
-
-    Args:
-        message (Any): protobuf message
-        field (str): name of the field
-    """
-    try:
-        return message.HasField(field)
-    except ValueError:
-        all_fields = set([descriptor.name for descriptor, _value in message.ListFields()])
-        return field in all_fields
 
 
 # protobuf resolves enum attributes in python, it takes ~0.5us on every access
@@ -99,35 +83,30 @@ except TypeError:  # pragma: no cover
 
 
 def value_to_json(value: Value) -> Any:
-    if isinstance(value, Value):
-        value_ = MessageToDict(value, preserving_proto_field_name=False)
-    else:
-        value_ = value
-
-    if "integerValue" in value_:
-        # by default int are represented as string for precision
-        # But in python it is OK to just use `int`
-        return int(value_["integerValue"])
-    if "doubleValue" in value_:
-        return value_["doubleValue"]
-    if "stringValue" in value_:
-        return value_["stringValue"]
-    if "boolValue" in value_:
-        return value_["boolValue"]
-    if "structValue" in value_:
-        if "fields" not in value_["structValue"]:
-            return {}
-        return dict(
-            (key, value_to_json(val)) for key, val in value_["structValue"]["fields"].items()
-        )
-    if "listValue" in value_:
-        if "values" in value_["listValue"]:
-            return list(value_to_json(val) for val in value_["listValue"]["values"])
-        else:
-            return []
-    if "nullValue" in value_:
+    # Reading the set field directly is several times faster than MessageToDict, which walks the
+    # message in python
+    kind = value.WhichOneof("kind")
+    if kind == "string_value":
+        return value.string_value
+    if kind == "integer_value":
+        return value.integer_value
+    if kind == "double_value":
+        double_value = value.double_value
+        if math.isfinite(double_value):
+            return double_value
+        # keep the strings MessageToDict used to return for non-finite doubles
+        if math.isnan(double_value):
+            return "NaN"
+        return "Infinity" if double_value > 0 else "-Infinity"
+    if kind == "bool_value":
+        return value.bool_value
+    if kind == "list_value":
+        return [value_to_json(val) for val in value.list_value.values]
+    if kind == "struct_value":
+        return grpc_to_payload(value.struct_value.fields)
+    if kind == "null_value":
         return None
-    raise ValueError(f"Not supported value: {value_}")  # pragma: no cover
+    raise ValueError(f"Not supported value: {value}")  # pragma: no cover
 
 
 def payload_to_grpc(payload: dict[str, Any]) -> dict[str, Value]:
@@ -135,7 +114,8 @@ def payload_to_grpc(payload: dict[str, Any]) -> dict[str, Value]:
 
 
 def grpc_to_payload(grpc_: MessageMap[str, Value]) -> dict[str, Any]:
-    return dict((key, value_to_json(val)) for key, val in grpc_.items())
+    # upb implements items() of a map in python, looking up each key is faster
+    return {key: value_to_json(grpc_[key]) for key in grpc_}
 
 
 def grpc_payload_schema_to_field_type(model: grpc.PayloadSchemaType) -> grpc.FieldType:
@@ -671,7 +651,8 @@ class GrpcToRest:
         return construct(
             rest.ScoredPoint,
             id=cls.convert_point_id(model.id),
-            payload=cls.convert_payload(model.payload) if has_field(model, "payload") else None,
+            # HasField raises on map fields
+            payload=cls.convert_payload(model.payload) if len(model.payload) > 0 else None,
             score=model.score,
             vector=(
                 cls.convert_vectors_output(model.vectors) if model.HasField("vectors") else None
@@ -689,7 +670,7 @@ class GrpcToRest:
 
     @classmethod
     def convert_payload(cls, model: "MessageMapContainer") -> rest.Payload:
-        return dict((key, value_to_json(model[key])) for key in model)
+        return grpc_to_payload(model)
 
     @classmethod
     def convert_values_count(cls, model: grpc.ValuesCount) -> rest.ValuesCount:
