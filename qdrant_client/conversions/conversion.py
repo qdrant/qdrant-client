@@ -12,7 +12,7 @@ except ImportError:
     pass
 
 from qdrant_client import grpc
-from qdrant_client.grpc import ListValue, NullValue, Struct, Value
+from qdrant_client.grpc import NullValue, Struct, Value
 from qdrant_client.http.models import models as rest
 from qdrant_client._pydantic_compat import construct, to_jsonable_python
 from qdrant_client.conversions.common_types import get_args_subscribed
@@ -34,26 +34,68 @@ def has_field(message: Any, field: str) -> bool:
         return field in all_fields
 
 
+# protobuf resolves enum attributes in python, it takes ~0.5us on every access
+_NULL_VALUE = NullValue.NULL_VALUE
+
+
 def json_to_value(payload: Any) -> Value:
-    if payload is None:
-        return Value(null_value=NullValue.NULL_VALUE)
-    if isinstance(payload, bool):
-        return Value(bool_value=payload)
-    if isinstance(payload, int):
-        return Value(integer_value=payload)
-    if isinstance(payload, float):
-        return Value(double_value=payload)
-    if isinstance(payload, str):
+    # exact type checks are cheaper than isinstance and cover almost every value
+    payload_type = type(payload)
+    if payload_type is str:
         return Value(string_value=payload)
+    if payload_type is int:
+        return Value(integer_value=payload)
+    if payload_type is float:
+        return Value(double_value=payload)
+    if payload_type is bool:
+        return Value(bool_value=payload)
+    if payload is None:
+        return Value(null_value=_NULL_VALUE)
+    return Value(**_json_to_value_kwargs(payload))
+
+
+def _json_to_value_kwargs(payload: Any) -> dict[str, Any]:
+    # Returns the arguments of the Value constructor instead of a Value. Protobuf builds the whole
+    # tree from nested dicts of arguments at once, which is much faster than building a Value for
+    # every element and copying it into its parent.
+    payload_type = type(payload)
+    if payload_type is str:
+        return {"string_value": payload}
+    if payload_type is int:
+        return {"integer_value": payload}
+    if payload_type is float:
+        return {"double_value": payload}
+    if payload_type is bool:
+        return {"bool_value": payload}
+    if payload is None:
+        return {"null_value": _NULL_VALUE}
     if isinstance(payload, (list, tuple)):
-        return Value(list_value=ListValue(values=[json_to_value(v) for v in payload]))
-    if isinstance(payload, dict):
-        return Value(
-            struct_value=Struct(fields=dict((k, json_to_value(v)) for k, v in payload.items()))
-        )
-    if isinstance(payload, datetime) or isinstance(payload, date):
-        return Value(string_value=to_jsonable_python(payload))
-    raise ValueError(f"Not supported json value: {payload}")  # pragma: no cover
+        return {"list_value": {"values": [_json_to_value_kwargs(v) for v in payload]}}
+    if isinstance(payload, dict) and all(isinstance(key, str) for key in payload):
+        fields = {k: _json_to_struct_field(v) for k, v in payload.items()}
+        return {"struct_value": {"fields": fields}}
+    # subclasses, e.g. enums
+    if isinstance(payload, int):
+        return {"integer_value": payload}
+    if isinstance(payload, float):
+        return {"double_value": payload}
+    if isinstance(payload, str):
+        return {"string_value": payload}
+    # Encode the rest (uuid, datetime, Decimal, set, bytes, non-str dict keys, etc.) the same way
+    # the REST client and local mode do
+    try:
+        jsonable_payload = to_jsonable_python(payload)
+    except (TypeError, ValueError) as e:  # pydantic v1 raises TypeError, v2 raises ValueError
+        raise ValueError(f"Not supported json value: {payload}") from e
+    return _json_to_value_kwargs(jsonable_payload)
+
+
+try:
+    # protobuf < 6.30 does not accept dicts of arguments as values of a map, e.g. Struct.fields
+    Struct(fields={"": {}})
+    _json_to_struct_field = _json_to_value_kwargs
+except TypeError:  # pragma: no cover
+    _json_to_struct_field = json_to_value
 
 
 def value_to_json(value: Value) -> Any:
