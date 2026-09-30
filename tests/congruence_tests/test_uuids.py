@@ -300,7 +300,9 @@ def test_uuid_payload_values(prefer_grpc):
         cl.create_payload_index(COLLECTION_NAME, "ref", models.PayloadSchemaType.UUID)
         cl.upsert(COLLECTION_NAME, [models.PointStruct(id=1, vector=[1.0, 0.0], payload=payload)])
         cl.set_payload(COLLECTION_NAME, payload={"other_ref": ref}, points=[1])
-        cl.upload_collection(COLLECTION_NAME, ids=[2], vectors=[[0.0, 1.0]], payload=[payload])
+        cl.upload_collection(
+            COLLECTION_NAME, ids=[2], vectors=[[0.0, 1.0]], payload=[payload], wait=True
+        )
 
     def retrieve_uuid_payload(client: QdrantClient):
         return client.retrieve(COLLECTION_NAME, ids=[1, 2])
