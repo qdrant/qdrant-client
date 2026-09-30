@@ -1,5 +1,6 @@
 import os
 import random
+import sqlite3
 import tempfile
 
 import numpy as np
@@ -8,6 +9,7 @@ import pytest
 from qdrant_client import QdrantClient
 import qdrant_client.http.models as rest
 from qdrant_client._pydantic_compat import construct
+from qdrant_client.local.persistence import CollectionPersistence
 from tests.fixtures.points import generate_random_sparse_vector_list
 
 default_collection_name = "example"
@@ -327,3 +329,64 @@ def test_failed_alias_save_keeps_aliases():
 
         assert client.get_aliases().aliases == []
         client.close()
+
+
+@pytest.mark.parametrize(
+    "commit_before_error", [True, False], ids=["after-commit", "before-commit"]
+)
+def test_failed_point_deletion_keeps_unreached_points(
+    monkeypatch: pytest.MonkeyPatch, tmp_path, commit_before_error: bool
+):
+    """A deletion that fails partway must leave the points it did not reach visible.
+
+    Regression: every selected point was hidden in memory before the first one was removed from
+    disk. After a failure the same filter could no longer select the points that were still
+    stored, so a retry returned normally and they came back when the collection was reopened.
+    """
+    collection_name = "failed_deletion"
+    targets = rest.Filter(
+        must=[rest.FieldCondition(key="target", match=rest.MatchValue(value=True))]
+    )
+
+    def visible_ids(client: QdrantClient) -> list[int]:
+        return sorted(point.id for point in client.scroll(collection_name, limit=10)[0])
+
+    real_delete = CollectionPersistence.delete
+    failures: list[rest.ExtendedPointId] = []
+
+    def failing_delete(self: CollectionPersistence, point_id: rest.ExtendedPointId) -> None:
+        if point_id == 2 and not failures:
+            failures.append(point_id)
+            if commit_before_error:
+                real_delete(self, point_id)
+            raise sqlite3.OperationalError("injected failure")
+        real_delete(self, point_id)
+
+    client = QdrantClient(path=str(tmp_path))
+    client.create_collection(
+        collection_name, vectors_config=rest.VectorParams(size=2, distance=rest.Distance.DOT)
+    )
+    client.upsert(
+        collection_name,
+        [
+            rest.PointStruct(id=i, vector=[1.0, 0.0], payload={"target": i != 9})
+            for i in (1, 2, 3, 9)
+        ],
+    )
+
+    with monkeypatch.context() as patch:
+        patch.setattr(CollectionPersistence, "delete", failing_delete)
+        with pytest.raises(sqlite3.OperationalError):
+            client.delete(collection_name, points_selector=targets)
+
+        # the points the failed deletion did not reach are still stored, so they must be visible
+        assert {3, 9} <= set(visible_ids(client))
+
+        client.delete(collection_name, points_selector=targets)
+
+    assert visible_ids(client) == [9]
+    client.close()
+
+    client = QdrantClient(path=str(tmp_path))
+    assert visible_ids(client) == [9]
+    client.close()
