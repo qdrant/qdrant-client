@@ -175,7 +175,7 @@ class QdrantLocal(QdrantBase):
                 f" If you require concurrent access, use Qdrant server instead."
             )
 
-    def _save(self) -> None:
+    def _save(self, aliases: dict[str, str] | None = None) -> None:
         if not self.persistent:
             return
 
@@ -191,7 +191,7 @@ class QdrantLocal(QdrantBase):
                             collection_name: to_dict(collection.config)
                             for collection_name, collection in self.collections.items()
                         },
-                        "aliases": self.aliases,
+                        "aliases": self.aliases if aliases is None else aliases,
                     }
                 )
             )
@@ -728,21 +728,35 @@ class QdrantLocal(QdrantBase):
     def update_collection_aliases(
         self, change_aliases_operations: Sequence[types.AliasOperations], **kwargs: Any
     ) -> bool:
+        if self.closed:
+            raise RuntimeError("QdrantLocal instance is closed. Please create a new instance.")
+
+        # apply the operations to a copy, so a rejected one leaves the aliases untouched
+        aliases = self.aliases.copy()
         for operation in change_aliases_operations:
             if isinstance(operation, rest_models.CreateAliasOperation):
-                self._get_collection(operation.create_alias.collection_name)
-                self.aliases[operation.create_alias.alias_name] = (
-                    operation.create_alias.collection_name
-                )
+                collection_name = operation.create_alias.collection_name
+                # an alias must point at a collection, not at another alias
+                if collection_name not in self.collections:
+                    raise ValueError(f"Collection {collection_name} not found")
+                alias_name = operation.create_alias.alias_name
+                # and must not take the name of an existing collection
+                if alias_name in self.collections:
+                    raise ValueError(f"Collection {alias_name} already exists")
+                aliases[alias_name] = collection_name
             elif isinstance(operation, rest_models.DeleteAliasOperation):
-                self.aliases.pop(operation.delete_alias.alias_name, None)
+                aliases.pop(operation.delete_alias.alias_name, None)
             elif isinstance(operation, rest_models.RenameAliasOperation):
                 new_name = operation.rename_alias.new_alias_name
                 old_name = operation.rename_alias.old_alias_name
-                self.aliases[new_name] = self.aliases.pop(old_name)
+                if old_name not in aliases:
+                    raise ValueError(f"Alias {old_name} does not exist")
+                aliases[new_name] = aliases.pop(old_name)
             else:
                 raise ValueError(f"Unknown operation: {operation}")
-        self._save()
+        # save first, so a failed write leaves the aliases in memory untouched as well
+        self._save(aliases=aliases)
+        self.aliases = aliases
         return True
 
     def get_collection_aliases(
@@ -822,8 +836,37 @@ class QdrantLocal(QdrantBase):
         self._save()
         return updated
 
+    @staticmethod
+    def _validate_new_collection_name(collection_name: str) -> None:
+        # same characters as the server rejects on creation, names of already existing
+        # collections are not checked to keep them accessible
+        invalid_chars = ("<", ">", ":", '"', "/", "\\", "|", "?", "*", "\0", "\x1f")
+        for char in invalid_chars:
+            if char in collection_name:
+                raise ValueError(f"Collection name cannot contain {char!r} char")
+        if collection_name in ("", ".", ".."):
+            raise ValueError(f"Collection name cannot be {collection_name!r}")
+        if len(collection_name) > 255:
+            raise ValueError("Collection name must be at most 255 characters long")
+
     def _collection_path(self, collection_name: str) -> str | None:
         if self.persistent:
+            # names come from users and from meta.json, the path must stay strictly inside
+            # `collection/`, otherwise absolute paths and `..` would escape the storage folder
+            # (nested legacy names like `a/b` are still allowed, new ones are rejected on creation)
+            # symlinks are resolved, so a planted link can't point the path outside either
+            base_path = os.path.realpath(os.path.join(self.location, "collection"))
+            path = os.path.realpath(os.path.join(base_path, collection_name))
+            try:
+                is_inside = (
+                    path != base_path and os.path.commonpath([base_path, path]) == base_path
+                )
+            except ValueError:
+                is_inside = False
+            if not is_inside:
+                raise ValueError(
+                    f"Collection name {collection_name!r} is not allowed, it points outside of the storage folder"
+                )
             return os.path.join(self.location, "collection", collection_name)
         else:
             return None
@@ -832,6 +875,7 @@ class QdrantLocal(QdrantBase):
         if self.closed:
             raise RuntimeError("QdrantLocal instance is closed. Please create a new instance.")
 
+        existed = collection_name in self.collections
         _collection = self.collections.pop(collection_name, None)
         del _collection
         self.aliases = {
@@ -843,7 +887,7 @@ class QdrantLocal(QdrantBase):
         if collection_path is not None:
             shutil.rmtree(collection_path, ignore_errors=True)
         self._save()
-        return True
+        return existed
 
     def create_collection(
         self,
@@ -859,8 +903,15 @@ class QdrantLocal(QdrantBase):
         if self.closed:
             raise RuntimeError("QdrantLocal instance is closed. Please create a new instance.")
 
+        self._validate_new_collection_name(collection_name)
+        # the server reserves the empty name for the default dense vector
+        if sparse_vectors_config is not None and "" in sparse_vectors_config:
+            raise ValueError("Sparse vector name cannot be empty")
         if collection_name in self.collections:
             raise ValueError(f"Collection {collection_name} already exists")
+        # a collection must not take the name of an existing alias either
+        if collection_name in self.aliases:
+            raise ValueError(f"Alias {collection_name} already exists")
         collection_path = self._collection_path(collection_name)
         if collection_path is not None:
             os.makedirs(collection_path, exist_ok=True)
@@ -888,6 +939,7 @@ class QdrantLocal(QdrantBase):
         payload: types.PayloadStorageParams | None = None,
         **kwargs: Any,
     ) -> bool:
+        self._validate_new_collection_name(collection_name)
         self.delete_collection(collection_name)
         return self.create_collection(
             collection_name,

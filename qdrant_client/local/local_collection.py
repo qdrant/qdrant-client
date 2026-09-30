@@ -460,6 +460,18 @@ class LocalCollection:
 
         raise ValueError(f"Malformed config.vectors: {self.config.vectors}")
 
+    def _validate_vector_kind(self, vector: Any, vector_name: str) -> None:
+        """Reject a sparse vector for a dense or multivector name, and the other way around.
+
+        The mismatch used to pass validation and fail part-way through the write, leaving the
+        point ids and the vector storage out of sync.
+        """
+        if isinstance(vector, SparseVector) != (vector_name in self.sparse_vectors):
+            raise ValueError(
+                "Wrong input: Conversion between sparse and regular vectors failed "
+                f"for vector '{vector_name}'"
+            )
+
     def _validate_dense_or_multivector(self, vector: Any, vector_name: str) -> None:
         """Reject vectors the server would refuse on the write path: empty, NaN, wrong size.
 
@@ -1263,7 +1275,9 @@ class LocalCollection:
             for group in groups_result:
                 lookup = with_lookup_collection.retrieve(
                     ids=[group.id],
-                    with_payload=with_lookup.with_payload,
+                    with_payload=(
+                        True if with_lookup.with_payload is None else with_lookup.with_payload
+                    ),
                     with_vectors=with_lookup.with_vectors,
                 )
                 group.lookup = next(iter(lookup), None)
@@ -1334,7 +1348,9 @@ class LocalCollection:
             for group in groups_result:
                 lookup = with_lookup_collection.retrieve(
                     ids=[group.id],
-                    with_payload=with_lookup.with_payload,
+                    with_payload=(
+                        True if with_lookup.with_payload is None else with_lookup.with_payload
+                    ),
                     with_vectors=with_lookup.with_vectors,
                 )
                 group.lookup = next(iter(lookup), None)
@@ -2699,6 +2715,7 @@ class LocalCollection:
             for vector_name, vector in point.vector.items():
                 if vector_name not in self._all_vectors_keys:
                     raise ValueError(f"Wrong input: Not existing vector name error: {vector_name}")
+                self._validate_vector_kind(vector, vector_name)
                 if isinstance(vector, SparseVector):
                     # validate sparse vector
                     validate_sparse_vector(vector)
@@ -2736,9 +2753,12 @@ class LocalCollection:
     ) -> None:
         """Apply a point returned by `_validate_point`, never a caller's own point."""
         if point.id in self.ids:
-            if update_mode == models.UpdateMode.INSERT_ONLY:
-                return None
             idx = self.ids[point.id]
+            if self.deleted[idx]:
+                if update_mode == models.UpdateMode.UPDATE_ONLY:
+                    return None
+            elif update_mode == models.UpdateMode.INSERT_ONLY:
+                return None
             if not self.deleted[idx] and update_filter is not None:
                 has_vector = {}
                 for vector_name, deleted in self.deleted_per_vector.items():
@@ -2818,6 +2838,7 @@ class LocalCollection:
         for vector_name, vector in vectors.items():
             if vector_name not in self._all_vectors_keys:
                 raise ValueError(f"Wrong input: Not existing vector name error: {vector_name}")
+            self._validate_vector_kind(vector, vector_name)
 
             if isinstance(vector, SparseVector):
                 validate_sparse_vector(vector)
@@ -3172,9 +3193,17 @@ class LocalCollection:
             if isinstance(update_op, models.UpsertOperation):
                 upsert_struct = update_op.upsert
                 if isinstance(upsert_struct, models.PointsBatch):
-                    self.upsert(upsert_struct.batch, update_filter=upsert_struct.update_filter)
+                    self.upsert(
+                        upsert_struct.batch,
+                        update_filter=upsert_struct.update_filter,
+                        update_mode=upsert_struct.update_mode,
+                    )
                 elif isinstance(upsert_struct, models.PointsList):
-                    self.upsert(upsert_struct.points, update_filter=upsert_struct.update_filter)
+                    self.upsert(
+                        upsert_struct.points,
+                        update_filter=upsert_struct.update_filter,
+                        update_mode=upsert_struct.update_mode,
+                    )
                 else:
                     raise ValueError(f"Unsupported upsert type: {type(update_op.upsert)}")
             elif isinstance(update_op, models.DeleteOperation):
@@ -3218,14 +3247,30 @@ class LocalCollection:
         self.config.sparse_vectors[vector_name] = new_config
 
     def create_dense_vector_name(self, vector_name: str, config: models.DenseVectorConfig) -> None:
-        if vector_name in self._all_vectors_keys:
-            raise ValueError(f"Vector {vector_name} already exists in the collection")
-
         params = models.VectorParams(
             size=config.size,
             distance=config.distance,
             multivector_config=config.multivector_config,
         )
+
+        if vector_name in self.sparse_vectors:
+            raise ValueError(f"Vector {vector_name} already exists as a sparse vector")
+
+        existing = self.vectors_config.get(vector_name) or self.multivectors_config.get(
+            vector_name
+        )
+        if existing is not None:
+            # like the server, re-creating a vector with the same schema is a no-op,
+            # datatype is not compared: local mode does not apply it
+            if (
+                existing.size != params.size
+                or existing.distance != params.distance
+                or existing.multivector_config != params.multivector_config
+            ):
+                raise ValueError(
+                    f"Vector {vector_name} already exists with a different configuration"
+                )
+            return
 
         num_points = len(self.ids_inv)
 
@@ -3250,12 +3295,21 @@ class LocalCollection:
     def create_sparse_vector_name(
         self, vector_name: str, config: models.SparseVectorConfig
     ) -> None:
-        if vector_name in self._all_vectors_keys:
-            raise ValueError(f"Vector {vector_name} already exists in the collection")
-
         params = models.SparseVectorParams(
             modifier=config.modifier,
         )
+
+        if vector_name in self.vectors_config or vector_name in self.multivectors_config:
+            raise ValueError(f"Vector {vector_name} already exists as a dense vector")
+
+        if vector_name in self.sparse_vectors:
+            # like the server, re-creating a vector with the same schema is a no-op,
+            # datatype is not compared: local mode does not apply it
+            if self.config.sparse_vectors[vector_name].modifier != params.modifier:
+                raise ValueError(
+                    f"Sparse vector {vector_name} already exists with a different configuration"
+                )
+            return
 
         num_points = len(self.ids_inv)
 
@@ -3268,10 +3322,13 @@ class LocalCollection:
         self.config.sparse_vectors[vector_name] = params
 
     def delete_vector_name(self, vector_name: str) -> None:
+        # like the server, deleting a vector that does not exist is a no-op
         if vector_name not in self._all_vectors_keys:
-            raise ValueError(f"Vector {vector_name} does not exist in the collection")
+            return
 
-        if isinstance(self.config.vectors, models.VectorParams):
+        if vector_name == DEFAULT_VECTOR_NAME and isinstance(
+            self.config.vectors, models.VectorParams
+        ):
             raise ValueError(
                 "Cannot delete the unnamed vector when it is the only dense vector in the collection"
             )
