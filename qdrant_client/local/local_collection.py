@@ -460,6 +460,18 @@ class LocalCollection:
 
         raise ValueError(f"Malformed config.vectors: {self.config.vectors}")
 
+    def _validate_vector_kind(self, vector: Any, vector_name: str) -> None:
+        """Reject a sparse vector for a dense or multivector name, and the other way around.
+
+        The mismatch used to pass validation and fail part-way through the write, leaving the
+        point ids and the vector storage out of sync.
+        """
+        if isinstance(vector, SparseVector) != (vector_name in self.sparse_vectors):
+            raise ValueError(
+                "Wrong input: Conversion between sparse and regular vectors failed "
+                f"for vector '{vector_name}'"
+            )
+
     def _validate_dense_or_multivector(self, vector: Any, vector_name: str) -> None:
         """Reject vectors the server would refuse on the write path: empty, NaN, wrong size.
 
@@ -2738,20 +2750,13 @@ class LocalCollection:
             for vector_name, vector in point.vector.items():
                 if vector_name not in self._all_vectors_keys:
                     raise ValueError(f"Wrong input: Not existing vector name error: {vector_name}")
+                self._validate_vector_kind(vector, vector_name)
                 if isinstance(vector, SparseVector):
-                    if vector_name not in self.sparse_vectors:
-                        raise ValueError(
-                            f"Wrong input: Sparse vector is not configured for vector name: {vector_name}"
-                        )
                     # validate sparse vector
                     validate_sparse_vector(vector)
                     # sort sparse vector by indices before persistence
                     normalized_vectors[vector_name] = sort_sparse_vector(vector)
                 else:
-                    if vector_name in self.sparse_vectors:
-                        raise ValueError(
-                            f"Wrong input: Dense vector is not configured for vector name: {vector_name}"
-                        )
                     self._validate_dense_or_multivector(vector, vector_name)
             normalized_vector = normalized_vectors
         else:
@@ -2868,20 +2873,13 @@ class LocalCollection:
         for vector_name, vector in vectors.items():
             if vector_name not in self._all_vectors_keys:
                 raise ValueError(f"Wrong input: Not existing vector name error: {vector_name}")
+            self._validate_vector_kind(vector, vector_name)
 
             if isinstance(vector, SparseVector):
-                if vector_name not in self.sparse_vectors:
-                    raise ValueError(
-                        f"Wrong input: Sparse vector is not configured for vector name: {vector_name}"
-                    )
                 validate_sparse_vector(vector)
                 validated.append((vector_name, sort_sparse_vector(vector)))
                 continue
 
-            if vector_name in self.sparse_vectors:
-                raise ValueError(
-                    f"Wrong input: Dense vector is not configured for vector name: {vector_name}"
-                )
             self._validate_dense_or_multivector(vector, vector_name)
             validated.append((vector_name, np.array(vector, dtype=np.float32)))
 
