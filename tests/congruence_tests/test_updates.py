@@ -1146,7 +1146,11 @@ def test_batch_update_rejects_empty_selector(local_client, remote_client):
     """The server answers selector-less or empty-selector batch operations with
     400 "Empty update request"; local mode must reject them too, instead of
     crashing on a None selector or silently applying nothing."""
-    id_filter = models.Filter(must=[models.HasIdCondition(has_id=[1])])
+    points = generate_fixtures(UPLOAD_NUM_VECTORS)
+    local_client.upload_points(COLLECTION_NAME, points, wait=True)
+    remote_client.upload_points(COLLECTION_NAME, points, wait=True)
+
+    id_filter = models.Filter(must=[models.HasIdCondition(has_id=[points[0].id])])
     operations = [
         models.SetPayloadOperation(set_payload=models.SetPayload(payload={"a": 1}, points=[])),
         models.SetPayloadOperation(
@@ -1169,3 +1173,4 @@ def test_batch_update_rejects_empty_selector(local_client, remote_client):
             local_client.batch_update_points(COLLECTION_NAME, update_operations=[operation])
         with pytest.raises(qdrant_client.http.exceptions.UnexpectedResponse):
             remote_client.batch_update_points(COLLECTION_NAME, update_operations=[operation], wait=True)
+        compare_collections(local_client, remote_client, UPLOAD_NUM_VECTORS)
