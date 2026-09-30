@@ -1,9 +1,16 @@
 import inspect
+import json
 import logging
 import re
-from datetime import date, datetime, timedelta, timezone
+import uuid
+from collections import OrderedDict, defaultdict, namedtuple
+from datetime import date, datetime, time, timedelta, timezone
+from decimal import Decimal
+from enum import Enum, IntEnum
 from inspect import getmembers
+from pathlib import Path
 
+import numpy as np
 import pytest
 from google.protobuf.json_format import MessageToDict
 
@@ -279,6 +286,87 @@ def test_datetime_to_timestamp_conversions(dt: datetime | date):
     assert (
         dt.utctimetuple() == grpc_to_rest.utctimetuple()
     ), f"Failed for {dt}, should be equal to {grpc_to_rest}"
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        uuid.UUID("5a6d1c3e-8f0b-4c55-9d6e-0a1b2c3d4e5f"),
+        Decimal("1.5"),
+        {1, 2},
+        frozenset({"a"}),
+        b"bytes",
+        datetime(2021, 1, 1, 12, 30, tzinfo=timezone.utc),
+        date(2021, 1, 1),
+        time(12, 30),
+        timedelta(hours=1),
+        Path("/tmp/file"),
+        {1: "non-str key"},
+        {"nested": [uuid.UUID(int=1), {"deeper": (Decimal("2"), b"x")}]},
+    ],
+    ids=lambda value: type(value).__name__,
+)
+def test_json_to_value_matches_rest_encoding(value):
+    from qdrant_client import models
+    from qdrant_client.conversions.conversion import json_to_value, value_to_json
+    from qdrant_client.http.api.points_api import jsonable_encoder
+
+    # the body the REST client sends for the same payload
+    rest_body = jsonable_encoder(models.SetPayload(payload={"value": value}, points=[1]))
+    rest_value = json.loads(rest_body)["payload"]["value"]
+
+    assert value_to_json(json_to_value(value)) == rest_value
+
+
+@pytest.mark.parametrize(
+    "value", [object(), np.float32(1.0), {object(): "key"}], ids=lambda value: type(value).__name__
+)
+def test_json_to_value_unsupported(value):
+    from qdrant_client.conversions.conversion import json_to_value
+
+    with pytest.raises(ValueError, match="Not supported json value"):
+        json_to_value(value)
+
+
+class IntColor(IntEnum):
+    RED = 1
+
+
+class StrColor(str, Enum):
+    RED = "red"
+
+
+@pytest.mark.parametrize(
+    "value, plain",
+    [
+        (IntColor.RED, 1),
+        (StrColor.RED, "red"),
+        (np.float64(1.5), 1.5),
+        ({StrColor.RED: [IntColor.RED]}, {"red": [1]}),
+        (namedtuple("Pair", "x y")(1, "a"), [1, "a"]),
+        (OrderedDict(a={"b": None}), {"a": {"b": None}}),
+        (defaultdict(list, a=True), {"a": True}),
+    ],
+    ids=lambda value: type(value).__name__,
+)
+def test_json_to_value_subclasses(value, plain):
+    from qdrant_client.conversions.conversion import json_to_value
+
+    # subclasses miss the exact type checks, but have to be encoded like the plain values
+    assert json_to_value(value) == json_to_value(plain)
+    assert json_to_value({"nested": value}) == json_to_value({"nested": plain})
+
+
+def test_json_to_value_struct_fields_as_messages(monkeypatch):
+    from qdrant_client.conversions import conversion
+    from tests.fixtures.payload import one_random_payload_please
+
+    payloads = [one_random_payload_please(i) for i in range(20)]
+    expected = [conversion.payload_to_grpc(payload) for payload in payloads]
+
+    # the path taken with protobuf < 6.30, which does not accept dicts as values of a map
+    monkeypatch.setattr(conversion, "_json_to_struct_field", conversion.json_to_value)
+    assert [conversion.payload_to_grpc(payload) for payload in payloads] == expected
 
 
 def test_convert_context_input_flat_pair():
