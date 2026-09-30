@@ -85,7 +85,7 @@ def _json_to_value_kwargs(payload: Any) -> dict[str, Any]:
     # the REST client and local mode do
     try:
         jsonable_payload = to_jsonable_python(payload)
-    except (KeyError, ValueError) as e:  # pydantic v1 raises KeyError, v2 raises ValueError
+    except (TypeError, ValueError) as e:  # pydantic v1 raises TypeError, v2 raises ValueError
         raise ValueError(f"Not supported json value: {payload}") from e
     return _json_to_value_kwargs(jsonable_payload)
 
