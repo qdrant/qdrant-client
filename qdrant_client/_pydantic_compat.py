@@ -14,10 +14,11 @@ if PYDANTIC_V2:
 
     to_jsonable_python = pydantic_core.to_jsonable_python
 else:
-    from pydantic.json import ENCODERS_BY_TYPE
+    from pydantic.json import pydantic_encoder
 
     def to_jsonable_python(x: Any) -> Any:
-        return ENCODERS_BY_TYPE[type(x)](x)
+        # same encoding as BaseModel.json(), which the REST client uses to build request bodies
+        return json.loads(json.dumps(x, default=pydantic_encoder))
 
 
 def update_forward_refs(model_class: Type[BaseModel], *args: Any, **kwargs: Any) -> None:

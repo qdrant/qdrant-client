@@ -1,4 +1,5 @@
 import datetime
+import decimal
 import random
 import uuid
 
@@ -249,9 +250,10 @@ def test_update_payload(prefer_grpc):
     compare_collections(local_client, remote_client, NUM_VECTORS)  # sanity check
 
 
-def test_not_jsonable_payload():
+@pytest.mark.parametrize("prefer_grpc", [True, False])
+def test_not_jsonable_payload(prefer_grpc):
     local_client = init_local()
-    remote_client = init_remote()
+    remote_client = init_remote(prefer_grpc=prefer_grpc)
 
     vector_size = 2
     vectors_config = models.VectorParams(size=vector_size, distance=models.Distance.COSINE)
@@ -259,8 +261,8 @@ def test_not_jsonable_payload():
     initialize_fixture_collection(local_client, vectors_config=vectors_config)
     initialize_fixture_collection(remote_client, vectors_config=vectors_config)
 
-    # subset of types from pydantic.json.ENCODERS_BY_TYPE (pydantic v1)
-    # is not supported by grpc
+    # subset of types from pydantic.json.ENCODERS_BY_TYPE (pydantic v1), which are not JSON types,
+    # but local mode, REST and gRPC all convert them to the same jsonable values
 
     payloads = [
         {"bytes": b"123"},
@@ -268,7 +270,7 @@ def test_not_jsonable_payload():
         {"datetime": datetime.datetime(2021, 1, 1, 1, 1, 1)},
         {"time": datetime.time(1, 1, 1)},
         {"timedelta": datetime.timedelta(seconds=1)},
-        {"decimal": 1.0},
+        {"decimal": decimal.Decimal("1.5")},
         {"frozenset": frozenset([1, 2])},
         {"set": {1, 2}},
         {"uuid": uuid.uuid4()},
