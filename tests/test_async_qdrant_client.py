@@ -563,6 +563,52 @@ async def test_async_auth():
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("prefer_grpc", [False, True])
+async def test_auth_token_provider_upload(prefer_grpc):
+    """Check that upload_points and upload_collection authenticate with the token provider."""
+    call_num = 0
+
+    def auth_token_provider():
+        nonlocal call_num
+        call_num += 1
+        return f"token_{call_num}"
+
+    client = AsyncQdrantClient(
+        prefer_grpc=prefer_grpc,
+        timeout=3,
+        check_compatibility=False,
+        auth_token_provider=auth_token_provider,
+    )
+    if await client.collection_exists(COLLECTION_NAME):
+        await client.delete_collection(COLLECTION_NAME)
+    await client.create_collection(
+        COLLECTION_NAME,
+        vectors_config=models.VectorParams(size=DIM, distance=models.Distance.DOT),
+    )
+
+    calls_before = call_num
+    client.upload_points(
+        COLLECTION_NAME,
+        points=[
+            models.PointStruct(id=idx, vector=np.random.rand(DIM).tolist()) for idx in range(10)
+        ],
+        wait=True,
+    )
+    assert call_num > calls_before
+
+    calls_before = call_num
+    client.upload_collection(
+        COLLECTION_NAME,
+        vectors=np.random.rand(10, DIM),
+        ids=list(range(10, 20)),
+        wait=True,
+    )
+    assert call_num > calls_before
+
+    await client.delete_collection(COLLECTION_NAME)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("prefer_grpc", [False, True])
 async def test_custom_sharding(prefer_grpc):
     client = AsyncQdrantClient(prefer_grpc=prefer_grpc)
     if (await client.cluster_status()).status == "disabled":
