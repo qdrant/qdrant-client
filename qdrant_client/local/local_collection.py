@@ -3221,14 +3221,7 @@ class LocalCollection:
 
         elif isinstance(update_op, models.ClearPayloadOperation):
             selector = update_op.clear_payload
-            points = (
-                selector.points
-                if isinstance(selector, models.PointIdsList)
-                else selector
-                if isinstance(selector, list)
-                else None
-            )
-            if points is not None and len(points) == 0:
+            if isinstance(selector, models.PointIdsList) and len(selector.points) == 0:
                 raise ValueError("Empty update request")
 
         elif isinstance(update_op, models.DeleteVectorsOperation):
