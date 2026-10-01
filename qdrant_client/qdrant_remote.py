@@ -2902,11 +2902,18 @@ class QdrantRemote(QdrantBase):
         self,
         collection_name: str,
         completed_limit: int | None = None,
+        with_: types.OptimizationsWith | Sequence[types.OptimizationsWith] | None = None,
         **kwargs: Any,
     ) -> types.OptimizationsResponse:
+        # Server ignores `completed_limit` unless `completed` is requested in `with`
+        with_fields = [with_] if isinstance(with_, str) else list(with_ or [])
+        if completed_limit is not None and "completed" not in with_fields:
+            with_fields.append("completed")
+
         # No gRPC endpoint for optimizations
         result = self.http.collections_api.get_optimizations(
             collection_name=collection_name,
+            _with=",".join(with_fields) if with_fields else None,
             completed_limit=completed_limit,
         ).result
         assert result is not None, "Get optimizations returned None"
