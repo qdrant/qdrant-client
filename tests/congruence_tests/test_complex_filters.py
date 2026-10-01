@@ -454,6 +454,47 @@ def test_nested_filter_payload_shapes(key: str):
     )
 
 
+@pytest.mark.parametrize("key", ["a[]", "a[0]", "a[1]", "a[][]"])
+@pytest.mark.parametrize(
+    "condition",
+    [
+        {"match": models.MatchValue(value=1)},
+        {"match": models.MatchAny(any=[4])},
+        {"match": models.MatchExcept(**{"except": [1]})},
+        {"range": models.Range(gte=2)},
+    ],
+    ids=["match_value", "match_any", "match_except", "range"],
+)
+def test_array_selected_by_index_is_flattened(key: str, condition: dict):
+    """A value selected by `[]` or `[i]` is matched element by element when it is an array
+    itself, one level deep, the same as a value selected by a plain key - `a[0]` of
+    `[[1, 2], [3]]` holds 1.
+    """
+    payloads = [
+        {"a": [[1, 2], [3]]},
+        {"a": [1, [4]]},
+        {"a": [[[1]]]},  # the value is one level too deep for `a[]` and `a[0]`
+        {"a": [[], [5]]},
+    ]
+
+    fixture_points = generate_fixtures(num=len(payloads))
+    for point, payload in zip(fixture_points, payloads):
+        point.payload = payload
+
+    local_client = init_local()
+    init_client(local_client, fixture_points)
+
+    remote_client = init_remote()
+    init_client(remote_client, fixture_points)
+
+    compare_client_results(
+        local_client,
+        remote_client,
+        scroll_with_filter,
+        scroll_filter=models.Filter(must=[models.FieldCondition(key=key, **condition)]),
+    )
+
+
 @pytest.mark.parametrize(
     "match",
     [

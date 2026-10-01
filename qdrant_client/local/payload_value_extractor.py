@@ -29,6 +29,13 @@ def value_by_key(payload: dict[str, Any], key: str, flat: bool = True) -> list[A
     keys = parse_json_path(key)
     result = []
 
+    def _add_value(value: Any) -> None:
+        # a value selected by `[]` or `[i]` is flattened like one selected by a key
+        if isinstance(value, list) and flat:
+            result.extend(value)
+        else:
+            result.append(value)
+
     def _get_value(data: Any, k_list: list[JsonPathItem]) -> None:
         if not k_list:
             return
@@ -37,21 +44,18 @@ def value_by_key(payload: dict[str, Any], key: str, flat: bool = True) -> list[A
         if len(k_list) == 0:
             if isinstance(data, dict) and current_key.item_type == JsonPathItemType.KEY:
                 if current_key.key in data:
-                    value = data[current_key.key]
-                    if isinstance(value, list) and flat:
-                        result.extend(value)
-                    else:
-                        result.append(value)
+                    _add_value(data[current_key.key])
 
             elif isinstance(data, list):
                 if current_key.item_type == JsonPathItemType.WILDCARD_INDEX:
-                    result.extend(data)
+                    for value in data:
+                        _add_value(value)
 
                 elif current_key.item_type == JsonPathItemType.INDEX:
                     assert current_key.index is not None
 
                     if current_key.index < len(data):
-                        result.append(data[current_key.index])
+                        _add_value(data[current_key.index])
 
         elif current_key.item_type == JsonPathItemType.KEY:
             if not isinstance(data, dict):
