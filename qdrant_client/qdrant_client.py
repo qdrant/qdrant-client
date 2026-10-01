@@ -2657,13 +2657,19 @@ class QdrantClient(QdrantFastembedMixin):
         self,
         collection_name: str,
         completed_limit: int | None = None,
+        with_: types.OptimizationsWith | Sequence[types.OptimizationsWith] | None = None,
         **kwargs: Any,
     ) -> types.OptimizationsResponse:
         """Get progress of ongoing and completed optimizations for a collection.
 
         Args:
             collection_name: Name of the collection
-            completed_limit: Maximum number of completed optimizations to return
+            completed_limit: Maximum number of completed optimizations to return.
+                Implies `"completed"` in `with_`
+            with_: Optional field or fields to include in the response:
+                `"queued"` - estimated queue of pending optimizations,
+                `"completed"` - completed optimizations,
+                `"idle_segments"` - segments that don't require optimization
 
         Returns:
             types.OptimizationsResponse: Optimizations progress for the collection
@@ -2671,6 +2677,7 @@ class QdrantClient(QdrantFastembedMixin):
         return self._client.get_optimizations(
             collection_name=collection_name,
             completed_limit=completed_limit,
+            with_=with_,
             **kwargs,
         )
 
