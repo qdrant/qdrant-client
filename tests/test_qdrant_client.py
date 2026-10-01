@@ -2006,6 +2006,46 @@ def test_auth_token_provider():
     assert token == "token_2"
 
 
+@pytest.mark.parametrize("prefer_grpc", [False, True])
+def test_auth_token_provider_upload(prefer_grpc):
+    """Check that upload_points and upload_collection authenticate with the token provider."""
+    call_num = 0
+
+    def auth_token_provider():
+        nonlocal call_num
+        call_num += 1
+        return f"token_{call_num}"
+
+    client = QdrantClient(
+        prefer_grpc=prefer_grpc, check_compatibility=False, auth_token_provider=auth_token_provider
+    )
+    if client.collection_exists(COLLECTION_NAME):
+        client.delete_collection(COLLECTION_NAME)
+    client.create_collection(
+        COLLECTION_NAME,
+        vectors_config=VectorParams(size=DIM, distance=Distance.DOT),
+    )
+
+    calls_before = call_num
+    client.upload_points(
+        COLLECTION_NAME,
+        points=[PointStruct(id=idx, vector=np.random.rand(DIM).tolist()) for idx in range(10)],
+        wait=True,
+    )
+    assert call_num > calls_before
+
+    calls_before = call_num
+    client.upload_collection(
+        COLLECTION_NAME,
+        vectors=np.random.rand(10, DIM),
+        ids=list(range(10, 20)),
+        wait=True,
+    )
+    assert call_num > calls_before
+
+    client.delete_collection(COLLECTION_NAME)
+
+
 def test_async_auth_token_provider():
     """Check that initialization fails if async auth_token_provider is provided to sync client."""
     token = ""
