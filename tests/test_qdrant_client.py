@@ -2735,3 +2735,49 @@ def test_keyword_index_prefix(prefer_grpc):
     )
     schema = client.get_collection(COLLECTION_NAME).payload_schema["keyword_no_prefix"]
     assert not schema.params.prefix
+
+
+@pytest.mark.parametrize("prefer_grpc", [False, True])
+def test_get_optimizations(prefer_grpc):
+    major, minor, patch, dev = read_version()
+    if not (major is None or dev):
+        if (major, minor, patch) < (1, 17, 0):
+            pytest.skip("Get optimizations is supported as of qdrant 1.17.0")
+
+    client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
+    if client.collection_exists(COLLECTION_NAME):
+        client.delete_collection(COLLECTION_NAME)
+    client.create_collection(
+        COLLECTION_NAME,
+        vectors_config=models.VectorParams(size=DIM, distance=models.Distance.DOT),
+    )
+
+    optimizations = client.get_optimizations(COLLECTION_NAME)
+    assert optimizations.queued is None
+    assert optimizations.completed is None
+    assert optimizations.idle_segments is None
+
+    optimizations = client.get_optimizations(COLLECTION_NAME, with_="queued")
+    assert optimizations.queued is not None
+    assert optimizations.completed is None
+    assert optimizations.idle_segments is None
+
+    optimizations = client.get_optimizations(
+        COLLECTION_NAME, with_=["queued", "completed", "idle_segments"]
+    )
+    assert optimizations.queued is not None
+    assert optimizations.completed is not None
+    assert optimizations.idle_segments is not None
+
+    # server ignores `completed_limit` unless completed optimizations are requested
+    optimizations = client.get_optimizations(COLLECTION_NAME, completed_limit=1)
+    assert optimizations.queued is None
+    assert optimizations.completed is not None
+    assert optimizations.idle_segments is None
+
+    optimizations = client.get_optimizations(
+        COLLECTION_NAME, completed_limit=1, with_=["queued", "completed"]
+    )
+    assert optimizations.queued is not None
+    assert optimizations.completed is not None
+    assert optimizations.idle_segments is None
