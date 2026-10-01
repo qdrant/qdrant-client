@@ -2242,6 +2242,7 @@ class QdrantRemote(QdrantBase):
                 "timeout": self._timeout,
                 "update_filter": update_filter,
                 "update_mode": update_mode,
+                "auth_token_provider": self._auth_token_provider,
             }
         else:
             updater_kwargs = {
