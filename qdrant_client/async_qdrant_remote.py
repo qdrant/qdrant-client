@@ -2707,7 +2707,9 @@ class AsyncQdrantRemote(AsyncQdrantBase):
     ) -> types.OptimizationsResponse:
         result = (
             await self.http.collections_api.get_optimizations(
-                collection_name=collection_name, completed_limit=completed_limit
+                collection_name=collection_name,
+                completed_limit=completed_limit,
+                _with=kwargs.get("_with"),
             )
         ).result
         assert result is not None, "Get optimizations returned None"
