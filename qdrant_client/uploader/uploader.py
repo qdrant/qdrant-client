@@ -1,5 +1,6 @@
 from abc import ABC
-from itertools import count, islice
+from collections.abc import Sized
+from itertools import chain, count, islice, zip_longest
 from typing import Any, Generator, Iterable
 
 import numpy as np
@@ -21,6 +22,47 @@ def iter_batch(iterable: Iterable | Generator, size: int) -> Iterable:
         if len(b) == 0:
             break
         yield b
+
+
+_strict_missing: Any = object()
+
+
+def _fail_fast_on_length_mismatch(
+    ids: Iterable | None, payload: Iterable | None, vectors: Iterable
+) -> None:
+    """Raise immediately when sized `ids`/`payload` are shorter than sized
+    `vectors`, before any batch is produced (avoids partial uploads).
+
+    Only applies when all compared inputs are sized collections; generators
+    and numpy inputs are validated lazily during iteration instead.
+    """
+    if isinstance(vectors, Sized):
+        if isinstance(ids, Sized) and len(ids) < len(vectors):
+            raise ValueError("ids iterable is shorter than vectors iterable")
+        if isinstance(payload, Sized) and len(payload) < len(vectors):
+            raise ValueError("payload iterable is shorter than vectors iterable")
+
+
+def _zip_strict(
+    ids: Iterable, vectors: Iterable, payload: Iterable
+) -> Iterable[tuple[Any, Any, Any]]:
+    """Item-level strict zip for upload streams.
+
+    Raises `ValueError` when the `ids`/`payload` stream ends before
+    `vectors`. `vectors` ending first keeps the previous behavior (extra
+    ids/payload are ignored) so infinite id/payload generators stay
+    supported. Lazy and O(1) memory.
+    """
+    for point_id, vector, payload_item in zip_longest(
+        ids, vectors, payload, fillvalue=_strict_missing
+    ):
+        if vector is _strict_missing:
+            break
+        if point_id is _strict_missing:
+            raise ValueError("ids iterable is shorter than vectors iterable")
+        if payload_item is _strict_missing:
+            raise ValueError("payload iterable is shorter than vectors iterable")
+        yield point_id, vector, payload_item
 
 
 class BaseUploader(Worker, ABC):
@@ -50,25 +92,30 @@ class BaseUploader(Worker, ABC):
         batch_size: int,
     ) -> Iterable:
         if ids is None:
-            ids_batches: Iterable = (None for _ in count())
+            ids_stream: Iterable = (None for _ in count())
         else:
-            ids_batches = iter_batch(ids, batch_size)
+            ids_stream = iter(ids)
 
         if payload is None:
-            payload_batches: Iterable = (None for _ in count())
+            payload_stream: Iterable = (None for _ in count())
         else:
-            payload_batches = iter_batch(payload, batch_size)
+            payload_stream = iter(payload)
 
         if isinstance(vectors, np.ndarray):
-            vector_batches: Iterable[Any] = cls._vector_batches_from_numpy(vectors, batch_size)
+            vectors_stream: Iterable[Any] = chain.from_iterable(
+                cls._vector_batches_from_numpy(vectors, batch_size)
+            )
         elif isinstance(vectors, dict) and any(
             isinstance(value, np.ndarray) for value in vectors.values()
         ):
-            vector_batches = cls._vector_batches_from_numpy_named_vectors(vectors, batch_size)
+            vectors_stream = chain.from_iterable(
+                cls._vector_batches_from_numpy_named_vectors(vectors, batch_size)
+            )
         else:
-            vector_batches = iter_batch(vectors, batch_size)
+            vectors_stream = iter(vectors)
+            _fail_fast_on_length_mismatch(ids, payload, vectors)
 
-        yield from zip(ids_batches, vector_batches, payload_batches)
+        yield from iter_batch(_zip_strict(ids_stream, vectors_stream, payload_stream), batch_size)
 
     @staticmethod
     def _vector_batches_from_numpy(vectors: types.NumpyArray, batch_size: int) -> Iterable[float]:
