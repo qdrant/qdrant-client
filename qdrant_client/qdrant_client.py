@@ -168,6 +168,22 @@ class QdrantClient(QdrantFastembedMixin):
     def __del__(self) -> None:
         self.close()
 
+    def __repr__(self) -> str:
+        if not hasattr(self, "_client"):
+            # __init__ raised before the inner client was built.
+            return f"<{type(self).__name__} uninitialized>"
+
+        if isinstance(self._client, QdrantLocal):
+            return f"<{type(self).__name__} mode=local location={self._client.location!r}>"
+
+        if isinstance(self._client, QdrantRemote):
+            return (
+                f"<{type(self).__name__} mode=remote host={self._client._address!r} "
+                f"prefer_grpc={self._client._prefer_grpc}>"
+            )
+
+        return f"<{type(self).__name__} client={type(self._client).__name__}>"
+
     def close(self, grpc_grace: float | None = None, **kwargs: Any) -> None:
         """Closes the connection to Qdrant
 
