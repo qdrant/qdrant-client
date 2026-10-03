@@ -117,7 +117,18 @@ class TestGroupRecommendation:
 
 
 def group_by_keys():
-    return ["id", "rand_digit", "two_words", "city.name", "maybe", "maybe_null"]
+    return [
+        "id",
+        "rand_digit",
+        "two_words",
+        "city.name",
+        "maybe",
+        "maybe_null",
+        "two_words[0]",
+        "nested.array[0].word",
+        "nested_array[0]",
+        "nested_array[]",
+    ]
 
 
 def test_simple_recommend_groups() -> None:
