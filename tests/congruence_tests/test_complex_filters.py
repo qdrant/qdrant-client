@@ -454,20 +454,7 @@ def test_nested_filter_payload_shapes(key: str):
     )
 
 
-@pytest.mark.parametrize(
-    "nested_filter",
-    [
-        models.Filter(
-            must_not=[models.FieldCondition(key="name", match=models.MatchValue(value="qdrant"))]
-        ),
-        models.Filter(must=[models.IsEmptyCondition(is_empty=models.PayloadField(key="name"))]),
-        models.Filter(
-            must=[models.FieldCondition(key="name", values_count=models.ValuesCount(lt=1))]
-        ),
-    ],
-    ids=["must_not", "is_empty", "values_count"],
-)
-def test_nested_filter_skips_non_object_elements(nested_filter: models.Filter):
+def test_nested_filter_skips_non_object_elements():
     """Only the objects in the array are checked against a nested filter. A null, string or
     number element has no fields, so it must not satisfy a condition that holds when a field
     is missing.
@@ -490,16 +477,27 @@ def test_nested_filter_skips_non_object_elements(nested_filter: models.Filter):
     remote_client = init_remote()
     init_client(remote_client, fixture_points)
 
-    compare_client_results(
-        local_client,
-        remote_client,
-        scroll_with_filter,
-        scroll_filter=models.Filter(
-            must=[
-                models.NestedCondition(nested=models.Nested(key="company", filter=nested_filter))
-            ]
+    for nested_filter in (
+        models.Filter(
+            must_not=[models.FieldCondition(key="name", match=models.MatchValue(value="qdrant"))]
         ),
-    )
+        models.Filter(must=[models.IsEmptyCondition(is_empty=models.PayloadField(key="name"))]),
+        models.Filter(
+            must=[models.FieldCondition(key="name", values_count=models.ValuesCount(lt=1))]
+        ),
+    ):
+        compare_client_results(
+            local_client,
+            remote_client,
+            scroll_with_filter,
+            scroll_filter=models.Filter(
+                must=[
+                    models.NestedCondition(
+                        nested=models.Nested(key="company", filter=nested_filter)
+                    )
+                ]
+            ),
+        )
 
 
 @pytest.mark.parametrize(
