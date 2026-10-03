@@ -1,4 +1,5 @@
 # flake8: noqa E501
+import asyncio
 from typing import TYPE_CHECKING, Any, Dict, Set, TypeVar, Union
 
 from pydantic import BaseModel
@@ -562,13 +563,19 @@ class AsyncPointsApi(_PointsApi):
         """
         Apply a series of update operations for points, vectors and payloads
         """
-        return await self._build_for_batch_update(
+        # _build_for_batch_update is sync: it serializes the body with
+        # jsonable_encoder (CPU-bound, can be slow) then calls
+        # self.api_client.request() which merely creates a coroutine.
+        # Run the sync part in a thread, then await the resulting coroutine.
+        coro = await asyncio.to_thread(
+            self._build_for_batch_update,
             collection_name=collection_name,
             wait=wait,
             ordering=ordering,
             timeout=timeout,
             update_operations=update_operations,
         )
+        return await coro
 
     async def clear_payload(
         self,
@@ -778,13 +785,16 @@ class AsyncPointsApi(_PointsApi):
         """
         Update specified named vectors on points, keep unspecified vectors intact.
         """
-        return await self._build_for_update_vectors(
+        # See batch_update for rationale.
+        coro = await asyncio.to_thread(
+            self._build_for_update_vectors,
             collection_name=collection_name,
             wait=wait,
             ordering=ordering,
             timeout=timeout,
             update_vectors=update_vectors,
         )
+        return await coro
 
     async def upsert_points(
         self,
@@ -797,13 +807,16 @@ class AsyncPointsApi(_PointsApi):
         """
         Perform insert + updates on points. If point with given ID already exists - it will be overwritten.
         """
-        return await self._build_for_upsert_points(
+        # See batch_update for rationale.
+        coro = await asyncio.to_thread(
+            self._build_for_upsert_points,
             collection_name=collection_name,
             wait=wait,
             ordering=ordering,
             timeout=timeout,
             point_insert_operations=point_insert_operations,
         )
+        return await coro
 
 
 class SyncPointsApi(_PointsApi):
