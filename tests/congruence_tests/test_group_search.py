@@ -224,7 +224,18 @@ class TestGroupSearcher:
 
 
 def group_by_keys():
-    return ["id", "rand_digit", "two_words", "city.name", "maybe", "maybe_null"]
+    return [
+        "id",
+        "rand_digit",
+        "two_words",
+        "city.name",
+        "maybe",
+        "maybe_null",
+        "two_words[0]",
+        "nested.array[0].word",
+        "nested_array[0]",
+        "nested_array[]",
+    ]
 
 
 def test_group_search_types():
@@ -429,3 +440,56 @@ def test_group_search_value_types():
             (type(group.id), group.id, tuple(hit.id for hit in group.hits))
             for group in result.groups
         } == expected_groups
+
+
+def test_group_by_array_index():
+    """`group_by` paths with an array index, and values which are arrays themselves.
+
+    The server fetches the group candidates with the path's indices widened to `[]` and reads
+    the values as from the full payload, then unwraps every value one level if it is an array.
+    So `m[1]` groups `{"m": [[1, 2], [3, 4]]}` by 3 and 4, and `m[]` by all four numbers.
+    """
+    points = [
+        models.PointStruct(
+            id=1,
+            vector=[1.0, 0.0],
+            payload={"arr": [{"x": "a"}, {"x": "b"}], "m": [[1, 2], [3, 4]]},
+        ),
+        models.PointStruct(
+            id=2,
+            vector=[2.0, 0.0],
+            payload={"arr": [{"x": "c"}, {"x": ["d", "e"]}], "m": [[5], [6, True]]},
+        ),
+        models.PointStruct(
+            id=3, vector=[3.0, 0.0], payload={"arr": [7, {"x": "f"}, [{"x": "g"}]], "m": [8]}
+        ),
+    ]
+    # point 3's `arr[1]` is not an object and `arr[2]` holds an array; a bool in point 2's
+    # `m[1]` drops the whole point for `m[1]` and `m[]`, but not for `m[0]`
+    expected = {
+        "arr[0].x": {("a", (1,)), ("c", (2,))},
+        "arr[1].x": {("b", (1,)), ("d", (2,)), ("e", (2,)), ("f", (3,))},
+        "arr[].x": {("a", (1,)), ("b", (1,)), ("c", (2,)), ("d", (2,)), ("e", (2,)), ("f", (3,))},
+        "arr[2][0].x": {("g", (3,))},
+        "m[0]": {(1, (1,)), (2, (1,)), (5, (2,)), (8, (3,))},
+        "m[1]": {(3, (1,)), (4, (1,))},
+        "m[]": {(1, (1,)), (2, (1,)), (3, (1,)), (4, (1,)), (8, (3,))},
+        "m[][0]": {(1, (1,)), (3, (1,)), (5, (2,)), (6, (2,))},
+    }
+
+    vectors_config = models.VectorParams(size=2, distance=models.Distance.DOT)
+
+    local_client = init_local()
+    init_client(local_client, points, vectors_config=vectors_config)
+
+    remote_client = init_remote()
+    init_client(remote_client, points, vectors_config=vectors_config)
+
+    for group_by, expected_groups in expected.items():
+        for client in (local_client, remote_client):
+            result = client.query_points_groups(
+                COLLECTION_NAME, group_by=group_by, query=[1.0, 0.0], limit=10, group_size=10
+            )
+            assert {
+                (group.id, tuple(sorted(hit.id for hit in group.hits))) for group in result.groups
+            } == expected_groups, group_by
