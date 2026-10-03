@@ -158,6 +158,8 @@ class LocalCollection:
             location: path to the collection directory. If None, the collection will be created in memory.
             force_disable_check_same_thread: force disable check_same_thread for sqlite3 connection. default: False
         """
+        # Keep the config and derived vector maps on the same collection-owned models.
+        config = deepcopy(config)
         self.vectors_config, self.multivectors_config = self._resolve_vectors_config(
             config.vectors
         )
@@ -3405,12 +3407,12 @@ class LocalCollection:
             payload_schema={},
             config=models.CollectionConfig(
                 params=models.CollectionParams(
-                    vectors=self.config.vectors,
+                    vectors=deepcopy(self.config.vectors),
                     shard_number=self.config.shard_number,
                     replication_factor=self.config.replication_factor,
                     write_consistency_factor=self.config.write_consistency_factor,
                     on_disk_payload=self.config.on_disk_payload,
-                    sparse_vectors=self.config.sparse_vectors,
+                    sparse_vectors=deepcopy(self.config.sparse_vectors),
                 ),
                 hnsw_config=models.HnswConfig(
                     m=16,
