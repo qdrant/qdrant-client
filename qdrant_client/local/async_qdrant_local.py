@@ -752,7 +752,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
             updated = True
         if metadata is not None:
             if _collection.config.metadata is not None:
-                _collection.config.metadata.update(metadata)
+                _collection.config.metadata.update(deepcopy(metadata))
             else:
                 _collection.config.metadata = deepcopy(metadata)
             updated = True
