@@ -166,7 +166,12 @@ class QdrantClient(QdrantFastembedMixin):
         # Httpx has specific set of params, which it accepts and will raise an error if it receives any other params.
 
     def __del__(self) -> None:
-        self.close()
+        try:
+            self.close()
+        except Exception:
+            # Destructors may run during interpreter shutdown, when transports or logging
+            # hooks are already partially torn down. Explicit close() still surfaces errors.
+            pass
 
     def close(self, grpc_grace: float | None = None, **kwargs: Any) -> None:
         """Closes the connection to Qdrant
