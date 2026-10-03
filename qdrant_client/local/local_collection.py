@@ -2779,12 +2779,11 @@ class LocalCollection:
                 return None
             idx = self.ids[point.id]
             if not self.deleted[idx] and update_filter is not None:
-                has_vector = {}
-                for vector_name, deleted in self.deleted_per_vector.items():
-                    if not deleted[idx]:
-                        has_vector[vector_name] = True
                 if not check_filter(
-                    update_filter, self.payload[idx], self.ids_inv[idx], has_vector
+                    update_filter,
+                    self.payload[idx],
+                    self.ids_inv[idx],
+                    self._calculate_has_vector(idx),
                 ):
                     return None
             self._update_point(point)
@@ -2925,12 +2924,11 @@ class LocalCollection:
                 continue
 
             if update_filter is not None:
-                has_vector = {}
-                for vector_name, deleted in self.deleted_per_vector.items():
-                    if not deleted[idx]:
-                        has_vector[vector_name] = True
                 if not check_filter(
-                    update_filter, self.payload[idx], self.ids_inv[idx], has_vector
+                    update_filter,
+                    self.payload[idx],
+                    self.ids_inv[idx],
+                    self._calculate_has_vector(idx),
                 ):
                     continue
             self._apply_named_vectors(idx, validated)
