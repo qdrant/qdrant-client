@@ -1,5 +1,5 @@
 [build]
-  command = "mkdir -p public"
+  command = "mkdir -p public && printf '%s' '<!DOCTYPE html><html><head><title>qdrant-client</title></head><body><p>Redirecting to <a href=\"https://qdrant.tech/documentation/\">qdrant.tech/documentation</a>…</p></body></html>' > public/index.html"
   publish = "public"
 
 [[redirects]]

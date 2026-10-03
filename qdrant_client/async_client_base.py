@@ -17,6 +17,10 @@ class AsyncQdrantBase:
     def __init__(self, **kwargs: Any):
         pass
 
+    @property
+    def closed(self) -> bool:
+        raise NotImplementedError
+
     async def search_matrix_offsets(
         self,
         collection_name: str,

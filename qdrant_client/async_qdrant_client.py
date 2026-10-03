@@ -165,6 +165,15 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             await self._client.close(grpc_grace=grpc_grace, **kwargs)
 
     @property
+    def closed(self) -> bool:
+        """Whether the underlying client has been closed.
+
+        Returns:
+            True if :meth:`close` has been called, False otherwise.
+        """
+        return self._client.closed
+
+    @property
     def grpc_collections(self) -> grpc.CollectionsStub:
         """gRPC client for collections methods
 
