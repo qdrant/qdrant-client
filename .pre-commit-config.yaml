@@ -1,9 +1,9 @@
 # See https://pre-commit.com for more information
 # See https://pre-commit.com/hooks.html for more hooks
 default_language_version:
-   python: python3.10
+  python: python3.10
 
-exclude: 'qdrant_client/(grpc|http|models)/'
+exclude: "qdrant_client/(grpc|http|models)/"
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
@@ -16,10 +16,8 @@ repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.4.3
     hooks:
-# ToDo: re-introduce ruff linter later
-#      - id: ruff
-#        types_or: [ python, pyi ]
-#        args: [ --fix ]
+      - id: ruff
+        types_or: [python, pyi]
+        args: [--fix]
       - id: ruff-format
-        types_or: [ python, pyi ]
-        args: [ --line-length=99 ]
+        types_or: [python, pyi]
