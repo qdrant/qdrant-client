@@ -282,7 +282,8 @@ def nested_filter_values(payload: dict[str, Any], key: str) -> list[Any]:
     elements: list[Any] = []
     for value in values:
         if isinstance(value, list):
-            elements.extend(value)
+            # only objects are checked against the nested filter, as on the server
+            elements.extend(element for element in value if isinstance(element, dict))
     return elements
 
 
