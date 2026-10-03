@@ -1202,7 +1202,18 @@ class TestSimpleSearcher:
 
 
 def group_by_keys():
-    return ["maybe", "rand_digit", "two_words", "city.name", "maybe_null", "id"]
+    return [
+        "maybe",
+        "rand_digit",
+        "two_words",
+        "city.name",
+        "maybe_null",
+        "id",
+        "two_words[0]",
+        "nested.array[0].word",
+        "nested_array[0]",
+        "nested_array[]",
+    ]
 
 
 def init_clients(fixture_points, **kwargs) -> tuple[QdrantClient, QdrantClient, QdrantClient]:

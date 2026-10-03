@@ -1219,10 +1219,21 @@ class LocalCollection:
         whole point as soon as one of the `group_by` values has an unsupported type
         (`GroupId::try_from` fails and the aggregator ignores the point), so a point with
         `{"a": [1, true]}` joins no group at all.
+
+        Like the server's aggregator, every value found by the path is unwrapped one level if it
+        is an array, whatever the path ends with: `m[0]` and `m[]` group `{"m": [[1, 2]]}` by
+        1 and 2, while `value_by_key` flattens only values reached by a key.
         """
-        values = value_by_key(payload, group_by)
-        if values is None:
+        raw_values = value_by_key(payload, group_by, flat=False)
+        if raw_values is None:
             return None
+
+        values = []
+        for value in raw_values:
+            if isinstance(value, list):
+                values.extend(value)
+            else:
+                values.append(value)
 
         group_id_types = get_args_subscribed(models.GroupId)
         if any(type(value) not in group_id_types for value in values):
