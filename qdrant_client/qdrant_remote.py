@@ -1443,9 +1443,20 @@ class QdrantRemote(QdrantBase):
             points_selector = GrpcToRest.convert_points_selector(points)
             points_selector.shard_key = shard_key_selector
         elif isinstance(points, get_args(models.PointsSelector)):
-            points_selector = points
-            points_selector.shard_key = (
-                shard_key_selector if shard_key_selector is not None else points_selector.shard_key
+            # Build a new selector instead of writing the shard key into the caller's
+            # object: an application that holds a selector as a constant and passes
+            # `shard_key_selector` per request would otherwise have that constant
+            # rewritten, so a later call meant for another shard goes to the wrong one.
+            # `_try_argument_to_grpc_selector` reads the embedded key and returns it
+            # separately for the same reason.
+            points_selector = construct(
+                type(points),
+                **{
+                    **points.model_dump(exclude_unset=True),
+                    "shard_key": (
+                        shard_key_selector if shard_key_selector is not None else points.shard_key
+                    ),
+                },
             )
         elif isinstance(points, models.Filter):
             points_selector = construct(

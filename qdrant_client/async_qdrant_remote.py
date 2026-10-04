@@ -1278,9 +1278,16 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             points_selector = GrpcToRest.convert_points_selector(points)
             points_selector.shard_key = shard_key_selector
         elif isinstance(points, get_args(models.PointsSelector)):
-            points_selector = points
-            points_selector.shard_key = (
-                shard_key_selector if shard_key_selector is not None else points_selector.shard_key
+            # Build a new selector instead of writing the shard key into the caller's
+            # object; see the same branch in `qdrant_remote.py`.
+            points_selector = construct(
+                type(points),
+                **{
+                    **points.model_dump(exclude_unset=True),
+                    "shard_key": (
+                        shard_key_selector if shard_key_selector is not None else points.shard_key
+                    ),
+                },
             )
         elif isinstance(points, models.Filter):
             points_selector = construct(
