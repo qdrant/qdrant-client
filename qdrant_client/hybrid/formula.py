@@ -188,7 +188,13 @@ def evaluate_expression(
 
     elif isinstance(expression, models.LinDecayExpression):
         x, target, midpoint, scale = evaluate_decay_params(
-            expression.lin_decay, point_id, scores, payload, has_vector, defaults
+            expression.lin_decay,
+            point_id,
+            scores,
+            payload,
+            has_vector,
+            defaults,
+            allow_boundary_midpoint=True,
         )
 
         lambda_factor = (1.0 - midpoint) / scale
@@ -223,6 +229,7 @@ def evaluate_decay_params(
     payload: models.Payload,
     has_vector: dict[str, bool],
     defaults: dict[str, Any],
+    allow_boundary_midpoint: bool = False,
 ) -> tuple[float, float, float, float]:
     x = evaluate_expression(params.x, point_id, scores, payload, has_vector, defaults)
 
@@ -235,7 +242,14 @@ def evaluate_decay_params(
 
     midpoint = params.midpoint if params.midpoint is not None else DEFAULT_DECAY_MIDPOINT
 
-    if midpoint <= 0.0 or midpoint >= 1.0:
+    if allow_boundary_midpoint:
+        # Linear decay accepts the closed range [0, 1], matching the server.
+        midpoint_in_range = 0.0 <= midpoint <= 1.0
+    else:
+        # exp/gauss decay take ln(midpoint), so the server requires the open range (0, 1).
+        midpoint_in_range = 0.0 < midpoint < 1.0
+
+    if not midpoint_in_range:
         raise ValueError(f"Midpoint must be between 0 and 1, got {midpoint}")
 
     scale = params.scale if params.scale is not None else DEFAULT_DECAY_SCALE
