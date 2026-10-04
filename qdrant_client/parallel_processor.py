@@ -111,6 +111,13 @@ class ParallelWorkerPool:
         start_method: str | None = None,
         max_internal_batch_size: int = MAX_INTERNAL_BATCH_SIZE,
     ):
+        # A pool with no workers never consumes its input queue, so `unordered_map`
+        # blocks forever waiting for an output that no process will ever produce.
+        # Callers pass `parallel` straight through from their public signature, where
+        # `0` is what "use every core" reads as elsewhere in this package, so map it
+        # the way `ModelEmbedder` does rather than deadlocking.
+        if num_workers < 1:
+            num_workers = os.cpu_count() or 1
         self.worker_class = worker
         self.num_workers = num_workers
         self.input_queue: Queue | None = None
