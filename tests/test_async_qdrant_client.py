@@ -266,6 +266,32 @@ async def test_async_qdrant_client(prefer_grpc):
 
 
 @pytest.mark.asyncio
+async def test_async_facade_closed_property_local():
+    client = AsyncQdrantClient(":memory:")
+    assert client.closed is False
+    await client.close()
+    assert client.closed is True
+
+
+@pytest.mark.asyncio
+async def test_async_facade_closed_property_on_disk(tmp_path):
+    client = AsyncQdrantClient(path=str(tmp_path / "qdrant"))
+    assert client.closed is False
+    await client.close()
+    assert client.closed is True
+
+
+@pytest.mark.asyncio
+async def test_async_facade_closed_property_remote():
+    # Remote clients (HTTP/gRPC) also expose `closed` without requiring a live server,
+    # since the property only reflects the underlying `_closed` flag.
+    client_http = AsyncQdrantClient(check_compatibility=False)
+    assert client_http.closed is False
+    await client_http.close()
+    assert client_http.closed is True
+
+
+@pytest.mark.asyncio
 async def test_async_qdrant_client_local():
     major, minor, patch, dev = read_version()
     client = AsyncQdrantClient(":memory:")
