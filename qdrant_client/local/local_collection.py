@@ -69,7 +69,11 @@ from qdrant_client.local.payload_filters import (
     validate_filter,
 )
 from qdrant_client.local.payload_value_extractor import value_by_key, parse_uuid
-from qdrant_client.local.payload_value_setter import delete_value_by_key, set_value_by_key
+from qdrant_client.local.payload_value_setter import (
+    delete_value_by_key,
+    merge_payload,
+    set_value_by_key,
+)
 from qdrant_client.local.persistence import CollectionPersistence
 from qdrant_client.local.utils import last_argmax, swap_remove
 from qdrant_client.local.sparse import (
@@ -3091,10 +3095,10 @@ class LocalCollection:
                 continue
             # Deep-copy per point: a shared object graph here would let a later,
             # differently-scoped set_payload(key=...) call mutate other points'
-            # payloads in place via set_value_by_key's dict.update().
+            # payloads in place via set_value_by_key.
             jsonable_payload = deepcopy(base_payload)
             if keys is None:
-                self.payload[idx] = {**self.payload[idx], **jsonable_payload}
+                self.payload[idx] = merge_payload(dict(self.payload[idx]), jsonable_payload)
             else:
                 if self.payload[idx] is not None:
                     set_value_by_key(payload=self.payload[idx], value=jsonable_payload, keys=keys)
