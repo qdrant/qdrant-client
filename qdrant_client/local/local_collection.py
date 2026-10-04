@@ -139,6 +139,16 @@ def validate_multivector(vector: Any, vector_name: str) -> None:
         raise ValueError("Vector contains NaN values")
 
 
+def _validate_update_selector(
+    points: list[models.ExtendedPointId] | None, update_filter: models.Filter | None
+) -> None:
+    # The server answers these with 400 "Empty update request".
+    if points is not None:
+        if len(points) == 0:
+            raise ValueError("Empty update request")
+    elif update_filter is None:
+        raise ValueError("Empty update request")
+
 class LocalCollection:
     """
     LocalCollection is a class that represents a collection of vectors in the local storage.
@@ -3216,14 +3226,33 @@ class LocalCollection:
                 )
 
         elif isinstance(update_op, models.SetPayloadOperation):
+            _validate_update_selector(
+                update_op.set_payload.points, update_op.set_payload.filter
+            )
             if update_op.set_payload.key is not None:
                 parse_json_path(update_op.set_payload.key)
 
+        elif isinstance(update_op, models.OverwritePayloadOperation):
+            _validate_update_selector(
+                update_op.overwrite_payload.points, update_op.overwrite_payload.filter
+            )
+
         elif isinstance(update_op, models.DeletePayloadOperation):
+            _validate_update_selector(
+                update_op.delete_payload.points, update_op.delete_payload.filter
+            )
             for key in update_op.delete_payload.keys:
                 parse_json_path(key)
 
+        elif isinstance(update_op, models.ClearPayloadOperation):
+            selector = update_op.clear_payload
+            if isinstance(selector, models.PointIdsList) and len(selector.points) == 0:
+                raise ValueError("Empty update request")
+
         elif isinstance(update_op, models.DeleteVectorsOperation):
+            _validate_update_selector(
+                update_op.delete_vectors.points, update_op.delete_vectors.filter
+            )
             self._validate_vector_names(update_op.delete_vectors.vector)
 
     def batch_update_points(
