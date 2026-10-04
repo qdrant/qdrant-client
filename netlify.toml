@@ -2,6 +2,9 @@
   command = "mkdir -p public && printf '%s' '<!DOCTYPE html><html><head><title>qdrant-client</title></head><body><p>Redirecting to <a href=\"https://qdrant.tech/documentation/\">qdrant.tech/documentation</a>…</p></body></html>' > public/index.html"
   publish = "public"
 
+[build.environment]
+  PYTHON_VERSION = "3.13"
+
 [[redirects]]
   from = "/*"
   to = "https://qdrant.tech/documentation/"
