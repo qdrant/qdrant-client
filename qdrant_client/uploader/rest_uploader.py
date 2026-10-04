@@ -9,7 +9,7 @@ from qdrant_client import grpc as grpc
 from qdrant_client.common.client_exceptions import ResourceExhaustedResponse
 from qdrant_client.http import SyncApis
 from qdrant_client import models as rest
-from qdrant_client.uploader.uploader import BaseUploader
+from qdrant_client.uploader.uploader import BaseUploader, iterate_upload_items
 from qdrant_client.common.client_warnings import show_warning
 from qdrant_client.conversions import common_types as types
 from qdrant_client.conversions.conversion import GrpcToRest
@@ -36,7 +36,7 @@ def upload_batch(
             vector=(vector.tolist() if isinstance(vector, np.ndarray) else vector) or {},
             payload=payload,
         )
-        for idx, vector, payload in zip(ids_batch, vectors_batch, payload_batch)
+        for idx, vector, payload in iterate_upload_items(vectors_batch, ids_batch, payload_batch)
     ]
 
     attempt = 0
