@@ -1551,8 +1551,9 @@ def test_upsert_batch_with_different_options():
 
     download_options = dict()
     download_options["cache_dir"] = _get_cache_dir_name("Qdrant/bm25")
-    if download_options["cache_dir"].exists():
-        download_options["local_files_only"] = True
+    # TODO: Re-enable offline BM25 loading after the FastEmbed fix (#728) is released.
+    # if download_options["cache_dir"].exists():
+    #     download_options["local_files_only"] = True
 
     sparse_doc_1 = models.Document(
         text="running run", model=bm25_name, options={"language": "english", **download_options}
@@ -1618,8 +1619,9 @@ def test_batch_size_propagation():
 
     download_options = dict()
     download_options["cache_dir"] = _get_cache_dir_name("Qdrant/bm25")
-    if download_options["cache_dir"].exists():
-        download_options["local_files_only"] = True
+    # TODO: Re-enable offline BM25 loading after the FastEmbed fix (#728) is released.
+    # if download_options["cache_dir"].exists():
+    #     download_options["local_files_only"] = True
 
     bm25_name = "Qdrant/bm25"
     inference_batch_size = 2
