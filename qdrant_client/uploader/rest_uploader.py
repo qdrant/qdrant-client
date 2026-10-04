@@ -62,15 +62,14 @@ def upload_batch(
             sleep(ex.retry_after_s)
 
         except Exception as e:
+            if attempt == max_retries - 1:
+                raise
+
             show_warning(
-                message=f"Batch upload failed {attempt + 1} times. Retrying...",
+                message=f"Batch upload failed {attempt + 1} times ({type(e).__name__}: {e}). Retrying...",
                 category=UserWarning,
                 stacklevel=7,
             )
-
-            if attempt == max_retries - 1:
-                raise e
-
             attempt += 1
     return True
 
