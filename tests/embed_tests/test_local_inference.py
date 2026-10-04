@@ -56,7 +56,11 @@ def _cached_text_embedding(model_name, *args, **kwargs):
 def _cached_sparse_text_embedding(model_name, *args, **kwargs):
     cache_dir = kwargs.get("cache_dir") or _get_cache_dir_name(model_name)
     kwargs["cache_dir"] = cache_dir
-    kwargs["local_files_only"] = kwargs.get("local_files_only", Path(cache_dir).exists())
+    if model_name == "Qdrant/bm25":
+        # TODO: Restore offline BM25 loading after the FastEmbed fix (#728) is released.
+        kwargs["local_files_only"] = False
+    else:
+        kwargs["local_files_only"] = kwargs.get("local_files_only", Path(cache_dir).exists())
     return SparseTextEmbedding(model_name=model_name, *args, **kwargs)
 
 
