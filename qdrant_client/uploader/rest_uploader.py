@@ -25,6 +25,13 @@ def upload_batch(
     update_mode: rest.UpdateMode | None = None,  # type: ignore[name-defined]
     wait: bool = False,
 ) -> bool:
+    # `max_retries` counts attempts, not extra retries: the loop below runs
+    # `while attempt < max_retries` starting from zero. A non-positive value
+    # therefore skips the loop entirely and returns True without uploading
+    # anything, so the batch is silently dropped. Reject it instead.
+    if max_retries < 1:
+        raise ValueError(f"max_retries value {max_retries} is invalid. Must be 1 or larger.")
+
     ids_batch, vectors_batch, payload_batch = batch
 
     ids_batch = (str(uuid4()) for _ in count()) if ids_batch is None else ids_batch
