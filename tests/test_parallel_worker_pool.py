@@ -22,13 +22,18 @@ class _Echo(Worker):
             yield f"{item}{self.marker}"
 
 
-def _drain(num_workers: int, timeout: float = 60.0) -> list[Any]:
+def _drain(
+    num_workers: int,
+    timeout: float = 60.0,
+    pool_factory: Any = ParallelWorkerPool,
+    release_on_timeout: threading.Event | None = None,
+) -> list[Any]:
     """Run a pool to completion, or report that it never finished."""
     results: list[Any] = []
 
     def runner() -> None:
         try:
-            for item in ParallelWorkerPool(num_workers, _Echo).unordered_map(
+            for item in pool_factory(num_workers, _Echo).unordered_map(
                 [[1], [2], [3]], marker="!"
             ):
                 results.append(item)
@@ -38,7 +43,18 @@ def _drain(num_workers: int, timeout: float = 60.0) -> list[Any]:
     thread = threading.Thread(target=runner, daemon=True)
     thread.start()
     thread.join(timeout=timeout)
-    return results
+    timed_out = thread.is_alive()
+    try:
+        assert (
+            not timed_out
+        ), f"parallel={num_workers} remained blocked; partial results: {results}"
+        return results
+    finally:
+        if release_on_timeout is not None:
+            release_on_timeout.set()
+        if thread.is_alive():
+            thread.join(timeout=1.0)
+        assert not thread.is_alive(), "pool runner thread did not stop after timeout cleanup"
 
 
 def test_zero_workers_does_not_hang() -> None:
@@ -50,10 +66,32 @@ def test_zero_workers_does_not_hang() -> None:
     """
     results = _drain(0)
 
-    assert results, "parallel=0 hung: the pool never produced a result"
-    assert not any(isinstance(r, str) and r.startswith("ERROR") for r in results), (
-        f"parallel=0 failed instead of running: {results}"
-    )
+    assert sorted(results) == [
+        "[1]!",
+        "[2]!",
+        "[3]!",
+    ], f"parallel=0 returned incomplete results: {results}"
+    assert not any(
+        isinstance(r, str) and r.startswith("ERROR") for r in results
+    ), f"parallel=0 failed instead of running: {results}"
+
+
+def test_drain_rejects_partial_results_when_pool_stays_blocked() -> None:
+    """A partial yield must not make the timeout guard report success."""
+    release = threading.Event()
+
+    class _PartialThenBlockedPool:
+        def __init__(self, _num_workers: int, _worker: type[Worker]) -> None:
+            pass
+
+        def unordered_map(self, _stream: Iterable[Any], **_kwargs: Any) -> Iterable[Any]:
+            yield "partial"
+            release.wait()
+
+    with pytest.raises(AssertionError, match="remained blocked"):
+        _drain(1, timeout=0.05, pool_factory=_PartialThenBlockedPool, release_on_timeout=release)
+
+    assert release.is_set(), "timeout cleanup must release the blocked fake pool"
 
 
 def test_zero_workers_is_treated_as_all_cores() -> None:
