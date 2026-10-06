@@ -22,7 +22,7 @@ from urllib.parse import urljoin
 
 from qdrant_client.common.client_warnings import show_warning, show_warning_once
 from qdrant_client import grpc as grpc
-from qdrant_client._pydantic_compat import construct
+from qdrant_client._pydantic_compat import construct, to_dict
 from qdrant_client.auth import BearerAuth
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.common.version_check import is_compatible, get_server_version
@@ -1452,7 +1452,7 @@ class QdrantRemote(QdrantBase):
             points_selector = construct(
                 type(points),
                 **{
-                    **points.model_dump(exclude_unset=True),
+                    **to_dict(points, exclude_unset=True),
                     "shard_key": (
                         shard_key_selector if shard_key_selector is not None else points.shard_key
                     ),
