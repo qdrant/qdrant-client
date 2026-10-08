@@ -9,7 +9,7 @@ successful upsert then broke every query with a shape mismatch.
 
 import pytest
 
-from qdrant_client import models
+from qdrant_client import QdrantClient, models
 from qdrant_client.local.local_collection import LocalCollection
 
 NAN_VECTOR = [1.0, float("nan"), 3.0]
@@ -172,3 +172,122 @@ def test_wrong_vector_dimension_is_rejected_before_writing(vectors_config, good,
         collection.update_vectors([models.PointVectors(id=1, vector=bad)])
 
     assert collection._get_vectors(idx=0, with_vectors=True) == good
+
+
+@pytest.mark.parametrize("vector_kind", ["unnamed", "dense", "sparse", "multi", "mixed"])
+@pytest.mark.parametrize("column", ["vectors", "payloads"])
+@pytest.mark.parametrize("column_size", [0, 1, 3])
+@pytest.mark.parametrize("batch_update", [False, True], ids=["upsert", "batch_update"])
+@pytest.mark.parametrize("persistent", [False, True], ids=["memory", "persistent"])
+def test_mismatched_batch_lengths_leave_points_unchanged(
+    tmp_path, vector_kind, column, column_size, batch_update, persistent
+):
+    # 2026-10-08: Reject malformed columns before a batch can overwrite or insert points.
+    sparse_vector = models.SparseVector(indices=[0, 2], values=[1.0, 3.0])
+    vector = GOOD_VECTOR
+    if vector_kind == "multi":
+        vector = [GOOD_VECTOR]
+    elif vector_kind == "sparse":
+        vector = sparse_vector
+
+    params = models.VectorParams(size=3, distance=models.Distance.DOT)
+    if vector_kind == "multi":
+        params.multivector_config = models.MultiVectorConfig(
+            comparator=models.MultiVectorComparator.MAX_SIM
+        )
+    vector_name = "" if vector_kind == "unnamed" else "v"
+    vectors_config = params if vector_kind == "unnamed" else {"v": params}
+    sparse_config = None
+    if vector_kind == "sparse":
+        vectors_config = {}
+        sparse_config = {"v": models.SparseVectorParams()}
+    elif vector_kind == "mixed":
+        sparse_config = {"s": models.SparseVectorParams()}
+
+    location = str(tmp_path / "storage") if persistent else ":memory:"
+    client = QdrantClient(path=location)
+    client.create_collection("batch", vectors_config, sparse_vectors_config=sparse_config)
+    point_vectors = {vector_name: vector}
+    if vector_kind == "mixed":
+        point_vectors["s"] = sparse_vector
+    client.upsert(
+        "batch",
+        points=[models.PointStruct(id=1, vector=point_vectors, payload={"state": "original"})],
+    )
+    before = client.retrieve("batch", ids=[1], with_vectors=True)
+
+    vectors = [vector] * (column_size if column == "vectors" else 2)
+    payloads = [{"state": "changed"}] * (column_size if column == "payloads" else 2)
+    batch_vectors = vectors if vector_kind == "unnamed" else {"v": vectors}
+    if vector_kind == "mixed":
+        batch_vectors = {"v": [GOOD_VECTOR] * 2, "s": [sparse_vector] * len(vectors)}
+    batch = models.Batch(
+        ids=[1, 2],
+        vectors=batch_vectors,
+        payloads=payloads,
+    )
+    try:
+        with pytest.raises(ValueError, match=f"ids and {column}"):
+            if batch_update:
+                client.batch_update_points(
+                    "batch",
+                    update_operations=[
+                        models.SetPayloadOperation(
+                            set_payload=models.SetPayload(payload={"state": "early"}, points=[1])
+                        ),
+                        models.UpsertOperation(upsert=models.PointsBatch(batch=batch)),
+                    ],
+                )
+            else:
+                client.upsert("batch", points=batch)
+
+        assert client.count("batch").count == 1
+        assert client.retrieve("batch", ids=[1], with_vectors=True) == before
+    finally:
+        client.close()
+
+    if persistent:
+        reopened = QdrantClient(path=location)
+        try:
+            assert reopened.count("batch").count == 1
+            assert reopened.retrieve("batch", ids=[1], with_vectors=True) == before
+        finally:
+            reopened.close()
+
+
+@pytest.mark.parametrize("batch_update", [False, True], ids=["upsert", "batch_update"])
+@pytest.mark.parametrize("vectors", [[], {}, {"v": []}])
+@pytest.mark.parametrize("payloads", [None, []])
+def test_empty_batch_remains_valid(batch_update, vectors, payloads):
+    # 2026-10-08: Length validation must preserve empty upserts and omitted payloads.
+    client = QdrantClient(":memory:")
+    client.create_collection(
+        "batch", vectors_config={"v": models.VectorParams(size=3, distance=models.Distance.DOT)}
+    )
+    batch = models.Batch(ids=[], vectors=vectors, payloads=payloads)
+    try:
+        if batch_update:
+            client.batch_update_points(
+                "batch",
+                update_operations=[models.UpsertOperation(upsert=models.PointsBatch(batch=batch))],
+            )
+        else:
+            client.upsert("batch", points=batch)
+        assert client.count("batch").count == 0
+    finally:
+        client.close()
+
+
+@pytest.mark.parametrize("vectors", [{}, {"v": [GOOD_VECTOR]}])
+def test_batch_without_payloads_remains_valid(vectors):
+    # 2026-10-08: A missing payload column and payload-only points are valid batches.
+    client = QdrantClient(":memory:")
+    client.create_collection(
+        "batch", vectors_config={"v": models.VectorParams(size=3, distance=models.Distance.DOT)}
+    )
+    try:
+        client.upsert("batch", points=models.Batch(ids=[1], vectors=vectors, payloads=None))
+        assert client.count("batch").count == 1
+        assert client.retrieve("batch", ids=[1])[0].payload == {}
+    finally:
+        client.close()

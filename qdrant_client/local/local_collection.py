@@ -2847,6 +2847,19 @@ class LocalCollection:
             else:
                 vectors = batch.vectors
 
+            # 2026-10-08: Check every column before indexing or dropping trailing values.
+            for vector_name, batch_vectors in vectors.items():
+                if len(batch_vectors) != len(batch.ids):
+                    raise ValueError(
+                        f"Number of ids and vectors for {vector_name!r} does not match: "
+                        f"{len(batch.ids)} != {len(batch_vectors)}"
+                    )
+            if batch.payloads is not None and len(batch.payloads) != len(batch.ids):
+                raise ValueError(
+                    f"Number of ids and payloads does not match: "
+                    f"{len(batch.ids)} != {len(batch.payloads)}"
+                )
+
             return [
                 models.PointStruct(
                     id=point_id,
