@@ -37,7 +37,9 @@ jobs:
       run: |
         python -m venv /tmp/smoke-venv
         /tmp/smoke-venv/bin/pip install --quiet dist/*.whl
-        /tmp/smoke-venv/bin/python -c "from qdrant_client import QdrantClient; print('Import OK')"
+        # Import the installed wheel, not ./qdrant_client from the checkout
+        cd /tmp
+        /tmp/smoke-venv/bin/python -I -c "import qdrant_client; from qdrant_client import QdrantClient; print('Import OK from', qdrant_client.__file__)"
     - name: Publish package
       uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
       with:
