@@ -2574,10 +2574,17 @@ def test_formula_query():
         "city.geo": {"lon": 0.4, "lat": 0.5},
     }
 
-    for _ in range(50):
-        formula = models.FormulaQuery(
-            formula=one_random_expression_please(max_depth=2), defaults=defaults
+    expressions = [one_random_expression_please(max_depth=2) for _ in range(50)]
+    # lin_decay accepts the closed midpoint range [0, 1], unlike exp_decay and gauss_decay
+    expressions += [
+        models.LinDecayExpression(
+            lin_decay=models.DecayParamsExpression(x="rand_number", scale=0.5, midpoint=midpoint)
         )
+        for midpoint in (0.0, 1.0)
+    ]
+
+    for expression in expressions:
+        formula = models.FormulaQuery(formula=expression, defaults=defaults)
 
         # We need to score point by point to make sure that the errors that come up correspond to the same point.
         #
