@@ -1832,7 +1832,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             parallel: Number of parallel processes of upload
             method: Start method for parallel processes, Default: forkserver
             max_retries: maximum number of retries in case of a failure
-                during the upload of a batch
+                during the upload of a batch, 0 means a single attempt without retries
             wait:
                 Await for the results to be applied on the server side.
                 If `true`, each update request will explicitly wait for the confirmation of completion. Might be slower.
@@ -1908,7 +1908,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             parallel: Number of parallel processes of upload
             method: Start method for parallel processes, Default: forkserver
             max_retries: maximum number of retries in case of a failure
-                during the upload of a batch
+                during the upload of a batch, 0 means a single attempt without retries
             wait:
                 Await for the results to be applied on the server side.
                 If `true`, each update request will explicitly wait for the confirmation of completion. Might be slower.

@@ -2218,6 +2218,9 @@ class QdrantRemote(QdrantBase):
         update_filter: types.Filter | None = None,
         update_mode: types.UpdateMode | None = None,
     ) -> None:
+        if max_retries < 0:
+            raise ValueError(f"max_retries value {max_retries} is invalid. Must be 0 or larger.")
+
         if method is not None:
             if method in get_all_start_methods():
                 start_method = method

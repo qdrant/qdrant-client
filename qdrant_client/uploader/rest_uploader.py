@@ -40,7 +40,7 @@ def upload_batch(
     ]
 
     attempt = 0
-    while attempt < max_retries:
+    while attempt <= max_retries:
         try:
             openapi_client.points_api.upsert_points(
                 collection_name=collection_name,
@@ -62,14 +62,14 @@ def upload_batch(
             sleep(ex.retry_after_s)
 
         except Exception as e:
+            if attempt == max_retries:
+                raise e
+
             show_warning(
                 message=f"Batch upload failed {attempt + 1} times. Retrying...",
                 category=UserWarning,
                 stacklevel=7,
             )
-
-            if attempt == max_retries - 1:
-                raise e
 
             attempt += 1
     return True
