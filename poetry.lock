@@ -2616,14 +2616,14 @@ telegram = ["envwrap", "requests"]
 
 [[package]]
 name = "types-protobuf"
-version = "4.25.0.20240417"
+version = "7.35.1.20260906"
 description = "Typing stubs for protobuf"
 optional = false
-python-versions = ">=3.8"
+python-versions = ">=3.10"
 groups = ["types"]
 files = [
-    {file = "types-protobuf-4.25.0.20240417.tar.gz", hash = "sha256:c34eff17b9b3a0adb6830622f0f302484e4c089f533a46e3f147568313544352"},
-    {file = "types_protobuf-4.25.0.20240417-py3-none-any.whl", hash = "sha256:e9b613227c2127e3d4881d75d93c93b4d6fd97b5f6a099a0b654a05351c8685d"},
+    {file = "types_protobuf-7.35.1.20260906-py3-none-any.whl", hash = "sha256:5155e48569e0dabff303fdf578db96cd31ea9a4a63b18018a4ceac6b0ae17462"},
+    {file = "types_protobuf-7.35.1.20260906.tar.gz", hash = "sha256:efd1a3862d4c967dad5512ef8d56b1530ac84f182c41735b94004756518c4998"},
 ]
 
 [[package]]
@@ -2715,4 +2715,4 @@ fastembed-gpu = ["fastembed-gpu"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10"
-content-hash = "a990ce98beb299f15dede914c84f5e672deeccc42e46dc845d10491cefe83460"
+content-hash = "af9980e990f691032d2fcc5cbf63b918262236fd3bd73d7deef6134d74f53080"
