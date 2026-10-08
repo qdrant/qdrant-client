@@ -182,7 +182,7 @@ def test_wrong_vector_dimension_is_rejected_before_writing(vectors_config, good,
 def test_mismatched_batch_lengths_leave_points_unchanged(
     tmp_path, vector_kind, column, column_size, batch_update, persistent
 ):
-    # 2026-10-08: Reject malformed columns before a batch can overwrite or insert points.
+    """2026-10-08: Reject malformed columns before a batch can overwrite or insert points."""
     sparse_vector = models.SparseVector(indices=[0, 2], values=[1.0, 3.0])
     vector = GOOD_VECTOR
     if vector_kind == "multi":
@@ -259,7 +259,7 @@ def test_mismatched_batch_lengths_leave_points_unchanged(
 @pytest.mark.parametrize("vectors", [[], {}, {"v": []}])
 @pytest.mark.parametrize("payloads", [None, []])
 def test_empty_batch_remains_valid(batch_update, vectors, payloads):
-    # 2026-10-08: Length validation must preserve empty upserts and omitted payloads.
+    """2026-10-08: Length validation must preserve empty upserts and omitted payloads."""
     client = QdrantClient(":memory:")
     client.create_collection(
         "batch", vectors_config={"v": models.VectorParams(size=3, distance=models.Distance.DOT)}
@@ -280,7 +280,7 @@ def test_empty_batch_remains_valid(batch_update, vectors, payloads):
 
 @pytest.mark.parametrize("vectors", [{}, {"v": [GOOD_VECTOR]}])
 def test_batch_without_payloads_remains_valid(vectors):
-    # 2026-10-08: A missing payload column and payload-only points are valid batches.
+    """2026-10-08: A missing payload column and payload-only points are valid batches."""
     client = QdrantClient(":memory:")
     client.create_collection(
         "batch", vectors_config={"v": models.VectorParams(size=3, distance=models.Distance.DOT)}
