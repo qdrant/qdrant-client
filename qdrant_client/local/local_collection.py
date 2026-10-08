@@ -16,6 +16,7 @@ import numpy as np
 
 from qdrant_client import grpc as grpc
 from qdrant_client.common.client_warnings import show_warning_once
+from qdrant_client.common.validation import validate_batch_lengths
 from qdrant_client._pydantic_compat import (
     construct,
     to_dict,
@@ -2842,23 +2843,12 @@ class LocalCollection:
 
         if isinstance(points, models.Batch):
             batch = points
+            # indexing the columns below would drop extra values or fail on missing ones
+            validate_batch_lengths(batch)
             if isinstance(batch.vectors, list):
                 vectors = {DEFAULT_VECTOR_NAME: batch.vectors}
             else:
                 vectors = batch.vectors
-
-            # 2026-10-08: Check every column before indexing or dropping trailing values.
-            for vector_name, batch_vectors in vectors.items():
-                if len(batch_vectors) != len(batch.ids):
-                    raise ValueError(
-                        f"Number of ids and vectors for {vector_name!r} does not match: "
-                        f"{len(batch.ids)} != {len(batch_vectors)}"
-                    )
-            if batch.payloads is not None and len(batch.payloads) != len(batch.ids):
-                raise ValueError(
-                    f"Number of ids and payloads does not match: "
-                    f"{len(batch.ids)} != {len(batch.payloads)}"
-                )
 
             return [
                 models.PointStruct(

@@ -241,6 +241,26 @@ def test_sparse_vector_batch_conversion():
     ]
 
 
+def test_point_insert_operation_rejects_mismatched_batch():
+    from qdrant_client.conversions.conversion import RestToGrpc
+    from qdrant_client.http.models import models as rest
+
+    vector = [1.0, 2.0, 3.0]
+    sparse_vector = rest.SparseVector(indices=[0], values=[1.0])
+
+    for batch in (
+        rest.Batch(ids=[1, 2], vectors=[vector] * 3),
+        rest.Batch(ids=[1, 2], vectors={"dense": [vector] * 2, "sparse": [sparse_vector]}),
+        rest.Batch(ids=[1, 2], vectors=[vector] * 2, payloads=[{}]),
+    ):
+        with pytest.raises(ValueError, match="number of ids and"):
+            RestToGrpc.convert_point_insert_operation(rest.PointsBatch(batch=batch))
+
+    # payloads are optional
+    batch = rest.Batch(ids=[1, 2], vectors={"dense": [vector] * 2}, payloads=None)
+    assert len(RestToGrpc.convert_point_insert_operation(rest.PointsBatch(batch=batch))) == 2
+
+
 def test_grpc_payload_scheme_conversion():
     from qdrant_client.conversions.conversion import (
         grpc_field_type_to_payload_schema,
