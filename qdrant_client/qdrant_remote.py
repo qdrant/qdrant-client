@@ -22,7 +22,7 @@ from urllib.parse import urljoin
 
 from qdrant_client.common.client_warnings import show_warning, show_warning_once
 from qdrant_client import grpc as grpc
-from qdrant_client._pydantic_compat import construct
+from qdrant_client._pydantic_compat import construct, model_copy
 from qdrant_client.auth import BearerAuth
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.common.validation import validate_batch_lengths
@@ -1446,9 +1446,9 @@ class QdrantRemote(QdrantBase):
             points_selector.shard_key = shard_key_selector
         elif isinstance(points, get_args(models.PointsSelector)):
             points_selector = points
-            points_selector.shard_key = (
-                shard_key_selector if shard_key_selector is not None else points_selector.shard_key
-            )
+            if shard_key_selector is not None:
+                # shallow copy: the selector belongs to the caller and might be reused
+                points_selector = model_copy(points, update={"shard_key": shard_key_selector})
         elif isinstance(points, models.Filter):
             points_selector = construct(
                 models.FilterSelector, filter=points, shard_key=shard_key_selector

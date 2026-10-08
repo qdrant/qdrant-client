@@ -42,6 +42,13 @@ def to_dict(model: BaseModel, *args: Any, **kwargs: Any) -> dict[Any, Any]:
         return model.dict(*args, **kwargs)
 
 
+def model_copy(model: Model, *args: Any, **kwargs: Any) -> Model:
+    if PYDANTIC_V2:
+        return model.model_copy(*args, **kwargs)
+    else:
+        return model.copy(*args, **kwargs)
+
+
 def model_fields_set(model: BaseModel) -> set:
     if PYDANTIC_V2:
         return model.model_fields_set
