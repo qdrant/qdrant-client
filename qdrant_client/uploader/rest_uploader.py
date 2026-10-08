@@ -25,13 +25,6 @@ def upload_batch(
     update_mode: rest.UpdateMode | None = None,  # type: ignore[name-defined]
     wait: bool = False,
 ) -> bool:
-    # `max_retries` counts attempts, not extra retries: the loop below runs
-    # `while attempt < max_retries` starting from zero. A non-positive value
-    # therefore skips the loop entirely and returns True without uploading
-    # anything, so the batch is silently dropped. Reject it instead.
-    if max_retries < 1:
-        raise ValueError(f"max_retries value {max_retries} is invalid. Must be 1 or larger.")
-
     ids_batch, vectors_batch, payload_batch = batch
 
     ids_batch = (str(uuid4()) for _ in count()) if ids_batch is None else ids_batch
@@ -47,7 +40,7 @@ def upload_batch(
     ]
 
     attempt = 0
-    while attempt < max_retries:
+    while attempt <= max_retries:
         try:
             openapi_client.points_api.upsert_points(
                 collection_name=collection_name,
@@ -69,14 +62,14 @@ def upload_batch(
             sleep(ex.retry_after_s)
 
         except Exception as e:
+            if attempt == max_retries:
+                raise e
+
             show_warning(
                 message=f"Batch upload failed {attempt + 1} times. Retrying...",
                 category=UserWarning,
                 stacklevel=7,
             )
-
-            if attempt == max_retries - 1:
-                raise e
 
             attempt += 1
     return True
