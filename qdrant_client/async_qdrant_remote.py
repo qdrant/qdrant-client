@@ -2061,6 +2061,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 "wait": wait,
                 "shard_key_selector": shard_key_selector,
                 "options": self._grpc_options,
+                "compression": self._grpc_compression,
+                "auth_token_provider": self._auth_token_provider,
                 "timeout": self._timeout,
                 "update_filter": update_filter,
                 "update_mode": update_mode,
