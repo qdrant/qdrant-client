@@ -1,8 +1,10 @@
+import os
 from unittest.mock import MagicMock
 
 import pytest
 
 from qdrant_client import QdrantClient, models
+from qdrant_client.parallel_processor import ParallelWorkerPool, Worker
 from qdrant_client.uploader.grpc_uploader import upload_batch_grpc
 from qdrant_client.uploader.rest_uploader import upload_batch
 
@@ -46,3 +48,17 @@ def test_upload_rejects_negative_max_retries() -> None:
             max_retries=-1,
             parallel=2,
         )
+
+
+def test_negative_parallel_raises() -> None:
+    with pytest.raises(ValueError, match="non-negative"):
+        ParallelWorkerPool(-1, Worker)
+
+
+@pytest.mark.parametrize("cpu_count, expected", [(3, 3), (None, 1)])
+def test_zero_parallel_uses_all_cores(
+    monkeypatch: pytest.MonkeyPatch, cpu_count: int | None, expected: int
+) -> None:
+    monkeypatch.setattr(os, "cpu_count", lambda: cpu_count)
+
+    assert ParallelWorkerPool(0, Worker).num_workers == expected
