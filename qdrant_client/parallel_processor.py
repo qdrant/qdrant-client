@@ -111,6 +111,11 @@ class ParallelWorkerPool:
         start_method: str | None = None,
         max_internal_batch_size: int = MAX_INTERNAL_BATCH_SIZE,
     ):
+        if num_workers < 0:
+            raise ValueError(f"Number of workers must be non-negative, got {num_workers}")
+        # 0 means one worker per core, as in ModelEmbedder
+        if num_workers == 0:
+            num_workers = os.cpu_count() or 1
         self.worker_class = worker
         self.num_workers = num_workers
         self.input_queue: Queue | None = None
@@ -300,6 +305,7 @@ class ParallelWorkerPool:
         For a discussion of using destructors in Python in this manner, see
         https://eli.thegreenplace.net/2009/06/12/safely-using-destructors-in-python/.
         """
-        for process in self.processes:
+        # __init__ may raise before `processes` is set
+        for process in getattr(self, "processes", []):
             if process.is_alive():
                 process.terminate()

@@ -1901,7 +1901,7 @@ class QdrantClient(QdrantFastembedMixin):
             collection_name:  Name of the collection to upload to
             points: Iterator over points to upload
             batch_size: How many vectors upload per-request, Default: 64
-            parallel: Number of parallel processes of upload
+            parallel: Number of parallel processes of upload, 0 means all available cores
             method: Start method for parallel processes, Default: forkserver
             max_retries: maximum number of retries in case of a failure
                 during the upload of a batch, 0 means a single attempt without retries
@@ -1980,7 +1980,7 @@ class QdrantClient(QdrantFastembedMixin):
             payload: Iterable of vectors payload, Optional, Default: None
             ids: Iterable of custom vectors ids, Optional, Default: None
             batch_size: How many vectors upload per-request, Default: 64
-            parallel: Number of parallel processes of upload
+            parallel: Number of parallel processes of upload, 0 means all available cores
             method: Start method for parallel processes, Default: forkserver
             max_retries: maximum number of retries in case of a failure
                 during the upload of a batch, 0 means a single attempt without retries
