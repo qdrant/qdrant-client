@@ -44,7 +44,7 @@ def upload_batch_grpc(
     ]
 
     attempt = 0
-    while attempt < max_retries:
+    while attempt <= max_retries:
         try:
             points_client.Upsert(
                 grpc.UpsertPoints(
@@ -67,14 +67,14 @@ def upload_batch_grpc(
             sleep(ex.retry_after_s)
 
         except Exception as e:
+            if attempt == max_retries:
+                raise e
+
             show_warning(
                 message=f"Batch upload failed {attempt + 1} times. Retrying...",
                 category=UserWarning,
                 stacklevel=8,
             )
-
-            if attempt == max_retries - 1:
-                raise e
 
             attempt += 1
     return True
