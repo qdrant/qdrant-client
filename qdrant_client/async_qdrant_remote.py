@@ -21,7 +21,7 @@ from urllib3.util import Url, parse_url
 from urllib.parse import urljoin
 from qdrant_client.common.client_warnings import show_warning, show_warning_once
 from qdrant_client import grpc as grpc
-from qdrant_client._pydantic_compat import construct, to_dict
+from qdrant_client._pydantic_compat import construct, model_copy
 from qdrant_client.auth import BearerAuth
 from qdrant_client.async_client_base import AsyncQdrantBase
 from qdrant_client.common.version_check import is_compatible, get_server_version
@@ -1278,17 +1278,9 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             points_selector = GrpcToRest.convert_points_selector(points)
             points_selector.shard_key = shard_key_selector
         elif isinstance(points, get_args(models.PointsSelector)):
-            # Build a new selector instead of writing the shard key into the caller's
-            # object; see the same branch in `qdrant_remote.py`.
-            points_selector = construct(
-                type(points),
-                **{
-                    **to_dict(points, exclude_unset=True),
-                    "shard_key": (
-                        shard_key_selector if shard_key_selector is not None else points.shard_key
-                    ),
-                },
-            )
+            points_selector = points
+            if shard_key_selector is not None:
+                points_selector = model_copy(points, update={"shard_key": shard_key_selector})
         elif isinstance(points, models.Filter):
             points_selector = construct(
                 models.FilterSelector, filter=points, shard_key=shard_key_selector

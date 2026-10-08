@@ -22,7 +22,7 @@ from urllib.parse import urljoin
 
 from qdrant_client.common.client_warnings import show_warning, show_warning_once
 from qdrant_client import grpc as grpc
-from qdrant_client._pydantic_compat import construct, to_dict
+from qdrant_client._pydantic_compat import construct, model_copy
 from qdrant_client.auth import BearerAuth
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.common.version_check import is_compatible, get_server_version
@@ -1443,21 +1443,10 @@ class QdrantRemote(QdrantBase):
             points_selector = GrpcToRest.convert_points_selector(points)
             points_selector.shard_key = shard_key_selector
         elif isinstance(points, get_args(models.PointsSelector)):
-            # Build a new selector instead of writing the shard key into the caller's
-            # object: an application that holds a selector as a constant and passes
-            # `shard_key_selector` per request would otherwise have that constant
-            # rewritten, so a later call meant for another shard goes to the wrong one.
-            # `_try_argument_to_grpc_selector` reads the embedded key and returns it
-            # separately for the same reason.
-            points_selector = construct(
-                type(points),
-                **{
-                    **to_dict(points, exclude_unset=True),
-                    "shard_key": (
-                        shard_key_selector if shard_key_selector is not None else points.shard_key
-                    ),
-                },
-            )
+            points_selector = points
+            if shard_key_selector is not None:
+                # shallow copy: the selector belongs to the caller and might be reused
+                points_selector = model_copy(points, update={"shard_key": shard_key_selector})
         elif isinstance(points, models.Filter):
             points_selector = construct(
                 models.FilterSelector, filter=points, shard_key=shard_key_selector
