@@ -84,7 +84,7 @@ def delete_value_by_key(payload: dict, keys: list[JsonPathItem]) -> None:
 
 
 def merge_payload(dest: dict, src: dict) -> dict:
-    """Merge ``src`` into ``dest`` like the server's set payload: a null value removes the key."""
+    """Merge ``src`` into ``dest`` like the server's ``merge_map``: a null removes the key."""
     for key, value in src.items():
         if value is None:
             dest.pop(key, None)

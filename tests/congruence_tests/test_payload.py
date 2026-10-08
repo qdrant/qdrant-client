@@ -788,8 +788,9 @@ def test_set_payload_null_removes_key(prefer_grpc):
     payload = {"a": 1, "b": {"c": 2, "d": 3}, "arr": [{"c": 2}, 1], "kept": None}
     # top-level nulls remove keys at the target, nested nulls are stored as is
     new_payload = {"a": None, "c": None, "missing": None, "e": {"f": None}}
+    keys = [None, "a", "b", "a.x", "arr[0]", "arr[1]", "arr[]", "arr[1].x", "arr[].x", "new.path"]
 
-    for key in [None, "b", "a.x", "arr[0]", "arr[1]", "arr[]", "new.path"]:
+    for key in keys:
         for client in (local_client, remote_client):
             client.upsert(
                 COLLECTION_NAME,

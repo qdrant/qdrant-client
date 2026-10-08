@@ -45,25 +45,6 @@ def test_wildcard_set_keeps_array_elements_independent(
     assert value_by_key(payload, f"{key}.metadata.color") == expected_colors
 
 
-@pytest.mark.parametrize(
-    "payload,key,expected",
-    [
-        ({"a": {"b": 1, "c": 0}}, "a", {"a": {"c": 2}}),
-        ({"a": 1}, "a", {"a": {"c": 2}}),
-        ({"a": 1}, "a.x", {"a": {"x": {"c": 2}}}),
-        ({}, "a.x", {"a": {"x": {"c": 2}}}),
-        ({"a": [{"b": 1}, 3]}, "a[0]", {"a": [{"c": 2}, 3]}),
-        ({"a": [{"b": 1}, 3]}, "a[1]", {"a": [{"b": 1}, {"c": 2}]}),
-        ({"a": [{"b": 1}, 3]}, "a[]", {"a": [{"c": 2}, {"c": 2}]}),
-    ],
-)
-def test_set_value_by_key_null_removes_key(
-    payload: dict[str, Any], key: str, expected: dict[str, Any]
-) -> None:
-    set_value_by_key(payload, parse_json_path(key), {"b": None, "c": 2})
-    assert payload == expected
-
-
 def test_parse_json_path() -> None:
     jp_key = "a"
     keys = parse_json_path(jp_key)

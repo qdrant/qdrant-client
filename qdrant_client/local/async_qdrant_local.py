@@ -30,6 +30,7 @@ from qdrant_client.local.local_collection import (
     DEFAULT_VECTOR_NAME,
     ignore_mentioned_ids_filter,
 )
+from qdrant_client.local.payload_value_setter import merge_payload
 
 META_INFO_FILENAME = "meta.json"
 
@@ -753,7 +754,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
             updated = True
         if metadata is not None:
             if _collection.config.metadata is not None:
-                _collection.config.metadata.update(deepcopy(metadata))
+                merge_payload(_collection.config.metadata, deepcopy(metadata))
             else:
                 _collection.config.metadata = deepcopy(metadata)
             updated = True
