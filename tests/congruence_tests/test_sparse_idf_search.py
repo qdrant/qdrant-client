@@ -85,6 +85,23 @@ def test_simple_search():
 
     compare_client_results(local_client, remote_client, searcher.simple_search_text)
 
+    # partial updates keep the unset fields, such as the modifier, `index` is merged
+    for index in (
+        models.SparseIndexParams(full_scan_threshold=100),
+        models.SparseIndexParams(on_disk=True),
+    ):
+        for client in (local_client, remote_client):
+            client.update_collection(
+                collection_name=COLLECTION_NAME,
+                sparse_vectors_config={"sparse-text": models.SparseVectorParams(index=index)},
+            )
+
+        assert (
+            local_client.get_collection(COLLECTION_NAME).config.params.sparse_vectors
+            == remote_client.get_collection(COLLECTION_NAME).config.params.sparse_vectors
+        )
+        compare_client_results(local_client, remote_client, searcher.simple_search_text)
+
     local_client.update_collection(
         collection_name=COLLECTION_NAME,
         sparse_vectors_config={

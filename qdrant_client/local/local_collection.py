@@ -16,7 +16,11 @@ import numpy as np
 
 from qdrant_client import grpc as grpc
 from qdrant_client.common.client_warnings import show_warning_once
-from qdrant_client._pydantic_compat import construct, to_jsonable_python as _to_jsonable_python
+from qdrant_client._pydantic_compat import (
+    construct,
+    to_dict,
+    to_jsonable_python as _to_jsonable_python,
+)
 from qdrant_client.conversions import common_types as types
 from qdrant_client.conversions.common_types import get_args_subscribed
 from qdrant_client.conversions.conversion import GrpcToRest
@@ -3290,7 +3294,12 @@ class LocalCollection:
         if vector_name not in self.sparse_vectors:
             raise ValueError(f"Vector {vector_name} does not exist in the collection")
 
-        self.config.sparse_vectors[vector_name] = deepcopy(new_config)
+        # like the server, unset fields keep their values, `index` is merged field by field
+        config = to_dict(self.config.sparse_vectors[vector_name], exclude_none=True)
+        update = to_dict(new_config, exclude_none=True)
+        if "index" in update:
+            update["index"] = {**config.get("index", {}), **update["index"]}
+        self.config.sparse_vectors[vector_name] = models.SparseVectorParams(**{**config, **update})
 
     def create_dense_vector_name(self, vector_name: str, config: models.DenseVectorConfig) -> None:
         params = models.VectorParams(
