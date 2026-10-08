@@ -15,6 +15,7 @@ from qdrant_client import grpc
 from qdrant_client.grpc import NullValue, Struct, Value
 from qdrant_client.http.models import models as rest
 from qdrant_client._pydantic_compat import construct, to_jsonable_python
+from qdrant_client.common.validation import validate_batch_lengths
 from qdrant_client.conversions.common_types import get_args_subscribed
 
 
@@ -4817,6 +4818,7 @@ class RestToGrpc:
     ) -> list[grpc.PointStruct]:
         # shard key and update_filter are converted in the parent function
         if isinstance(model, rest.PointsBatch):
+            validate_batch_lengths(model.batch)
             vectors_batch: list[grpc.Vectors] = cls.convert_batch_vector_struct(
                 model.batch.vectors, len(model.batch.ids)
             )

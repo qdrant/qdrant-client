@@ -25,6 +25,7 @@ from qdrant_client import grpc as grpc
 from qdrant_client._pydantic_compat import construct
 from qdrant_client.auth import BearerAuth
 from qdrant_client.client_base import QdrantBase
+from qdrant_client.common.validation import validate_batch_lengths
 from qdrant_client.common.version_check import is_compatible, get_server_version
 from qdrant_client.connection import get_channel
 from qdrant_client.conversions import common_types as types
@@ -1112,6 +1113,7 @@ class QdrantRemote(QdrantBase):
     ) -> types.UpdateResult:
         if self._prefer_grpc:
             if isinstance(points, models.Batch):
+                validate_batch_lengths(points)
                 vectors_batch: list[grpc.Vectors] = RestToGrpc.convert_batch_vector_struct(
                     points.vectors, len(points.ids)
                 )

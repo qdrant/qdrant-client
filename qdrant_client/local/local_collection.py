@@ -16,6 +16,7 @@ import numpy as np
 
 from qdrant_client import grpc as grpc
 from qdrant_client.common.client_warnings import show_warning_once
+from qdrant_client.common.validation import validate_batch_lengths
 from qdrant_client._pydantic_compat import (
     construct,
     to_dict,
@@ -2842,6 +2843,8 @@ class LocalCollection:
 
         if isinstance(points, models.Batch):
             batch = points
+            # indexing the columns below would drop extra values or fail on missing ones
+            validate_batch_lengths(batch)
             if isinstance(batch.vectors, list):
                 vectors = {DEFAULT_VECTOR_NAME: batch.vectors}
             else:

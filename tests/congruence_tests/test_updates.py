@@ -1140,3 +1140,35 @@ def test_rejected_batch_update_leaves_the_collection_untouched(local_client, rem
         remote_client.batch_update_points(COLLECTION_NAME, update_operations=operations, wait=True)
 
     compare_collections(local_client, remote_client, UPLOAD_NUM_VECTORS)
+
+
+@pytest.mark.parametrize("prefer_grpc", [False, True])
+def test_rejected_mismatched_batch_leaves_the_collection_untouched(prefer_grpc):
+    """A batch column longer or shorter than its ids must be rejected, not cut to fit.
+
+    The server validates this for REST only. Over gRPC the client splits the batch into points
+    itself, and used to drop a short named column's vectors, or extra payloads, without an error.
+    """
+    local_client = init_local()
+    remote_client = init_remote(prefer_grpc=prefer_grpc)
+    initialize_fixture_collection(local_client)
+    initialize_fixture_collection(remote_client)
+
+    points = generate_fixtures(UPLOAD_NUM_VECTORS)
+    local_client.upload_points(COLLECTION_NAME, points, wait=True)
+    remote_client.upload_points(COLLECTION_NAME, points, wait=True)
+
+    ids = [points[0].id, UPLOAD_NUM_VECTORS + 1]  # an update and an insert
+    vectors = {name: [vector, vector] for name, vector in points[1].vector.items()}
+    remote_error = ValueError if prefer_grpc else qdrant_client.http.exceptions.UnexpectedResponse
+
+    for batch in (
+        models.Batch(ids=ids, vectors={**vectors, "image": vectors["image"][:1]}),
+        models.Batch(ids=ids, vectors=vectors, payloads=[{"a": 1}, {"a": 2}, {"a": 3}]),
+    ):
+        with pytest.raises(ValueError, match="number of ids and"):
+            local_client.upsert(COLLECTION_NAME, batch)
+        with pytest.raises(remote_error, match="number of ids and"):
+            remote_client.upsert(COLLECTION_NAME, batch, wait=True)
+
+        compare_collections(local_client, remote_client, UPLOAD_NUM_VECTORS)
