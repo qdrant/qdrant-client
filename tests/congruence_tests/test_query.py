@@ -2510,6 +2510,44 @@ def test_query_group():
             raise e
 
 
+def test_query_group_prefetch_recommend_lookup_from():
+    vectors_config = models.VectorParams(size=2, distance=models.Distance.DOT)
+    fixture_points = [
+        models.PointStruct(id=0, vector=[1.0, 0.0], payload={"document": "0"}),
+        models.PointStruct(id=1, vector=[0.9, 0.1], payload={"document": "1"}),
+        models.PointStruct(id=2, vector=[0.5, 0.5], payload={"document": "2"}),
+    ]
+    secondary_collection_points = [models.PointStruct(id=0, vector=[0.0, 1.0])]
+
+    local_client, http_client, grpc_client = init_clients(
+        fixture_points, vectors_config=vectors_config
+    )
+    for client in (local_client, http_client):
+        init_client(
+            client,
+            secondary_collection_points,
+            SECONDARY_COLLECTION_NAME,
+            vectors_config=vectors_config,
+        )
+
+    def query_groups(client: QdrantBase) -> GroupsResult:
+        return client.query_points_groups(
+            collection_name=COLLECTION_NAME,
+            prefetch=models.Prefetch(
+                query=models.RecommendQuery(recommend=models.RecommendInput(positive=[0])),
+                lookup_from=models.LookupLocation(collection=SECONDARY_COLLECTION_NAME),
+                limit=3,
+            ),
+            query=models.FusionQuery(fusion=models.Fusion.RRF),
+            group_by="document",
+            group_size=1,
+        )
+
+    compare_clients_results(local_client, http_client, grpc_client, query_groups)
+    # the example is taken from another collection, so point 0 of this one stays a candidate
+    assert [group.hits[0].id for group in query_groups(local_client).groups] == [2, 1, 0]
+
+
 def test_random_sampling():
     fixture_points = generate_fixtures(100)
 
