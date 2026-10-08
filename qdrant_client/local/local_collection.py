@@ -3294,18 +3294,12 @@ class LocalCollection:
         if vector_name not in self.sparse_vectors:
             raise ValueError(f"Vector {vector_name} does not exist in the collection")
 
-        # Like the server, apply only the provided non-null fields, including within index.
-        config = deepcopy(self.config.sparse_vectors[vector_name])
-        if new_config.modifier is not None:
-            config.modifier = new_config.modifier
-        if new_config.index is not None:
-            if config.index is None:
-                config.index = deepcopy(new_config.index)
-            else:
-                for field, value in to_dict(new_config.index, exclude_none=True).items():
-                    setattr(config.index, field, value)
-
-        self.config.sparse_vectors[vector_name] = config
+        # like the server, unset fields keep their values, `index` is merged field by field
+        config = to_dict(self.config.sparse_vectors[vector_name], exclude_none=True)
+        update = to_dict(new_config, exclude_none=True)
+        if "index" in update:
+            update["index"] = {**config.get("index", {}), **update["index"]}
+        self.config.sparse_vectors[vector_name] = models.SparseVectorParams(**{**config, **update})
 
     def create_dense_vector_name(self, vector_name: str, config: models.DenseVectorConfig) -> None:
         params = models.VectorParams(
