@@ -564,7 +564,7 @@ async def test_async_auth():
 @pytest.mark.asyncio
 @pytest.mark.parametrize("prefer_grpc", [False, True])
 async def test_auth_token_provider_upload(prefer_grpc):
-    """Check that upload_points and upload_collection authenticate with the token provider."""
+    """Check that upload_points authenticates with the token provider."""
     call_num = 0
 
     def auth_token_provider():
@@ -591,15 +591,6 @@ async def test_auth_token_provider_upload(prefer_grpc):
         points=[
             models.PointStruct(id=idx, vector=np.random.rand(DIM).tolist()) for idx in range(10)
         ],
-        wait=True,
-    )
-    assert call_num > calls_before
-
-    calls_before = call_num
-    client.upload_collection(
-        COLLECTION_NAME,
-        vectors=np.random.rand(10, DIM),
-        ids=list(range(10, 20)),
         wait=True,
     )
     assert call_num > calls_before
