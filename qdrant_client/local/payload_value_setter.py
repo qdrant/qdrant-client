@@ -83,6 +83,16 @@ def delete_value_by_key(payload: dict, keys: list[JsonPathItem]) -> None:
     _delete(payload, keys.copy())
 
 
+def merge_payload(dest: dict, src: dict) -> dict:
+    """Merge ``src`` into ``dest`` like the server's ``merge_map``: a null removes the key."""
+    for key, value in src.items():
+        if value is None:
+            dest.pop(key, None)
+        else:
+            dest[key] = value
+    return dest
+
+
 class Setter:
     TYPE: Any
     SETTERS: dict[JsonPathItemType, Type["Setter"]] = {}
@@ -174,9 +184,9 @@ class KeySetter(Setter):
 
         if len(k_list) == 0:
             if isinstance(data[current_key.key], dict):
-                data[current_key.key].update(value)
+                merge_payload(data[current_key.key], value)
             else:
-                data[current_key.key] = value
+                data[current_key.key] = merge_payload({}, value)
         else:
             cls.set(data[current_key.key], k_list.copy(), value, data, current_key)
 
@@ -193,9 +203,9 @@ class KeySetter(Setter):
 
         if len(k_list) == 0:
             if prev_key.item_type == JsonPathItemType.KEY:
-                prev_data[prev_key.key] = {current_key.key: value}
+                prev_data[prev_key.key] = {current_key.key: merge_payload({}, value)}
             else:  # if prev key was WILDCARD, we need to pass INDEX instead with an index set
-                prev_data[prev_key.index] = {current_key.key: value}
+                prev_data[prev_key.index] = {current_key.key: merge_payload({}, value)}
         else:
             if prev_key.item_type == JsonPathItemType.KEY:
                 prev_data[prev_key.key] = {current_key.key: {}}
@@ -263,9 +273,9 @@ class IndexSetter(_ListSetter):
         if current_key.index < len(data):
             if len(k_list) == 0:
                 if isinstance(data[current_key.index], dict):
-                    data[current_key.index].update(value)
+                    merge_payload(data[current_key.index], value)
                 else:
-                    data[current_key.index] = value
+                    data[current_key.index] = merge_payload({}, value)
                 return
 
             cls.set(data[current_key.index], k_list.copy(), value, data, current_key)
@@ -287,9 +297,9 @@ class WildcardIndexSetter(_ListSetter):
             item_value = deepcopy(value)
             if len(k_list) == 0:
                 if isinstance(item, dict):
-                    item.update(item_value)
+                    merge_payload(item, item_value)
                 else:
-                    data[i] = item_value
+                    data[i] = merge_payload({}, item_value)
             else:
                 cls.set(
                     item,

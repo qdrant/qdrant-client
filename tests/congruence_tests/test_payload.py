@@ -775,3 +775,29 @@ def test_local_set_payload_does_not_leak_across_points(prefer_grpc):
         )
 
     compare_collections(local_client, remote_client, num_vectors)
+
+
+@pytest.mark.parametrize("prefer_grpc", [True, False])
+def test_set_payload_null_removes_key(prefer_grpc):
+    local_client: QdrantClient = init_local()
+    remote_client: QdrantClient = init_remote(prefer_grpc=prefer_grpc)
+    vectors_config = models.VectorParams(size=2, distance=models.Distance.COSINE)
+    initialize_fixture_collection(local_client, vectors_config=vectors_config)
+    initialize_fixture_collection(remote_client, vectors_config=vectors_config)
+
+    payload = {"a": 1, "b": {"c": 2, "d": 3}, "arr": [{"c": 2}, 1], "kept": None}
+    # top-level nulls remove keys at the target, nested nulls are stored as is
+    new_payload = {"a": None, "c": None, "missing": None, "e": {"f": None}}
+    keys = [None, "a", "b", "a.x", "arr[0]", "arr[1]", "arr[]", "arr[1].x", "arr[].x", "new.path"]
+
+    for key in keys:
+        for client in (local_client, remote_client):
+            client.upsert(
+                COLLECTION_NAME,
+                points=[PointStruct(id=1, vector=[0.1, 0.2], payload=payload)],
+                wait=True,
+            )
+            client.set_payload(
+                COLLECTION_NAME, payload=new_payload, points=[1], key=key, wait=True
+            )
+        compare_collections(local_client, remote_client, 1)
