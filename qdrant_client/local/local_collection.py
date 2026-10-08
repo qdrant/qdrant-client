@@ -819,7 +819,13 @@ class LocalCollection:
 
         required_order = distance_to_order(distance)
 
-        if required_order == DistanceOrder.BIGGER_IS_BETTER or isinstance(
+        # Recommend/Discovery/Context (and their multi-vector and sparse variants) score every
+        # point with a sigmoid-based synthetic score that is *bigger is better*, regardless of the
+        # collection's raw distance order. The sort order and the `score_threshold` cut-off below
+        # must use the same decision; otherwise a Euclidean/Manhattan collection applies the
+        # "smaller is better" distance cut-off to a "bigger is better" synthetic score and drops
+        # every result on the first point.
+        synthetic_bigger_is_better = isinstance(
             query_vector,
             (
                 DiscoveryQuery,
@@ -830,7 +836,12 @@ class LocalCollection:
                 MultiRecoQuery,
                 NaiveFeedbackQuery,
             ),  # sparse structures are not required, sparse always uses DOT
-        ):
+        )
+        bigger_is_better = (
+            required_order == DistanceOrder.BIGGER_IS_BETTER or synthetic_bigger_is_better
+        )
+
+        if bigger_is_better:
             order = np.argsort(scores)[::-1]
         else:
             order = np.argsort(scores)
@@ -850,7 +861,7 @@ class LocalCollection:
             point_id = self.ids_inv[idx]
 
             if score_threshold is not None:
-                if required_order == DistanceOrder.BIGGER_IS_BETTER:
+                if bigger_is_better:
                     if score <= score_threshold:
                         break
                 else:
