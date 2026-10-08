@@ -546,6 +546,9 @@ class QdrantLocal(QdrantBase):
                 collection_name, query, using, lookup_from
             )
             query_filter = ignore_mentioned_ids_filter(query_filter, list(mentioned_ids))
+
+        prefetch = self._resolve_prefetches_input(prefetch, collection_name)
+
         with_lookup_collection = None
         if with_lookup is not None:
             if isinstance(with_lookup, str):
