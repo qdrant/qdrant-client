@@ -1,5 +1,5 @@
-import asyncio
 import collections
+import inspect
 from typing import Any, Awaitable, Callable
 
 import grpc
@@ -168,10 +168,12 @@ def header_adder_interceptor(
             )
 
         if auth_token_provider:
-            if not asyncio.iscoroutinefunction(auth_token_provider):
-                metadata.append(("authorization", f"Bearer {auth_token_provider()}"))
-            else:
+            token: Any = auth_token_provider()
+            if inspect.isawaitable(token):
+                if inspect.iscoroutine(token):
+                    token.close()  # never awaited, close it to avoid a RuntimeWarning
                 raise ValueError("Synchronous channel requires synchronous auth token provider.")
+            metadata.append(("authorization", f"Bearer {token}"))
 
         for key, value in get_context_headers().items():
             metadata.append((key, value))
@@ -229,10 +231,9 @@ def header_adder_async_interceptor(
             )
 
         if auth_token_provider:
-            if asyncio.iscoroutinefunction(auth_token_provider):
-                token = await auth_token_provider()
-            else:
-                token = auth_token_provider()
+            token: Any = auth_token_provider()
+            if inspect.isawaitable(token):
+                token = await token
             metadata.append(("authorization", f"Bearer {token}"))
 
         for key, value in get_context_headers().items():
