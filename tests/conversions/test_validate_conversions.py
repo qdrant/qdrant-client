@@ -389,6 +389,55 @@ def test_json_to_value_struct_fields_as_messages(monkeypatch):
     assert [conversion.payload_to_grpc(payload) for payload in payloads] == expected
 
 
+@pytest.mark.parametrize(
+    "field, value, expected",
+    [
+        ("integer_value", 2**63 - 1, 2**63 - 1),
+        ("integer_value", -(2**63), -(2**63)),
+        ("double_value", 1.0, 1.0),
+        ("double_value", -0.0, -0.0),
+        # non-finite doubles are returned as strings, the way MessageToDict renders them
+        ("double_value", float("nan"), "NaN"),
+        ("double_value", float("inf"), "Infinity"),
+        ("double_value", float("-inf"), "-Infinity"),
+        ("string_value", "", ""),
+        ("bool_value", False, False),
+        ("null_value", 0, None),
+    ],
+)
+def test_value_to_json_scalars(field, value, expected):
+    from qdrant_client.conversions.conversion import value_to_json
+    from qdrant_client.grpc import Value
+
+    result = value_to_json(Value(**{field: value}))
+    assert type(result) is type(expected)
+    assert repr(result) == repr(expected)  # tells -0.0 from 0.0
+
+
+def test_value_to_json_containers():
+    from qdrant_client.conversions.conversion import json_to_value, value_to_json
+    from qdrant_client.grpc import ListValue, Struct, Value
+
+    assert value_to_json(Value(struct_value=Struct())) == {}
+    assert value_to_json(Value(list_value=ListValue())) == []
+
+    payload = {"a": [1, 1.5, None, {"b": [True, "c", [], {}]}], "d": {"e": {"f": -1}}}
+    assert value_to_json(json_to_value(payload)) == payload
+
+
+def test_convert_points_empty_payload():
+    from qdrant_client import grpc
+    from qdrant_client.conversions.conversion import GrpcToRest, json_to_value
+
+    point_id = grpc.PointId(num=1)
+    assert GrpcToRest.convert_scored_point(grpc.ScoredPoint(id=point_id)).payload is None
+    assert GrpcToRest.convert_retrieved_point(grpc.RetrievedPoint(id=point_id)).payload == {}
+
+    payload = {"a": json_to_value(1)}
+    scored_point = GrpcToRest.convert_scored_point(grpc.ScoredPoint(id=point_id, payload=payload))
+    assert scored_point.payload == {"a": 1}
+
+
 def test_convert_context_input_flat_pair():
     from qdrant_client import models
     from qdrant_client.conversions.conversion import GrpcToRest, RestToGrpc
