@@ -3887,6 +3887,8 @@ class RestToGrpc:
                     vectors.update({key: grpc.Vector(image=cls.convert_image(val))})
                 elif isinstance(val, rest.InferenceObject):
                     vectors.update({key: grpc.Vector(object=cls.convert_inference_object(val))})
+                else:
+                    raise ValueError(f"invalid VectorStruct model: vector {key!r} is {val!r}")
             return grpc.Vectors(vectors=grpc.NamedVectors(vectors=vectors))
         elif isinstance(model, rest.Document):
             return grpc.Vectors(vector=grpc.Vector(document=cls.convert_document(model)))
