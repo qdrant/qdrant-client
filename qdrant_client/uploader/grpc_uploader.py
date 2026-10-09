@@ -1,9 +1,11 @@
+from functools import lru_cache
 from itertools import count
 from time import sleep
 from typing import Any, Generator, Iterable
 from uuid import uuid4
 
 import numpy as np
+from google.protobuf.internal import api_implementation
 
 from qdrant_client import grpc as grpc
 from qdrant_client import models as rest
@@ -15,51 +17,48 @@ from qdrant_client.common.client_warnings import show_warning
 from qdrant_client.conversions import common_types as types
 
 
-def _varint(value: int) -> bytes:
-    result = bytearray()
-    while value > 0x7F:
-        result.append(value & 0x7F | 0x80)
-        value >>= 7
-    result.append(value)
-    return bytes(result)
+# only upb parses the bytes fast and to the floats it makes of python floats: pure python protobuf
+# is slower at it and loses NaN payloads, the cpp one of protobuf 3 rounds differently near FLT_MAX
+_UPB = api_implementation.Type() == "upb"
 
 
-def _length_delimited_tag(message: Any, field: str) -> bytes:
-    return _varint(message.DESCRIPTOR.fields_by_name[field].number << 3 | 2)
+@lru_cache(maxsize=64)
+def _dense_vector_prefix(dim: int, multi: bool) -> bytes:
+    """What protobuf writes before the floats of a `DenseVector` of `dim` floats
 
-
-_DENSE_VECTOR_DATA = _length_delimited_tag(grpc.DenseVector, "data")
-_MULTI_DENSE_VECTOR_VECTORS = _length_delimited_tag(grpc.MultiDenseVector, "vectors")
-
-
-def _dense_vector_bytes(vector: np.ndarray) -> bytes:
-    """Serialized `DenseVector` with the values of a 1-d array"""
-    # values out of the float range become inf, as protobuf does with python floats (pure python
-    # protobuf < 6.30 also turns values slightly above the float maximum into inf, a cast rounds
-    # them down to the maximum, as upb does)
-    with np.errstate(over="ignore"):
-        if vector.dtype.kind != "f" or vector.dtype.itemsize > 8:
-            # through a double, the way `tolist()` and protobuf convert other numbers
-            vector = vector.astype(np.float64)
-        data = vector.astype("<f4", copy=False).tobytes()
-    return _DENSE_VECTOR_DATA + _varint(len(data)) + data
-
-
-def _set_numpy_vector(target: grpc.Vector, vector: np.ndarray) -> None:
-    if vector.ndim == 2 and len(vector) > 0:
-        target.multi_dense.MergeFromString(
-            b"".join(
-                _MULTI_DENSE_VECTOR_VECTORS + _varint(len(dense)) + dense
-                for dense in map(_dense_vector_bytes, vector)
-            )
-        )
-    else:  # an empty 2-d array is an empty dense vector, like an empty list
-        target.dense.MergeFromString(_dense_vector_bytes(vector.reshape(-1)))
+    With `multi`, of a `DenseVector` in a `MultiDenseVector`. Cut from a serialized vector of
+    zeros, which ends with its floats.
+    """
+    message: Any = grpc.DenseVector(data=[0.0] * dim)
+    if multi:
+        message = grpc.MultiDenseVector(vectors=[message])
+    serialized = message.SerializeToString()
+    return serialized[: len(serialized) - 4 * dim]
 
 
 def _is_numpy_vector(vector: Any) -> bool:
-    # other arrays take the path of lists, to fail or be converted the same way
-    return isinstance(vector, np.ndarray) and vector.ndim in (1, 2) and vector.dtype.kind in "fiub"
+    # other arrays: empty ones, of long doubles or not of numbers, and subclasses like matrices
+    # (their rows are 2-d) or masked arrays, take the path of lists as before
+    return (
+        _UPB
+        and type(vector) in (np.ndarray, np.memmap)
+        and vector.ndim in (1, 2)
+        and vector.size > 0
+        and vector.dtype.kind in "fiub"
+        and vector.dtype.itemsize <= 8
+    )
+
+
+def _set_numpy_vector(target: grpc.Vector, vector: np.ndarray) -> None:
+    # through doubles to floats, as tolist() and protobuf convert numbers, e.g. signaling NaNs
+    # become quiet and values out of the float range inf, without warnings
+    with np.errstate(all="ignore"):
+        vector = vector.astype(np.float64, copy=False).astype("<f4")
+    if vector.ndim == 1:
+        target.dense.MergeFromString(_dense_vector_prefix(len(vector), False) + vector.tobytes())
+    else:
+        prefix = _dense_vector_prefix(vector.shape[1], True)
+        target.multi_dense.MergeFromString(b"".join([prefix + row.tobytes() for row in vector]))
 
 
 def convert_vector_struct(vector: Any) -> grpc.Vectors:
@@ -192,8 +191,9 @@ class GrpcBatchUploader(BaseUploader):
 
     @staticmethod
     def _from_numpy(vectors: types.NumpyArray) -> Any:
-        # convert_vector_struct reads the arrays directly
-        return vectors
+        # convert_vector_struct reads plain arrays, others become lists as before: the rows of a
+        # matrix are 2-d, a masked array hides values, an array of objects may hold anything
+        return vectors if type(vectors) in (np.ndarray, np.memmap) else vectors.tolist()
 
     @classmethod
     def start(

@@ -10,16 +10,16 @@ from qdrant_client.embed.utils import FieldPath
 
 _INFERENCE_OBJECT_TYPES = get_args(INFERENCE_OBJECT_TYPES)
 
+# the inspection finds nothing in numbers, and doesn't look into lists inside lists
+_NUMBER_OR_LIST_TYPES = {int, float, list}
 
-def _models(members: list[Any]) -> list[BaseModel]:
-    """Models among the members of a list, only they can be or contain inference objects
 
-    Lists are mostly vectors, with thousands of floats. Comparing the set of their types is much
-    cheaper than isinstance on every member.
+def _numbers_or_lists(values: list[Any]) -> bool:
+    """Whether the values are all numbers or lists, like those of a vector or a multivector
+
+    Comparing the set of their types is much cheaper than inspecting each of thousands of floats.
     """
-    if not any(issubclass(member_type, BaseModel) for member_type in set(map(type, members))):
-        return []
-    return [member for member in members if isinstance(member, BaseModel)]
+    return set(map(type, values)) <= _NUMBER_OR_LIST_TYPES
 
 
 class Inspector:
@@ -116,18 +116,22 @@ class Inspector:
             return False
 
         elif isinstance(model, list):
-            # members which are not models can't contain inference objects at any path
-            members = _models(model)
-            for current_model in members:
+            if _numbers_or_lists(model):
+                return False
+
+            for current_model in model:
                 if isinstance(current_model, _INFERENCE_OBJECT_TYPES):
                     return True
+
+                if not isinstance(current_model, BaseModel):
+                    continue
 
                 type_found = inspect_recursive(current_model)
                 if type_found:
                     return True
 
             for next_path in tail:
-                for current_model in members:
+                for current_model in model:
                     type_found = self._inspect_inner_models(
                         current_model, next_path.current, next_path.tail if next_path.tail else []
                     )
@@ -137,10 +141,16 @@ class Inspector:
 
         elif isinstance(model, dict):
             for key, values in model.items():
-                values = _models([values] if not isinstance(values, list) else values)
+                values = [values] if not isinstance(values, list) else values
+                if _numbers_or_lists(values):
+                    continue
+
                 for current_model in values:
                     if isinstance(current_model, _INFERENCE_OBJECT_TYPES):
                         return True
+
+                    if not isinstance(current_model, BaseModel):
+                        continue
 
                     found_type = inspect_recursive(current_model)
                     if found_type:
