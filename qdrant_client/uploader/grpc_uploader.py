@@ -1,8 +1,11 @@
+from functools import lru_cache
 from itertools import count
 from time import sleep
 from typing import Any, Generator, Iterable
 from uuid import uuid4
 
+import numpy as np
+from google.protobuf.internal import api_implementation
 
 from qdrant_client import grpc as grpc
 from qdrant_client import models as rest
@@ -12,6 +15,76 @@ from qdrant_client.conversions.conversion import RestToGrpc, payload_to_grpc
 from qdrant_client.uploader.uploader import BaseUploader
 from qdrant_client.common.client_warnings import show_warning
 from qdrant_client.conversions import common_types as types
+
+
+# only upb parses the bytes fast and to the floats it makes of python floats: pure python protobuf
+# is slower at it and loses NaN payloads, the cpp one of protobuf 3 rounds differently near FLT_MAX
+_UPB = api_implementation.Type() == "upb"
+
+
+@lru_cache(maxsize=64)
+def _dense_vector_prefix(dim: int, multi: bool) -> bytes:
+    """What protobuf writes before the floats of a `DenseVector` of `dim` floats
+
+    With `multi`, of a `DenseVector` in a `MultiDenseVector`. Cut from a serialized vector of
+    zeros, which ends with its floats.
+    """
+    message: Any = grpc.DenseVector(data=[0.0] * dim)
+    if multi:
+        message = grpc.MultiDenseVector(vectors=[message])
+    serialized = message.SerializeToString()
+    return serialized[: len(serialized) - 4 * dim]
+
+
+def _is_numpy_vector(vector: Any) -> bool:
+    # other arrays: empty ones, of long doubles or not of numbers, and subclasses like matrices
+    # (their rows are 2-d) or masked arrays, take the path of lists as before
+    return (
+        _UPB
+        and type(vector) in (np.ndarray, np.memmap)
+        and vector.ndim in (1, 2)
+        and vector.size > 0
+        and vector.dtype.kind in "fiub"
+        and vector.dtype.itemsize <= 8
+    )
+
+
+def _set_numpy_vector(target: grpc.Vector, vector: np.ndarray) -> None:
+    # through doubles to floats, as tolist() and protobuf convert numbers, e.g. signaling NaNs
+    # become quiet and values out of the float range inf, without warnings
+    with np.errstate(all="ignore"):
+        vector = vector.astype(np.float64, copy=False).astype("<f4")
+    if vector.ndim == 1:
+        target.dense.MergeFromString(_dense_vector_prefix(len(vector), False) + vector.tobytes())
+    else:
+        prefix = _dense_vector_prefix(vector.shape[1], True)
+        target.multi_dense.MergeFromString(b"".join([prefix + row.tobytes() for row in vector]))
+
+
+def convert_vector_struct(vector: Any) -> grpc.Vectors:
+    """`RestToGrpc.convert_vector_struct`, which also takes numpy arrays and dicts of them
+
+    Reading the bytes of an array is many times faster than turning it into python floats which
+    protobuf then converts to C floats one by one.
+    """
+    if _is_numpy_vector(vector):
+        vectors = grpc.Vectors()
+        _set_numpy_vector(vectors.vector, vector)
+        return vectors
+    if isinstance(vector, dict) and vector and all(map(_is_numpy_vector, vector.values())):
+        vectors = grpc.Vectors()
+        for name, value in vector.items():
+            _set_numpy_vector(vectors.vectors.vectors[name], value)
+        return vectors
+
+    if isinstance(vector, np.ndarray):
+        vector = vector.tolist()
+    elif isinstance(vector, dict):
+        vector = {
+            name: value.tolist() if isinstance(value, np.ndarray) else value
+            for name, value in vector.items()
+        }
+    return RestToGrpc.convert_vector_struct(vector)
 
 
 def upload_batch_grpc(
@@ -37,7 +110,7 @@ def upload_batch_grpc(
             id=RestToGrpc.convert_extended_point_id(idx)
             if not isinstance(idx, grpc.PointId)
             else idx,
-            vectors=RestToGrpc.convert_vector_struct(vector),
+            vectors=convert_vector_struct(vector),
             payload=payload_to_grpc(payload or {}),
         )
         for idx, vector, payload in zip(ids_batch, vectors_batch, payload_batch)
@@ -115,6 +188,12 @@ class GrpcBatchUploader(BaseUploader):
             if isinstance(update_mode, rest.UpdateMode)  # type: ignore[attr-defined]
             else update_mode
         )
+
+    @staticmethod
+    def _from_numpy(vectors: types.NumpyArray) -> Any:
+        # convert_vector_struct reads plain arrays, others become lists as before: the rows of a
+        # matrix are 2-d, a masked array hides values, an array of objects may hold anything
+        return vectors if type(vectors) in (np.ndarray, np.memmap) else vectors.tolist()
 
     @classmethod
     def start(
