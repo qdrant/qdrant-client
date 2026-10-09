@@ -600,6 +600,32 @@ async def test_auth_token_provider_upload(prefer_grpc):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("prefer_grpc", [False, True])
+async def test_async_auth_token_provider_upload(prefer_grpc):
+    """Check that uploads reject an async token provider before sending any batch."""
+    call_num = 0
+
+    async def auth_token_provider():
+        nonlocal call_num
+        call_num += 1
+        return f"token_{call_num}"
+
+    client = AsyncQdrantClient(
+        prefer_grpc=prefer_grpc,
+        timeout=3,
+        check_compatibility=False,
+        auth_token_provider=auth_token_provider,
+    )
+    with pytest.raises(ValueError, match="require a synchronous auth_token_provider"):
+        client.upload_points(
+            COLLECTION_NAME, points=[models.PointStruct(id=0, vector=np.random.rand(DIM).tolist())]
+        )
+    with pytest.raises(ValueError, match="require a synchronous auth_token_provider"):
+        client.upload_collection(COLLECTION_NAME, vectors=np.random.rand(2, DIM), ids=[0, 1])
+    assert call_num == 0
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("prefer_grpc", [False, True])
 async def test_custom_sharding(prefer_grpc):
     client = AsyncQdrantClient(prefer_grpc=prefer_grpc)
     if (await client.cluster_status()).status == "disabled":

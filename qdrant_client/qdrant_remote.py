@@ -1,4 +1,5 @@
 import importlib.metadata
+import inspect
 import math
 import platform
 from multiprocessing import get_all_start_methods
@@ -2222,6 +2223,15 @@ class QdrantRemote(QdrantBase):
     ) -> None:
         if max_retries < 0:
             raise ValueError(f"max_retries value {max_retries} is invalid. Must be 0 or larger.")
+
+        # Catches `async def` providers. Others, like a lambda returning a coroutine or an object
+        # with `async def __call__`, are rejected by the uploader once a batch is sent
+        if self._auth_token_provider is not None and inspect.iscoroutinefunction(
+            self._auth_token_provider
+        ):
+            raise ValueError(
+                "upload_points and upload_collection require a synchronous auth_token_provider"
+            )
 
         if method is not None:
             if method in get_all_start_methods():
