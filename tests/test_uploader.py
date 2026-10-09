@@ -139,3 +139,12 @@ def test_grpc_uploader_numpy_batches(vectors: Any) -> None:
     assert converted(GrpcBatchUploader, convert_vector_struct) == converted(
         BaseUploader, RestToGrpc.convert_vector_struct
     )
+
+
+@pytest.mark.parametrize("value", [(0.1, 0.2), "abc", None], ids=["tuple", "str", "None"])
+def test_grpc_uploader_rejects_unknown_named_vectors(value: Any) -> None:
+    sparse = models.SparseVector(indices=[1], values=[0.5])
+
+    # used to be skipped, uploading the point without the vector
+    with pytest.raises(ValueError, match="invalid VectorStruct model: vector 'dense'"):
+        convert_vector_struct({"dense": value, "sparse": sparse})
