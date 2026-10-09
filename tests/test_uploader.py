@@ -4,6 +4,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from qdrant_client import QdrantClient, models
+from qdrant_client.common.client_exceptions import ResourceExhaustedResponse
 from qdrant_client.parallel_processor import ParallelWorkerPool, Worker
 from qdrant_client.uploader.grpc_uploader import upload_batch_grpc
 from qdrant_client.uploader.rest_uploader import upload_batch
@@ -34,6 +35,70 @@ def test_upload_batch_retries_then_raises(prefer_grpc: bool) -> None:
         "Batch upload failed 1 times. Retrying...",
         "Batch upload failed 2 times. Retrying...",
     ]
+
+
+@pytest.mark.parametrize("prefer_grpc", [False, True])
+@pytest.mark.parametrize("max_retries", [0, 2])
+def test_rate_limit_exhausts_upload_retry_budget(prefer_grpc: bool, max_retries: int) -> None:
+    client = MagicMock()
+    upsert = client.Upsert if prefer_grpc else client.points_api.upsert_points
+    error = ResourceExhaustedResponse("limited", retry_after_s=0)
+    # A finite fallback ensures a broken retry loop cannot hang the test.
+    upsert.side_effect = [error] * (max_retries + 2) + [RuntimeError("budget exceeded")]
+    upload = upload_batch_grpc if prefer_grpc else upload_batch
+
+    with pytest.raises(ResourceExhaustedResponse) as raised:
+        upload(
+            client,
+            "test_collection",
+            ([1], [[0.1]], [None]),
+            max_retries=max_retries,
+            shard_key_selector=None,
+            update_filter=None,
+        )
+
+    assert raised.value is error
+    assert upsert.call_count == max_retries + 1
+
+
+@pytest.mark.parametrize("prefer_grpc", [False, True])
+def test_rate_limits_and_other_failures_share_retry_budget(prefer_grpc: bool) -> None:
+    client = MagicMock()
+    upsert = client.Upsert if prefer_grpc else client.points_api.upsert_points
+    error = ResourceExhaustedResponse("limited", retry_after_s=0)
+    upsert.side_effect = [error, ConnectionError("temporary"), error, None]
+    upload = upload_batch_grpc if prefer_grpc else upload_batch
+
+    with pytest.raises(ResourceExhaustedResponse) as raised:
+        upload(
+            client,
+            "test_collection",
+            ([1], [[0.1]], [None]),
+            max_retries=2,
+            shard_key_selector=None,
+            update_filter=None,
+        )
+
+    assert raised.value is error
+    assert upsert.call_count == 3
+
+
+@pytest.mark.parametrize("prefer_grpc", [False, True])
+def test_upload_recovers_from_rate_limit_within_retry_budget(prefer_grpc: bool) -> None:
+    client = MagicMock()
+    upsert = client.Upsert if prefer_grpc else client.points_api.upsert_points
+    upsert.side_effect = [ResourceExhaustedResponse("limited", retry_after_s=0), None]
+    upload = upload_batch_grpc if prefer_grpc else upload_batch
+
+    assert upload(
+        client,
+        "test_collection",
+        ([1], [[0.1]], [None]),
+        max_retries=1,
+        shard_key_selector=None,
+        update_filter=None,
+    )
+    assert upsert.call_count == 2
 
 
 def test_upload_rejects_negative_max_retries() -> None:

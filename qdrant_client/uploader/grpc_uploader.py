@@ -59,12 +59,16 @@ def upload_batch_grpc(
             )
             break
         except ResourceExhaustedResponse as ex:
+            if attempt == max_retries:
+                raise
+
             show_warning(
                 message=f"Batch upload failed due to rate limit. Waiting for {ex.retry_after_s} seconds before retrying...",
                 category=UserWarning,
                 stacklevel=8,
             )
             sleep(ex.retry_after_s)
+            attempt += 1
 
         except Exception as e:
             if attempt == max_retries:
