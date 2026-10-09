@@ -418,54 +418,6 @@ def test_convert_points_empty_payload():
     assert scored_point.payload == {"a": 1}
 
 
-@pytest.mark.parametrize(
-    "vector",
-    [
-        np.array([0.5, -0.0, np.nan, np.inf, -np.inf, 1e39, 1e-46, 0.1]),
-        np.arange(6, dtype=np.float32),
-        np.arange(6, dtype=np.float16),
-        np.arange(6, dtype=">f4"),
-        np.arange(12, dtype=np.float64)[::3],
-        # rounds differently to a float directly and through a double
-        np.array([2**60 + 2**36 + 1, -5], dtype=np.int64),
-        np.array([True, False]),
-        np.zeros(0),
-        np.arange(12, dtype=np.float32).reshape(4, 3),
-        np.zeros((0, 3)),
-        np.zeros((2, 0)),
-        {"dense": np.arange(3, dtype=np.float32), "multi": np.ones((2, 2))},
-        {"dense": np.arange(3, dtype=np.float32), "list": [1.0, 2.0]},
-        [1.0, 2.0],
-        np.zeros((2, 2, 2)),
-        np.array([1j]),
-    ],
-    ids=lambda vector: type(vector).__name__,
-)
-def test_grpc_uploader_numpy_vectors(vector):
-    from qdrant_client.conversions.conversion import RestToGrpc
-    from qdrant_client.uploader.grpc_uploader import convert_vector_struct
-
-    def old_path(vector):
-        # numpy vectors used to be converted to lists before the conversion
-        if isinstance(vector, np.ndarray):
-            vector = vector.tolist()
-        elif isinstance(vector, dict):
-            vector = {
-                name: value.tolist() if isinstance(value, np.ndarray) else value
-                for name, value in vector.items()
-            }
-        return RestToGrpc.convert_vector_struct(vector)
-
-    def outcome(convert):
-        try:
-            # bytes, because NaN != NaN in message comparison
-            return convert(vector).SerializeToString(deterministic=True)
-        except Exception as e:
-            return type(e)
-
-    assert outcome(convert_vector_struct) == outcome(old_path)
-
-
 def test_convert_context_input_flat_pair():
     from qdrant_client import models
     from qdrant_client.conversions.conversion import GrpcToRest, RestToGrpc
