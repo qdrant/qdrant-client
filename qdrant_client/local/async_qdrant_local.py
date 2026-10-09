@@ -24,6 +24,7 @@ from qdrant_client.common.client_warnings import show_warning, show_warning_once
 from qdrant_client._pydantic_compat import to_dict
 from qdrant_client.async_client_base import AsyncQdrantBase
 from qdrant_client.conversions import common_types as types
+from qdrant_client.uploader.uploader import _zip_strict
 from qdrant_client.http import models as rest_models
 from qdrant_client.local.local_collection import (
     LocalCollection,
@@ -923,8 +924,10 @@ class AsyncQdrantLocal(AsyncQdrantBase):
                     vector=(vector.tolist() if isinstance(vector, np.ndarray) else vector) or {},
                     payload=payload or {},
                 )
-                for (point_id, vector, payload) in zip(
-                    ids or uuid_generator(), iter(vectors), payload or itertools.cycle([{}])
+                for (point_id, vector, payload) in _zip_strict(
+                    uuid_generator() if ids is None else iter(ids),
+                    iter(vectors),
+                    itertools.cycle([{}]) if payload is None else iter(payload),
                 )
             ],
             update_filter=update_filter,
