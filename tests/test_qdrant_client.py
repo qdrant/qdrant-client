@@ -2078,6 +2078,8 @@ def test_async_auth_token_provider():
         match="Synchronous token provider is not set.",
     ):
         client.get_collections()
+    with pytest.raises(ValueError, match="require a synchronous auth_token_provider"):
+        client.upload_points(COLLECTION_NAME, points=[PointStruct(id=0, vector=[0.1] * DIM)])
 
     assert token == ""
 
@@ -2086,6 +2088,8 @@ def test_async_auth_token_provider():
         ValueError, match="Synchronous channel requires synchronous auth token provider."
     ):
         client.get_collections()
+    with pytest.raises(ValueError, match="require a synchronous auth_token_provider"):
+        client.upload_points(COLLECTION_NAME, points=[PointStruct(id=0, vector=[0.1] * DIM)])
 
     assert token == ""
 
