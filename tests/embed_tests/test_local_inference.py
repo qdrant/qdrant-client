@@ -1811,3 +1811,46 @@ def test_bm25_core():
             local_client.upsert(COLLECTION_NAME, points)
     else:
         local_client.upsert(COLLECTION_NAME, points)
+
+
+def test_embed_models_batch_state_reset_after_failure():
+    from qdrant_client.embed.model_embedder import ModelEmbedder
+
+    class FailingOnceEmbedder:
+        def __init__(self):
+            self.should_fail = True
+
+        def is_supported_text_model(self, model_name):
+            return True
+
+        def is_supported_sparse_model(self, model_name):
+            return False
+
+        def is_supported_late_interaction_text_model(self, model_name):
+            return False
+
+        def is_supported_image_model(self, model_name):
+            return False
+
+        def is_supported_late_interaction_multimodal_model(self, model_name):
+            return False
+
+        def embed(self, model_name, texts=None, **kwargs):
+            if self.should_fail:
+                self.should_fail = False
+                raise RuntimeError("transient")
+            return [[float(len(text))] for text in texts]
+
+    model_embedder = ModelEmbedder()
+    model_embedder.embedder = FailingOnceEmbedder()
+
+    def batch(text):
+        return [models.PointStruct(id=0, vector=models.Document(text=text, model="model"))]
+
+    with pytest.raises(RuntimeError, match="transient"):
+        list(model_embedder.embed_models_batch(batch("aaaaa")))
+
+    points = list(model_embedder.embed_models_batch(batch("bb")))
+    assert points[0].vector == [2.0]
+    assert not model_embedder._batch_accumulator
+    assert not model_embedder._embed_storage
