@@ -547,15 +547,15 @@ test = ["pytest (>=6)"]
 
 [[package]]
 name = "fastembed"
-version = "0.8.1"
+version = "0.9.0"
 description = "Fast, light, accurate library built for retrieval embedding generation"
 optional = true
 python-versions = ">=3.10.0"
 groups = ["main"]
 markers = "extra == \"fastembed\""
 files = [
-    {file = "fastembed-0.8.1-py3-none-any.whl", hash = "sha256:b4f4043080af36ee820d22d2d3034df635c1a8b9764e5d2a642bc7aeb1d0e749"},
-    {file = "fastembed-0.8.1.tar.gz", hash = "sha256:ad815f14873dce918f755a99f16929a1384775f91ca8a14645993a165b5f65ba"},
+    {file = "fastembed-0.9.0-py3-none-any.whl", hash = "sha256:273d408edec8c0f161711d8f6e44e4a5b559d18e8edf6bf805415d55dc772846"},
+    {file = "fastembed-0.9.0.tar.gz", hash = "sha256:bc3beadb46ecb3580ab832d12670be7ecb937f80adfcb7b77b03f7eef76c394a"},
 ]
 
 [package.dependencies]
@@ -587,15 +587,15 @@ tqdm = ">=4.66,<5.0"
 
 [[package]]
 name = "fastembed-gpu"
-version = "0.8.1"
+version = "0.9.0"
 description = "Fast, light, accurate library built for retrieval embedding generation"
 optional = true
 python-versions = ">=3.10.0"
 groups = ["main"]
 markers = "extra == \"fastembed-gpu\""
 files = [
-    {file = "fastembed_gpu-0.8.1-py3-none-any.whl", hash = "sha256:42c4bf7d90df5d318a09c2cb08702e8c6aa4e9f443b19ffc66ca20464e4e76fb"},
-    {file = "fastembed_gpu-0.8.1.tar.gz", hash = "sha256:c5e86f3d345b80bf450d8bd94e1307ea2fdbf7462f11cae904b956f86ea87c08"},
+    {file = "fastembed_gpu-0.9.0-py3-none-any.whl", hash = "sha256:80cd2ac0bacb9b7ac83543208f3953a411d497c9ad0c410b4b688051792cecdf"},
+    {file = "fastembed_gpu-0.9.0.tar.gz", hash = "sha256:70b318462268b8b83dd936695fb29479775ceb0d206aa75120754059b2dabac0"},
 ]
 
 [package.dependencies]
@@ -2821,4 +2821,4 @@ fastembed-gpu = ["fastembed-gpu"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10"
-content-hash = "c485f4f523464f6763d0faa8511d86aae3de1faddc4e81b7e7d508e7f3ad7ca1"
+content-hash = "3e6e86aceae50d48c66812d123642b3293db8b60bc0ce660762a2ba43040cc19"
