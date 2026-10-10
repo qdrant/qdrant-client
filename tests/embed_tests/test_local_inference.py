@@ -1853,3 +1853,42 @@ def test_embed_models_batch_state_reset_after_failure():
     assert points[0].vector == [2.0]
     assert not model_embedder._batch_accumulator
     assert not model_embedder._embed_storage
+
+
+def test_embed_models_batch_state_reset_after_abandoned_generator():
+    class LengthEmbedder:
+        def is_supported_text_model(self, model_name):
+            return True
+
+        def is_supported_sparse_model(self, model_name):
+            return False
+
+        def is_supported_late_interaction_text_model(self, model_name):
+            return False
+
+        def is_supported_image_model(self, model_name):
+            return False
+
+        def is_supported_late_interaction_multimodal_model(self, model_name):
+            return False
+
+        def embed(self, model_name, texts=None, **kwargs):
+            return [[float(len(text))] for text in texts]
+
+    model_embedder = ModelEmbedder()
+    model_embedder.embedder = LengthEmbedder()
+
+    def batch(*texts):
+        return [
+            models.PointStruct(id=i, vector=models.Document(text=text, model="model"))
+            for i, text in enumerate(texts)
+        ]
+
+    generator = model_embedder.embed_models_batch(batch("aaaaa", "aaaaaaa"))
+    next(generator)
+    generator.close()
+
+    points = list(model_embedder.embed_models_batch(batch("bb")))
+    assert points[0].vector == [2.0]
+    assert not model_embedder._batch_accumulator
+    assert not model_embedder._embed_storage
