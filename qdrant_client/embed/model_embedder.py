@@ -154,21 +154,26 @@ class ModelEmbedder:
         if not self._is_builtin_embedder_available:
             FastEmbedMisc.import_fastembed()  # fail fast if fastembed is required
 
-        for raw_model in raw_models:
-            self._process_model(raw_model, is_query=is_query, accumulating=True)
+        try:
+            for raw_model in raw_models:
+                self._process_model(raw_model, is_query=is_query, accumulating=True)
 
-        if not self._batch_accumulator:
-            yield from raw_models
-        else:
-            yield from (
-                self._process_model(
-                    raw_model,
-                    is_query=is_query,
-                    accumulating=False,
-                    inference_batch_size=inference_batch_size,
+            if not self._batch_accumulator:
+                yield from raw_models
+            else:
+                yield from (
+                    self._process_model(
+                        raw_model,
+                        is_query=is_query,
+                        accumulating=False,
+                        inference_batch_size=inference_batch_size,
+                    )
+                    for raw_model in raw_models
                 )
-                for raw_model in raw_models
-            )
+        finally:
+            # do not leak state of a failed or abandoned batch into the next call
+            self._batch_accumulator.clear()
+            self._embed_storage.clear()
 
     def _process_model(
         self,
