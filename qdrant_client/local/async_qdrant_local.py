@@ -223,6 +223,10 @@ class AsyncQdrantLocal(AsyncQdrantBase):
                 raise ValueError(
                     f"prefetch limit value {item.limit} is invalid. Must be 1 or larger."
                 )
+            if item.score_threshold is not None and isinstance(
+                item.query, rest_models.OrderByQuery
+            ):
+                raise ValueError("Can't use score_threshold with an order_by query.")
             cls._validate_query(item.query)
             cls._validate_prefetch(item.prefetch)
 
@@ -392,6 +396,8 @@ class AsyncQdrantLocal(AsyncQdrantBase):
             raise ValueError(f"limit value {limit} is invalid. Must be 1 or larger.")
         if offset is not None and offset < 0:
             raise ValueError(f"offset value {offset} is invalid. Must be 0 or larger.")
+        if score_threshold is not None and isinstance(query, rest_models.OrderByQuery):
+            raise ValueError("Can't use score_threshold with an order_by query.")
         self._validate_query(query)
         self._validate_prefetch(prefetch)
         collection = self._get_collection(collection_name)
@@ -473,6 +479,8 @@ class AsyncQdrantLocal(AsyncQdrantBase):
             raise ValueError(f"limit value {limit} is invalid. Must be 1 or larger.")
         if group_size < 1:
             raise ValueError(f"group_size value {group_size} is invalid. Must be 1 or larger.")
+        if score_threshold is not None and isinstance(query, rest_models.OrderByQuery):
+            raise ValueError("Can't use score_threshold with an order_by query.")
         self._validate_query(query)
         self._validate_prefetch(prefetch)
         collection = self._get_collection(collection_name)
