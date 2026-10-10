@@ -3013,15 +3013,14 @@ class LocalCollection:
     def _delete_ids(self, ids: list[types.PointId]) -> None:
         for point_id in ids:
             if point_id in self.ids:
+                # Remove the stored record before hiding the point: if this fails, the points
+                # not reached yet must stay visible so that a retry can select them again.
+                if self.storage is not None:
+                    self.storage.delete(point_id)
                 idx = self.ids[point_id]
                 for vector_name in self.sparse_vectors:
                     self._drop_idf_contribution(idx, vector_name)
                 self.deleted[idx] = 1
-
-        if self.storage is not None:
-            for point_id in ids:
-                if point_id in self.ids:
-                    self.storage.delete(point_id)
 
     def _filter_to_ids(self, delete_filter: types.Filter) -> list[models.ExtendedPointId]:
         mask = self._payload_and_non_deleted_mask(delete_filter)
