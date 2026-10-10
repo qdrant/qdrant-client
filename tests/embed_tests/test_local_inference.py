@@ -12,6 +12,7 @@ import pytest
 import qdrant_client.embed.embedder
 from qdrant_client import QdrantClient, models
 from qdrant_client.client_base import QdrantBase
+from qdrant_client.embed.model_embedder import ModelEmbedder
 from qdrant_client.fastembed_common import (
     TextEmbedding,
     SparseTextEmbedding,
@@ -1814,8 +1815,6 @@ def test_bm25_core():
 
 
 def test_embed_models_batch_state_reset_after_failure():
-    from qdrant_client.embed.model_embedder import ModelEmbedder
-
     class FailingOnceEmbedder:
         def __init__(self):
             self.should_fail = True
