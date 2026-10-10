@@ -381,3 +381,64 @@ def test_geo_filters_ignore_nonfinite_coordinates():
         for value in (float("nan"), float("inf"), -float("inf"), 10**400):
             assert matching(geo_filter, {"lon": 0, "lat": value}) == [1, 3], f"{name} lat={value}"
             assert matching(geo_filter, {"lon": value, "lat": 0}) == [1, 3], f"{name} lon={value}"
+
+
+MULTI_SUB_CONDITION_PAYLOADS = {
+    1: {"tag": "sale", "price": 100},
+    2: {"tag": "new", "price": 5},
+    3: {"tag": "new", "price": 100},
+    4: {"tag": "old", "price": 5},
+}
+
+
+def test_field_condition_ors_its_sub_conditions():
+    # A single `FieldCondition` may carry several sub-conditions, and the server ORs them
+    # (`ValueChecker for FieldCondition`), rather than honouring only one of them.
+    both = models.Filter(
+        must=[
+            models.FieldCondition(
+                key="tag",
+                match=models.MatchValue(value="sale"),
+                # no payload value is both a string and >= 10, so this one only adds matches
+                range=models.Range(gte=10),
+            )
+        ]
+    )
+    assert matching_ids(both, MULTI_SUB_CONDITION_PAYLOADS) == [1]
+
+    or_over_two_keys = models.Filter(
+        must=[
+            models.FieldCondition(
+                key="price",
+                match=models.MatchValue(value=5),
+                range=models.Range(gte=100),
+            )
+        ]
+    )
+    assert matching_ids(or_over_two_keys, MULTI_SUB_CONDITION_PAYLOADS) == [1, 2, 3, 4]
+
+    geo_and_match = models.Filter(
+        must=[
+            models.FieldCondition(
+                key="tag",
+                match=models.MatchValue(value="old"),
+                geo_radius=models.GeoRadius(center=models.GeoPoint(lon=0.0, lat=0.0), radius=1.0),
+            )
+        ]
+    )
+    assert matching_ids(geo_and_match, MULTI_SUB_CONDITION_PAYLOADS) == [4]
+
+
+def test_field_condition_values_count_takes_precedence():
+    # `values_count`, `is_empty` and `is_null` are resolved before the OR, in that order.
+    payloads = {1: {"tag": ["sale"]}, 2: {"tag": ["sale", "new"]}}
+    condition = models.Filter(
+        must=[
+            models.FieldCondition(
+                key="tag",
+                match=models.MatchValue(value="sale"),
+                values_count=models.ValuesCount(gte=2),
+            )
+        ]
+    )
+    assert matching_ids(condition, payloads) == [2]
