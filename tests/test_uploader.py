@@ -1,4 +1,5 @@
 import os
+import pickle
 from typing import Any, Callable
 from unittest.mock import MagicMock
 
@@ -13,7 +14,7 @@ from qdrant_client.uploader.grpc_uploader import (
     convert_vector_struct,
     upload_batch_grpc,
 )
-from qdrant_client.uploader.rest_uploader import upload_batch
+from qdrant_client.uploader.rest_uploader import RestBatchUploader, batch_to_points, upload_batch
 from qdrant_client.uploader.uploader import BaseUploader
 
 
@@ -139,6 +140,36 @@ def test_grpc_uploader_numpy_batches(vectors: Any) -> None:
     assert converted(GrpcBatchUploader, convert_vector_struct) == converted(
         BaseUploader, RestToGrpc.convert_vector_struct
     )
+
+
+def _multivectors(*lengths: int) -> np.ndarray:
+    """Multivectors with these numbers of 3-d vectors, in an array of arrays as numpy keeps them"""
+    multivectors: np.ndarray = np.empty(len(lengths), dtype=object)
+    for i, length in enumerate(lengths):
+        multivectors[i] = np.arange(length * 3, dtype=np.float32).reshape(length, 3)
+    return multivectors
+
+
+@pytest.mark.parametrize(
+    "vectors",
+    [
+        np.arange(15, dtype=np.float32).reshape(5, 3),
+        _multivectors(2, 3, 1, 4, 2),
+        {"dense": np.ones((5, 3)), "multi": _multivectors(2, 3, 1, 4, 2)},
+        {"dense": np.ones((5, 3)), "multi": np.ones((5, 2, 3), dtype=np.float16)},
+    ],
+    ids=["dense", "multi", "named", "named-same-lengths"],
+)
+def test_rest_uploader_numpy_batches(vectors: Any) -> None:
+    def points(uploader: type[BaseUploader]) -> list[Any]:
+        batches = uploader.iterate_batches(
+            vectors=vectors, payload=None, ids=list(range(5)), batch_size=2
+        )
+        # pickled, as for parallel workers
+        return [batch_to_points(pickle.loads(pickle.dumps(batch))) for batch in batches]
+
+    # the batches used to be converted to lists before they were sent to the workers
+    assert points(RestBatchUploader) == points(BaseUploader)
 
 
 @pytest.mark.parametrize("value", [(0.1, 0.2), "abc", None], ids=["tuple", "str", "None"])
