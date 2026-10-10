@@ -2,6 +2,7 @@ import importlib.metadata
 import inspect
 import math
 import platform
+import sys
 from multiprocessing import get_all_start_methods
 from threading import Thread
 
@@ -2240,6 +2241,13 @@ class QdrantRemote(QdrantBase):
                 raise ValueError(
                     f"Start methods {method} is not available, available methods: {get_all_start_methods()}"
                 )
+        elif sys.platform == "darwin":
+            # On macOS, a worker forked from a process that has ever run a thread aborts when it
+            # initializes an Objective-C class, as httpx's system proxy lookup does. Since
+            # Python 3.15 the forkserver imports the main script, so one thread started by its
+            # imports (`import grpc` starts one) crashes every worker. spawn is also CPython's
+            # default start method on macOS.
+            start_method = "spawn"
         else:
             start_method = "forkserver" if "forkserver" in get_all_start_methods() else "spawn"
 

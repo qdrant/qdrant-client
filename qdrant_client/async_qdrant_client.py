@@ -1830,7 +1830,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             points: Iterator over points to upload
             batch_size: How many vectors upload per-request, Default: 64
             parallel: Number of parallel processes of upload, 0 means all available cores
-            method: Start method for parallel processes, Default: forkserver
+            method: Start method for parallel processes, Default: forkserver, spawn on macOS
             max_retries: maximum number of retries in case of a failure
                 during the upload of a batch, 0 means a single attempt without retries
             wait:
@@ -1906,7 +1906,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             ids: Iterable of custom vectors ids, Optional, Default: None
             batch_size: How many vectors upload per-request, Default: 64
             parallel: Number of parallel processes of upload, 0 means all available cores
-            method: Start method for parallel processes, Default: forkserver
+            method: Start method for parallel processes, Default: forkserver, spawn on macOS
             max_retries: maximum number of retries in case of a failure
                 during the upload of a batch, 0 means a single attempt without retries
             wait:

@@ -13,6 +13,7 @@ import importlib.metadata
 import inspect
 import math
 import platform
+import sys
 from multiprocessing import get_all_start_methods
 from threading import Thread
 from typing import Any, Awaitable, Callable, Iterable, Mapping, Sequence, Type, get_args
@@ -2058,6 +2059,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 raise ValueError(
                     f"Start methods {method} is not available, available methods: {get_all_start_methods()}"
                 )
+        elif sys.platform == "darwin":
+            start_method = "spawn"
         else:
             start_method = "forkserver" if "forkserver" in get_all_start_methods() else "spawn"
         if self._prefer_grpc:
