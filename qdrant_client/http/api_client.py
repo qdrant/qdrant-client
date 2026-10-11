@@ -1,11 +1,11 @@
 from asyncio import get_event_loop
-from functools import lru_cache
 from typing import Any, Awaitable, Callable, Dict, Generic, Type, TypeVar, overload
 from urllib.parse import urljoin
 
 from httpx import AsyncClient, Client, Request, Response
 from pydantic import ValidationError
 from qdrant_client.common.client_exceptions import ResourceExhaustedResponse
+from qdrant_client.common.response_parsing import parse_response
 from qdrant_client.http.api.aliases_api import AsyncAliasesApi, SyncAliasesApi
 from qdrant_client.http.api.beta_api import AsyncBetaApi, SyncBetaApi
 from qdrant_client.http.api.collections_api import AsyncCollectionsApi, SyncCollectionsApi
@@ -127,7 +127,7 @@ class ApiClient:
 
         if response.status_code in [200, 201, 202]:
             try:
-                return parse_as_type(response.json(), type_)
+                return parse_response(response.content, type_)
             except ValidationError as e:
                 raise ResponseHandlingException(e)
         raise UnexpectedResponse.for_response(response)
@@ -218,7 +218,7 @@ class AsyncApiClient:
 
         if response.status_code in [200, 201, 202]:
             try:
-                return parse_as_type(response.json(), type_)
+                return parse_response(response.content, type_)
             except ValidationError as e:
                 raise ResponseHandlingException(e)
         raise UnexpectedResponse.for_response(response)
@@ -253,16 +253,3 @@ class BaseAsyncMiddleware:
 class BaseMiddleware:
     def __call__(self, request: Request, call_next: Send) -> Response:
         return call_next(request)
-
-
-@lru_cache(maxsize=None)
-def _get_parsing_type(type_: Any, source: str) -> Any:
-    from pydantic.main import create_model
-
-    type_name = getattr(type_, "__name__", str(type_))
-    return create_model(f"ParsingModel[{type_name}] (for {source})", obj=(type_, ...))
-
-
-def parse_as_type(obj: Any, type_: Type[T]) -> T:
-    model_type = _get_parsing_type(type_, source=parse_as_type.__name__)
-    return model_type(obj=obj).obj
