@@ -13,6 +13,8 @@ def upload_with_retry(
     max_attempts: int = 3,
     pause: float = 3.0,
 ) -> None:
+    # Each attempt must replay the complete batch, even when points is a one-shot iterator.
+    points = list(points)
     attempts = 1
     while attempts <= max_attempts:
         try:
