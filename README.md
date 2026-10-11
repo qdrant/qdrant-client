@@ -38,6 +38,12 @@ See [QuickStart](https://qdrant.tech/documentation/quick-start/#create-collectio
 pip install qdrant-client
 ```
 
+The REST client decodes responses faster with [orjson](https://github.com/ijl/orjson). To use it, install the optional `orjson` extra:
+
+```
+pip install 'qdrant-client[orjson]'
+```
+
 ## Features
 
 - Type hints for all API methods
