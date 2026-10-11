@@ -39,26 +39,37 @@ def json_to_value(payload: Any) -> Value:
     return Value(**_json_to_value_kwargs(payload))
 
 
+# the field of a Value for values of these exact types
+_VALUE_FIELDS = {
+    str: "string_value",
+    int: "integer_value",
+    float: "double_value",
+    bool: "bool_value",
+}
+
+
 def _json_to_value_kwargs(payload: Any) -> dict[str, Any]:
     # Returns the arguments of the Value constructor instead of a Value. Protobuf builds the whole
     # tree from nested dicts of arguments at once, which is much faster than building a Value for
-    # every element and copying it into its parent.
-    payload_type = type(payload)
-    if payload_type is str:
-        return {"string_value": payload}
-    if payload_type is int:
-        return {"integer_value": payload}
-    if payload_type is float:
-        return {"double_value": payload}
-    if payload_type is bool:
-        return {"bool_value": payload}
+    # every element and copying it into its parent. Containers wrap their values of the types in
+    # _VALUE_FIELDS themselves, which saves a call for each.
+    field = _VALUE_FIELDS.get(type(payload))
+    if field is not None:
+        return {field: payload}
     if payload is None:
         return {"null_value": _NULL_VALUE}
     if isinstance(payload, (list, tuple)):
-        return {"list_value": {"values": [_json_to_value_kwargs(v) for v in payload]}}
+        values = [
+            (
+                {field: value}
+                if (field := _VALUE_FIELDS.get(type(value)))
+                else _json_to_value_kwargs(value)
+            )
+            for value in payload
+        ]
+        return {"list_value": {"values": values}}
     if isinstance(payload, dict) and all(isinstance(key, str) for key in payload):
-        fields = {k: _json_to_struct_field(v) for k, v in payload.items()}
-        return {"struct_value": {"fields": fields}}
+        return {"struct_value": {"fields": payload_to_grpc(payload)}}
     # subclasses, e.g. enums
     if isinstance(payload, int):
         return {"integer_value": payload}
@@ -73,14 +84,6 @@ def _json_to_value_kwargs(payload: Any) -> dict[str, Any]:
     except (TypeError, ValueError) as e:  # pydantic v1 raises TypeError, v2 raises ValueError
         raise ValueError(f"Not supported json value: {payload}") from e
     return _json_to_value_kwargs(jsonable_payload)
-
-
-try:
-    # protobuf < 6.30 does not accept dicts of arguments as values of a map, e.g. Struct.fields
-    Struct(fields={"": {}})
-    _json_to_struct_field = _json_to_value_kwargs
-except TypeError:  # pragma: no cover
-    _json_to_struct_field = json_to_value
 
 
 def value_to_json(value: Value) -> Any:
@@ -110,8 +113,29 @@ def value_to_json(value: Value) -> Any:
     raise ValueError(f"Not supported value: {value}")  # pragma: no cover
 
 
-def payload_to_grpc(payload: dict[str, Any]) -> dict[str, Value]:
-    return dict((key, json_to_value(val)) for key, val in payload.items())
+def _payload_to_value_kwargs(payload: dict[str, Any]) -> dict[str, Any]:
+    # dicts of Value arguments: message constructors build the map from them without making Value
+    # messages and copying them into it
+    return {
+        key: (
+            {field: val}
+            if (field := _VALUE_FIELDS.get(type(val)))
+            else _json_to_value_kwargs(val)
+        )
+        for key, val in payload.items()
+    }
+
+
+def _payload_to_values(payload: dict[str, Any]) -> dict[str, Any]:
+    return {key: json_to_value(val) for key, val in payload.items()}
+
+
+try:
+    # protobuf < 6.30 does not accept dicts of arguments as values of a map, e.g. Struct.fields
+    Struct(fields={"": {}})
+    payload_to_grpc = _payload_to_value_kwargs
+except TypeError:  # pragma: no cover
+    payload_to_grpc = _payload_to_values
 
 
 def grpc_to_payload(grpc_: MessageMap[str, Value]) -> dict[str, Any]:
@@ -3275,8 +3299,8 @@ class RestToGrpc:
         )
 
     @classmethod
-    def convert_payload(cls, model: rest.Payload) -> dict[str, grpc.Value]:
-        return dict((key, json_to_value(val)) for key, val in model.items())
+    def convert_payload(cls, model: rest.Payload) -> dict[str, Any]:
+        return payload_to_grpc(model)
 
     @classmethod
     def convert_hnsw_config_diff(cls, model: rest.HnswConfigDiff) -> grpc.HnswConfigDiff:

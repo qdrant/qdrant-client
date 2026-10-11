@@ -378,15 +378,16 @@ def test_json_to_value_subclasses(value, plain):
 
 
 def test_json_to_value_struct_fields_as_messages(monkeypatch):
+    from qdrant_client import grpc
     from qdrant_client.conversions import conversion
     from tests.fixtures.payload import one_random_payload_please
 
     payloads = [one_random_payload_please(i) for i in range(20)]
-    expected = [conversion.payload_to_grpc(payload) for payload in payloads]
+    expected = [grpc.PointStruct(payload=conversion.payload_to_grpc(p)) for p in payloads]
 
     # the path taken with protobuf < 6.30, which does not accept dicts as values of a map
-    monkeypatch.setattr(conversion, "_json_to_struct_field", conversion.json_to_value)
-    assert [conversion.payload_to_grpc(payload) for payload in payloads] == expected
+    monkeypatch.setattr(conversion, "payload_to_grpc", conversion._payload_to_values)
+    assert [grpc.PointStruct(payload=conversion.payload_to_grpc(p)) for p in payloads] == expected
 
 
 @pytest.mark.parametrize(
