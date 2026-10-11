@@ -382,6 +382,9 @@ def test_json_to_value_struct_fields_as_messages(monkeypatch):
     from qdrant_client.conversions import conversion
     from tests.fixtures.payload import one_random_payload_please
 
+    if conversion.payload_to_grpc is conversion._payload_to_values:
+        pytest.skip("dicts as values of a map need protobuf >= 6.30")
+
     payloads = [one_random_payload_please(i) for i in range(20)]
     expected = [grpc.PointStruct(payload=conversion.payload_to_grpc(p)) for p in payloads]
 
