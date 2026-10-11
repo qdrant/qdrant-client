@@ -38,7 +38,7 @@ def parse_response(content: bytes, type_: type[T]) -> T:
     """Parse a successful REST response body into ``type_``."""
     if PYDANTIC_V2:
         try:
-            return _validator(type_)(_loads(content))
+            return _validator(type_)(_loads(content))  # type: ignore[arg-type]
         except ValueError:
             # a validation or JSON error: the old path below raises the same error as before
             pass
@@ -47,7 +47,7 @@ def parse_response(content: bytes, type_: type[T]) -> T:
 
 def parse_as_type(obj: Any, type_: type[T]) -> T:
     """The regular path: validate ``obj`` as the only field of a model wrapping ``type_``."""
-    model_type = _get_parsing_type(type_, source=parse_as_type.__name__)
+    model_type = _get_parsing_type(type_, source=parse_as_type.__name__)  # type: ignore[arg-type]
     return model_type(obj=obj).obj
 
 
