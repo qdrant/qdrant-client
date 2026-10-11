@@ -350,7 +350,7 @@ def test_query_with_nan():
         sparse_vectors_config=sparse_vectors_config,
     )
 
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         local_client.query_points(
             COLLECTION_NAME, sparse_vector["sparse-text"], using="sparse-text"
         )

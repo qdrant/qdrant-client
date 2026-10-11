@@ -1,8 +1,18 @@
 import numpy as np
+import pytest
 
 from qdrant_client.http import models
-from qdrant_client.local.distances import calculate_distance
-from qdrant_client.local.multi_distances import calculate_multi_distance
+from qdrant_client.local.distances import (
+    ContextPair,
+    DiscoveryQuery,
+    RecoQuery,
+    calculate_distance,
+)
+from qdrant_client.local.multi_distances import (
+    MultiDiscoveryQuery,
+    MultiRecoQuery,
+    calculate_multi_distance,
+)
 from qdrant_client.local.sparse_distances import calculate_distance_sparse
 
 
@@ -91,3 +101,31 @@ def test_cosine_accepts_integer_dtype_query() -> None:
     vectors = np.array([[6.0, 8.0], [1.0, 0.0]], dtype=np.float32)
     result = calculate_distance(query, vectors, models.Distance.COSINE)
     assert np.allclose(result, [1.0, 0.6], atol=0.0001)
+
+
+def test_nan_rejected() -> None:
+    nan_vector = [1.0, float("nan"), 3.0]
+    vectors = np.array([[1.0, 2.0, 3.0]])
+
+    with pytest.raises(ValueError, match="Query vector must not contain NaN"):
+        calculate_distance(np.array(nan_vector), vectors, models.Distance.DOT)
+
+    with pytest.raises(ValueError, match="Query matrix must not contain NaN"):
+        calculate_multi_distance(
+            np.array([nan_vector]), [np.array([[1.0, 2.0, 3.0]])], models.Distance.DOT
+        )
+
+    with pytest.raises(ValueError, match="Positive vectors must not contain NaN"):
+        RecoQuery(positive=[nan_vector], strategy=models.RecommendStrategy.BEST_SCORE)
+
+    with pytest.raises(ValueError, match="Positive vector must not contain NaN"):
+        ContextPair(positive=nan_vector, negative=[1.0, 2.0, 3.0])
+
+    with pytest.raises(ValueError, match="Target vector must not contain NaN"):
+        DiscoveryQuery(target=nan_vector, context=[])
+
+    with pytest.raises(ValueError, match="Positive vectors must not contain NaN"):
+        MultiRecoQuery(positive=[[nan_vector]], strategy=models.RecommendStrategy.BEST_SCORE)
+
+    with pytest.raises(ValueError, match="Target vector must not contain NaN"):
+        MultiDiscoveryQuery(target=[nan_vector], context=[])

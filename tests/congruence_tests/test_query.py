@@ -47,8 +47,10 @@ class TestSimpleSearcher:
 
         # dense query vectors
         self.dense_vector_query_text = np.random.random(text_vector_size).tolist()
-        self.dense_vector_query_text_bis = self.dense_vector_query_text
-        self.dense_vector_query_text_bis[0] += 42.0  # slightly different vector
+        self.dense_vector_query_text_bis = list(self.dense_vector_query_text)
+        # keep the shift small: in grouped queries the server rescores only its top prefetch
+        # candidates, while local mode rescores all points
+        self.dense_vector_query_text_bis[0] += 0.1  # slightly different vector
         self.dense_vector_query_image = np.random.random(image_vector_size).tolist()
         self.dense_vector_query_code = np.random.random(code_vector_size).tolist()
 
@@ -194,7 +196,7 @@ class TestSimpleSearcher:
             collection_name=COLLECTION_NAME,
             query=self.dense_vector_query_text,
             using="text",
-            with_payload=["text_array", "nested.id"],
+            with_payload=("text_array", "nested.id"),
             limit=10,
         )
 
@@ -213,7 +215,7 @@ class TestSimpleSearcher:
             query=self.dense_vector_query_image,
             using="image",
             with_payload=False,
-            with_vectors=["image", "code"],
+            with_vectors=("image", "code"),
             limit=10,
         )
 
@@ -315,6 +317,54 @@ class TestSimpleSearcher:
             ),
             using="text",
             lookup_from=lookup_from,
+            group_by=self.group_by,
+            group_size=self.group_size,
+            limit=self.limit,
+        )
+
+    def dense_query_group_prefetch_by_id(self, client: QdrantBase) -> GroupsResult:
+        # a bare point id is a valid prefetch query in grouped queries too
+        # local mode lifts prefetch limits in grouped queries, the same query on every level
+        # keeps the server's top prefetch candidates equal to local's full scan
+        return client.query_points_groups(
+            collection_name=COLLECTION_NAME,
+            prefetch=models.Prefetch(query=1, using="text", limit=20),
+            query=1,
+            using="text",
+            with_payload=models.PayloadSelectorInclude(include=[self.group_by]),
+            group_by=self.group_by,
+            group_size=self.group_size,
+            limit=self.limit,
+        )
+
+    def dense_query_group_nested_prefetch_by_id(self, client: QdrantBase) -> GroupsResult:
+        return client.query_points_groups(
+            collection_name=COLLECTION_NAME,
+            prefetch=models.Prefetch(
+                prefetch=models.Prefetch(query=1, using="text", limit=30),
+                query=1,
+                using="text",
+                limit=20,
+            ),
+            query=1,
+            using="text",
+            with_payload=models.PayloadSelectorInclude(include=[self.group_by]),
+            group_by=self.group_by,
+            group_size=self.group_size,
+            limit=self.limit,
+        )
+
+    def dense_query_group_prefetch_by_id_lookup_from(
+        self, client: QdrantBase, lookup_from: models.LookupLocation
+    ) -> GroupsResult:
+        # the id is looked up in another collection, so the point with the same id is not excluded
+        return client.query_points_groups(
+            collection_name=COLLECTION_NAME,
+            prefetch=models.Prefetch(query=1, using="text", limit=20, lookup_from=lookup_from),
+            query=1,
+            using="text",
+            lookup_from=lookup_from,
+            with_payload=models.PayloadSelectorInclude(include=[self.group_by]),
             group_by=self.group_by,
             group_size=self.group_size,
             limit=self.limit,
@@ -1062,6 +1112,34 @@ class TestSimpleSearcher:
             limit=10,
         )
 
+    def mmr_query_parametrized_offset(
+        self, client: QdrantBase, offset: int
+    ) -> models.QueryResponse:
+        return client.query_points(
+            collection_name=COLLECTION_NAME,
+            query=models.NearestQuery(
+                nearest=self.dense_vector_query_text,
+                mmr=models.Mmr(diversity=0.3, candidates_limit=30),
+            ),
+            using="text",
+            limit=10,
+            offset=offset,
+        )
+
+    def default_mmr_query_offset(self, client: QdrantBase, offset: int) -> models.QueryResponse:
+        # `candidates_limit` defaults to `limit`, so the candidate pool runs out before
+        # `limit + offset` picks are made and the page is short. Core behaves the same way.
+        return client.query_points(
+            collection_name=COLLECTION_NAME,
+            query=models.NearestQuery(
+                nearest=self.dense_vector_query_text,
+                mmr=models.Mmr(),
+            ),
+            using="text",
+            limit=10,
+            offset=offset,
+        )
+
     def mmr_query_parametrized_score_threshold(self, client: QdrantBase) -> models.QueryResponse:
         return client.query_points(
             collection_name=COLLECTION_NAME,
@@ -1174,7 +1252,18 @@ class TestSimpleSearcher:
 
 
 def group_by_keys():
-    return ["maybe", "rand_digit", "two_words", "city.name", "maybe_null", "id"]
+    return [
+        "maybe",
+        "rand_digit",
+        "two_words",
+        "city.name",
+        "maybe_null",
+        "id",
+        "two_words[0]",
+        "nested.array[0].word",
+        "nested_array[0]",
+        "nested_array[]",
+    ]
 
 
 def init_clients(fixture_points, **kwargs) -> tuple[QdrantClient, QdrantClient, QdrantClient]:
@@ -1952,6 +2041,229 @@ def test_query_invalid_vector_type():
         )
 
 
+def test_query_invalid_offset():
+    fixture_points = generate_fixtures(5)
+
+    local_client, http_client, grpc_client = init_clients(fixture_points)
+
+    query_vector = np.random.random(text_vector_size).tolist()
+
+    with pytest.raises(ValueError, match="offset value -1 is invalid"):
+        local_client.query_points(
+            collection_name=COLLECTION_NAME, query=query_vector, using="text", offset=-1
+        )
+
+    with pytest.raises(UnexpectedResponse, match="expected usize"):
+        http_client.query_points(
+            collection_name=COLLECTION_NAME, query=query_vector, using="text", offset=-1
+        )
+
+    # grpc rejects the negative offset while encoding it into a uint64 field
+    with pytest.raises(ValueError, match="out of range"):
+        grpc_client.query_points(
+            collection_name=COLLECTION_NAME, query=query_vector, using="text", offset=-1
+        )
+
+    requests = [
+        models.QueryRequest(query=query_vector, using="text", limit=10, offset=-1),
+    ]
+
+    with pytest.raises(ValueError, match="offset value -1 is invalid"):
+        local_client.query_batch_points(collection_name=COLLECTION_NAME, requests=requests)
+
+    with pytest.raises(UnexpectedResponse, match="expected usize"):
+        http_client.query_batch_points(collection_name=COLLECTION_NAME, requests=requests)
+
+    with pytest.raises(ValueError, match="out of range"):
+        grpc_client.query_batch_points(collection_name=COLLECTION_NAME, requests=requests)
+
+
+def test_query_invalid_prefetch_limit():
+    fixture_points = generate_fixtures(5)
+
+    local_client, http_client, grpc_client = init_clients(fixture_points)
+
+    query_vector = np.random.random(text_vector_size).tolist()
+
+    valid_prefetch = models.Prefetch(query=query_vector, using="text", limit=10)
+    invalid_prefetch = models.Prefetch(query=query_vector, using="text", limit=0)
+
+    prefetches = [
+        invalid_prefetch,
+        # the invalid limit is not the first element, every element has to be checked
+        [valid_prefetch, invalid_prefetch],
+        models.Prefetch(query=query_vector, using="text", limit=10, prefetch=invalid_prefetch),
+        models.Prefetch(
+            query=query_vector,
+            using="text",
+            limit=10,
+            prefetch=[valid_prefetch, invalid_prefetch],
+        ),
+    ]
+
+    for prefetch in prefetches:
+        with pytest.raises(ValueError, match="prefetch limit value 0 is invalid"):
+            local_client.query_points(
+                collection_name=COLLECTION_NAME,
+                query=query_vector,
+                using="text",
+                prefetch=prefetch,
+            )
+
+        with pytest.raises(UnexpectedResponse, match="must be 1 or larger"):
+            http_client.query_points(
+                collection_name=COLLECTION_NAME,
+                query=query_vector,
+                using="text",
+                prefetch=prefetch,
+            )
+
+        with pytest.raises(RpcError, match="must be 1 or larger"):
+            grpc_client.query_points(
+                collection_name=COLLECTION_NAME,
+                query=query_vector,
+                using="text",
+                prefetch=prefetch,
+            )
+
+
+def test_query_groups_invalid_group_size():
+    fixture_points = generate_fixtures(5)
+
+    local_client, http_client, grpc_client = init_clients(fixture_points)
+
+    query_vector = np.random.random(text_vector_size).tolist()
+
+    with pytest.raises(ValueError, match="group_size value 0 is invalid"):
+        local_client.query_points_groups(
+            collection_name=COLLECTION_NAME,
+            query=query_vector,
+            using="text",
+            group_by="city.geo",
+            group_size=0,
+        )
+
+    with pytest.raises(UnexpectedResponse, match="must be 1 or larger"):
+        http_client.query_points_groups(
+            collection_name=COLLECTION_NAME,
+            query=query_vector,
+            using="text",
+            group_by="city.geo",
+            group_size=0,
+        )
+
+    with pytest.raises(RpcError, match="must be 1 or larger"):
+        grpc_client.query_points_groups(
+            collection_name=COLLECTION_NAME,
+            query=query_vector,
+            using="text",
+            group_by="city.geo",
+            group_size=0,
+        )
+
+
+def test_query_invalid_rrf_k():
+    fixture_points = generate_fixtures(5)
+
+    local_client, http_client, grpc_client = init_clients(fixture_points)
+
+    query_vector = np.random.random(text_vector_size).tolist()
+
+    source = models.Prefetch(query=query_vector, using="text", limit=10)
+    invalid_rrf = models.RrfQuery(rrf=models.Rrf(k=0))
+
+    with pytest.raises(ValueError, match="rrf k value 0 is invalid"):
+        local_client.query_points(
+            collection_name=COLLECTION_NAME, query=invalid_rrf, prefetch=source
+        )
+
+    with pytest.raises(UnexpectedResponse, match="must be 1 or larger"):
+        http_client.query_points(
+            collection_name=COLLECTION_NAME, query=invalid_rrf, prefetch=source
+        )
+
+    with pytest.raises(RpcError, match="must be 1 or larger"):
+        grpc_client.query_points(
+            collection_name=COLLECTION_NAME, query=invalid_rrf, prefetch=source
+        )
+
+    # the same query carried by a prefetch has to be rejected as well
+    nested = models.Prefetch(query=invalid_rrf, limit=10, prefetch=source)
+
+    with pytest.raises(ValueError, match="rrf k value 0 is invalid"):
+        local_client.query_points(
+            collection_name=COLLECTION_NAME, query=query_vector, using="text", prefetch=nested
+        )
+
+    with pytest.raises(UnexpectedResponse, match="must be 1 or larger"):
+        http_client.query_points(
+            collection_name=COLLECTION_NAME, query=query_vector, using="text", prefetch=nested
+        )
+
+    with pytest.raises(RpcError, match="must be 1 or larger"):
+        grpc_client.query_points(
+            collection_name=COLLECTION_NAME, query=query_vector, using="text", prefetch=nested
+        )
+
+
+def test_query_invalid_mmr_candidates_limit():
+    fixture_points = generate_fixtures(5)
+
+    local_client, http_client, grpc_client = init_clients(fixture_points)
+
+    query_vector = np.random.random(text_vector_size).tolist()
+
+    too_large = models.NearestQuery(nearest=query_vector, mmr=models.Mmr(candidates_limit=16385))
+
+    with pytest.raises(ValueError, match="mmr candidates_limit value 16385 is invalid"):
+        local_client.query_points(collection_name=COLLECTION_NAME, query=too_large, using="text")
+
+    with pytest.raises(UnexpectedResponse, match="must be 16384 or smaller"):
+        http_client.query_points(collection_name=COLLECTION_NAME, query=too_large, using="text")
+
+    with pytest.raises(RpcError, match="must be 16384 or smaller"):
+        grpc_client.query_points(collection_name=COLLECTION_NAME, query=too_large, using="text")
+
+    negative = models.NearestQuery(nearest=query_vector, mmr=models.Mmr(candidates_limit=-1))
+
+    with pytest.raises(ValueError, match="mmr candidates_limit value -1 is invalid"):
+        local_client.query_points(collection_name=COLLECTION_NAME, query=negative, using="text")
+
+    # the server rejects the negative value while parsing the body, before the bound is reached
+    with pytest.raises(UnexpectedResponse):
+        http_client.query_points(collection_name=COLLECTION_NAME, query=negative, using="text")
+
+    with pytest.raises(ValueError, match="out of range"):
+        grpc_client.query_points(collection_name=COLLECTION_NAME, query=negative, using="text")
+
+
+def test_query_invalid_feedback_strategy():
+    fixture_points = generate_fixtures(5)
+
+    local_client, http_client, grpc_client = init_clients(fixture_points)
+
+    query_vector = np.random.random(text_vector_size).tolist()
+
+    query = models.RelevanceFeedbackQuery(
+        relevance_feedback=models.RelevanceFeedbackInput(
+            target=query_vector,
+            feedback=[models.FeedbackItem(example=1, score=0.9)],
+            strategy=models.NaiveFeedbackStrategy(
+                naive=models.NaiveFeedbackStrategyParams(a=0.5, b=-1.0, c=0.7)
+            ),
+        )
+    )
+
+    with pytest.raises(ValueError, match="naive feedback b value -1.0 is invalid"):
+        local_client.query_points(collection_name=COLLECTION_NAME, query=query, using="text")
+
+    with pytest.raises(UnexpectedResponse, match="must be 0.0 or larger"):
+        http_client.query_points(collection_name=COLLECTION_NAME, query=query, using="text")
+
+    with pytest.raises(RpcError, match="must be 0.0 or larger"):
+        grpc_client.query_points(collection_name=COLLECTION_NAME, query=query, using="text")
+
+
 def test_query_with_nan():
     fixture_points = generate_fixtures()
 
@@ -1960,7 +2272,7 @@ def test_query_with_nan():
     vector = np.random.random(text_vector_size)
     vector[4] = np.nan
     query = vector.tolist()
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         local_client.query_points(COLLECTION_NAME, query=query, using="text")
 
     with pytest.raises(UnexpectedResponse):
@@ -1984,7 +2296,7 @@ def test_query_with_nan():
     init_client(local_client, fixture_points, vectors_config=single_vector_config)
     init_client(http_client, fixture_points, vectors_config=single_vector_config)
 
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         print(local_client.query_points(COLLECTION_NAME, query=query))
 
     with pytest.raises(UnexpectedResponse):
@@ -2164,6 +2476,22 @@ def test_query_group():
             searcher.dense_query_lookup_from_group,
             lookup_from=models.LookupLocation(collection=SECONDARY_COLLECTION_NAME, vector="text"),
         )
+        compare_clients_results(
+            local_client, http_client, grpc_client, searcher.dense_query_group_prefetch_by_id
+        )
+        compare_clients_results(
+            local_client,
+            http_client,
+            grpc_client,
+            searcher.dense_query_group_nested_prefetch_by_id,
+        )
+        compare_clients_results(
+            local_client,
+            http_client,
+            grpc_client,
+            searcher.dense_query_group_prefetch_by_id_lookup_from,
+            lookup_from=models.LookupLocation(collection=SECONDARY_COLLECTION_NAME, vector="text"),
+        )
 
     searcher.group_by = "city.name"
 
@@ -2180,6 +2508,44 @@ def test_query_group():
         except AssertionError as e:
             print(f"\nFailed with filter {query_filter}")
             raise e
+
+
+def test_query_group_prefetch_recommend_lookup_from():
+    vectors_config = models.VectorParams(size=2, distance=models.Distance.DOT)
+    fixture_points = [
+        models.PointStruct(id=0, vector=[1.0, 0.0], payload={"document": "0"}),
+        models.PointStruct(id=1, vector=[0.9, 0.1], payload={"document": "1"}),
+        models.PointStruct(id=2, vector=[0.5, 0.5], payload={"document": "2"}),
+    ]
+    secondary_collection_points = [models.PointStruct(id=0, vector=[0.0, 1.0])]
+
+    local_client, http_client, grpc_client = init_clients(
+        fixture_points, vectors_config=vectors_config
+    )
+    for client in (local_client, http_client):
+        init_client(
+            client,
+            secondary_collection_points,
+            SECONDARY_COLLECTION_NAME,
+            vectors_config=vectors_config,
+        )
+
+    def query_groups(client: QdrantBase) -> GroupsResult:
+        return client.query_points_groups(
+            collection_name=COLLECTION_NAME,
+            prefetch=models.Prefetch(
+                query=models.RecommendQuery(recommend=models.RecommendInput(positive=[0])),
+                lookup_from=models.LookupLocation(collection=SECONDARY_COLLECTION_NAME),
+                limit=3,
+            ),
+            query=models.FusionQuery(fusion=models.Fusion.RRF),
+            group_by="document",
+            group_size=1,
+        )
+
+    compare_clients_results(local_client, http_client, grpc_client, query_groups)
+    # the example is taken from another collection, so point 0 of this one stays a candidate
+    assert [group.hits[0].id for group in query_groups(local_client).groups] == [2, 1, 0]
 
 
 def test_random_sampling():
@@ -2208,10 +2574,17 @@ def test_formula_query():
         "city.geo": {"lon": 0.4, "lat": 0.5},
     }
 
-    for _ in range(50):
-        formula = models.FormulaQuery(
-            formula=one_random_expression_please(max_depth=2), defaults=defaults
+    expressions = [one_random_expression_please(max_depth=2) for _ in range(50)]
+    # lin_decay accepts the closed midpoint range [0, 1], unlike exp_decay and gauss_decay
+    expressions += [
+        models.LinDecayExpression(
+            lin_decay=models.DecayParamsExpression(x="rand_number", scale=0.5, midpoint=midpoint)
         )
+        for midpoint in (0.0, 1.0)
+    ]
+
+    for expression in expressions:
+        formula = models.FormulaQuery(formula=expression, defaults=defaults)
 
         # We need to score point by point to make sure that the errors that come up correspond to the same point.
         #
@@ -2266,6 +2639,24 @@ def test_mmr_queries():
     compare_clients_results(
         local_client, http_client, grpc_client, searcher.mmr_query_parametrized_score_threshold
     )
+
+    # `offset` must paginate the re-ranked output, not the candidate pool. Until qdrant 1.19.2
+    # the server applied it to the candidate pool instead, which exhausted it and returned nothing
+    major, minor, patch, dev = read_version()
+    if dev or None in (major, minor, patch) or (major, minor, patch) >= (1, 19, 2):
+        for offset in (0, 10, 20):
+            compare_clients_results(
+                local_client,
+                http_client,
+                grpc_client,
+                searcher.mmr_query_parametrized_offset,
+                offset=offset,
+            )
+
+    compare_clients_results(
+        local_client, http_client, grpc_client, searcher.default_mmr_query_offset, offset=5
+    )
+
     compare_clients_results(
         local_client, http_client, grpc_client, searcher.mmr_query_parametrized_dot
     )

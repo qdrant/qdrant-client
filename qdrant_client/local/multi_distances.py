@@ -27,9 +27,11 @@ class MultiRecoQuery:
         negative = negative if negative is not None else []
 
         for vector in positive:
-            assert not np.isnan(vector).any(), "Positive vectors must not contain NaN"
+            if np.isnan(vector).any():
+                raise ValueError("Positive vectors must not contain NaN")
         for vector in negative:
-            assert not np.isnan(vector).any(), "Negative vectors must not contain NaN"
+            if np.isnan(vector).any():
+                raise ValueError("Negative vectors must not contain NaN")
 
         self.positive: list[types.NumpyArray] = [np.array(vector) for vector in positive]
         self.negative: list[types.NumpyArray] = [np.array(vector) for vector in negative]
@@ -40,8 +42,10 @@ class MultiContextPair:
         self.positive: types.NumpyArray = np.array(positive)
         self.negative: types.NumpyArray = np.array(negative)
 
-        assert not np.isnan(self.positive).any(), "Positive vector must not contain NaN"
-        assert not np.isnan(self.negative).any(), "Negative vector must not contain NaN"
+        if np.isnan(self.positive).any():
+            raise ValueError("Positive vector must not contain NaN")
+        if np.isnan(self.negative).any():
+            raise ValueError("Negative vector must not contain NaN")
 
 
 class MultiDiscoveryQuery:
@@ -49,7 +53,8 @@ class MultiDiscoveryQuery:
         self.target: types.NumpyArray = np.array(target)
         self.context = context
 
-        assert not np.isnan(self.target).any(), "Target vector must not contain NaN"
+        if np.isnan(self.target).any():
+            raise ValueError("Target vector must not contain NaN")
 
 
 class MultiContextQuery:
@@ -65,8 +70,10 @@ def calculate_multi_distance(
     matrices: list[types.NumpyArray],
     distance_type: models.Distance,
 ) -> types.NumpyArray:
-    assert not np.isnan(query_matrix).any(), "Query matrix must not contain NaN"
-    assert len(query_matrix.shape) == 2, "Query must be a matrix"
+    if np.isnan(query_matrix).any():
+        raise ValueError("Query matrix must not contain NaN")
+    if len(query_matrix.shape) != 2:
+        raise ValueError("Query must be a matrix")
 
     distances = calculate_multi_distance_core(query_matrix, matrices, distance_type)
 
@@ -88,7 +95,8 @@ def calculate_multi_distance_core(
     def manhattan(q: types.NumpyArray, m: types.NumpyArray, *_: Any) -> types.NumpyArray:
         return -np.abs(m - q, dtype=np.float32).sum(axis=-1, dtype=np.float32)
 
-    assert not np.isnan(query_matrix).any(), "Query vector must not contain NaN"
+    if np.isnan(query_matrix).any():
+        raise ValueError("Query vector must not contain NaN")
     similarities: list[float] = []
 
     # Euclid and Manhattan are the only ones which are calculated differently during candidate selection

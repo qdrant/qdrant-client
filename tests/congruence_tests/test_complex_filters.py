@@ -13,6 +13,7 @@ from tests.congruence_tests.test_common import (
     init_local,
     init_remote,
 )
+from tests.utils import read_version
 
 
 def test_nested_query():
@@ -453,6 +454,52 @@ def test_nested_filter_payload_shapes(key: str):
     )
 
 
+def test_nested_filter_skips_non_object_elements():
+    """Only the objects in the array are checked against a nested filter. A null, string or
+    number element has no fields, so it must not satisfy a condition that holds when a field
+    is missing.
+    """
+    shapes = [
+        [{"name": "qdrant"}, None],
+        [{"name": "qdrant"}, "qdrant"],
+        [{"name": "qdrant"}, 42],
+        [{"name": "qdrant"}, {"name": None}],
+        [{"name": "qdrant"}, {"other": 1}],
+    ]
+
+    fixture_points = generate_fixtures(num=len(shapes))
+    for point, shape in zip(fixture_points, shapes):
+        point.payload = {"company": shape}
+
+    local_client = init_local()
+    init_client(local_client, fixture_points)
+
+    remote_client = init_remote()
+    init_client(remote_client, fixture_points)
+
+    for nested_filter in (
+        models.Filter(
+            must_not=[models.FieldCondition(key="name", match=models.MatchValue(value="qdrant"))]
+        ),
+        models.Filter(must=[models.IsEmptyCondition(is_empty=models.PayloadField(key="name"))]),
+        models.Filter(
+            must=[models.FieldCondition(key="name", values_count=models.ValuesCount(lt=1))]
+        ),
+    ):
+        compare_client_results(
+            local_client,
+            remote_client,
+            scroll_with_filter,
+            scroll_filter=models.Filter(
+                must=[
+                    models.NestedCondition(
+                        nested=models.Nested(key="company", filter=nested_filter)
+                    )
+                ]
+            ),
+        )
+
+
 @pytest.mark.parametrize(
     "match",
     [
@@ -478,9 +525,12 @@ def test_text_match_on_unindexed_field(match: models.Match):
     """On a field without a text index the server tokenizes both sides with the default word
     tokenizer - split on non-alphanumeric, lowercased - and matches whole tokens rather than
     substrings, so "fly" does not match "butterfly". `MatchText` accepts the query tokens in
-    any order, `MatchPhrase` only consecutively, and `MatchTextAny` is the exception which
-    still scans for substrings.
+    any order, `MatchPhrase` only consecutively, and `MatchTextAny` needs just one of them.
     """
+    major, minor, patch, dev = read_version()
+    if not dev and None not in (major, minor, patch) and (major, minor, patch) < (1, 19, 2):
+        pytest.skip("Unindexed text match stops matching substrings as of qdrant 1.19.2")
+
     values = [
         "goodness only",  # substring of the query, not a token
         "good cheap stuff",
@@ -521,6 +571,10 @@ def test_is_null_matches_null_inside_arrays(key: str):
     """A value counts as null when it is null itself or is an array holding a null element,
     one level deep - so `[null, 1]` matches while `[[null]]` does not.
     """
+    major, minor, patch, dev = read_version()
+    if not dev and None not in (major, minor, patch) and (major, minor, patch) < (1, 19, 1):
+        pytest.skip("is_null matches an array holding a null as of qdrant 1.19.1")
+
     payloads = [
         {"a": [None, 1]},
         {"a": [1, None]},
@@ -551,3 +605,66 @@ def test_is_null_matches_null_inside_arrays(key: str):
             must=[models.IsNullCondition(is_null=models.PayloadField(key=key))]
         ),
     )
+
+
+def is_empty_is_null_clients() -> tuple[QdrantBase, QdrantBase]:
+    is_empty_is_null_payloads = [
+        {"field": [1, 2]},  # non-empty array: neither empty nor null
+        {"field": []},  # empty array: empty, not null
+        {"field": None},  # null: both empty and null
+        {"other": 1},  # the key absent altogether: empty, not null
+        {"field": [None, 1]},  # array holding a null: not empty, but null
+        {"field": 0},  # scalars and objects are neither
+        {"field": ""},
+        {"field": {"a": 1}},
+        # the same shapes under a nested key, and under a key resolving to several values
+        {"nested": {"field": None}},
+        {"nested": {"field": []}},
+        {"nested": {}},
+        {"nested": {"field": [1, 2]}},
+        {"array": [{"field": 1}, {"field": None}]},
+        {"array": [{"field": 1}, {"field": 2}]},
+        {"array": []},
+        {"array": [{"field": []}, {"field": 1}]},
+    ]
+
+    fixture_points = generate_fixtures(num=len(is_empty_is_null_payloads))
+    for point, payload in zip(fixture_points, is_empty_is_null_payloads):
+        point.payload = payload
+
+    local_client = init_local()
+    init_client(local_client, fixture_points)
+
+    remote_client = init_remote()
+    init_client(remote_client, fixture_points)
+
+    for client in (local_client, remote_client):
+        for key in ("field", "nested.field", "array[].field"):
+            client.create_payload_index(
+                COLLECTION_NAME, key, models.PayloadSchemaType.INTEGER, wait=True
+            )
+
+    return local_client, remote_client
+
+
+@pytest.mark.parametrize("key", ["field", "nested.field", "array[].field"])
+@pytest.mark.parametrize("flag", ["is_empty", "is_null"])
+@pytest.mark.parametrize("value", [True, False])
+def test_field_condition_is_empty_is_null(key: str, flag: str, value: bool):
+    """`FieldCondition.is_empty` / `is_null` are the shorthand syntax for `IsEmptyCondition` /
+    `IsNullCondition`, and local mode used to ignore them outright - matching nothing under
+    `must` and everything under `must_not`.
+    """
+    local_client, remote_client = is_empty_is_null_clients()
+
+    condition = models.FieldCondition(key=key, **{flag: value})
+    for scroll_filter in (
+        models.Filter(must=[condition]),
+        models.Filter(must_not=[condition]),
+    ):
+        compare_client_results(
+            local_client,
+            remote_client,
+            scroll_with_filter,
+            scroll_filter=scroll_filter,
+        )

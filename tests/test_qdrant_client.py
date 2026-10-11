@@ -52,6 +52,7 @@ from qdrant_client.models import (
     VectorParamsDiff,
 )
 from qdrant_client.qdrant_remote import QdrantRemote
+from qdrant_client.uploader import grpc_uploader
 from qdrant_client.uploader.grpc_uploader import payload_to_grpc
 from tests.congruence_tests.test_common import (
     generate_fixtures,
@@ -1947,6 +1948,29 @@ def test_grpc_compression():
         QdrantClient(prefer_grpc=True, grpc_compression="gzip")
 
 
+def test_grpc_compression_upload(mocker):
+    """Check that upload_points sends batches over a channel with the client's compression."""
+    client = QdrantClient(prefer_grpc=True, grpc_compression=Compression.Gzip)
+    if client.collection_exists(COLLECTION_NAME):
+        client.delete_collection(COLLECTION_NAME)
+    client.create_collection(
+        COLLECTION_NAME,
+        vectors_config=VectorParams(size=DIM, distance=Distance.DOT),
+    )
+
+    get_channel_spy = mocker.spy(grpc_uploader, "get_channel")
+    client.upload_points(
+        COLLECTION_NAME,
+        points=[PointStruct(id=idx, vector=np.random.rand(DIM).tolist()) for idx in range(10)],
+        wait=True,
+    )
+    get_channel_spy.assert_called()
+    assert get_channel_spy.call_args.kwargs.get("compression") == Compression.Gzip
+    assert client.count(COLLECTION_NAME).count == 10
+
+    client.delete_collection(COLLECTION_NAME)
+
+
 def test_auth_token_provider():
     """Check that the token provided is called for both http and grpc clients."""
     token = ""
@@ -2006,6 +2030,37 @@ def test_auth_token_provider():
     assert token == "token_2"
 
 
+@pytest.mark.parametrize("prefer_grpc", [False, True])
+def test_auth_token_provider_upload(prefer_grpc):
+    """Check that upload_points authenticates with the token provider."""
+    call_num = 0
+
+    def auth_token_provider():
+        nonlocal call_num
+        call_num += 1
+        return f"token_{call_num}"
+
+    client = QdrantClient(
+        prefer_grpc=prefer_grpc, check_compatibility=False, auth_token_provider=auth_token_provider
+    )
+    if client.collection_exists(COLLECTION_NAME):
+        client.delete_collection(COLLECTION_NAME)
+    client.create_collection(
+        COLLECTION_NAME,
+        vectors_config=VectorParams(size=DIM, distance=Distance.DOT),
+    )
+
+    calls_before = call_num
+    client.upload_points(
+        COLLECTION_NAME,
+        points=[PointStruct(id=idx, vector=np.random.rand(DIM).tolist()) for idx in range(10)],
+        wait=True,
+    )
+    assert call_num > calls_before
+
+    client.delete_collection(COLLECTION_NAME)
+
+
 def test_async_auth_token_provider():
     """Check that initialization fails if async auth_token_provider is provided to sync client."""
     token = ""
@@ -2023,6 +2078,8 @@ def test_async_auth_token_provider():
         match="Synchronous token provider is not set.",
     ):
         client.get_collections()
+    with pytest.raises(ValueError, match="require a synchronous auth_token_provider"):
+        client.upload_points(COLLECTION_NAME, points=[PointStruct(id=0, vector=[0.1] * DIM)])
 
     assert token == ""
 
@@ -2031,6 +2088,8 @@ def test_async_auth_token_provider():
         ValueError, match="Synchronous channel requires synchronous auth token provider."
     ):
         client.get_collections()
+    with pytest.raises(ValueError, match="require a synchronous auth_token_provider"):
+        client.upload_points(COLLECTION_NAME, points=[PointStruct(id=0, vector=[0.1] * DIM)])
 
     assert token == ""
 
@@ -2735,3 +2794,49 @@ def test_keyword_index_prefix(prefer_grpc):
     )
     schema = client.get_collection(COLLECTION_NAME).payload_schema["keyword_no_prefix"]
     assert not schema.params.prefix
+
+
+@pytest.mark.parametrize("prefer_grpc", [False, True])
+def test_get_optimizations(prefer_grpc):
+    major, minor, patch, dev = read_version()
+    if not (major is None or dev):
+        if (major, minor, patch) < (1, 17, 0):
+            pytest.skip("Get optimizations is supported as of qdrant 1.17.0")
+
+    client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
+    if client.collection_exists(COLLECTION_NAME):
+        client.delete_collection(COLLECTION_NAME)
+    client.create_collection(
+        COLLECTION_NAME,
+        vectors_config=models.VectorParams(size=DIM, distance=models.Distance.DOT),
+    )
+
+    optimizations = client.get_optimizations(COLLECTION_NAME)
+    assert optimizations.queued is None
+    assert optimizations.completed is None
+    assert optimizations.idle_segments is None
+
+    optimizations = client.get_optimizations(COLLECTION_NAME, with_="queued")
+    assert optimizations.queued is not None
+    assert optimizations.completed is None
+    assert optimizations.idle_segments is None
+
+    optimizations = client.get_optimizations(
+        COLLECTION_NAME, with_=["queued", "completed", "idle_segments"]
+    )
+    assert optimizations.queued is not None
+    assert optimizations.completed is not None
+    assert optimizations.idle_segments is not None
+
+    # server ignores `completed_limit` unless completed optimizations are requested
+    optimizations = client.get_optimizations(COLLECTION_NAME, completed_limit=1)
+    assert optimizations.queued is None
+    assert optimizations.completed is not None
+    assert optimizations.idle_segments is None
+
+    optimizations = client.get_optimizations(
+        COLLECTION_NAME, completed_limit=1, with_=["queued", "completed"]
+    )
+    assert optimizations.queued is not None
+    assert optimizations.completed is not None
+    assert optimizations.idle_segments is None

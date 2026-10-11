@@ -1,10 +1,11 @@
 from datetime import date, datetime
 from enum import Enum
-from typing import Any, Dict, List, Literal, Optional, Union
+from typing import Annotated, Any, Dict, List, Literal, Optional, Union
 from uuid import UUID
 
 from pydantic import BaseModel, Field
 from pydantic.types import StrictBool, StrictFloat, StrictInt, StrictStr
+from qdrant_client._numpy_vectors import NumpyVectorsToLists
 
 Payload = Dict[str, Any]
 SparseVectorsConfig = Dict[str, "SparseVectorParams"]
@@ -87,7 +88,7 @@ class AuditTelemetry(BaseModel):
 
 class Batch(BaseModel, extra="forbid"):
     ids: List["ExtendedPointId"] = Field(..., description="")
-    vectors: "BatchVectorStruct" = Field(..., description="")
+    vectors: Annotated["BatchVectorStruct", NumpyVectorsToLists] = Field(..., description="")
     payloads: Optional[List["Payload"]] = Field(default=None, description="")
 
 
@@ -2319,13 +2320,13 @@ class PointRequest(BaseModel, extra="forbid"):
 
 class PointStruct(BaseModel, extra="forbid"):
     id: "ExtendedPointId" = Field(..., description="")
-    vector: "VectorStruct" = Field(..., description="")
+    vector: Annotated["VectorStruct", NumpyVectorsToLists] = Field(..., description="")
     payload: Optional["Payload"] = Field(default=None, description="Payload values (optional)")
 
 
 class PointVectors(BaseModel, extra="forbid"):
     id: "ExtendedPointId" = Field(..., description="")
-    vector: "VectorStruct" = Field(..., description="")
+    vector: Annotated["VectorStruct", NumpyVectorsToLists] = Field(..., description="")
 
 
 class PointsBatch(BaseModel, extra="forbid"):

@@ -7,7 +7,7 @@ For breaking changes:
 
 For fixes:
 
-* [ ] Create a new branch from master
+* [ ] Create a new branch from `dev`
 
 ---
 

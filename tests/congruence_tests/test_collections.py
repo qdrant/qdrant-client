@@ -1,6 +1,7 @@
 from time import sleep
 from typing import Callable
 
+import grpc
 import pytest
 
 from qdrant_client.http import models
@@ -157,6 +158,74 @@ def test_config_variations():
     check_variation({"text": vectors_config}, sparse_vectors_config)
     check_variation({"text": vectors_config}, None)
     check_variation(None, None)
+
+
+def test_create_collection_empty_sparse_vector_name():
+    collection_name = "test_empty_sparse_vector_name"
+    error_message = "Sparse vector name cannot be empty"
+
+    local_client = init_local()
+    http_client = init_remote()
+    grpc_client = init_remote(prefer_grpc=True)
+
+    if http_client.collection_exists(collection_name):
+        http_client.delete_collection(collection_name)
+
+    dense_params = models.VectorParams(size=2, distance=models.Distance.COSINE)
+    configs = [
+        (None, {"": models.SparseVectorParams()}),
+        (None, {"sparse": models.SparseVectorParams(), "": models.SparseVectorParams()}),
+        (dense_params, {"": models.SparseVectorParams()}),
+        ({"text": dense_params}, {"": models.SparseVectorParams()}),
+    ]
+
+    for vectors_config, sparse_vectors_config in configs:
+        with pytest.raises(ValueError, match=error_message):
+            local_client.create_collection(
+                collection_name,
+                vectors_config=vectors_config,
+                sparse_vectors_config=sparse_vectors_config,
+            )
+        assert not local_client.collection_exists(collection_name)
+
+        with pytest.raises(UnexpectedResponse, match=error_message):
+            http_client.create_collection(
+                collection_name,
+                vectors_config=vectors_config,
+                sparse_vectors_config=sparse_vectors_config,
+            )
+
+        with pytest.raises(grpc.RpcError, match=error_message):
+            grpc_client.create_collection(
+                collection_name,
+                vectors_config=vectors_config,
+                sparse_vectors_config=sparse_vectors_config,
+            )
+        assert not http_client.collection_exists(collection_name)
+
+
+@pytest.mark.parametrize("prefer_grpc", [False, True])
+def test_update_collection_metadata_null_removes_key(prefer_grpc):
+    local_client = init_local()
+    remote_client = init_remote(prefer_grpc=prefer_grpc)
+    vector_params = models.VectorParams(size=2, distance=models.Distance.COSINE)
+
+    # top-level nulls remove keys from existing metadata, nested nulls are stored as is;
+    # a collection without metadata stores the update as is, nulls included
+    new_metadata = {"a": None, "missing": None, "b": {"c": None}}
+    for initial_metadata in [{"a": 1, "keep": 1, "kept": None}, None]:
+        for client in (local_client, remote_client):
+            if client.collection_exists(COLLECTION_NAME):
+                client.delete_collection(COLLECTION_NAME)
+            client.create_collection(
+                COLLECTION_NAME, vectors_config=vector_params, metadata=initial_metadata
+            )
+            client.update_collection(COLLECTION_NAME, metadata=new_metadata)
+
+        assert (
+            local_client.get_collection(COLLECTION_NAME).config.metadata
+            == remote_client.get_collection(COLLECTION_NAME).config.metadata
+        )
 
 
 def wait_for(condition: Callable, *args, **kwargs):

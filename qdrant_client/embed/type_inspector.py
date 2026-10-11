@@ -1,4 +1,4 @@
-from typing import Iterable, get_args
+from typing import Any, Iterable, get_args
 
 from pydantic import BaseModel
 
@@ -7,6 +7,19 @@ from qdrant_client.embed.common import INFERENCE_OBJECT_TYPES
 
 from qdrant_client.embed.schema_parser import ModelSchemaParser
 from qdrant_client.embed.utils import FieldPath
+
+_INFERENCE_OBJECT_TYPES = get_args(INFERENCE_OBJECT_TYPES)
+
+# the inspection finds nothing in numbers, and doesn't look into lists inside lists
+_NUMBER_OR_LIST_TYPES = {int, float, list}
+
+
+def _numbers_or_lists(values: list[Any]) -> bool:
+    """Whether the values are all numbers or lists, like those of a vector or a multivector
+
+    Comparing the set of their types is much cheaper than inspecting each of thousands of floats.
+    """
+    return set(map(type, values)) <= _NUMBER_OR_LIST_TYPES
 
 
 class Inspector:
@@ -50,7 +63,7 @@ class Inspector:
         return False
 
     def _inspect_model(self, model: BaseModel, paths: list[FieldPath] | None = None) -> bool:
-        if isinstance(model, get_args(INFERENCE_OBJECT_TYPES)):
+        if isinstance(model, _INFERENCE_OBJECT_TYPES):
             return True
 
         paths = (
@@ -86,7 +99,7 @@ class Inspector:
         if model is None:
             return False
 
-        if isinstance(model, get_args(INFERENCE_OBJECT_TYPES)):
+        if isinstance(model, _INFERENCE_OBJECT_TYPES):
             return True
 
         if isinstance(model, BaseModel):
@@ -103,8 +116,11 @@ class Inspector:
             return False
 
         elif isinstance(model, list):
+            if _numbers_or_lists(model):
+                return False
+
             for current_model in model:
-                if isinstance(current_model, get_args(INFERENCE_OBJECT_TYPES)):
+                if isinstance(current_model, _INFERENCE_OBJECT_TYPES):
                     return True
 
                 if not isinstance(current_model, BaseModel):
@@ -126,8 +142,11 @@ class Inspector:
         elif isinstance(model, dict):
             for key, values in model.items():
                 values = [values] if not isinstance(values, list) else values
+                if _numbers_or_lists(values):
+                    continue
+
                 for current_model in values:
-                    if isinstance(current_model, get_args(INFERENCE_OBJECT_TYPES)):
+                    if isinstance(current_model, _INFERENCE_OBJECT_TYPES):
                         return True
 
                     if not isinstance(current_model, BaseModel):

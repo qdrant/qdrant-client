@@ -1,3 +1,4 @@
+import math
 import re
 from datetime import date, datetime, timezone
 from typing import Any
@@ -47,8 +48,57 @@ def check_values_count(condition: models.ValuesCount, values: list[Any] | None) 
     )
 
 
+def value_is_empty(value: Any) -> bool:
+    """A value is empty when it is null or an empty array."""
+    if value is None:
+        return True
+    if isinstance(value, list):
+        return len(value) == 0
+    return False
+
+
+def value_is_null(value: Any) -> bool:
+    """A value is null when it is null itself, or an array containing a null element,
+    one level deep (qdrant#10101).
+    """
+    if value is None:
+        return True
+    if isinstance(value, list):
+        return any(element is None for element in value)
+    return False
+
+
+def check_is_empty(payload: dict[str, Any], key: str) -> bool:
+    """Whether a key is empty: it resolves to no value at all, or every value it resolves
+    to is empty.
+    """
+    values = value_by_key(payload, key, flat=False)
+    return values is None or len(values) == 0 or all(value_is_empty(value) for value in values)
+
+
+def check_is_null(payload: dict[str, Any], key: str) -> bool:
+    """Whether any value a key resolves to is null."""
+    values = value_by_key(payload, key, flat=False)
+    if values is None:
+        return False
+    return any(value_is_null(value) for value in values)
+
+
+def _is_geo_point(value: Any) -> bool:
+    """Accept finite JSON numbers that can be used by the geometry calculations."""
+    if not isinstance(value, dict):
+        return False
+    try:
+        return all(
+            (type(coordinate) is int or type(coordinate) is float) and math.isfinite(coordinate)
+            for coordinate in (value.get("lat"), value.get("lon"))
+        )
+    except OverflowError:
+        return False
+
+
 def check_geo_radius(condition: models.GeoRadius, values: Any) -> bool:
-    if isinstance(values, dict) and "lat" in values and "lon" in values:
+    if _is_geo_point(values):
         lat = values["lat"]
         lon = values["lon"]
 
@@ -65,7 +115,7 @@ def check_geo_radius(condition: models.GeoRadius, values: Any) -> bool:
 
 
 def check_geo_bounding_box(condition: models.GeoBoundingBox, values: Any) -> bool:
-    if isinstance(values, dict) and "lat" in values and "lon" in values:
+    if _is_geo_point(values):
         lat = values["lat"]
         lon = values["lon"]
 
@@ -83,7 +133,7 @@ def check_geo_bounding_box(condition: models.GeoBoundingBox, values: Any) -> boo
 
 
 def check_geo_polygon(condition: models.GeoPolygon, values: Any) -> bool:
-    if isinstance(values, dict) and "lat" in values and "lon" in values:
+    if _is_geo_point(values):
         lat = values["lat"]
         lon = values["lon"]
         exterior = [(point.lat, point.lon) for point in condition.exterior.points]
@@ -184,9 +234,11 @@ def check_match(condition: models.Match, value: Any) -> bool:
         document_tokens = set(unindexed_text_tokens(value))
         return bool(query_tokens) and all(token in document_tokens for token in query_tokens)
     if isinstance(condition, models.MatchTextAny):
-        # Unlike text/phrase, the server still resolves this with a substring scan on
-        # unindexed fields.
-        return isinstance(value, str) and any(word in value for word in condition.text_any.split())
+        # Like `MatchText`, but a single query token is enough (qdrant#10526).
+        if not isinstance(value, str):
+            return False
+        document_tokens = set(unindexed_text_tokens(value))
+        return any(token in document_tokens for token in unindexed_text_tokens(condition.text_any))
     if isinstance(condition, models.MatchPhrase):
         # Like `MatchText`, but the query tokens must appear consecutively in document
         # token order (qdrant#10341).
@@ -230,7 +282,8 @@ def nested_filter_values(payload: dict[str, Any], key: str) -> list[Any]:
     elements: list[Any] = []
     for value in values:
         if isinstance(value, list):
-            elements.extend(value)
+            # only objects are checked against the nested filter, as on the server
+            elements.extend(element for element in value if isinstance(element, dict))
     return elements
 
 
@@ -245,21 +298,9 @@ def check_condition(
     has_vector: dict[str, bool],
 ) -> bool:
     if isinstance(condition, models.IsNullCondition):
-        values = value_by_key(payload, condition.is_null.key, flat=False)
-        if values is None:
-            return False
-        # A value is null if it is null itself, or is an array containing a null
-        # element, one level deep (qdrant#10101).
-        if any(v is None or (isinstance(v, list) and any(e is None for e in v)) for v in values):
-            return True
+        return check_is_null(payload, condition.is_null.key)
     elif isinstance(condition, models.IsEmptyCondition):
-        values = value_by_key(payload, condition.is_empty.key, flat=False)
-        if (
-            values is None
-            or len(values) == 0
-            or all((v is None or (isinstance(v, list) and len(v) == 0)) for v in values)
-        ):
-            return True
+        return check_is_empty(payload, condition.is_empty.key)
     elif isinstance(condition, models.HasIdCondition):
         ids = [str(id_) if isinstance(id_, UUID) else id_ for id_ in condition.has_id]
         if point_id in ids:
@@ -274,6 +315,14 @@ def check_condition(
         if condition.has_vector in has_vector and has_vector[condition.has_vector]:
             return True
     elif isinstance(condition, models.FieldCondition):
+        if condition.values_count is not None:
+            return check_values_count(
+                condition.values_count, value_by_key(payload, condition.key, flat=False)
+            )
+        if condition.is_empty is not None:
+            return check_is_empty(payload, condition.key) == condition.is_empty
+        if condition.is_null is not None:
+            return check_is_null(payload, condition.key) == condition.is_null
         values = value_by_key(payload, condition.key)
         if condition.match is not None:
             if values is None:
@@ -291,9 +340,6 @@ def check_condition(
             if values is None:
                 return False
             return any(check_geo_radius(condition.geo_radius, v) for v in values)
-        if condition.values_count is not None:
-            values = value_by_key(payload, condition.key, flat=False)
-            return check_values_count(condition.values_count, values)
         if condition.geo_polygon is not None:
             if values is None:
                 return False
@@ -426,7 +472,7 @@ def validate_filter(payload_filter: models.Filter | None) -> None:
                 if total < 1:
                     raise ValueError(f"Slice total must be >= 1, got {total}")
                 if not 0 <= index < total:
-                    raise ValueError(f"Slice index must be in 0..{total}, got {index}")
+                    raise ValueError(f"Slice index must be in [0;{total - 1}], got {index}")
 
 
 def calculate_payload_mask(

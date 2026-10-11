@@ -1,9 +1,11 @@
 from typing import Callable, Any
 
+from grpc import RpcError
 import pytest
 
 from qdrant_client import QdrantClient, models
 from qdrant_client.client_base import QdrantBase
+from qdrant_client.http.exceptions import UnexpectedResponse
 from tests.congruence_tests.test_common import (
     COLLECTION_NAME,
     compare_client_results,
@@ -218,3 +220,49 @@ def test_search_matrix_with_mixed_id_types():
 
     compare_all_clients_results(local_client, http_client, grpc_client, search_offsets_mixed_ids)
     compare_all_clients_results(local_client, http_client, grpc_client, search_pairs_mixed_ids)
+
+
+def test_search_matrix_invalid_limit(local_client, http_client, grpc_client):
+    for local_matrix, http_matrix, grpc_matrix in (
+        (
+            local_client.search_matrix_offsets,
+            http_client.search_matrix_offsets,
+            grpc_client.search_matrix_offsets,
+        ),
+        (
+            local_client.search_matrix_pairs,
+            http_client.search_matrix_pairs,
+            grpc_client.search_matrix_pairs,
+        ),
+    ):
+        with pytest.raises(ValueError, match="limit value 0 is invalid"):
+            local_matrix(collection_name=COLLECTION_NAME, limit=0, using="text")
+
+        with pytest.raises(UnexpectedResponse, match="must be 1 or larger"):
+            http_matrix(collection_name=COLLECTION_NAME, limit=0, using="text")
+
+        with pytest.raises(RpcError, match="must be 1 or larger"):
+            grpc_matrix(collection_name=COLLECTION_NAME, limit=0, using="text")
+
+
+def test_search_matrix_invalid_sample(local_client, http_client, grpc_client):
+    for local_matrix, http_matrix, grpc_matrix in (
+        (
+            local_client.search_matrix_offsets,
+            http_client.search_matrix_offsets,
+            grpc_client.search_matrix_offsets,
+        ),
+        (
+            local_client.search_matrix_pairs,
+            http_client.search_matrix_pairs,
+            grpc_client.search_matrix_pairs,
+        ),
+    ):
+        with pytest.raises(ValueError, match="sample value 1 is invalid"):
+            local_matrix(collection_name=COLLECTION_NAME, sample=1, using="text")
+
+        with pytest.raises(UnexpectedResponse, match="must be 2 or larger"):
+            http_matrix(collection_name=COLLECTION_NAME, sample=1, using="text")
+
+        with pytest.raises(RpcError, match="must be 2 or larger"):
+            grpc_matrix(collection_name=COLLECTION_NAME, sample=1, using="text")

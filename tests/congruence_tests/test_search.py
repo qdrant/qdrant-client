@@ -362,7 +362,7 @@ def test_query_with_nan():
     vector[4] = np.nan
     query_vector = vector.tolist()
 
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         local_client.query_points(COLLECTION_NAME, query_vector, using="text")
     with pytest.raises(UnexpectedResponse):
         remote_client.query_points(COLLECTION_NAME, query_vector, using="text")
@@ -381,7 +381,7 @@ def test_query_with_nan():
     init_client(local_client, fixture_points, vectors_config=single_vector_config)
     init_client(remote_client, fixture_points, vectors_config=single_vector_config)
 
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         local_client.query_points(COLLECTION_NAME, vector.tolist())
     with pytest.raises(UnexpectedResponse):
         remote_client.query_points(COLLECTION_NAME, vector.tolist())
