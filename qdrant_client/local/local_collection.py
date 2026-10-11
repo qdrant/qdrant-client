@@ -1277,6 +1277,7 @@ class LocalCollection:
         score_threshold: float | None = None,
         with_lookup: types.WithLookupInterface | None = None,
         with_lookup_collection: "LocalCollection | None" = None,
+        search_params: types.SearchParams | None = None,
     ) -> models.GroupsResult:
         max_limit = len(self.ids_inv)
         # rewrite prefetch with larger limit
@@ -1296,6 +1297,7 @@ class LocalCollection:
             with_payload=True,
             with_vectors=with_vectors,
             score_threshold=score_threshold,
+            search_params=search_params,
         )
 
         groups = OrderedDict()
