@@ -1,37 +1,6 @@
-import time
-from typing import Iterable
-
 from qdrant_client._pydantic_compat import to_dict, model_fields
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.http import models
-
-
-def upload_with_retry(
-    client: QdrantBase,
-    collection_name: str,
-    points: Iterable[models.PointStruct],
-    max_attempts: int = 3,
-    pause: float = 3.0,
-) -> None:
-    # Each attempt must replay the complete batch, even when points is a one-shot iterator.
-    points = list(points)
-    attempts = 1
-    while attempts <= max_attempts:
-        try:
-            client.upload_points(
-                collection_name=collection_name,
-                points=points,
-                wait=True,
-            )
-            return
-        except Exception as e:
-            print(f"Exception: {e}, attempt {attempts}/{max_attempts}")
-            if attempts < max_attempts:
-                print(f"Next attempt in {pause} seconds")
-                time.sleep(pause)
-            attempts += 1
-
-    raise Exception(f"Failed to upload points after {max_attempts} attempts")
 
 
 def migrate(
@@ -172,12 +141,12 @@ def _migrate_collection(
         batch_size (int, optional): Batch size for scrolling and uploading vectors. Defaults to 100.
     """
     records, next_offset = source_client.scroll(collection_name, limit=2, with_vectors=True)
-    upload_with_retry(client=dest_client, collection_name=collection_name, points=records)  # type: ignore
+    dest_client.upload_points(collection_name, records, wait=True)  # type: ignore
     while next_offset is not None:
         records, next_offset = source_client.scroll(
             collection_name, offset=next_offset, limit=batch_size, with_vectors=True
         )
-        upload_with_retry(client=dest_client, collection_name=collection_name, points=records)  # type: ignore
+        dest_client.upload_points(collection_name, records, wait=True)  # type: ignore
     source_client_vectors_count = source_client.count(collection_name).count
     dest_client_vectors_count = dest_client.count(collection_name).count
     assert (
