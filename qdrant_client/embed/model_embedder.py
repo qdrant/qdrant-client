@@ -1,4 +1,5 @@
 import os
+import sys
 from collections import defaultdict
 from copy import deepcopy
 from multiprocessing import get_all_start_methods
@@ -120,7 +121,16 @@ class ModelEmbedder:
             if parallel == 0:
                 parallel = os.cpu_count()
 
-            start_method = "forkserver" if "forkserver" in get_all_start_methods() else "spawn"
+            if sys.platform == "darwin":
+                # On macOS, a worker forked from a process that has ever run a thread aborts
+                # when it initializes an Objective-C class, as importing onnxruntime or the
+                # system proxy lookup of a model download does. Since Python 3.15 the
+                # forkserver imports the main script, so one thread started by its imports
+                # (`import grpc` starts one) crashes every worker. spawn is also CPython's
+                # default start method on macOS.
+                start_method = "spawn"
+            else:
+                start_method = "forkserver" if "forkserver" in get_all_start_methods() else "spawn"
             assert parallel is not None  # just a mypy complaint
             pool = ParallelWorkerPool(
                 num_workers=parallel,
