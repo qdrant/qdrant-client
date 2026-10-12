@@ -141,10 +141,10 @@ def upload_batch_grpc(
 
         except Exception as e:
             if attempt == max_retries:
-                raise e
+                raise
 
             show_warning(
-                message=f"Batch upload failed {attempt + 1} times. Retrying...",
+                message=f"Batch upload failed {attempt + 1} times ({type(e).__name__}: {e}). Retrying...",
                 category=UserWarning,
                 stacklevel=8,
             )
