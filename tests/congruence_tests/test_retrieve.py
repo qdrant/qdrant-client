@@ -73,6 +73,11 @@ def test_retrieve(local_client, remote_client) -> None:
             with_payload=PayloadSelectorExclude(exclude=sample_keys),
         ),
     )
+    compare_client_results(
+        local_client,
+        remote_client,
+        lambda c: c.retrieve(COLLECTION_NAME, [id_], with_payload=[]),
+    )
 
     # a bare string is not a selector, it is rejected instead of selecting everything
     for client in (local_client, remote_client):
@@ -150,4 +155,9 @@ def test_sparse_retrieve() -> None:
             [id_],
             with_payload=PayloadSelectorExclude(exclude=sample_keys),
         ),
+    )
+    compare_client_results(
+        local_client,
+        remote_client,
+        lambda c: c.retrieve(COLLECTION_NAME, [id_], with_payload=[]),
     )

@@ -570,11 +570,7 @@ class LocalCollection:
         payload: dict,
         with_payload: types.WithPayloadInterface = True,
     ) -> dict | None:
-        # Only False and an absent selector mean "no payload". An empty list is a selection of no
-        # fields, which still carries a payload - an empty one. `PayloadSelectorInclude(include=[])`
-        # is treated that way below, and `_get_vectors` already separates `is False or is None` from
-        # an empty list. RestToGrpc sends a plain list as an include selector over the same field,
-        # never as `enable: False`.
+        # an empty list selects no fields, it doesn't disable the payload
         if with_payload is False or with_payload is None:
             return None
 
