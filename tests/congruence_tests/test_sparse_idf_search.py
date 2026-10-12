@@ -293,6 +293,49 @@ def test_idf_scope_in_prefetch():
         )
 
 
+def test_idf_scope_in_groups():
+    fixture_points = generate_sparse_fixtures(
+        vectors_sizes={"sparse-text": sparse_text_vector_size},
+        even_sparse=False,
+    )
+
+    local_client = init_local()
+    init_client(
+        local_client,
+        fixture_points,
+        sparse_vectors_config=sparse_vectors_idf_config,
+        vectors_config={},
+    )
+
+    remote_client = init_remote()
+    init_client(
+        remote_client,
+        fixture_points,
+        sparse_vectors_config=sparse_vectors_idf_config,
+        vectors_config={},
+    )
+
+    query = generate_random_sparse_vector(sparse_text_vector_size, density=0.3)
+
+    for idf in (
+        models.IdfScope.GLOBAL,
+        models.IdfCorpusParams(corpus=corpus_filter([0, 1, 2, 3])),
+    ):
+        compare_client_results(
+            local_client,
+            remote_client,
+            lambda c, idf=idf: c.query_points_groups(
+                COLLECTION_NAME,
+                group_by="rand_digit",
+                query=query,
+                using="sparse-text",
+                search_params=models.SearchParams(idf=idf),
+                limit=5,
+                group_size=3,
+            ),
+        )
+
+
 def test_search_with_persistence():
     fixture_points = generate_sparse_fixtures(
         vectors_sizes={"sparse-text": sparse_text_vector_size},

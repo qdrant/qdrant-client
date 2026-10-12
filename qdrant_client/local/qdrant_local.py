@@ -570,6 +570,7 @@ class QdrantLocal(QdrantBase):
             score_threshold=score_threshold,
             with_lookup=with_lookup,
             with_lookup_collection=with_lookup_collection,
+            search_params=search_params,
         )
 
     def scroll(

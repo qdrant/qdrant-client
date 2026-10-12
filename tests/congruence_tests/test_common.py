@@ -390,7 +390,7 @@ def compare_client_results(
             group_2 = groups_2[i]
 
             assert (
-                group_1.hits[0].score - group_2.hits[0].score < 1e-4
+                abs(group_1.hits[0].score - group_2.hits[0].score) < 1e-4
             ), f"groups_1[{i}].hits[0].score = {group_1.hits[0].score}, groups_2[{i}].hits[0].score = {group_2.hits[0].score}"
 
             # We can't assert ids because they are not stable, order of groups with same score is guaranteed
