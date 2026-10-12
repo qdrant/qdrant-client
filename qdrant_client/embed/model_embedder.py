@@ -154,6 +154,9 @@ class ModelEmbedder:
         if not self._is_builtin_embedder_available:
             FastEmbedMisc.import_fastembed()  # fail fast if fastembed is required
 
+        # an abandoned generator which is still referenced has not run its `finally` yet
+        self._batch_accumulator.clear()
+        self._embed_storage.clear()
         try:
             for raw_model in raw_models:
                 self._process_model(raw_model, is_query=is_query, accumulating=True)

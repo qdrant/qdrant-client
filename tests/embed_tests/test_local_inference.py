@@ -1814,81 +1814,74 @@ def test_bm25_core():
         local_client.upsert(COLLECTION_NAME, points)
 
 
-def test_embed_models_batch_state_reset_after_failure():
-    class FailingOnceEmbedder:
-        def __init__(self):
-            self.should_fail = True
+class LengthEmbedder:
+    """Embeds a text into a vector holding its length, fails the first `failures` calls"""
 
-        def is_supported_text_model(self, model_name):
-            return True
+    def __init__(self, failures=0):
+        self.failures = failures
 
-        def is_supported_sparse_model(self, model_name):
-            return False
+    def is_supported_text_model(self, model_name):
+        return True
 
-        def is_supported_late_interaction_text_model(self, model_name):
-            return False
+    def is_supported_sparse_model(self, model_name):
+        return False
 
-        def is_supported_image_model(self, model_name):
-            return False
+    def is_supported_late_interaction_text_model(self, model_name):
+        return False
 
-        def is_supported_late_interaction_multimodal_model(self, model_name):
-            return False
+    def is_supported_image_model(self, model_name):
+        return False
 
-        def embed(self, model_name, texts=None, **kwargs):
-            if self.should_fail:
-                self.should_fail = False
-                raise RuntimeError("transient")
-            return [[float(len(text))] for text in texts]
+    def is_supported_late_interaction_multimodal_model(self, model_name):
+        return False
 
+    def embed(self, model_name, texts=None, **kwargs):
+        if self.failures:
+            self.failures -= 1
+            raise RuntimeError("transient")
+        return [[float(len(text))] for text in texts]
+
+
+def make_length_model_embedder(failures=0):
     model_embedder = ModelEmbedder()
-    model_embedder.embedder = FailingOnceEmbedder()
+    model_embedder.embedder = LengthEmbedder(failures=failures)
+    return model_embedder
 
-    def batch(text):
-        return [models.PointStruct(id=0, vector=models.Document(text=text, model="model"))]
+
+def documents_batch(*texts):
+    return [
+        models.PointStruct(id=i, vector=models.Document(text=text, model="model"))
+        for i, text in enumerate(texts)
+    ]
+
+
+def test_embed_models_batch_state_reset_after_failure():
+    model_embedder = make_length_model_embedder(failures=1)
 
     with pytest.raises(RuntimeError, match="transient"):
-        list(model_embedder.embed_models_batch(batch("aaaaa")))
+        list(model_embedder.embed_models_batch(documents_batch("aaaaa")))
 
-    points = list(model_embedder.embed_models_batch(batch("bb")))
+    points = list(model_embedder.embed_models_batch(documents_batch("bb")))
     assert points[0].vector == [2.0]
     assert not model_embedder._batch_accumulator
     assert not model_embedder._embed_storage
 
 
 def test_embed_models_batch_state_reset_after_abandoned_generator():
-    class LengthEmbedder:
-        def is_supported_text_model(self, model_name):
-            return True
+    model_embedder = make_length_model_embedder()
 
-        def is_supported_sparse_model(self, model_name):
-            return False
-
-        def is_supported_late_interaction_text_model(self, model_name):
-            return False
-
-        def is_supported_image_model(self, model_name):
-            return False
-
-        def is_supported_late_interaction_multimodal_model(self, model_name):
-            return False
-
-        def embed(self, model_name, texts=None, **kwargs):
-            return [[float(len(text))] for text in texts]
-
-    model_embedder = ModelEmbedder()
-    model_embedder.embedder = LengthEmbedder()
-
-    def batch(*texts):
-        return [
-            models.PointStruct(id=i, vector=models.Document(text=text, model="model"))
-            for i, text in enumerate(texts)
-        ]
-
-    generator = model_embedder.embed_models_batch(batch("aaaaa", "aaaaaaa"))
+    generator = model_embedder.embed_models_batch(documents_batch("aaaaa", "aaaaaaa"))
     next(generator)
     generator.close()
 
-    points = list(model_embedder.embed_models_batch(batch("bb")))
+    points = list(model_embedder.embed_models_batch(documents_batch("bb")))
     assert points[0].vector == [2.0]
     assert not model_embedder._batch_accumulator
     assert not model_embedder._embed_storage
+
+    # an abandoned generator can stay alive, e.g. referenced by a caught exception's traceback
+    generator = model_embedder.embed_models_batch(documents_batch("aaaaa", "aaaaaaa"))
+    next(generator)
+
+    points = list(model_embedder.embed_models_batch(documents_batch("bb", "ccc")))
+    assert [point.vector for point in points] == [[2.0], [3.0]]
