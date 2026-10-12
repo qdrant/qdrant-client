@@ -22,6 +22,9 @@ def migrate(
             raise ValueError.
         batch_size (int, optional): Batch size for scrolling and uploading vectors. Defaults to 100.
     """
+    if batch_size <= 0:
+        raise ValueError("batch_size must be greater than 0")
+
     collection_names = _select_source_collections(source_client, collection_names)
     if any(
         _has_custom_shards(source_client, collection_name) for collection_name in collection_names
