@@ -2821,14 +2821,16 @@ class LocalCollection:
                     self._calculate_has_vector(idx),
                 ):
                     return None
-            self._update_point(point)
+            apply_point = self._update_point
         else:
             if update_mode == models.UpdateMode.UPDATE_ONLY:
                 return None
-            self._add_point(point)
+            apply_point = self._add_point
 
+        # Store the point before applying it, see `_persist_by_id`.
         if self.storage is not None:
             self.storage.persist(point)
+        apply_point(point)
 
     @staticmethod
     def _materialize_points(
@@ -2888,7 +2890,8 @@ class LocalCollection:
     def _validate_named_vectors(
         self, vectors: dict[str, list[float] | SparseVector | list[list[float]]]
     ) -> list[tuple[str, Any]]:
-        """Validate and normalize named vectors, without touching collection state."""
+        """Validate named vectors and normalize them to the form they are stored in, without
+        touching collection state."""
         validated: list[tuple[str, Any]] = []
         for vector_name, vector in vectors.items():
             if vector_name not in self._all_vectors_keys:
@@ -2901,7 +2904,15 @@ class LocalCollection:
                 continue
 
             self._validate_dense_or_multivector(vector, vector_name)
-            validated.append((vector_name, np.array(vector, dtype=np.float32)))
+            vector_np = np.array(vector, dtype=np.float32)
+            if self.get_vector_params(vector_name).distance == models.Distance.COSINE:
+                if vector_name in self.vectors:
+                    norm = np.linalg.norm(vector_np)
+                    vector_np = vector_np / norm if norm > EPSILON else vector_np
+                else:
+                    vector_norm = np.linalg.norm(vector_np, axis=-1)[:, np.newaxis]
+                    vector_np /= np.where(vector_norm != 0.0, vector_norm, EPSILON)
+            validated.append((vector_name, vector_np))
 
         return validated
 
@@ -2920,17 +2931,9 @@ class LocalCollection:
                 continue
 
             self.deleted_per_vector[vector_name][idx] = 0
-
-            params = self.get_vector_params(vector_name)
             if vector_name in self.vectors:
-                if params.distance == models.Distance.COSINE:
-                    norm = np.linalg.norm(vector_np)
-                    vector_np = vector_np / norm if norm > EPSILON else vector_np
                 self.vectors[vector_name][idx] = vector_np
             else:
-                if params.distance == models.Distance.COSINE:
-                    vector_norm = np.linalg.norm(vector_np, axis=-1)[:, np.newaxis]
-                    vector_np /= np.where(vector_norm != 0.0, vector_norm, EPSILON)
                 self.multivectors[vector_name][idx] = vector_np
 
     def update_vectors(
@@ -2969,8 +2972,8 @@ class LocalCollection:
                     self._calculate_has_vector(idx),
                 ):
                     continue
+            self._persist_by_id(point_id, vectors=dict(validated))
             self._apply_named_vectors(idx, validated)
-            self._persist_by_id(point_id)
 
         if missing is not None:
             raise KeyError(missing)
@@ -2998,11 +3001,11 @@ class LocalCollection:
             if idx is None:
                 missing = point_id if missing is None else missing
                 continue
+            self._persist_by_id(point_id, vectors=dict.fromkeys(vectors))
             for vector_name in vectors:
                 if vector_name in self.sparse_vectors:
                     self._drop_idf_contribution(idx, vector_name)
                 self.deleted_per_vector[vector_name][idx] = 1
-            self._persist_by_id(point_id)
 
         if missing is not None:
             raise KeyError(missing)
@@ -3010,15 +3013,14 @@ class LocalCollection:
     def _delete_ids(self, ids: list[types.PointId]) -> None:
         for point_id in ids:
             if point_id in self.ids:
+                # Remove the stored record before hiding the point: if this fails, the points
+                # not reached yet must stay visible so that a retry can select them again.
+                if self.storage is not None:
+                    self.storage.delete(point_id)
                 idx = self.ids[point_id]
                 for vector_name in self.sparse_vectors:
                     self._drop_idf_contribution(idx, vector_name)
                 self.deleted[idx] = 1
-
-        if self.storage is not None:
-            for point_id in ids:
-                if point_id in self.ids:
-                    self.storage.delete(point_id)
 
     def _filter_to_ids(self, delete_filter: types.Filter) -> list[models.ExtendedPointId]:
         mask = self._payload_and_non_deleted_mask(delete_filter)
@@ -3057,14 +3059,41 @@ class LocalCollection:
         ids = self._selector_to_ids(selector)
         self._delete_ids(ids)
 
-    def _persist_by_id(self, point_id: models.ExtendedPointId) -> None:
+    def _persist_by_id(
+        self,
+        point_id: models.ExtendedPointId,
+        payload: models.Payload | None = None,
+        vectors: dict[str, Any] | None = None,
+    ) -> None:
+        """Store a point as memory holds it, with `payload` and `vectors` in place of its own.
+
+        Writers store the new state of a point before applying it in memory. If storing fails,
+        memory still matches the storage, so a retry selects the point again. Applied first,
+        the point may no longer match the retry's filter, and its stored state comes back on
+        reopening. A vector given as `None` is stored as deleted.
+        """
         if self.storage is not None:
             idx = self.ids[point_id]
-            point = models.PointStruct(
-                id=point_id,
-                payload=self._get_payload(idx, with_payload=True, return_copy=False),
-                vector=self._get_vectors(idx, with_vectors=True),
-            )
+            if payload is None:
+                payload = self._get_payload(idx, with_payload=True, return_copy=False)
+
+            vector = self._get_vectors(idx, with_vectors=True)
+            if vectors:
+                named = vector if isinstance(vector, dict) else {DEFAULT_VECTOR_NAME: vector}
+                for vector_name, value in vectors.items():
+                    if value is None:
+                        named.pop(vector_name, None)
+                    else:
+                        named[vector_name] = (
+                            value.tolist() if isinstance(value, np.ndarray) else value
+                        )
+                vector = (
+                    named[DEFAULT_VECTOR_NAME]
+                    if len(named) == 1 and DEFAULT_VECTOR_NAME in named
+                    else named
+                )
+
+            point = models.PointStruct(id=point_id, payload=payload, vector=vector)
             self.storage.persist(point)
 
     def set_payload(
@@ -3098,12 +3127,15 @@ class LocalCollection:
             # payloads in place via set_value_by_key.
             jsonable_payload = deepcopy(base_payload)
             if keys is None:
-                self.payload[idx] = merge_payload(dict(self.payload[idx]), jsonable_payload)
+                new_payload = merge_payload(dict(self.payload[idx]), jsonable_payload)
             else:
-                if self.payload[idx] is not None:
-                    set_value_by_key(payload=self.payload[idx], value=jsonable_payload, keys=keys)
+                # copied, so that memory keeps the old payload until the new one is stored
+                new_payload = deepcopy(self.payload[idx])
+                if new_payload is not None:
+                    set_value_by_key(payload=new_payload, value=jsonable_payload, keys=keys)
 
-            self._persist_by_id(point_id)
+            self._persist_by_id(point_id, payload=new_payload)
+            self.payload[idx] = new_payload
 
         if missing is not None:
             raise KeyError(missing)
@@ -3129,8 +3161,9 @@ class LocalCollection:
             if idx is None:
                 missing = point_id if missing is None else missing
                 continue
-            self.payload[idx] = deepcopy(to_jsonable_python(payload)) or {}
-            self._persist_by_id(point_id)
+            new_payload = deepcopy(to_jsonable_python(payload)) or {}
+            self._persist_by_id(point_id, payload=new_payload)
+            self.payload[idx] = new_payload
 
         if missing is not None:
             raise KeyError(missing)
@@ -3157,9 +3190,12 @@ class LocalCollection:
             if idx is None:
                 missing = point_id if missing is None else missing
                 continue
+            # copied, so that memory keeps the old payload until the new one is stored
+            new_payload = deepcopy(self.payload[idx])
             for parsed_key in parsed_keys:
-                delete_value_by_key(self.payload[idx], parsed_key)
-            self._persist_by_id(point_id)
+                delete_value_by_key(new_payload, parsed_key)
+            self._persist_by_id(point_id, payload=new_payload)
+            self.payload[idx] = new_payload
 
         if missing is not None:
             raise KeyError(missing)
@@ -3184,8 +3220,8 @@ class LocalCollection:
             if idx is None:
                 missing = point_id if missing is None else missing
                 continue
+            self._persist_by_id(point_id, payload={})
             self.payload[idx] = {}
-            self._persist_by_id(point_id)
 
         if missing is not None:
             raise KeyError(missing)
@@ -3394,6 +3430,12 @@ class LocalCollection:
 
         affected_mask = ~self.deleted_per_vector.get(vector_name, np.ones(0, dtype=bool))
 
+        # Store the points without the vector before dropping it, see `_persist_by_id`.
+        if self.storage is not None:
+            for idx, point_id in enumerate(self.ids_inv):
+                if affected_mask[idx] and not self.deleted[idx]:
+                    self._persist_by_id(point_id, vectors={vector_name: None})
+
         self._all_vectors_keys.remove(vector_name)
         self.deleted_per_vector.pop(vector_name, None)
 
@@ -3413,11 +3455,6 @@ class LocalCollection:
             del self.multivectors_config[vector_name]
             if isinstance(self.config.vectors, dict):
                 self.config.vectors.pop(vector_name, None)
-
-        if self.storage is not None:
-            for idx, point_id in enumerate(self.ids_inv):
-                if affected_mask[idx] and not self.deleted[idx]:
-                    self._persist_by_id(point_id)
 
     def info(self) -> models.CollectionInfo:
         return models.CollectionInfo(
