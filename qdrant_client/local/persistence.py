@@ -81,17 +81,17 @@ class CollectionPersistence:
         key = self.encode_key(point.id)
         value = pickle.dumps(point)
 
-        cursor = self.storage.cursor()
-        # Insert or update by key
-        cursor.execute(
-            "INSERT OR REPLACE INTO points VALUES (?, ?)",
-            (
-                key,
-                sqlite3.Binary(value),
-            ),
-        )
-
-        self.storage.commit()
+        # The connection commits on leaving the block, and rolls back if the commit fails,
+        # so a failed write can't be committed later along with another one.
+        with self.storage:
+            # Insert or update by key
+            self.storage.execute(
+                "INSERT OR REPLACE INTO points VALUES (?, ?)",
+                (
+                    key,
+                    sqlite3.Binary(value),
+                ),
+            )
 
     def delete(self, point_id: models.ExtendedPointId) -> None:
         """
@@ -100,12 +100,11 @@ class CollectionPersistence:
             point_id: id of the point to delete
         """
         key = self.encode_key(point_id)
-        cursor = self.storage.cursor()
-        cursor.execute(
-            "DELETE FROM points WHERE id = ?",
-            (key,),
-        )
-        self.storage.commit()
+        with self.storage:
+            self.storage.execute(
+                "DELETE FROM points WHERE id = ?",
+                (key,),
+            )
 
     def load(self) -> Iterable[models.PointStruct]:
         """
