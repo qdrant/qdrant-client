@@ -390,3 +390,91 @@ def test_failed_point_deletion_keeps_unreached_points(
     client = QdrantClient(path=str(tmp_path))
     assert visible_ids(client) == [9]
     client.close()
+
+
+failed_write_collection = "failed_write"
+pending = rest.Filter(must=[rest.FieldCondition(key="done", match=rest.MatchValue(value=False))])
+
+
+# Each write changes what selects its points, so a retry only reaches the point it failed on if
+# that point was left unchanged in memory.
+@pytest.mark.parametrize(
+    "write",
+    [
+        lambda client: client.upsert(
+            failed_write_collection,
+            [rest.PointStruct(id=i, vector={}, payload={"done": True}) for i in (1, 2, 3)],
+            update_filter=pending,
+        ),
+        lambda client: client.upsert(
+            failed_write_collection,
+            [rest.PointStruct(id=i, vector={}) for i in (4, 5, 6)],
+            update_mode=rest.UpdateMode.INSERT_ONLY,
+        ),
+        lambda client: client.update_vectors(
+            failed_write_collection,
+            [
+                rest.PointVectors(
+                    id=i, vector={"sparse": rest.SparseVector(indices=[0], values=[1.0])}
+                )
+                for i in (1, 2, 3)
+            ],
+            update_filter=rest.Filter(must_not=[rest.HasVectorCondition(has_vector="sparse")]),
+        ),
+        lambda client: client.delete_vectors(
+            failed_write_collection,
+            ["dense"],
+            points=rest.Filter(must=[rest.HasVectorCondition(has_vector="dense")]),
+        ),
+        lambda client: client.set_payload(failed_write_collection, {"done": True}, points=pending),
+        lambda client: client.overwrite_payload(failed_write_collection, {}, points=pending),
+        lambda client: client.delete_payload(failed_write_collection, ["done"], points=pending),
+        lambda client: client.clear_payload(failed_write_collection, points_selector=pending),
+    ],
+    ids=[
+        "upsert-update-filter",
+        "upsert-insert-only",
+        "update-vectors",
+        "delete-vectors",
+        "set-payload",
+        "overwrite-payload",
+        "delete-payload",
+        "clear-payload",
+    ],
+)
+def test_failed_point_write_can_be_retried(monkeypatch: pytest.MonkeyPatch, tmp_path, write):
+    """A write that fails partway must leave memory matching the storage, so it can be retried."""
+    client = QdrantClient(path=str(tmp_path))
+    client.create_collection(
+        failed_write_collection,
+        vectors_config={"dense": rest.VectorParams(size=2, distance=rest.Distance.DOT)},
+        sparse_vectors_config={"sparse": rest.SparseVectorParams()},
+    )
+    client.upsert(
+        failed_write_collection,
+        [
+            rest.PointStruct(id=i, vector={"dense": [1.0, 0.0]}, payload={"done": False})
+            for i in (1, 2, 3)
+        ],
+    )
+
+    real_persist = CollectionPersistence.persist
+    calls: list[rest.PointStruct] = []
+
+    def failing_persist(self: CollectionPersistence, point: rest.PointStruct) -> None:
+        calls.append(point)
+        if len(calls) == 2:
+            raise sqlite3.OperationalError("injected failure")
+        real_persist(self, point)
+
+    monkeypatch.setattr(CollectionPersistence, "persist", failing_persist)
+    with pytest.raises(sqlite3.OperationalError):
+        write(client)
+    write(client)
+
+    points = client.scroll(failed_write_collection, with_vectors=True)[0]
+    client.close()
+
+    client = QdrantClient(path=str(tmp_path))
+    assert client.scroll(failed_write_collection, with_vectors=True)[0] == points
+    client.close()
