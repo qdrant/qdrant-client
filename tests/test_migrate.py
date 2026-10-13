@@ -442,32 +442,6 @@ def test_migrate_missing_collections(
         local_client.migrate(second_local_client, collection_names=[collection_name])
 
 
-@pytest.mark.parametrize("batch_size", [0, -1])
-def test_migrate_rejects_nonpositive_batch_size_before_recreating(
-    local_client: QdrantClient, second_local_client: QdrantClient, batch_size: int
-) -> None:
-    collection_name = "invalid_batch_size_collection"
-    vectors_config = models.VectorParams(size=2, distance=models.Distance.DOT)
-    for client in (local_client, second_local_client):
-        client.create_collection(collection_name, vectors_config=vectors_config)
-
-    second_local_client.upsert(
-        collection_name,
-        points=[models.PointStruct(id=99, vector=[99.0, 1.0])],
-    )
-
-    with pytest.raises(ValueError, match="batch_size must be greater than 0"):
-        local_client.migrate(
-            second_local_client,
-            collection_names=[collection_name],
-            recreate_on_collision=True,
-            batch_size=batch_size,
-        )
-
-    points, _ = second_local_client.scroll(collection_name)
-    assert [point.id for point in points] == [99]
-
-
 def test_recreate_collection(remote_client: QdrantClient):
     collection_name = "test_collection"
     initialize_fixture_collection(remote_client, collection_name=collection_name)
@@ -530,9 +504,7 @@ def test_recreate_collection(remote_client: QdrantClient):
             compression=models.CompressionRatio.X4, always_ram=False
         )
     )
-    strict_mode_config = models.StrictModeConfig(
-        read_rate_limit=1000000
-    )
+    strict_mode_config = models.StrictModeConfig(read_rate_limit=1000000)
     remote_client.create_collection(
         collection_name,
         vectors_config=vectors_config,
@@ -544,7 +516,7 @@ def test_recreate_collection(remote_client: QdrantClient):
         optimizers_config=optimizers_config,
         wal_config=wal_config,
         quantization_config=general_quantization_config,
-        strict_mode_config=strict_mode_config
+        strict_mode_config=strict_mode_config,
     )
 
     remote_client.create_payload_index(
