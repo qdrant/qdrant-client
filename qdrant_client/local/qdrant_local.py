@@ -208,7 +208,25 @@ class QdrantLocal(QdrantBase):
         raise ValueError(f"Collection {collection_name} not found")
 
     @classmethod
-    def _validate_query(cls, query: types.Query | None) -> None:
+    def _validate_query(
+        cls,
+        query: types.Query | None,
+        using: str | None,
+        prefetch: types.Prefetch | list[types.Prefetch] | None,
+        score_threshold: float | None,
+    ) -> None:
+        if prefetch and query is None:
+            raise ValueError("A query is needed to merge the prefetches.")
+
+        if score_threshold is not None:
+            if query is None:
+                raise ValueError("A query is needed to use the score_threshold.")
+            if isinstance(query, rest_models.OrderByQuery):
+                raise ValueError("Can't use score_threshold with an order_by query.")
+
+        if isinstance(query, (rest_models.FusionQuery, rest_models.RrfQuery)) and using:
+            raise ValueError("Fusion queries cannot be combined with the 'using' field.")
+
         if isinstance(query, rest_models.RrfQuery):
             if query.rrf.k is not None and query.rrf.k < 1:
                 raise ValueError(f"rrf k value {query.rrf.k} is invalid. Must be 1 or larger.")
@@ -245,7 +263,7 @@ class QdrantLocal(QdrantBase):
                 raise ValueError(
                     f"prefetch limit value {item.limit} is invalid. Must be 1 or larger."
                 )
-            cls._validate_query(item.query)
+            cls._validate_query(item.query, item.using, item.prefetch, item.score_threshold)
             cls._validate_prefetch(item.prefetch)
 
     def search_matrix_offsets(
@@ -438,7 +456,7 @@ class QdrantLocal(QdrantBase):
             raise ValueError(f"limit value {limit} is invalid. Must be 1 or larger.")
         if offset is not None and offset < 0:
             raise ValueError(f"offset value {offset} is invalid. Must be 0 or larger.")
-        self._validate_query(query)
+        self._validate_query(query, using, prefetch, score_threshold)
         self._validate_prefetch(prefetch)
 
         collection = self._get_collection(collection_name)
@@ -528,7 +546,7 @@ class QdrantLocal(QdrantBase):
             raise ValueError(f"limit value {limit} is invalid. Must be 1 or larger.")
         if group_size < 1:
             raise ValueError(f"group_size value {group_size} is invalid. Must be 1 or larger.")
-        self._validate_query(query)
+        self._validate_query(query, using, prefetch, score_threshold)
         self._validate_prefetch(prefetch)
 
         collection = self._get_collection(collection_name)
