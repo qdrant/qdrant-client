@@ -247,3 +247,62 @@ def test_collection_cannot_take_alias_name():
 
     compare_client_results(local_client, remote_client, retriever.list_aliases)
     compare_client_results(local_client, remote_client, retriever.list_collection_aliases)
+
+
+def test_alias_cannot_be_renamed_to_collection_name():
+    """An alias must not be renamed to the name of an existing collection.
+
+    Regression: local mode only checked that the old alias existed, so the renamed alias
+    took the collection's name and shadowed it.
+    """
+    major, minor, patch, dev = read_version()
+    if not dev and None not in (major, minor, patch) and (major, minor, patch) < (1, 19, 3):
+        pytest.skip("Renaming an alias to a collection name is rejected as of qdrant 1.19.3")
+
+    fixture_points = generate_fixtures(10)
+
+    retriever = TestAliasRetriever()
+
+    local_client = init_local()
+    init_client(local_client, fixture_points)
+
+    remote_client = init_remote()
+    init_client(remote_client, fixture_points)
+
+    alias_name = "test_alias"
+
+    ops = [
+        models.CreateAliasOperation(
+            create_alias=models.CreateAlias(
+                collection_name=COLLECTION_NAME,
+                alias_name=alias_name,
+            )
+        )
+    ]
+
+    local_client.update_collection_aliases(change_aliases_operations=ops)
+    remote_client.update_collection_aliases(change_aliases_operations=ops)
+
+    # the rename is rejected, so the alias created before it must not appear either
+    ops = [
+        models.CreateAliasOperation(
+            create_alias=models.CreateAlias(
+                collection_name=COLLECTION_NAME,
+                alias_name=alias_name + "_new",
+            )
+        ),
+        models.RenameAliasOperation(
+            rename_alias=models.RenameAlias(
+                old_alias_name=alias_name,
+                new_alias_name=COLLECTION_NAME,
+            )
+        ),
+    ]
+
+    with pytest.raises(ValueError):
+        local_client.update_collection_aliases(change_aliases_operations=ops)
+    with pytest.raises(UnexpectedResponse):
+        remote_client.update_collection_aliases(change_aliases_operations=ops)
+
+    compare_client_results(local_client, remote_client, retriever.list_aliases)
+    compare_client_results(local_client, remote_client, retriever.list_collection_aliases)
