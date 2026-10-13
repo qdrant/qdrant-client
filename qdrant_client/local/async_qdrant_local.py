@@ -896,16 +896,14 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         update_mode: types.UpdateMode | None = None,
     ) -> None:
         collection = self._get_collection(collection_name)
-        collection.upsert(
-            [
-                rest_models.PointStruct(
-                    id=point.id, vector=point.vector or {}, payload=point.payload or {}
-                )
-                for point in points
-            ],
-            update_filter=update_filter,
-            update_mode=update_mode,
-        )
+        point_structs = [
+            rest_models.PointStruct(
+                id=point.id, vector=point.vector or {}, payload=point.payload or {}
+            )
+            for point in points
+        ]
+        if len(point_structs) > 0:
+            collection.upsert(point_structs, update_filter=update_filter, update_mode=update_mode)
 
     def upload_collection(
         self,
@@ -932,20 +930,18 @@ class AsyncQdrantLocal(AsyncQdrantBase):
                 {name: vectors[name][i].tolist() for name in vectors.keys()}
                 for i in range(num_vectors)
             ]
-        collection.upsert(
-            [
-                rest_models.PointStruct(
-                    id=str(point_id) if isinstance(point_id, uuid.UUID) else point_id,
-                    vector=(vector.tolist() if isinstance(vector, np.ndarray) else vector) or {},
-                    payload=payload or {},
-                )
-                for (point_id, vector, payload) in zip(
-                    ids or uuid_generator(), iter(vectors), payload or itertools.cycle([{}])
-                )
-            ],
-            update_filter=update_filter,
-            update_mode=update_mode,
-        )
+        point_structs = [
+            rest_models.PointStruct(
+                id=str(point_id) if isinstance(point_id, uuid.UUID) else point_id,
+                vector=(vector.tolist() if isinstance(vector, np.ndarray) else vector) or {},
+                payload=payload or {},
+            )
+            for (point_id, vector, payload) in zip(
+                ids or uuid_generator(), iter(vectors), payload or itertools.cycle([{}])
+            )
+        ]
+        if len(point_structs) > 0:
+            collection.upsert(point_structs, update_filter=update_filter, update_mode=update_mode)
 
     async def create_payload_index(
         self,

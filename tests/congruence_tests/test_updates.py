@@ -1224,3 +1224,46 @@ def test_batch_update_rejects_empty_operation(local_client, remote_client):
         with pytest.raises(qdrant_client.http.exceptions.UnexpectedResponse):
             remote_client.batch_update_points(COLLECTION_NAME, update_operations=batch, wait=True)
         compare_collections(local_client, remote_client, len(points))
+
+
+def test_update_rejects_empty_operation(local_client, remote_client):
+    """Outside a batch, the same empty operations are rejected and nothing is written."""
+    points = generate_fixtures(10)
+    for client, error in (
+        (local_client, ValueError),
+        (remote_client, qdrant_client.http.exceptions.UnexpectedResponse),
+    ):
+        client.upload_points(COLLECTION_NAME, points, wait=True)
+        with pytest.raises(error):
+            client.set_payload(COLLECTION_NAME, {"a": 1}, points=[])
+        with pytest.raises(error):
+            client.overwrite_payload(COLLECTION_NAME, {"a": 1}, points=[])
+        with pytest.raises(error):
+            client.delete_payload(COLLECTION_NAME, ["a"], points=[])
+        with pytest.raises(error):
+            client.clear_payload(COLLECTION_NAME, points_selector=[])
+        with pytest.raises(error):
+            client.delete(COLLECTION_NAME, points_selector=models.PointIdsList(points=[]))
+        with pytest.raises(error):
+            client.upsert(COLLECTION_NAME, points=[])
+        with pytest.raises(error):
+            client.upsert(COLLECTION_NAME, points=models.Batch(ids=[], vectors={}))
+        with pytest.raises(error):
+            client.update_vectors(COLLECTION_NAME, points=[])
+        with pytest.raises(error):
+            client.delete_vectors(COLLECTION_NAME, vectors=["text"], points=[])
+        with pytest.raises(error):
+            client.delete_vectors(COLLECTION_NAME, vectors=[], points=[0])
+
+    compare_collections(local_client, remote_client, len(points))
+
+
+def test_upload_nothing(local_client, remote_client):
+    """Remote mode sends no request for an empty upload, so it is not an empty upsert."""
+    points = generate_fixtures(10)
+    for client in (local_client, remote_client):
+        client.upload_points(COLLECTION_NAME, points, wait=True)
+        client.upload_points(COLLECTION_NAME, [], wait=True)
+        client.upload_collection(COLLECTION_NAME, vectors=[], ids=[], wait=True)
+
+    compare_collections(local_client, remote_client, len(points))

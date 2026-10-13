@@ -157,19 +157,24 @@ def _validate_payload_selector(operation: models.SetPayload | models.DeletePaylo
 def _batch_selector(
     operation: models.SetPayload | models.DeletePayload | models.DeleteVectors,
 ) -> list[models.ExtendedPointId] | models.Filter:
+    # an id list wins over the filter even when it is empty, `_selector_to_ids` rejects it then
     if operation.points is not None:
-        if len(operation.points) == 0:
-            raise ValueError("Empty update request")
         return operation.points
     if operation.filter is None:
         raise ValueError("No filter or points provided")
     return operation.filter
 
 
-def _batch_points_selector(selector: models.PointsSelector) -> models.PointsSelector:
-    if isinstance(selector, models.PointIdsList) and len(selector.points) == 0:
-        raise ValueError("Empty update request")
-    return selector
+def _validate_points_to_update(points: Sequence[models.PointVectors]) -> None:
+    # the server rejects this while parsing the request
+    if len(points) == 0:
+        raise ValueError("must specify points to update")
+
+
+def _validate_vector_names_to_delete(vector_names: Sequence[str]) -> None:
+    # the server rejects this while parsing the request
+    if len(vector_names) == 0:
+        raise ValueError("must specify vector names to delete")
 
 
 class LocalCollection:
@@ -2893,6 +2898,8 @@ class LocalCollection:
         validate_filter(update_filter)
 
         point_structs = self._materialize_points(points)
+        if len(point_structs) == 0:
+            raise ValueError("Empty update request")
 
         # Validate everything before writing anything: the server rejects the whole request,
         # so a bad point in the middle of a batch must not leave the earlier ones applied.
@@ -2963,6 +2970,7 @@ class LocalCollection:
     def update_vectors(
         self, points: Sequence[types.PointVectors], update_filter: types.Filter | None = None
     ) -> None:
+        _validate_points_to_update(points)
         validate_filter(update_filter)
 
         # Same rule as upsert: validate every point in the request before writing any of it.
@@ -3012,13 +3020,16 @@ class LocalCollection:
             | models.PointIdsList
         ),
     ) -> None:
+        _validate_vector_names_to_delete(vectors)
+        # the selection is checked before the vector names, as on the server
+        ids = self._selector_to_ids(selector)
+
         # Check every name up front, rather than deleting the ones we recognize and then
         # failing. The server errors either way, but whether it deletes first varies.
         self._validate_vector_names(vectors)
 
         # Like `update_vectors`, a point the collection does not hold does not stop the rest
         # of the request: everything else is deleted, and the 404 comes afterwards.
-        ids = self._selector_to_ids(selector)
         missing: types.PointId | None = None
         for point_id in ids:
             idx = self._existing_idx(point_id)
@@ -3060,12 +3071,16 @@ class LocalCollection:
             | models.PointIdsList
         ),
     ) -> list[models.ExtendedPointId]:
+        if isinstance(selector, models.PointIdsList):
+            selector = selector.points
         if isinstance(selector, list):
+            # A filter that matches nothing is fine, an empty id list is not: the server routes
+            # ids to shards, and an empty list reaches none of them.
+            if len(selector) == 0:
+                raise ValueError("Empty update request")
             return [str(id_) if isinstance(id_, uuid.UUID) else id_ for id_ in selector]
         elif isinstance(selector, models.Filter):
             return self._filter_to_ids(selector)
-        elif isinstance(selector, models.PointIdsList):
-            return [str(id_) if isinstance(id_, uuid.UUID) else id_ for id_ in selector.points]
         elif isinstance(selector, models.FilterSelector):
             return self._filter_to_ids(selector.filter)
         else:
@@ -3279,8 +3294,7 @@ class LocalCollection:
                 self._validate_point(point)
 
         elif isinstance(update_op, models.UpdateVectorsOperation):
-            if len(update_op.update_vectors.points) == 0:
-                raise ValueError("must specify points to update")
+            _validate_points_to_update(update_op.update_vectors.points)
             for point in update_op.update_vectors.points:
                 self._validate_named_vectors(
                     {DEFAULT_VECTOR_NAME: point.vector}
@@ -3302,8 +3316,7 @@ class LocalCollection:
                 parse_json_path(key)
 
         elif isinstance(update_op, models.DeleteVectorsOperation):
-            if len(update_op.delete_vectors.vector) == 0:
-                raise ValueError("must specify vector names to delete")
+            _validate_vector_names_to_delete(update_op.delete_vectors.vector)
 
     def batch_update_points(
         self,
@@ -3316,16 +3329,12 @@ class LocalCollection:
             if isinstance(update_op, models.UpsertOperation):
                 upsert_struct = update_op.upsert
                 if isinstance(upsert_struct, models.PointsBatch):
-                    if len(upsert_struct.batch.ids) == 0:
-                        raise ValueError("Empty update request")
                     self.upsert(
                         upsert_struct.batch,
                         update_filter=upsert_struct.update_filter,
                         update_mode=upsert_struct.update_mode,
                     )
                 elif isinstance(upsert_struct, models.PointsList):
-                    if len(upsert_struct.points) == 0:
-                        raise ValueError("Empty update request")
                     self.upsert(
                         upsert_struct.points,
                         update_filter=upsert_struct.update_filter,
@@ -3334,7 +3343,7 @@ class LocalCollection:
                 else:
                     raise ValueError(f"Unsupported upsert type: {type(update_op.upsert)}")
             elif isinstance(update_op, models.DeleteOperation):
-                self.delete(_batch_points_selector(update_op.delete))
+                self.delete(update_op.delete)
             elif isinstance(update_op, models.SetPayloadOperation):
                 self.set_payload(
                     update_op.set_payload.payload,
@@ -3351,7 +3360,7 @@ class LocalCollection:
                     update_op.delete_payload.keys, _batch_selector(update_op.delete_payload)
                 )
             elif isinstance(update_op, models.ClearPayloadOperation):
-                self.clear_payload(_batch_points_selector(update_op.clear_payload))
+                self.clear_payload(update_op.clear_payload)
             elif isinstance(update_op, models.UpdateVectorsOperation):
                 update_vectors = update_op.update_vectors
                 self.update_vectors(
