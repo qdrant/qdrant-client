@@ -806,6 +806,48 @@ def test_convert_points_update_operation_falsy_shard_key():
             assert GrpcToRest.convert_shard_key_selector(inner.shard_key_selector) == shard_key
 
 
+def test_convert_points_update_operation_empty_points():
+    """An empty `points` list must stay an empty id list, as the server treats it over REST.
+
+    It used to be dropped as falsy, so a filter sent alongside it touched every matching point.
+    """
+    from qdrant_client import models
+    from qdrant_client.conversions.conversion import RestToGrpc
+
+    filter_ = models.Filter(must=[models.HasIdCondition(has_id=[1, 2, 3])])
+
+    def make_operations(**selector):
+        return [
+            models.SetPayloadOperation(
+                set_payload=models.SetPayload(payload={"my_payload": 1}, **selector)
+            ),
+            models.OverwritePayloadOperation(
+                overwrite_payload=models.SetPayload(payload={"my_payload": 1}, **selector)
+            ),
+            models.DeletePayloadOperation(
+                delete_payload=models.DeletePayload(keys=["my_payload"], **selector)
+            ),
+            models.DeleteVectorsOperation(
+                delete_vectors=models.DeleteVectors(vector=["image"], **selector)
+            ),
+        ]
+
+    for selector in ({"points": []}, {"points": [], "filter": filter_}):
+        for operation in make_operations(**selector):
+            grpc_operation = RestToGrpc.convert_update_operation(operation)
+            points_selector = getattr(
+                grpc_operation, grpc_operation.WhichOneof("operation")
+            ).points_selector
+            name = points_selector.WhichOneof("points_selector_one_of")
+
+            assert name == "points", f"{type(operation).__name__} with {selector} sent {name}"
+            assert list(points_selector.points.ids) == []
+
+    for operation in make_operations():
+        with pytest.raises(ValueError, match=f"invalid {type(operation).__name__} model"):
+            RestToGrpc.convert_update_operation(operation)
+
+
 def test_convert_keyword_index_params_prefix():
     from qdrant_client import models
     from qdrant_client.conversions.conversion import GrpcToRest, RestToGrpc

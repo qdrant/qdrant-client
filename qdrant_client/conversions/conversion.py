@@ -118,9 +118,7 @@ def _payload_to_value_kwargs(payload: dict[str, Any]) -> dict[str, Any]:
     # messages and copying them into it
     return {
         key: (
-            {field: val}
-            if (field := _VALUE_FIELDS.get(type(val)))
-            else _json_to_value_kwargs(val)
+            {field: val} if (field := _VALUE_FIELDS.get(type(val))) else _json_to_value_kwargs(val)
         )
         for key, val in payload.items()
     }
@@ -4893,12 +4891,12 @@ class RestToGrpc:
                 delete_points=delete_points,
             )
         elif isinstance(model, rest.SetPayloadOperation):
-            if model.set_payload.points:
+            if model.set_payload.points is not None:
                 points_selector = rest.PointIdsList(points=model.set_payload.points)
-            elif model.set_payload.filter:
+            elif model.set_payload.filter is not None:
                 points_selector = rest.FilterSelector(filter=model.set_payload.filter)
             else:
-                raise ValueError(f"invalid SetPayloadOperation model: {model}")  # pragma: no cover
+                raise ValueError(f"invalid SetPayloadOperation model: {model}")
 
             shard_key_selector = (
                 cls.convert_shard_key_selector(model.set_payload.shard_key)
@@ -4915,14 +4913,12 @@ class RestToGrpc:
                 )
             )
         elif isinstance(model, rest.OverwritePayloadOperation):
-            if model.overwrite_payload.points:
+            if model.overwrite_payload.points is not None:
                 points_selector = rest.PointIdsList(points=model.overwrite_payload.points)
-            elif model.overwrite_payload.filter:
+            elif model.overwrite_payload.filter is not None:
                 points_selector = rest.FilterSelector(filter=model.overwrite_payload.filter)
             else:
-                raise ValueError(
-                    f"invalid OverwritePayloadOperation model: {model}"
-                )  # pragma: no cover
+                raise ValueError(f"invalid OverwritePayloadOperation model: {model}")
 
             shard_key_selector = (
                 cls.convert_shard_key_selector(model.overwrite_payload.shard_key)
@@ -4939,14 +4935,12 @@ class RestToGrpc:
                 )
             )
         elif isinstance(model, rest.DeletePayloadOperation):
-            if model.delete_payload.points:
+            if model.delete_payload.points is not None:
                 points_selector = rest.PointIdsList(points=model.delete_payload.points)
-            elif model.delete_payload.filter:
+            elif model.delete_payload.filter is not None:
                 points_selector = rest.FilterSelector(filter=model.delete_payload.filter)
             else:
-                raise ValueError(
-                    f"invalid DeletePayloadOperation model: {model}"
-                )  # pragma: no cover
+                raise ValueError(f"invalid DeletePayloadOperation model: {model}")
 
             shard_key_selector = (
                 cls.convert_shard_key_selector(model.delete_payload.shard_key)
@@ -4996,14 +4990,12 @@ class RestToGrpc:
                 )
             )
         elif isinstance(model, rest.DeleteVectorsOperation):
-            if model.delete_vectors.points:
+            if model.delete_vectors.points is not None:
                 points_selector = rest.PointIdsList(points=model.delete_vectors.points)
-            elif model.delete_vectors.filter:
+            elif model.delete_vectors.filter is not None:
                 points_selector = rest.FilterSelector(filter=model.delete_vectors.filter)
             else:
-                raise ValueError(
-                    f"invalid DeletePayloadOperation model: {model}"
-                )  # pragma: no cover
+                raise ValueError(f"invalid DeleteVectorsOperation model: {model}")
 
             shard_key_selector = (
                 cls.convert_shard_key_selector(model.delete_vectors.shard_key)
