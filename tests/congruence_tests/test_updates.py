@@ -1174,15 +1174,16 @@ def test_rejected_mismatched_batch_leaves_the_collection_untouched(prefer_grpc):
         compare_collections(local_client, remote_client, UPLOAD_NUM_VECTORS)
 
 
-def test_batch_update_rejects_empty_selector(local_client, remote_client):
-    """The server answers selector-less or empty-selector batch operations with
-    400 "Empty update request"; local mode must reject them too, instead of
-    crashing on a None selector or silently applying nothing."""
-    points = generate_fixtures(UPLOAD_NUM_VECTORS)
-    local_client.upload_points(COLLECTION_NAME, points, wait=True)
-    remote_client.upload_points(COLLECTION_NAME, points, wait=True)
-
-    id_filter = models.Filter(must=[models.HasIdCondition(has_id=[points[0].id])])
+def test_batch_update_rejects_empty_operation(local_client, remote_client):
+    """The writes around the rejected operation show how much of the batch was applied."""
+    points = generate_fixtures(10)
+    ahead = models.SetPayloadOperation(
+        set_payload=models.SetPayload(payload={"ahead": 1}, points=[0])
+    )
+    behind = models.SetPayloadOperation(
+        set_payload=models.SetPayload(payload={"behind": 1}, points=[1])
+    )
+    id_filter = models.Filter(must=[models.HasIdCondition(has_id=[0])])
     operations = [
         models.SetPayloadOperation(set_payload=models.SetPayload(payload={"a": 1}, points=[])),
         models.SetPayloadOperation(
@@ -1192,17 +1193,34 @@ def test_batch_update_rejects_empty_selector(local_client, remote_client):
         models.OverwritePayloadOperation(
             overwrite_payload=models.SetPayload(payload={"a": 1}, points=[])
         ),
-        models.DeletePayloadOperation(
-            delete_payload=models.DeletePayload(keys=["a"], points=[])
-        ),
+        models.OverwritePayloadOperation(overwrite_payload=models.SetPayload(payload={"a": 1})),
+        models.DeletePayloadOperation(delete_payload=models.DeletePayload(keys=["a"], points=[])),
+        models.DeletePayloadOperation(delete_payload=models.DeletePayload(keys=["a"])),
+        models.ClearPayloadOperation(clear_payload=models.PointIdsList(points=[])),
+        models.DeleteOperation(delete=models.PointIdsList(points=[])),
+        models.UpsertOperation(upsert=models.PointsList(points=[])),
+        models.UpsertOperation(upsert=models.PointsBatch(batch=models.Batch(ids=[], vectors={}))),
+        models.UpdateVectorsOperation(update_vectors=models.UpdateVectors(points=[])),
         models.DeleteVectorsOperation(
             delete_vectors=models.DeleteVectors(points=[], vector=["text"])
         ),
-        models.ClearPayloadOperation(clear_payload=models.PointIdsList(points=[])),
+        models.DeleteVectorsOperation(delete_vectors=models.DeleteVectors(vector=["text"])),
+        models.DeleteVectorsOperation(delete_vectors=models.DeleteVectors(points=[0], vector=[])),
+        models.DeleteVectorsOperation(
+            delete_vectors=models.DeleteVectors(points=[0], vector=["missing"])
+        ),
+        models.DeleteVectorsOperation(
+            delete_vectors=models.DeleteVectors(points=[], vector=["missing"])
+        ),
     ]
     for operation in operations:
-        with pytest.raises(ValueError, match="Empty update request"):
-            local_client.batch_update_points(COLLECTION_NAME, update_operations=[operation])
+        # undo whatever the previous batch applied
+        local_client.upload_points(COLLECTION_NAME, points, wait=True)
+        remote_client.upload_points(COLLECTION_NAME, points, wait=True)
+
+        batch = [ahead, operation, behind]
+        with pytest.raises(ValueError):
+            local_client.batch_update_points(COLLECTION_NAME, update_operations=batch)
         with pytest.raises(qdrant_client.http.exceptions.UnexpectedResponse):
-            remote_client.batch_update_points(COLLECTION_NAME, update_operations=[operation], wait=True)
-        compare_collections(local_client, remote_client, UPLOAD_NUM_VECTORS)
+            remote_client.batch_update_points(COLLECTION_NAME, update_operations=batch, wait=True)
+        compare_collections(local_client, remote_client, len(points))
