@@ -430,6 +430,17 @@ pending = rest.Filter(must=[rest.FieldCondition(key="done", match=rest.MatchValu
         lambda client: client.overwrite_payload(failed_write_collection, {}, points=pending),
         lambda client: client.delete_payload(failed_write_collection, ["done"], points=pending),
         lambda client: client.clear_payload(failed_write_collection, points_selector=pending),
+        # vectors left behind in storage would come back with the re-created vector
+        lambda client: (
+            client.delete_vector_name(failed_write_collection, "dense"),
+            client.create_vector_name(
+                failed_write_collection,
+                "dense",
+                rest.DenseVectorNameConfig(
+                    dense=rest.DenseVectorConfig(size=2, distance=rest.Distance.DOT)
+                ),
+            ),
+        ),
     ],
     ids=[
         "upsert-update-filter",
@@ -440,6 +451,7 @@ pending = rest.Filter(must=[rest.FieldCondition(key="done", match=rest.MatchValu
         "overwrite-payload",
         "delete-payload",
         "clear-payload",
+        "delete-vector-name",
     ],
 )
 def test_failed_point_write_can_be_retried(monkeypatch: pytest.MonkeyPatch, tmp_path, write):
