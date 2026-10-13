@@ -1811,3 +1811,34 @@ def test_bm25_core():
             local_client.upsert(COLLECTION_NAME, points)
     else:
         local_client.upsert(COLLECTION_NAME, points)
+
+
+def test_embed_models_batch_state_reset(cached_embeddings):
+    local_client = QdrantClient(":memory:")
+    if not local_client._FASTEMBED_INSTALLED:
+        pytest.skip("FastEmbed is not installed, skipping")
+
+    model_embedder = local_client._model_embedder
+    document = models.Document(text="bb", model=DENSE_MODEL_NAME)
+    expected = list(model_embedder.embed_models_batch([document]))
+
+    with pytest.raises(ValueError):  # an unknown model fails the whole batch
+        list(
+            model_embedder.embed_models_batch(
+                [
+                    models.Document(text="aaaaa", model=DENSE_MODEL_NAME),
+                    models.Document(text="aaaaa", model="unknown-model"),
+                ]
+            )
+        )
+    assert list(model_embedder.embed_models_batch([document])) == expected
+
+    # an abandoned generator can stay alive, e.g. referenced by a caught exception's traceback
+    abandoned = model_embedder.embed_models_batch(
+        [
+            models.Document(text="aaaaa", model=DENSE_MODEL_NAME),
+            models.Document(text="aaaaaaa", model=DENSE_MODEL_NAME),
+        ]
+    )
+    next(abandoned)
+    assert list(model_embedder.embed_models_batch([document])) == expected
