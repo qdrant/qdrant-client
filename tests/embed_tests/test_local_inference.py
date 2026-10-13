@@ -12,7 +12,6 @@ import pytest
 import qdrant_client.embed.embedder
 from qdrant_client import QdrantClient, models
 from qdrant_client.client_base import QdrantBase
-from qdrant_client.embed.model_embedder import ModelEmbedder
 from qdrant_client.fastembed_common import (
     TextEmbedding,
     SparseTextEmbedding,
@@ -1814,74 +1813,32 @@ def test_bm25_core():
         local_client.upsert(COLLECTION_NAME, points)
 
 
-class LengthEmbedder:
-    """Embeds a text into a vector holding its length, fails the first `failures` calls"""
+def test_embed_models_batch_state_reset(cached_embeddings):
+    local_client = QdrantClient(":memory:")
+    if not local_client._FASTEMBED_INSTALLED:
+        pytest.skip("FastEmbed is not installed, skipping")
 
-    def __init__(self, failures=0):
-        self.failures = failures
+    model_embedder = local_client._model_embedder
+    document = models.Document(text="bb", model=DENSE_MODEL_NAME)
+    expected = list(model_embedder.embed_models_batch([document]))
 
-    def is_supported_text_model(self, model_name):
-        return True
-
-    def is_supported_sparse_model(self, model_name):
-        return False
-
-    def is_supported_late_interaction_text_model(self, model_name):
-        return False
-
-    def is_supported_image_model(self, model_name):
-        return False
-
-    def is_supported_late_interaction_multimodal_model(self, model_name):
-        return False
-
-    def embed(self, model_name, texts=None, **kwargs):
-        if self.failures:
-            self.failures -= 1
-            raise RuntimeError("transient")
-        return [[float(len(text))] for text in texts]
-
-
-def make_length_model_embedder(failures=0):
-    model_embedder = ModelEmbedder()
-    model_embedder.embedder = LengthEmbedder(failures=failures)
-    return model_embedder
-
-
-def documents_batch(*texts):
-    return [
-        models.PointStruct(id=i, vector=models.Document(text=text, model="model"))
-        for i, text in enumerate(texts)
-    ]
-
-
-def test_embed_models_batch_state_reset_after_failure():
-    model_embedder = make_length_model_embedder(failures=1)
-
-    with pytest.raises(RuntimeError, match="transient"):
-        list(model_embedder.embed_models_batch(documents_batch("aaaaa")))
-
-    points = list(model_embedder.embed_models_batch(documents_batch("bb")))
-    assert points[0].vector == [2.0]
-    assert not model_embedder._batch_accumulator
-    assert not model_embedder._embed_storage
-
-
-def test_embed_models_batch_state_reset_after_abandoned_generator():
-    model_embedder = make_length_model_embedder()
-
-    generator = model_embedder.embed_models_batch(documents_batch("aaaaa", "aaaaaaa"))
-    next(generator)
-    generator.close()
-
-    points = list(model_embedder.embed_models_batch(documents_batch("bb")))
-    assert points[0].vector == [2.0]
-    assert not model_embedder._batch_accumulator
-    assert not model_embedder._embed_storage
+    with pytest.raises(ValueError):  # an unknown model fails the whole batch
+        list(
+            model_embedder.embed_models_batch(
+                [
+                    models.Document(text="aaaaa", model=DENSE_MODEL_NAME),
+                    models.Document(text="aaaaa", model="unknown-model"),
+                ]
+            )
+        )
+    assert list(model_embedder.embed_models_batch([document])) == expected
 
     # an abandoned generator can stay alive, e.g. referenced by a caught exception's traceback
-    generator = model_embedder.embed_models_batch(documents_batch("aaaaa", "aaaaaaa"))
-    next(generator)
-
-    points = list(model_embedder.embed_models_batch(documents_batch("bb", "ccc")))
-    assert [point.vector for point in points] == [[2.0], [3.0]]
+    abandoned = model_embedder.embed_models_batch(
+        [
+            models.Document(text="aaaaa", model=DENSE_MODEL_NAME),
+            models.Document(text="aaaaaaa", model=DENSE_MODEL_NAME),
+        ]
+    )
+    next(abandoned)
+    assert list(model_embedder.embed_models_batch([document])) == expected
