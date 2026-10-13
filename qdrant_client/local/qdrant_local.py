@@ -753,6 +753,9 @@ class QdrantLocal(QdrantBase):
             elif isinstance(operation, rest_models.RenameAliasOperation):
                 new_name = operation.rename_alias.new_alias_name
                 old_name = operation.rename_alias.old_alias_name
+                # the new name must not take the name of an existing collection either
+                if new_name in self.collections:
+                    raise ValueError(f"Collection {new_name} already exists")
                 if old_name not in aliases:
                     raise ValueError(f"Alias {old_name} does not exist")
                 aliases[new_name] = aliases.pop(old_name)
