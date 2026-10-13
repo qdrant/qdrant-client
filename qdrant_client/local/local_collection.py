@@ -570,7 +570,8 @@ class LocalCollection:
         payload: dict,
         with_payload: types.WithPayloadInterface = True,
     ) -> dict | None:
-        if not with_payload:
+        # an empty list selects no fields, it doesn't disable the payload
+        if with_payload is False or with_payload is None:
             return None
 
         if isinstance(with_payload, bool):
