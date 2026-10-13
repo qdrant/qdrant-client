@@ -908,9 +908,6 @@ class LocalCollection:
             # It is a hybrid/re-scoring query
             sources = [self._prefetch(prefetch, query_filter) for prefetch in prefetches]
 
-            if query is None:
-                raise ValueError("Query is required for merging prefetches")
-
             # Merge sources
             scored_points = self._merge_sources(
                 sources=sources,
@@ -958,9 +955,6 @@ class LocalCollection:
                 self._prefetch(inner_prefetch, prefetch_filter)
                 for inner_prefetch in inner_prefetches
             ]
-
-            if prefetch.query is None:
-                raise ValueError("Query is required for merging prefetches")
 
             # Merge sources
             return self._merge_sources(

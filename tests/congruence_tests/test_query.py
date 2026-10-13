@@ -2264,6 +2264,113 @@ def test_query_invalid_feedback_strategy():
         grpc_client.query_points(collection_name=COLLECTION_NAME, query=query, using="text")
 
 
+def test_query_invalid_score_threshold():
+    fixture_points = generate_fixtures(5)
+
+    local_client, http_client, grpc_client = init_clients(fixture_points)
+
+    http_client.create_payload_index(
+        COLLECTION_NAME, "rand_digit", models.PayloadSchemaType.INTEGER, wait=True
+    )
+
+    order_by = models.OrderByQuery(order_by="rand_digit")
+    fusion = models.FusionQuery(fusion=models.Fusion.RRF)
+
+    valid_prefetch = models.Prefetch(query=order_by, limit=10)
+    invalid_prefetch = models.Prefetch(query=order_by, score_threshold=0.5, limit=10)
+
+    prefetches = [
+        invalid_prefetch,
+        # the invalid prefetch is not the first element, every element has to be checked
+        [valid_prefetch, invalid_prefetch],
+        models.Prefetch(query=fusion, prefetch=[valid_prefetch, invalid_prefetch]),
+        models.Prefetch(score_threshold=0.5, limit=10),
+    ]
+
+    for client, error_type in (
+        (local_client, ValueError),
+        (http_client, UnexpectedResponse),
+        (grpc_client, RpcError),
+    ):
+        for query in (order_by, None):
+            with pytest.raises(error_type):
+                client.query_points(COLLECTION_NAME, query=query, score_threshold=0.5)
+
+            with pytest.raises(error_type):
+                client.query_points_groups(
+                    COLLECTION_NAME, group_by="rand_digit", query=query, score_threshold=0.5
+                )
+
+        for prefetch in prefetches:
+            with pytest.raises(error_type):
+                client.query_points(COLLECTION_NAME, query=fusion, prefetch=prefetch)
+
+
+def test_query_invalid_prefetch_without_query():
+    fixture_points = generate_fixtures(5)
+
+    local_client, http_client, grpc_client = init_clients(fixture_points)
+
+    query_vector = np.random.random(text_vector_size).tolist()
+
+    prefetch = models.Prefetch(query=query_vector, using="text", limit=10)
+    fusion = models.FusionQuery(fusion=models.Fusion.RRF)
+
+    for client, error_type in (
+        (local_client, ValueError),
+        (http_client, UnexpectedResponse),
+        (grpc_client, RpcError),
+    ):
+        with pytest.raises(error_type):
+            client.query_points(COLLECTION_NAME, prefetch=[prefetch, prefetch])
+
+        with pytest.raises(error_type):
+            client.query_points(
+                COLLECTION_NAME, query=fusion, prefetch=models.Prefetch(prefetch=prefetch)
+            )
+
+        with pytest.raises(error_type):
+            client.query_points_groups(COLLECTION_NAME, group_by="rand_digit", prefetch=prefetch)
+
+
+def test_query_invalid_fusion_using():
+    fixture_points = generate_fixtures(5)
+
+    local_client, http_client, grpc_client = init_clients(fixture_points)
+
+    query_vector = np.random.random(text_vector_size).tolist()
+
+    prefetch = models.Prefetch(query=query_vector, using="text", limit=10)
+    fusions = [models.FusionQuery(fusion=models.Fusion.RRF), models.RrfQuery(rrf=models.Rrf())]
+
+    for client, error_type in (
+        (local_client, ValueError),
+        (http_client, UnexpectedResponse),
+        (grpc_client, RpcError),
+    ):
+        for fusion in fusions:
+            with pytest.raises(error_type):
+                client.query_points(
+                    COLLECTION_NAME, query=fusion, using="text", prefetch=[prefetch, prefetch]
+                )
+
+            with pytest.raises(error_type):
+                client.query_points(
+                    COLLECTION_NAME,
+                    query=fusion,
+                    prefetch=models.Prefetch(query=fusion, using="text", prefetch=prefetch),
+                )
+
+            with pytest.raises(error_type):
+                client.query_points_groups(
+                    COLLECTION_NAME,
+                    group_by="rand_digit",
+                    query=fusion,
+                    using="text",
+                    prefetch=prefetch,
+                )
+
+
 def test_query_with_nan():
     fixture_points = generate_fixtures()
 
