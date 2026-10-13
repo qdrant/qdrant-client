@@ -2505,7 +2505,7 @@ class QdrantClient(QdrantFastembedMixin):
         Args:
             dest_client: Destination Qdrant instance either in local or remote mode
             collection_names: List of collection names to migrate. If None - migrate all collections
-            batch_size: Batch size to be in scroll and upsert operations during migration
+            batch_size: Batch size to be in scroll and upsert operations during migration, must be positive
             recreate_on_collision: If True - recreate collection on destination if it already exists, otherwise
                 raise ValueError exception
         """
