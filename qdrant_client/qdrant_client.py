@@ -1901,10 +1901,10 @@ class QdrantClient(QdrantFastembedMixin):
             collection_name:  Name of the collection to upload to
             points: Iterator over points to upload
             batch_size: How many vectors upload per-request, Default: 64
-            parallel: Number of parallel processes of upload
-            method: Start method for parallel processes, Default: forkserver
+            parallel: Number of parallel processes of upload, 0 means all available cores
+            method: Start method for parallel processes, Default: forkserver, spawn on macOS
             max_retries: maximum number of retries in case of a failure
-                during the upload of a batch
+                during the upload of a batch, 0 means a single attempt without retries
             wait:
                 Await for the results to be applied on the server side.
                 If `true`, each update request will explicitly wait for the confirmation of completion. Might be slower.
@@ -1980,10 +1980,10 @@ class QdrantClient(QdrantFastembedMixin):
             payload: Iterable of vectors payload, Optional, Default: None
             ids: Iterable of custom vectors ids, Optional, Default: None
             batch_size: How many vectors upload per-request, Default: 64
-            parallel: Number of parallel processes of upload
-            method: Start method for parallel processes, Default: forkserver
+            parallel: Number of parallel processes of upload, 0 means all available cores
+            method: Start method for parallel processes, Default: forkserver, spawn on macOS
             max_retries: maximum number of retries in case of a failure
-                during the upload of a batch
+                during the upload of a batch, 0 means a single attempt without retries
             wait:
                 Await for the results to be applied on the server side.
                 If `true`, each update request will explicitly wait for the confirmation of completion. Might be slower.
@@ -2505,7 +2505,7 @@ class QdrantClient(QdrantFastembedMixin):
         Args:
             dest_client: Destination Qdrant instance either in local or remote mode
             collection_names: List of collection names to migrate. If None - migrate all collections
-            batch_size: Batch size to be in scroll and upsert operations during migration
+            batch_size: Batch size to be in scroll and upsert operations during migration, must be positive
             recreate_on_collision: If True - recreate collection on destination if it already exists, otherwise
                 raise ValueError exception
         """
@@ -2657,13 +2657,19 @@ class QdrantClient(QdrantFastembedMixin):
         self,
         collection_name: str,
         completed_limit: int | None = None,
+        with_: types.OptimizationsWith | Sequence[types.OptimizationsWith] | None = None,
         **kwargs: Any,
     ) -> types.OptimizationsResponse:
         """Get progress of ongoing and completed optimizations for a collection.
 
         Args:
             collection_name: Name of the collection
-            completed_limit: Maximum number of completed optimizations to return
+            completed_limit: Maximum number of completed optimizations to return.
+                Implies `"completed"` in `with_`
+            with_: Optional field or fields to include in the response:
+                `"queued"` - estimated queue of pending optimizations,
+                `"completed"` - completed optimizations,
+                `"idle_segments"` - segments that don't require optimization
 
         Returns:
             types.OptimizationsResponse: Optimizations progress for the collection
@@ -2671,6 +2677,7 @@ class QdrantClient(QdrantFastembedMixin):
         return self._client.get_optimizations(
             collection_name=collection_name,
             completed_limit=completed_limit,
+            with_=with_,
             **kwargs,
         )
 

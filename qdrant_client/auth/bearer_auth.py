@@ -1,5 +1,5 @@
-import asyncio
-from typing import Awaitable, Callable
+import inspect
+from typing import Any, Awaitable, Callable
 
 import httpx
 
@@ -9,21 +9,19 @@ class BearerAuth(httpx.Auth):
         self,
         auth_token_provider: Callable[[], str] | Callable[[], Awaitable[str]],
     ):
-        self.async_token: Callable[[], Awaitable[str]] | None = None
-        self.sync_token: Callable[[], str] | None = None
-
-        if asyncio.iscoroutinefunction(auth_token_provider):
-            self.async_token = auth_token_provider
-        else:
-            if callable(auth_token_provider):
-                self.sync_token = auth_token_provider  # type: ignore
-            else:
-                raise ValueError("auth_token_provider must be a callable or awaitable")
+        if not callable(auth_token_provider):
+            raise ValueError("auth_token_provider must be a callable or awaitable")
+        self.auth_token_provider = auth_token_provider
 
     def _sync_get_token(self) -> str:
-        if self.sync_token is None:
+        # Whether the provider is async is only known from what it returns: a lambda or an
+        # object with `async def __call__` returns a coroutine without being a coroutine function
+        token: Any = self.auth_token_provider()
+        if inspect.isawaitable(token):
+            if inspect.iscoroutine(token):
+                token.close()  # never awaited, close it to avoid a RuntimeWarning
             raise ValueError("Synchronous token provider is not set.")
-        return self.sync_token()
+        return token
 
     def sync_auth_flow(self, request: httpx.Request) -> httpx.Request:
         token = self._sync_get_token()
@@ -31,10 +29,10 @@ class BearerAuth(httpx.Auth):
         yield request
 
     async def _async_get_token(self) -> str:
-        if self.async_token is not None:
-            return await self.async_token()  # type: ignore
-        # Fallback to synchronous token if asynchronous token is not available
-        return self._sync_get_token()
+        token: Any = self.auth_token_provider()
+        if inspect.isawaitable(token):
+            token = await token
+        return token
 
     async def async_auth_flow(self, request: httpx.Request) -> httpx.Request:
         token = await self._async_get_token()

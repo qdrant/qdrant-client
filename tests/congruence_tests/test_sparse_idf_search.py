@@ -85,6 +85,23 @@ def test_simple_search():
 
     compare_client_results(local_client, remote_client, searcher.simple_search_text)
 
+    # partial updates keep the unset fields, such as the modifier, `index` is merged
+    for index in (
+        models.SparseIndexParams(full_scan_threshold=100),
+        models.SparseIndexParams(on_disk=True),
+    ):
+        for client in (local_client, remote_client):
+            client.update_collection(
+                collection_name=COLLECTION_NAME,
+                sparse_vectors_config={"sparse-text": models.SparseVectorParams(index=index)},
+            )
+
+        assert (
+            local_client.get_collection(COLLECTION_NAME).config.params.sparse_vectors
+            == remote_client.get_collection(COLLECTION_NAME).config.params.sparse_vectors
+        )
+        compare_client_results(local_client, remote_client, searcher.simple_search_text)
+
     local_client.update_collection(
         collection_name=COLLECTION_NAME,
         sparse_vectors_config={
@@ -273,6 +290,49 @@ def test_idf_scope_in_prefetch():
                 query=models.FusionQuery(fusion=models.Fusion.RRF),
                 limit=10,
             ).points,
+        )
+
+
+def test_idf_scope_in_groups():
+    fixture_points = generate_sparse_fixtures(
+        vectors_sizes={"sparse-text": sparse_text_vector_size},
+        even_sparse=False,
+    )
+
+    local_client = init_local()
+    init_client(
+        local_client,
+        fixture_points,
+        sparse_vectors_config=sparse_vectors_idf_config,
+        vectors_config={},
+    )
+
+    remote_client = init_remote()
+    init_client(
+        remote_client,
+        fixture_points,
+        sparse_vectors_config=sparse_vectors_idf_config,
+        vectors_config={},
+    )
+
+    query = generate_random_sparse_vector(sparse_text_vector_size, density=0.3)
+
+    for idf in (
+        models.IdfScope.GLOBAL,
+        models.IdfCorpusParams(corpus=corpus_filter([0, 1, 2, 3])),
+    ):
+        compare_client_results(
+            local_client,
+            remote_client,
+            lambda c, idf=idf: c.query_points_groups(
+                COLLECTION_NAME,
+                group_by="rand_digit",
+                query=query,
+                using="sparse-text",
+                search_params=models.SearchParams(idf=idf),
+                limit=5,
+                group_size=3,
+            ),
         )
 
 

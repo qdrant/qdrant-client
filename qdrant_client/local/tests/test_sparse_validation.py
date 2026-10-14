@@ -9,6 +9,8 @@ def test_validate_sparse_vector_accepts_valid() -> None:
     validate_sparse_vector(SparseVector(indices=[1, 2, 3], values=[0.1, 0.2, 0.3]))
     # indices do not have to be sorted to be valid
     validate_sparse_vector(SparseVector(indices=[3, 1], values=[0.1, 0.2]))
+    # both ends of the u32 range
+    validate_sparse_vector(SparseVector(indices=[0, 2**32 - 1], values=[0.1, 0.2]))
 
 
 @pytest.mark.parametrize(
@@ -17,6 +19,8 @@ def test_validate_sparse_vector_accepts_valid() -> None:
         (SparseVector(indices=[1, 2], values=[0.1]), "same length"),
         (SparseVector(indices=[1], values=[float("nan")]), "NaN"),
         (SparseVector(indices=[1, 1], values=[0.1, 0.2]), "unique"),
+        (SparseVector(indices=[-1], values=[0.1]), "between 0 and 4294967295"),
+        (SparseVector(indices=[2**32], values=[0.1]), "between 0 and 4294967295"),
     ],
 )
 def test_validate_sparse_vector_rejects_invalid(vector: SparseVector, message: str) -> None:

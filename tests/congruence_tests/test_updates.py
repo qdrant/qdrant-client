@@ -880,8 +880,6 @@ def test_update_mode(prefer_grpc: bool) -> None:
         update_mode: models.UpdateMode,
         method: str = "upsert",
     ) -> None:
-        # method: `upsert`, `upload_points`, `upload_collection`
-        print(method)
         if method == "upsert":
             client.upsert(collection_name, points, update_mode=update_mode)
         elif method == "upload_points":
@@ -901,8 +899,39 @@ def test_update_mode(prefer_grpc: bool) -> None:
                 payload=payloads,
                 update_mode=update_mode,
             )
+        elif method == "batch_update_points_list":
+            client.batch_update_points(
+                collection_name,
+                update_operations=[
+                    models.UpsertOperation(
+                        upsert=models.PointsList(points=points, update_mode=update_mode)
+                    )
+                ],
+            )
+        elif method == "batch_update_points_batch":
+            client.batch_update_points(
+                collection_name,
+                update_operations=[
+                    models.UpsertOperation(
+                        upsert=models.PointsBatch(
+                            batch=models.Batch(
+                                ids=[p.id for p in points],
+                                vectors=[p.vector for p in points],
+                                payloads=[p.payload for p in points],
+                            ),
+                            update_mode=update_mode,
+                        )
+                    )
+                ],
+            )
 
-    for method in ("upsert", "upload_points", "upload_collection"):
+    for method in (
+        "upsert",
+        "upload_points",
+        "upload_collection",
+        "batch_update_points_list",
+        "batch_update_points_batch",
+    ):
         local_client = init_local()
         remote_client = init_remote()
         vector_params = models.VectorParams(size=50, distance=models.Distance.DOT)
@@ -985,6 +1014,44 @@ def test_update_mode(prefer_grpc: bool) -> None:
         assert np.allclose(local_points[0].vector, remote_points[0].vector)
         assert np.allclose(local_points[0].vector, first_point.vector)
         assert len(local_points) == len(remote_points) == 1
+
+        # Deleted points must behave like non-existent points for UPDATE_ONLY and INSERT_ONLY
+        local_client.delete(COLLECTION_NAME, points_selector=[first_point.id, second_point.id])
+        remote_client.delete(COLLECTION_NAME, points_selector=[first_point.id, second_point.id])
+
+        upload(
+            client=local_client,
+            collection_name=COLLECTION_NAME,
+            points=[first_point],
+            update_mode=models.UpdateMode.UPDATE_ONLY,
+            method=method,
+        )
+        upload(
+            client=remote_client,
+            collection_name=COLLECTION_NAME,
+            points=[first_point],
+            update_mode=models.UpdateMode.UPDATE_ONLY,
+            method=method,
+        )
+        assert local_client.retrieve(COLLECTION_NAME, ids=[first_point.id]) == []
+        assert remote_client.retrieve(COLLECTION_NAME, ids=[first_point.id]) == []
+
+        upload(
+            client=local_client,
+            collection_name=COLLECTION_NAME,
+            points=[second_point],
+            update_mode=models.UpdateMode.INSERT_ONLY,
+            method=method,
+        )
+        upload(
+            client=remote_client,
+            collection_name=COLLECTION_NAME,
+            points=[second_point],
+            update_mode=models.UpdateMode.INSERT_ONLY,
+            method=method,
+        )
+        assert len(local_client.retrieve(COLLECTION_NAME, ids=[second_point.id])) == 1
+        assert len(remote_client.retrieve(COLLECTION_NAME, ids=[second_point.id])) == 1
 
 
 def nan_vectors(point: models.PointStruct) -> dict:
@@ -1073,3 +1140,130 @@ def test_rejected_batch_update_leaves_the_collection_untouched(local_client, rem
         remote_client.batch_update_points(COLLECTION_NAME, update_operations=operations, wait=True)
 
     compare_collections(local_client, remote_client, UPLOAD_NUM_VECTORS)
+
+
+@pytest.mark.parametrize("prefer_grpc", [False, True])
+def test_rejected_mismatched_batch_leaves_the_collection_untouched(prefer_grpc):
+    """A batch column longer or shorter than its ids must be rejected, not cut to fit.
+
+    The server validates this for REST only. Over gRPC the client splits the batch into points
+    itself, and used to drop a short named column's vectors, or extra payloads, without an error.
+    """
+    local_client = init_local()
+    remote_client = init_remote(prefer_grpc=prefer_grpc)
+    initialize_fixture_collection(local_client)
+    initialize_fixture_collection(remote_client)
+
+    points = generate_fixtures(UPLOAD_NUM_VECTORS)
+    local_client.upload_points(COLLECTION_NAME, points, wait=True)
+    remote_client.upload_points(COLLECTION_NAME, points, wait=True)
+
+    ids = [points[0].id, UPLOAD_NUM_VECTORS + 1]  # an update and an insert
+    vectors = {name: [vector, vector] for name, vector in points[1].vector.items()}
+    remote_error = ValueError if prefer_grpc else qdrant_client.http.exceptions.UnexpectedResponse
+
+    for batch in (
+        models.Batch(ids=ids, vectors={**vectors, "image": vectors["image"][:1]}),
+        models.Batch(ids=ids, vectors=vectors, payloads=[{"a": 1}, {"a": 2}, {"a": 3}]),
+    ):
+        with pytest.raises(ValueError, match="number of ids and"):
+            local_client.upsert(COLLECTION_NAME, batch)
+        with pytest.raises(remote_error, match="number of ids and"):
+            remote_client.upsert(COLLECTION_NAME, batch, wait=True)
+
+        compare_collections(local_client, remote_client, UPLOAD_NUM_VECTORS)
+
+
+def test_batch_update_rejects_empty_operation(local_client, remote_client):
+    """The writes around the rejected operation show how much of the batch was applied."""
+    points = generate_fixtures(10)
+    ahead = models.SetPayloadOperation(
+        set_payload=models.SetPayload(payload={"ahead": 1}, points=[0])
+    )
+    behind = models.SetPayloadOperation(
+        set_payload=models.SetPayload(payload={"behind": 1}, points=[1])
+    )
+    id_filter = models.Filter(must=[models.HasIdCondition(has_id=[0])])
+    operations = [
+        models.SetPayloadOperation(set_payload=models.SetPayload(payload={"a": 1}, points=[])),
+        models.SetPayloadOperation(
+            set_payload=models.SetPayload(payload={"a": 1}, points=[], filter=id_filter)
+        ),
+        models.SetPayloadOperation(set_payload=models.SetPayload(payload={"a": 1})),
+        models.OverwritePayloadOperation(
+            overwrite_payload=models.SetPayload(payload={"a": 1}, points=[])
+        ),
+        models.OverwritePayloadOperation(overwrite_payload=models.SetPayload(payload={"a": 1})),
+        models.DeletePayloadOperation(delete_payload=models.DeletePayload(keys=["a"], points=[])),
+        models.DeletePayloadOperation(delete_payload=models.DeletePayload(keys=["a"])),
+        models.ClearPayloadOperation(clear_payload=models.PointIdsList(points=[])),
+        models.DeleteOperation(delete=models.PointIdsList(points=[])),
+        models.UpsertOperation(upsert=models.PointsList(points=[])),
+        models.UpsertOperation(upsert=models.PointsBatch(batch=models.Batch(ids=[], vectors={}))),
+        models.UpdateVectorsOperation(update_vectors=models.UpdateVectors(points=[])),
+        models.DeleteVectorsOperation(
+            delete_vectors=models.DeleteVectors(points=[], vector=["text"])
+        ),
+        models.DeleteVectorsOperation(delete_vectors=models.DeleteVectors(vector=["text"])),
+        models.DeleteVectorsOperation(delete_vectors=models.DeleteVectors(points=[0], vector=[])),
+        models.DeleteVectorsOperation(
+            delete_vectors=models.DeleteVectors(points=[0], vector=["missing"])
+        ),
+        models.DeleteVectorsOperation(
+            delete_vectors=models.DeleteVectors(points=[], vector=["missing"])
+        ),
+    ]
+    for operation in operations:
+        # undo whatever the previous batch applied
+        local_client.upload_points(COLLECTION_NAME, points, wait=True)
+        remote_client.upload_points(COLLECTION_NAME, points, wait=True)
+
+        batch = [ahead, operation, behind]
+        with pytest.raises(ValueError):
+            local_client.batch_update_points(COLLECTION_NAME, update_operations=batch)
+        with pytest.raises(qdrant_client.http.exceptions.UnexpectedResponse):
+            remote_client.batch_update_points(COLLECTION_NAME, update_operations=batch, wait=True)
+        compare_collections(local_client, remote_client, len(points))
+
+
+def test_update_rejects_empty_operation(local_client, remote_client):
+    """Outside a batch, the same empty operations are rejected and nothing is written."""
+    points = generate_fixtures(10)
+    for client, error in (
+        (local_client, ValueError),
+        (remote_client, qdrant_client.http.exceptions.UnexpectedResponse),
+    ):
+        client.upload_points(COLLECTION_NAME, points, wait=True)
+        with pytest.raises(error):
+            client.set_payload(COLLECTION_NAME, {"a": 1}, points=[])
+        with pytest.raises(error):
+            client.overwrite_payload(COLLECTION_NAME, {"a": 1}, points=[])
+        with pytest.raises(error):
+            client.delete_payload(COLLECTION_NAME, ["a"], points=[])
+        with pytest.raises(error):
+            client.clear_payload(COLLECTION_NAME, points_selector=[])
+        with pytest.raises(error):
+            client.delete(COLLECTION_NAME, points_selector=models.PointIdsList(points=[]))
+        with pytest.raises(error):
+            client.upsert(COLLECTION_NAME, points=[])
+        with pytest.raises(error):
+            client.upsert(COLLECTION_NAME, points=models.Batch(ids=[], vectors={}))
+        with pytest.raises(error):
+            client.update_vectors(COLLECTION_NAME, points=[])
+        with pytest.raises(error):
+            client.delete_vectors(COLLECTION_NAME, vectors=["text"], points=[])
+        with pytest.raises(error):
+            client.delete_vectors(COLLECTION_NAME, vectors=[], points=[0])
+
+    compare_collections(local_client, remote_client, len(points))
+
+
+def test_upload_nothing(local_client, remote_client):
+    """Remote mode sends no request for an empty upload, so it is not an empty upsert."""
+    points = generate_fixtures(10)
+    for client in (local_client, remote_client):
+        client.upload_points(COLLECTION_NAME, points, wait=True)
+        client.upload_points(COLLECTION_NAME, [], wait=True)
+        client.upload_collection(COLLECTION_NAME, vectors=[], ids=[], wait=True)
+
+    compare_collections(local_client, remote_client, len(points))

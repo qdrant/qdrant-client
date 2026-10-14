@@ -71,21 +71,28 @@ class BaseUploader(Worker, ABC):
         yield from zip(ids_batches, vector_batches, payload_batches)
 
     @staticmethod
-    def _vector_batches_from_numpy(vectors: types.NumpyArray, batch_size: int) -> Iterable[float]:
-        for i in range(0, vectors.shape[0], batch_size):
-            yield vectors[i : i + batch_size].tolist()
+    def _from_numpy(vectors: types.NumpyArray) -> Any:
+        """Converts a part of a numpy array before it is passed to `process`."""
+        return vectors.tolist()
 
-    @staticmethod
+    @classmethod
+    def _vector_batches_from_numpy(
+        cls, vectors: types.NumpyArray, batch_size: int
+    ) -> Iterable[Any]:
+        for i in range(0, vectors.shape[0], batch_size):
+            yield cls._from_numpy(vectors[i : i + batch_size])
+
+    @classmethod
     def _vector_batches_from_numpy_named_vectors(
-        vectors: dict[str, types.NumpyArray], batch_size: int
-    ) -> Iterable[dict[str, list[float]]]:
+        cls, vectors: dict[str, types.NumpyArray], batch_size: int
+    ) -> Iterable[dict[str, Any]]:
         if len(set([arr.shape[0] for arr in vectors.values()])) != 1:
             raise ValueError("Each named vector should have the same number of vectors")
 
         num_vectors = next(iter(vectors.values())).shape[0]
-        # Convert dict[str, np.ndarray] to Generator(dict[str, list[float]])
+        # Convert dict[str, np.ndarray] to Generator(dict[str, vector]), a vector per name
         vector_batches = (
-            {name: vectors[name][i].tolist() for name in vectors.keys()}
+            {name: cls._from_numpy(vectors[name][i]) for name in vectors.keys()}
             for i in range(num_vectors)
         )
         yield from iter_batch(vector_batches, batch_size)

@@ -1,9 +1,9 @@
+import math
 import uuid
 from datetime import date, datetime, timezone
-from typing import Any, Mapping, Sequence, get_args
+from typing import Any, Mapping, get_args
 
 from google.protobuf.internal.containers import MessageMap
-from google.protobuf.json_format import MessageToDict
 from google.protobuf.timestamp_pb2 import Timestamp
 
 try:
@@ -12,88 +12,133 @@ except ImportError:
     pass
 
 from qdrant_client import grpc
-from qdrant_client.grpc import ListValue, NullValue, Struct, Value
+from qdrant_client.grpc import NullValue, Struct, Value
 from qdrant_client.http.models import models as rest
 from qdrant_client._pydantic_compat import construct, to_jsonable_python
+from qdrant_client.common.validation import validate_batch_lengths
 from qdrant_client.conversions.common_types import get_args_subscribed
 
 
-def has_field(message: Any, field: str) -> bool:
-    """
-    Same as protobuf HasField, but also works for primitive values
-    (https://stackoverflow.com/questions/51918871/check-if-a-field-has-been-set-in-protocol-buffer-3)
-
-    Args:
-        message (Any): protobuf message
-        field (str): name of the field
-    """
-    try:
-        return message.HasField(field)
-    except ValueError:
-        all_fields = set([descriptor.name for descriptor, _value in message.ListFields()])
-        return field in all_fields
+# protobuf resolves enum attributes in python, it takes ~0.5us on every access
+_NULL_VALUE = NullValue.NULL_VALUE
 
 
 def json_to_value(payload: Any) -> Value:
-    if payload is None:
-        return Value(null_value=NullValue.NULL_VALUE)
-    if isinstance(payload, bool):
-        return Value(bool_value=payload)
-    if isinstance(payload, int):
-        return Value(integer_value=payload)
-    if isinstance(payload, float):
-        return Value(double_value=payload)
-    if isinstance(payload, str):
+    # exact type checks are cheaper than isinstance and cover almost every value
+    payload_type = type(payload)
+    if payload_type is str:
         return Value(string_value=payload)
+    if payload_type is int:
+        return Value(integer_value=payload)
+    if payload_type is float:
+        return Value(double_value=payload)
+    if payload_type is bool:
+        return Value(bool_value=payload)
+    if payload is None:
+        return Value(null_value=_NULL_VALUE)
+    return Value(**_json_to_value_kwargs(payload))
+
+
+# the field of a Value for values of these exact types
+_VALUE_FIELDS = {
+    str: "string_value",
+    int: "integer_value",
+    float: "double_value",
+    bool: "bool_value",
+}
+
+
+def _json_to_value_kwargs(payload: Any) -> dict[str, Any]:
+    # Returns the arguments of the Value constructor instead of a Value. Protobuf builds the whole
+    # tree from nested dicts of arguments at once, which is much faster than building a Value for
+    # every element and copying it into its parent. Containers wrap their values of the types in
+    # _VALUE_FIELDS themselves, which saves a call for each.
+    field = _VALUE_FIELDS.get(type(payload))
+    if field is not None:
+        return {field: payload}
+    if payload is None:
+        return {"null_value": _NULL_VALUE}
     if isinstance(payload, (list, tuple)):
-        return Value(list_value=ListValue(values=[json_to_value(v) for v in payload]))
-    if isinstance(payload, dict):
-        return Value(
-            struct_value=Struct(fields=dict((k, json_to_value(v)) for k, v in payload.items()))
-        )
-    if isinstance(payload, datetime) or isinstance(payload, date):
-        return Value(string_value=to_jsonable_python(payload))
-    raise ValueError(f"Not supported json value: {payload}")  # pragma: no cover
+        values = [
+            (
+                {field: value}
+                if (field := _VALUE_FIELDS.get(type(value)))
+                else _json_to_value_kwargs(value)
+            )
+            for value in payload
+        ]
+        return {"list_value": {"values": values}}
+    if isinstance(payload, dict) and all(isinstance(key, str) for key in payload):
+        return {"struct_value": {"fields": payload_to_grpc(payload)}}
+    # subclasses, e.g. enums
+    if isinstance(payload, int):
+        return {"integer_value": payload}
+    if isinstance(payload, float):
+        return {"double_value": payload}
+    if isinstance(payload, str):
+        return {"string_value": payload}
+    # Encode the rest (uuid, datetime, Decimal, set, bytes, non-str dict keys, etc.) the same way
+    # the REST client and local mode do
+    try:
+        jsonable_payload = to_jsonable_python(payload)
+    except (TypeError, ValueError) as e:  # pydantic v1 raises TypeError, v2 raises ValueError
+        raise ValueError(f"Not supported json value: {payload}") from e
+    return _json_to_value_kwargs(jsonable_payload)
 
 
 def value_to_json(value: Value) -> Any:
-    if isinstance(value, Value):
-        value_ = MessageToDict(value, preserving_proto_field_name=False)
-    else:
-        value_ = value
-
-    if "integerValue" in value_:
-        # by default int are represented as string for precision
-        # But in python it is OK to just use `int`
-        return int(value_["integerValue"])
-    if "doubleValue" in value_:
-        return value_["doubleValue"]
-    if "stringValue" in value_:
-        return value_["stringValue"]
-    if "boolValue" in value_:
-        return value_["boolValue"]
-    if "structValue" in value_:
-        if "fields" not in value_["structValue"]:
-            return {}
-        return dict(
-            (key, value_to_json(val)) for key, val in value_["structValue"]["fields"].items()
-        )
-    if "listValue" in value_:
-        if "values" in value_["listValue"]:
-            return list(value_to_json(val) for val in value_["listValue"]["values"])
-        else:
-            return []
-    if "nullValue" in value_:
+    # Reading the set field directly is several times faster than MessageToDict, which walks the
+    # message in python
+    kind = value.WhichOneof("kind")
+    if kind == "string_value":
+        return value.string_value
+    if kind == "integer_value":
+        return value.integer_value
+    if kind == "double_value":
+        double_value = value.double_value
+        if math.isfinite(double_value):
+            return double_value
+        # keep the strings MessageToDict used to return for non-finite doubles
+        if math.isnan(double_value):
+            return "NaN"
+        return "Infinity" if double_value > 0 else "-Infinity"
+    if kind == "bool_value":
+        return value.bool_value
+    if kind == "list_value":
+        return [value_to_json(val) for val in value.list_value.values]
+    if kind == "struct_value":
+        return grpc_to_payload(value.struct_value.fields)
+    if kind == "null_value":
         return None
-    raise ValueError(f"Not supported value: {value_}")  # pragma: no cover
+    raise ValueError(f"Not supported value: {value}")  # pragma: no cover
 
 
-def payload_to_grpc(payload: dict[str, Any]) -> dict[str, Value]:
-    return dict((key, json_to_value(val)) for key, val in payload.items())
+def _payload_to_value_kwargs(payload: dict[str, Any]) -> dict[str, Any]:
+    # dicts of Value arguments: message constructors build the map from them without making Value
+    # messages and copying them into it
+    return {
+        key: (
+            {field: val} if (field := _VALUE_FIELDS.get(type(val))) else _json_to_value_kwargs(val)
+        )
+        for key, val in payload.items()
+    }
+
+
+def _payload_to_values(payload: dict[str, Any]) -> dict[str, Any]:
+    return {key: json_to_value(val) for key, val in payload.items()}
+
+
+try:
+    # protobuf < 6.30 does not accept dicts of arguments as values of a map, e.g. Struct.fields
+    Struct(fields={"": {}})
+    payload_to_grpc = _payload_to_value_kwargs
+except TypeError:  # pragma: no cover
+    payload_to_grpc = _payload_to_values
 
 
 def grpc_to_payload(grpc_: MessageMap[str, Value]) -> dict[str, Any]:
-    return dict((key, value_to_json(val)) for key, val in grpc_.items())
+    # upb implements items() of a map in python, looking up each key is faster
+    return {key: value_to_json(grpc_[key]) for key in grpc_}
 
 
 def grpc_payload_schema_to_field_type(model: grpc.PayloadSchemaType) -> grpc.FieldType:
@@ -629,7 +674,8 @@ class GrpcToRest:
         return construct(
             rest.ScoredPoint,
             id=cls.convert_point_id(model.id),
-            payload=cls.convert_payload(model.payload) if has_field(model, "payload") else None,
+            # HasField raises on map fields
+            payload=cls.convert_payload(model.payload) if len(model.payload) > 0 else None,
             score=model.score,
             vector=(
                 cls.convert_vectors_output(model.vectors) if model.HasField("vectors") else None
@@ -647,7 +693,7 @@ class GrpcToRest:
 
     @classmethod
     def convert_payload(cls, model: "MessageMapContainer") -> rest.Payload:
-        return dict((key, value_to_json(model[key])) for key in model)
+        return grpc_to_payload(model)
 
     @classmethod
     def convert_values_count(cls, model: grpc.ValuesCount) -> rest.ValuesCount:
@@ -3251,8 +3297,8 @@ class RestToGrpc:
         )
 
     @classmethod
-    def convert_payload(cls, model: rest.Payload) -> dict[str, grpc.Value]:
-        return dict((key, json_to_value(val)) for key, val in model.items())
+    def convert_payload(cls, model: rest.Payload) -> dict[str, Any]:
+        return payload_to_grpc(model)
 
     @classmethod
     def convert_hnsw_config_diff(cls, model: rest.HnswConfigDiff) -> grpc.HnswConfigDiff:
@@ -3863,6 +3909,8 @@ class RestToGrpc:
                     vectors.update({key: grpc.Vector(image=cls.convert_image(val))})
                 elif isinstance(val, rest.InferenceObject):
                     vectors.update({key: grpc.Vector(object=cls.convert_inference_object(val))})
+                else:
+                    raise ValueError(f"invalid VectorStruct model: vector {key!r} is {val!r}")
             return grpc.Vectors(vectors=grpc.NamedVectors(vectors=vectors))
         elif isinstance(model, rest.Document):
             return grpc.Vectors(vector=grpc.Vector(document=cls.convert_document(model)))
@@ -4775,6 +4823,7 @@ class RestToGrpc:
     ) -> list[grpc.PointStruct]:
         # shard key and update_filter are converted in the parent function
         if isinstance(model, rest.PointsBatch):
+            validate_batch_lengths(model.batch)
             vectors_batch: list[grpc.Vectors] = cls.convert_batch_vector_struct(
                 model.batch.vectors, len(model.batch.ids)
             )
@@ -4842,12 +4891,12 @@ class RestToGrpc:
                 delete_points=delete_points,
             )
         elif isinstance(model, rest.SetPayloadOperation):
-            if model.set_payload.points:
+            if model.set_payload.points is not None:
                 points_selector = rest.PointIdsList(points=model.set_payload.points)
-            elif model.set_payload.filter:
+            elif model.set_payload.filter is not None:
                 points_selector = rest.FilterSelector(filter=model.set_payload.filter)
             else:
-                raise ValueError(f"invalid SetPayloadOperation model: {model}")  # pragma: no cover
+                raise ValueError(f"invalid SetPayloadOperation model: {model}")
 
             shard_key_selector = (
                 cls.convert_shard_key_selector(model.set_payload.shard_key)
@@ -4864,14 +4913,12 @@ class RestToGrpc:
                 )
             )
         elif isinstance(model, rest.OverwritePayloadOperation):
-            if model.overwrite_payload.points:
+            if model.overwrite_payload.points is not None:
                 points_selector = rest.PointIdsList(points=model.overwrite_payload.points)
-            elif model.overwrite_payload.filter:
+            elif model.overwrite_payload.filter is not None:
                 points_selector = rest.FilterSelector(filter=model.overwrite_payload.filter)
             else:
-                raise ValueError(
-                    f"invalid OverwritePayloadOperation model: {model}"
-                )  # pragma: no cover
+                raise ValueError(f"invalid OverwritePayloadOperation model: {model}")
 
             shard_key_selector = (
                 cls.convert_shard_key_selector(model.overwrite_payload.shard_key)
@@ -4888,14 +4935,12 @@ class RestToGrpc:
                 )
             )
         elif isinstance(model, rest.DeletePayloadOperation):
-            if model.delete_payload.points:
+            if model.delete_payload.points is not None:
                 points_selector = rest.PointIdsList(points=model.delete_payload.points)
-            elif model.delete_payload.filter:
+            elif model.delete_payload.filter is not None:
                 points_selector = rest.FilterSelector(filter=model.delete_payload.filter)
             else:
-                raise ValueError(
-                    f"invalid DeletePayloadOperation model: {model}"
-                )  # pragma: no cover
+                raise ValueError(f"invalid DeletePayloadOperation model: {model}")
 
             shard_key_selector = (
                 cls.convert_shard_key_selector(model.delete_payload.shard_key)
@@ -4945,14 +4990,12 @@ class RestToGrpc:
                 )
             )
         elif isinstance(model, rest.DeleteVectorsOperation):
-            if model.delete_vectors.points:
+            if model.delete_vectors.points is not None:
                 points_selector = rest.PointIdsList(points=model.delete_vectors.points)
-            elif model.delete_vectors.filter:
+            elif model.delete_vectors.filter is not None:
                 points_selector = rest.FilterSelector(filter=model.delete_vectors.filter)
             else:
-                raise ValueError(
-                    f"invalid DeletePayloadOperation model: {model}"
-                )  # pragma: no cover
+                raise ValueError(f"invalid DeleteVectorsOperation model: {model}")
 
             shard_key_selector = (
                 cls.convert_shard_key_selector(model.delete_vectors.shard_key)

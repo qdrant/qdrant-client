@@ -1,6 +1,6 @@
 import warnings
 
-SEEN_MESSAGES = set()
+SEEN_MESSAGES: set[str] = set()
 
 
 def show_warning(message: str, category: type[Warning] = UserWarning, stacklevel: int = 2) -> None:
