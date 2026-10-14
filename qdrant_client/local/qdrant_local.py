@@ -29,6 +29,7 @@ from qdrant_client.local.local_collection import (
     ignore_mentioned_ids_filter,
 )
 from qdrant_client.local.payload_value_setter import merge_payload
+from qdrant_client.uploader.uploader import take_exactly
 
 META_INFO_FILENAME = "meta.json"
 
@@ -1035,17 +1036,20 @@ class QdrantLocal(QdrantBase):
                 for i in range(num_vectors)
             ]
 
+        vectors = list(vectors)
+        point_ids = uuid_generator() if ids is None else take_exactly(ids, len(vectors), "ids")
+        payloads = (
+            itertools.cycle([{}])
+            if payload is None
+            else take_exactly(payload, len(vectors), "payload")
+        )
         point_structs = [
             rest_models.PointStruct(
                 id=str(point_id) if isinstance(point_id, uuid.UUID) else point_id,
                 vector=(vector.tolist() if isinstance(vector, np.ndarray) else vector) or {},
                 payload=payload or {},
             )
-            for (point_id, vector, payload) in zip(
-                ids or uuid_generator(),
-                iter(vectors),
-                payload or itertools.cycle([{}]),
-            )
+            for (point_id, vector, payload) in zip(point_ids, vectors, payloads)
         ]
         # remote mode sends no request for an empty upload, while an empty upsert is an error
         if len(point_structs) > 0:

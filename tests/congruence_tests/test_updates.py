@@ -1267,3 +1267,33 @@ def test_upload_nothing(local_client, remote_client):
         client.upload_collection(COLLECTION_NAME, vectors=[], ids=[], wait=True)
 
     compare_collections(local_client, remote_client, len(points))
+
+
+@pytest.mark.parametrize("prefer_grpc", [False, True])
+def test_upload_collection_rejects_short_ids_and_payload(prefer_grpc):
+    """ids or payload ending before the vectors used to cut the upload short without an error."""
+    local_client = init_local()
+    remote_client = init_remote(prefer_grpc=prefer_grpc)
+    initialize_fixture_collection(local_client)
+    initialize_fixture_collection(remote_client)
+
+    points = generate_fixtures(10)
+    vectors = [point.vector for point in points]
+    numpy_vectors = {name: np.array([vector[name] for vector in vectors]) for name in vectors[0]}
+    ids = [point.id for point in points]
+    payload = [point.payload for point in points]
+
+    for client in (local_client, remote_client):
+        # the vectors fit in one batch, so remote mode raises before it sends anything
+        with pytest.raises(ValueError, match="ids iterable is shorter"):
+            client.upload_collection(COLLECTION_NAME, vectors, ids=ids[:9], wait=True)
+        with pytest.raises(ValueError, match="ids iterable is shorter"):
+            client.upload_collection(COLLECTION_NAME, numpy_vectors, ids=iter(ids[:9]), wait=True)
+        with pytest.raises(ValueError, match="ids iterable is shorter"):
+            client.upload_collection(COLLECTION_NAME, vectors, ids=[], wait=True)
+        with pytest.raises(ValueError, match="payload iterable is shorter"):
+            client.upload_collection(COLLECTION_NAME, vectors, payload[:9], ids=ids, wait=True)
+        with pytest.raises(ValueError, match="payload iterable is shorter"):
+            client.upload_collection(COLLECTION_NAME, numpy_vectors, payload=[], wait=True)
+
+    compare_collections(local_client, remote_client, len(points))
