@@ -14,8 +14,8 @@ def value_by_key(payload: dict[str, Any], key: str, flat: bool = True) -> list[A
     Get value from payload by key.
     Args:
         payload: arbitrary json-like object
-        flat: If True, extend list of values. If False, append. By default, we use True and flatten the arrays,
-            we need it for filters, however for `count` method we need to keep the arrays as is.
+        flat: If True, unwrap a selected array one level, like the server does. If False, keep
+            arrays as is.
         key:
             Key or path to value in payload.
             Examples:
@@ -32,50 +32,29 @@ def value_by_key(payload: dict[str, Any], key: str, flat: bool = True) -> list[A
 
     def _get_value(data: Any, k_list: list[JsonPathItem]) -> None:
         if not k_list:
+            # the whole path is consumed, `data` is one of the values it selects
+            if isinstance(data, list) and flat:
+                result.extend(data)
+            else:
+                result.append(data)
             return
 
-        current_key = k_list.pop(0)
-        if len(k_list) == 0:
-            if isinstance(data, dict) and current_key.item_type == JsonPathItemType.KEY:
-                if current_key.key in data:
-                    value = data[current_key.key]
-                    if isinstance(value, list) and flat:
-                        result.extend(value)
-                    else:
-                        result.append(value)
+        current_key, rest = k_list[0], k_list[1:]
 
-            elif isinstance(data, list):
-                if current_key.item_type == JsonPathItemType.WILDCARD_INDEX:
-                    result.extend(data)
-
-                elif current_key.item_type == JsonPathItemType.INDEX:
-                    assert current_key.index is not None
-
-                    if current_key.index < len(data):
-                        result.append(data[current_key.index])
-
-        elif current_key.item_type == JsonPathItemType.KEY:
-            if not isinstance(data, dict):
-                return
-
-            if current_key.key in data:
-                _get_value(data[current_key.key], k_list.copy())
+        if current_key.item_type == JsonPathItemType.KEY:
+            if isinstance(data, dict) and current_key.key in data:
+                _get_value(data[current_key.key], rest)
 
         elif current_key.item_type == JsonPathItemType.INDEX:
             assert current_key.index is not None
 
-            if not isinstance(data, list):
-                return
-
-            if current_key.index < len(data):
-                _get_value(data[current_key.index], k_list.copy())
+            if isinstance(data, list) and current_key.index < len(data):
+                _get_value(data[current_key.index], rest)
 
         elif current_key.item_type == JsonPathItemType.WILDCARD_INDEX:
-            if not isinstance(data, list):
-                return
-
-            for item in data:
-                _get_value(item, k_list.copy())
+            if isinstance(data, list):
+                for item in data:
+                    _get_value(item, rest)
 
     _get_value(payload, keys)
     return result if result else None
