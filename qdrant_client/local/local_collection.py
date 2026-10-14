@@ -80,7 +80,7 @@ from qdrant_client.local.payload_value_setter import (
     set_value_by_key,
 )
 from qdrant_client.local.persistence import CollectionPersistence
-from qdrant_client.local.utils import last_argmax, swap_remove
+from qdrant_client.local.utils import last_argmax, normalize_point_id, swap_remove
 from qdrant_client.local.sparse import (
     copy_sparse_vector,
     empty_sparse_vector,
@@ -238,7 +238,11 @@ class LocalCollection:
         self.config = config
         if location is not None:
             self.storage = CollectionPersistence(location, force_disable_check_same_thread)
-        self.load_vectors()
+        try:
+            self.load_vectors()
+        except Exception:
+            self.close()
+            raise
 
     @staticmethod
     def _resolve_vectors_config(
@@ -292,7 +296,7 @@ class LocalCollection:
         Deleted points keep their slot so that internal ids stay stable, but the server
         answers 404 for them exactly as it does for ids it has never seen.
         """
-        idx = self.ids.get(point_id)
+        idx = self.ids.get(normalize_point_id(point_id))
         if idx is None or self.deleted[idx]:
             return None
         return idx
@@ -1454,7 +1458,7 @@ class LocalCollection:
         self._validate_with_payload(with_payload)
 
         result = []
-        ids = [str(id_) if isinstance(id_, uuid.UUID) else id_ for id_ in ids]
+        ids = [normalize_point_id(id_) for id_ in ids]
         for point_id in ids:
             if point_id not in self.ids:
                 continue
@@ -2164,8 +2168,10 @@ class LocalCollection:
 
         mask = self._payload_and_non_deleted_mask(scroll_filter)
 
+        offset_id = None if offset is None else self._universal_id(normalize_point_id(offset))
+
         for point_id, idx in sorted_ids:
-            if offset is not None and self._universal_id(point_id) < self._universal_id(offset):
+            if offset_id is not None and self._universal_id(point_id) < offset_id:
                 continue
 
             if len(result) >= limit + 1:
@@ -2730,17 +2736,10 @@ class LocalCollection:
         Every write path runs this over all of its points before applying any of them, so a
         rejected point leaves the collection untouched, the way the server does.
 
-        Normalization (sorting sparse vectors, stringifying UUID ids) goes into the returned
+        Normalization (sorting sparse vectors, canonicalizing UUID ids) goes into the returned
         copy: remote mode does not rewrite the caller's point either.
         """
-        if isinstance(point.id, str):
-            # try to parse as UUID
-            try:
-                _uuid = uuid.UUID(point.id)
-            except ValueError as e:
-                raise ValueError(f"Point id {point.id} is not a valid UUID") from e
-
-        point_id = str(point.id) if isinstance(point.id, uuid.UUID) else point.id
+        point_id = normalize_point_id(point.id, validate=True)
 
         normalized_vector: models.VectorStruct = point.vector
 
@@ -2930,7 +2929,7 @@ class LocalCollection:
         # point in it, and only then answers 404 for the first id it could not find.
         prepared = [
             (
-                str(point.id) if isinstance(point.id, uuid.UUID) else point.id,
+                normalize_point_id(point.id),
                 self._validate_named_vectors(
                     {DEFAULT_VECTOR_NAME: point.vector}
                     if isinstance(point.vector, list)
@@ -3029,7 +3028,7 @@ class LocalCollection:
             # ids to shards, and an empty list reaches none of them.
             if len(selector) == 0:
                 raise ValueError("Empty update request")
-            return [str(id_) if isinstance(id_, uuid.UUID) else id_ for id_ in selector]
+            return [normalize_point_id(id_) for id_ in selector]
         elif isinstance(selector, models.Filter):
             return self._filter_to_ids(selector)
         elif isinstance(selector, models.FilterSelector):
