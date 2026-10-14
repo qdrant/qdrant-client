@@ -4,7 +4,6 @@ import uuid
 from collections import OrderedDict, defaultdict
 from typing import (
     Any,
-    Callable,
     Mapping,
     Sequence,
     get_args,
@@ -69,7 +68,12 @@ from qdrant_client.local.payload_filters import (
     check_filter,
     validate_filter,
 )
-from qdrant_client.local.payload_value_extractor import value_by_key, parse_uuid
+from qdrant_client.local.payload_value_extractor import (
+    exclude_payload,
+    include_payload,
+    parse_uuid,
+    value_by_key,
+)
 from qdrant_client.local.payload_value_setter import (
     delete_value_by_key,
     merge_payload,
@@ -533,72 +537,21 @@ class LocalCollection:
             )
 
     @classmethod
-    def _check_include_pattern(cls, pattern: str, key: str) -> bool:
-        """
-        >>> LocalCollection._check_include_pattern('a', 'a')
-        True
-        >>> LocalCollection._check_include_pattern('a.b', 'b')
-        False
-        >>> LocalCollection._check_include_pattern('a.b', 'a.b')
-        True
-        >>> LocalCollection._check_include_pattern('a.b', 'a.b.c')
-        True
-        >>> LocalCollection._check_include_pattern('a.b[]', 'a.b[].c')
-        True
-        >>> LocalCollection._check_include_pattern('a.b[]', 'a.b.c')
-        False
-        >>> LocalCollection._check_include_pattern('a', 'a.b')
-        True
-        >>> LocalCollection._check_include_pattern('a.b', 'a')
-        True
-        >>> LocalCollection._check_include_pattern('a', 'aa.b.c')
-        False
-        >>> LocalCollection._check_include_pattern('a_b', 'a')
-        False
-        """
-        pattern_parts = pattern.replace(".", "[.").split("[")
-        key_parts = key.replace(".", "[.").split("[")
-        return all(p == v for p, v in zip(pattern_parts, key_parts))
-
-    @classmethod
-    def _check_exclude_pattern(cls, pattern: str, key: str) -> bool:
-        if len(pattern) > len(key):
-            return False
-        pattern_parts = pattern.replace(".", "[.").split("[")
-        key_parts = key.replace(".", "[.").split("[")
-        return all(p == v for p, v in zip(pattern_parts, key_parts))
-
-    @classmethod
-    def _filter_payload(
-        cls, payload: Any, predicate: Callable[[str], bool], path: str = ""
-    ) -> Any:
-        if isinstance(payload, dict):
-            res = {}
-            if path != "":
-                new_path = path + "."
-            else:
-                new_path = path
-
-            for key, value in payload.items():
-                if predicate(new_path + key):
-                    res[key] = cls._filter_payload(value, predicate, new_path + key)
-            return res
-        elif isinstance(payload, list):
-            res_array = []
-            path = path + "[]"
-            for idx, value in enumerate(payload):
-                if predicate(path):
-                    res_array.append(cls._filter_payload(value, predicate, path))
-            return res_array
-        else:
-            return payload
-
-    @classmethod
     def _process_payload(
         cls,
         payload: dict,
         with_payload: types.WithPayloadInterface = True,
     ) -> dict | None:
+        """
+        >>> payload = {"a": {"b": 1, "c": 2}, "aa": {"b": 3}, "a.b": 4, "l": [{"b": 5, "c": 6}]}
+        >>> LocalCollection._process_payload(payload, ["a.b"])
+        {'a': {'b': 1}}
+        >>> LocalCollection._process_payload(payload, ['"a.b"', "l[].c"])
+        {'a.b': 4, 'l': [{'c': 6}]}
+        >>> selector = models.PayloadSelectorExclude(exclude=["a", "l[].b"])
+        >>> LocalCollection._process_payload(payload, selector)
+        {'aa': {'b': 3}, 'a.b': 4, 'l': [{'c': 6}]}
+        """
         # an empty list selects no fields, it doesn't disable the payload
         if with_payload is False or with_payload is None:
             return None
@@ -613,15 +566,7 @@ class LocalCollection:
             )
 
         if isinstance(with_payload, models.PayloadSelectorExclude):
-            return cls._filter_payload(
-                payload,
-                lambda key: all(
-                    map(
-                        lambda pattern: not cls._check_exclude_pattern(pattern, key),
-                        with_payload.exclude,  # type: ignore
-                    )
-                ),
-            )
+            return exclude_payload(payload, with_payload.exclude)
 
         include = (
             with_payload.include
@@ -629,15 +574,12 @@ class LocalCollection:
             else list(with_payload)  # type: ignore
         )
 
-        return cls._filter_payload(
-            payload,
-            lambda key: any(
-                map(
-                    lambda pattern: cls._check_include_pattern(pattern, key),
-                    include,  # type: ignore
-                )
-            ),
-        )
+        return include_payload(payload, include)
+
+    @classmethod
+    def _validate_with_payload(cls, with_payload: types.WithPayloadInterface) -> None:
+        # the server rejects an invalid selector even when no points match
+        cls._process_payload({}, with_payload)
 
     def _get_payload(
         self,
@@ -928,6 +870,7 @@ class LocalCollection:
 
         Assumes all vectors have been homogenized so that there are no ids in the inputs
         """
+        self._validate_with_payload(with_payload)
 
         prefetches = []
         if prefetch is not None:
@@ -1303,6 +1246,10 @@ class LocalCollection:
         with_lookup_collection: "LocalCollection | None" = None,
         search_params: types.SearchParams | None = None,
     ) -> models.GroupsResult:
+        self._validate_with_payload(with_payload)
+        if isinstance(with_lookup, models.WithLookup) and with_lookup.with_payload is not None:
+            self._validate_with_payload(with_lookup.with_payload)
+
         max_limit = len(self.ids_inv)
         # rewrite prefetch with larger limit
         if prefetch is not None:
@@ -1504,6 +1451,8 @@ class LocalCollection:
         with_payload: types.WithPayloadInterface = True,
         with_vectors: types.WithVector = False,
     ) -> list[models.Record]:
+        self._validate_with_payload(with_payload)
+
         result = []
         ids = [str(id_) if isinstance(id_, uuid.UUID) else id_ for id_ in ids]
         for point_id in ids:
@@ -2164,6 +2113,8 @@ class LocalCollection:
         with_payload: types.WithPayloadInterface = True,
         with_vectors: types.WithVector = False,
     ) -> tuple[list[types.Record], types.PointId | None]:
+        self._validate_with_payload(with_payload)
+
         if len(self.ids) == 0:
             validate_filter(
                 scroll_filter

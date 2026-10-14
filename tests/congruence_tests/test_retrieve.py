@@ -2,7 +2,8 @@ import random
 
 import pytest
 
-from qdrant_client.http.models import PayloadSelectorExclude, PayloadSelectorInclude
+from qdrant_client.http.exceptions import UnexpectedResponse
+from qdrant_client.http.models import PayloadSelectorExclude, PayloadSelectorInclude, PointStruct
 from tests.congruence_tests.test_common import (
     COLLECTION_NAME,
     compare_client_results,
@@ -86,6 +87,42 @@ def test_retrieve(local_client, remote_client) -> None:
 
         with pytest.raises(ValueError):
             client.retrieve(COLLECTION_NAME, [id_], with_vectors="image")
+
+
+def test_retrieve_quoted_payload_keys(local_client, remote_client) -> None:
+    payload = {
+        "a.b": {"x": 1, "y": 2},
+        "a": {"b": 3, "c": 4},
+        "a[]": 5,
+        "items": [{"c.d": 6, "e": 7}, {"c.d": 8, "e": 9}],
+    }
+    local_client.upsert(COLLECTION_NAME, [PointStruct(id=1, vector={}, payload=payload)])
+    remote_client.upsert(COLLECTION_NAME, [PointStruct(id=1, vector={}, payload=payload)])
+
+    # a quoted key is a single key, an unquoted path doesn't match keys with dots or brackets
+    for key in ['"a.b".x', "a.b", "a", 'items[]."c.d"']:
+        compare_client_results(
+            local_client,
+            remote_client,
+            lambda c: c.retrieve(
+                COLLECTION_NAME, [1], with_payload=PayloadSelectorInclude(include=[key])
+            ),
+        )
+        compare_client_results(
+            local_client,
+            remote_client,
+            lambda c: c.retrieve(
+                COLLECTION_NAME, [1], with_payload=PayloadSelectorExclude(exclude=[key])
+            ),
+        )
+
+    # a key with a space has to be quoted
+    for client, error in ((local_client, ValueError), (remote_client, UnexpectedResponse)):
+        with pytest.raises(error):
+            client.retrieve(COLLECTION_NAME, [1], with_payload=["a b"])
+
+        with pytest.raises(error):  # even when no point is returned
+            client.retrieve(COLLECTION_NAME, [2], with_payload=["a b"])
 
 
 def test_sparse_retrieve() -> None:
