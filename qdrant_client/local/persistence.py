@@ -7,7 +7,8 @@ from typing import Iterable
 
 from qdrant_client.http import models
 from qdrant_client._pydantic_compat import construct
-from qdrant_client.local.point_id import normalize_point_id
+from qdrant_client.common.client_warnings import show_warning
+from qdrant_client.local.utils import normalize_point_id
 
 STORAGE_FILE_NAME_OLD = "storage.dbm"
 STORAGE_FILE_NAME = "storage.sqlite"
@@ -27,10 +28,14 @@ def check_legacy_storage(location: str) -> None:
 
 class CollectionPersistence:
     CHECK_SAME_THREAD: bool | None = None
+    # pinned, since the default protocol changed from 4 to 5 in Python 3.14, and keys with it
+    KEY_PICKLE_PROTOCOL = 4
 
     @classmethod
     def encode_key(cls, key: models.ExtendedPointId) -> str:
-        return base64.b64encode(pickle.dumps(key)).decode("utf-8")
+        return base64.b64encode(pickle.dumps(key, protocol=cls.KEY_PICKLE_PROTOCOL)).decode(
+            "utf-8"
+        )
 
     def __init__(self, location: str, force_disable_check_same_thread: bool = False):
         """
@@ -65,7 +70,7 @@ class CollectionPersistence:
         )
 
         self._ensure_table()
-        # Only legacy, non-canonical keys need an alias. Reading never rewrites storage.
+        # stored keys which differ from `encode_key(point_id)`
         self._legacy_keys: dict[models.ExtendedPointId, str] = {}
 
     def close(self) -> None:
@@ -119,33 +124,48 @@ class CollectionPersistence:
     def load(self) -> Iterable[models.PointStruct]:
         """
         Load a point from the local storage.
+
+        Older versions could store a point in several rows (per UUID spelling or key pickle
+        protocol). The highest rowid is the latest write, the other rows are removed.
+
         Returns:
             point: loaded point
         """
         cursor = self.storage.cursor()
-        cursor.execute("SELECT id, point FROM points")
-        points = []
-        seen = set()
-        legacy_keys = {}
-        for key, value in cursor.fetchall():
+        cursor.execute("SELECT rowid, id, point FROM points ORDER BY rowid DESC")
+        self._legacy_keys = {}
+        loaded = set()
+        outdated = []
+        for rowid, key, value in cursor.fetchall():
             point = pickle.loads(value)
             point_id = normalize_point_id(point.id)
-            if point_id in seen:
-                raise ValueError(
-                    f"Duplicate UUID identity {point_id!r} in local storage {self.location}. "
-                    "No points have been changed. Back up the storage and resolve duplicate "
-                    "UUID spellings using the previous client version before reopening."
-                )
-            seen.add(point_id)
+            if point_id in loaded:
+                outdated.append(rowid)
+                continue
+            loaded.add(point_id)
             if key != self.encode_key(point_id):
-                legacy_keys[point_id] = key
-            points.append(
-                construct(
+                self._legacy_keys[point_id] = key
+            if point_id != point.id:
+                point = construct(
                     models.PointStruct, id=point_id, vector=point.vector, payload=point.payload
                 )
+            yield point
+
+        if outdated:
+            self._remove_outdated(outdated)
+
+    def _remove_outdated(self, rowids: list[int]) -> None:
+        with self.storage:
+            self.storage.executemany(
+                "DELETE FROM points WHERE rowid = ?", [(rowid,) for rowid in rowids]
             )
-        self._legacy_keys = legacy_keys
-        yield from points
+        show_warning(
+            f"Removed {len(rowids)} outdated copies of points from {self.location}, keeping "
+            "the latest copy of each point. They were written by a qdrant-client version "
+            "which stored each spelling of a UUID as a separate point, or which ran under "
+            "another Python version and failed to replace the existing copy.",
+            category=UserWarning,
+        )
 
 
 def test_persistence() -> None:

@@ -1,9 +1,11 @@
 """Offline regression cases for issue #1477; no provider or server required."""
 
+import base64
 import uuid
 import copy
 import pickle
 import sqlite3
+import warnings
 from contextlib import closing
 
 import pytest
@@ -182,18 +184,20 @@ def test_group_lookup_non_uuid_payload_remains_missing(client):
     assert result.groups[0].lookup is None
 
 
-def seed_legacy_storage(tmp_path, ids):
-    """Write the pre-fix on-disk format, bypassing the new normalization."""
+def seed_legacy_storage(tmp_path, ids, protocols=None):
+    """Write the pre-fix on-disk format, with keys pickled with `protocols` (3.14 uses 5)."""
+    if protocols is None:
+        protocols = [CollectionPersistence.KEY_PICKLE_PROTOCOL] * len(ids)
     with closing(QdrantClient(path=str(tmp_path))) as client:
         create_collection(client)
     database = tmp_path / "collection" / "points" / "storage.sqlite"
     with closing(sqlite3.connect(database)) as storage, storage:
-        for index, point_id in enumerate(ids):
+        for index, (point_id, protocol) in enumerate(zip(ids, protocols)):
             point = models.PointStruct(id=point_id, vector=[1.0, 0.0], payload={"index": index})
             storage.execute(
                 "INSERT INTO points VALUES (?, ?)",
                 (
-                    CollectionPersistence.encode_key(point_id),
+                    base64.b64encode(pickle.dumps(point_id, protocol=protocol)).decode("utf-8"),
                     pickle.dumps(point),
                 ),
             )
@@ -234,13 +238,43 @@ def test_legacy_storage_keys_do_not_resurrect(tmp_path, spelling, operation):
     assert len(rows) == (0 if operation == "delete" else 1)
 
 
-@pytest.mark.parametrize("ids", [[CANONICAL, CANONICAL.upper()], [CANONICAL.upper(), CANONICAL]])
-def test_conflicting_legacy_ids_leave_storage_untouched(tmp_path, ids):
-    database = seed_legacy_storage(tmp_path, ids)
-    before = read_rows(database)
-    with pytest.raises(ValueError, match="Duplicate UUID identity"):
-        QdrantClient(path=str(tmp_path))
-    assert read_rows(database) == before
+@pytest.mark.parametrize(
+    "ids, protocols",
+    [
+        ([CANONICAL, CANONICAL.upper()], None),
+        ([CANONICAL.upper(), CANONICAL], None),
+        # upserted again under Python 3.14
+        ([1, 1], [4, 5]),
+        ([CANONICAL, CANONICAL], [4, 5]),
+    ],
+)
+def test_outdated_copies_are_replaced_by_the_latest(tmp_path, ids, protocols):
+    database = seed_legacy_storage(tmp_path, ids, protocols)
+    with pytest.warns(UserWarning, match="Removed 1 outdated copies"):
+        client = QdrantClient(path=str(tmp_path))
+    with closing(client):
+        assert client.count("points").count == 1
+        assert client.retrieve("points", [ids[0]])[0].payload == {"index": 1}
+    assert len(read_rows(database)) == 1
+
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        QdrantClient(path=str(tmp_path)).close()
+    assert not [warning for warning in caught if "outdated copies" in str(warning.message)]
+
+
+@pytest.mark.parametrize("point_id", [1, CANONICAL])
+@pytest.mark.parametrize("operation", ["delete", "upsert"])
+def test_keys_written_under_another_python_version(tmp_path, point_id, operation):
+    database = seed_legacy_storage(tmp_path, [point_id], protocols=[5])
+    with closing(QdrantClient(path=str(tmp_path))) as client:
+        if operation == "delete":
+            client.delete("points", [point_id])
+        else:
+            client.upsert("points", [models.PointStruct(id=point_id, vector=[0.0, 1.0])])
+    with closing(QdrantClient(path=str(tmp_path))) as client:
+        assert client.count("points").count == (0 if operation == "delete" else 1)
+    assert len(read_rows(database)) == (0 if operation == "delete" else 1)
 
 
 def test_legacy_key_migration_is_transactional(tmp_path):

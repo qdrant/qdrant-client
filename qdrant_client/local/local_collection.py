@@ -80,8 +80,7 @@ from qdrant_client.local.payload_value_setter import (
     set_value_by_key,
 )
 from qdrant_client.local.persistence import CollectionPersistence
-from qdrant_client.local.point_id import normalize_point_id
-from qdrant_client.local.utils import last_argmax, swap_remove
+from qdrant_client.local.utils import last_argmax, normalize_point_id, swap_remove
 from qdrant_client.local.sparse import (
     copy_sparse_vector,
     empty_sparse_vector,
@@ -2102,8 +2101,7 @@ class LocalCollection:
         )
 
     @classmethod
-    def _universal_id(cls, point_id: types.PointId) -> tuple[str, int]:
-        point_id = normalize_point_id(point_id)
+    def _universal_id(cls, point_id: models.ExtendedPointId) -> tuple[str, int]:
         if isinstance(point_id, str):
             return point_id, 0
         elif isinstance(point_id, int):
@@ -2170,8 +2168,10 @@ class LocalCollection:
 
         mask = self._payload_and_non_deleted_mask(scroll_filter)
 
+        offset_id = None if offset is None else self._universal_id(normalize_point_id(offset))
+
         for point_id, idx in sorted_ids:
-            if offset is not None and self._universal_id(point_id) < self._universal_id(offset):
+            if offset_id is not None and self._universal_id(point_id) < offset_id:
                 continue
 
             if len(result) >= limit + 1:
