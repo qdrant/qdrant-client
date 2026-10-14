@@ -1,3 +1,4 @@
+import asyncio
 import importlib.metadata
 import math
 import platform
@@ -2218,6 +2219,15 @@ class QdrantRemote(QdrantBase):
         update_filter: types.Filter | None = None,
         update_mode: types.UpdateMode | None = None,
     ) -> None:
+        if self._auth_token_provider is not None and asyncio.iscoroutinefunction(
+            self._auth_token_provider
+        ):
+            raise ValueError(
+                "upload_points and upload_collection do not support an async "
+                "auth_token_provider. The batch uploader runs in a worker thread that "
+                "cannot await async callables. Use a synchronous auth_token_provider, "
+                "or use upsert() for async uploads."
+            )
         if method is not None:
             if method in get_all_start_methods():
                 start_method = method
