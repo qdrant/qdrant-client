@@ -1,10 +1,10 @@
 import math
-import re
 from datetime import date, datetime, timezone
 from typing import Any
 from uuid import UUID
 
 import numpy as np
+import regex
 
 from qdrant_client.http import models
 from qdrant_client.local import datetime_utils
@@ -213,10 +213,14 @@ def values_match(value: Any, other: Any) -> bool:
     return value == other
 
 
+_UNINDEXED_TEXT_TOKEN = regex.compile(r"[\p{Alphabetic}\p{Number}]+")
+
+
 def unindexed_text_tokens(text: str) -> list[str]:
     # Mirrors the server's default word tokenizer, used for text and phrase filters on
-    # fields without a text index: split on non-alphanumeric characters, lowercase.
-    return [token.lower() for token in re.findall(r"[^\W_]+", text)]
+    # fields without a text index. Rust uses Unicode Alphabetic + Number, which includes
+    # alphabetic combining marks that Python re\w and str.isalnum() exclude.
+    return [token.lower() for token in _UNINDEXED_TEXT_TOKEN.findall(text)]
 
 
 def check_match(condition: models.Match, value: Any) -> bool:
