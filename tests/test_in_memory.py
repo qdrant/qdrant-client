@@ -1,4 +1,5 @@
 import math
+import uuid
 
 import pytest
 
@@ -355,3 +356,39 @@ def test_idf_statistics_after_deletion(qdrant: QdrantClient, operation: str):
             [models.PointStruct(id=i, vector={"text": vector}) for i in (1, 2)],
         )
     assert_scores(3)
+
+
+def test_formula_ties_keep_the_prefetch_order(qdrant: QdrantClient):
+    # str ids: a set would order the tied points by the hash seed, different in every process
+    qdrant.create_collection(
+        collection_name="test_collection",
+        vectors_config=models.VectorParams(size=2, distance=models.Distance.DOT),
+    )
+    ids = [str(uuid.UUID(int=i)) for i in range(1, 7)]
+    qdrant.upsert("test_collection", [models.PointStruct(id=i, vector=[1.0, 1.0]) for i in ids])
+
+    prefetched = qdrant.query_points("test_collection", query=[1.0, 1.0], limit=6).points
+    rescored = qdrant.query_points(
+        "test_collection",
+        prefetch=models.Prefetch(query=[1.0, 1.0], limit=6),
+        query=models.FormulaQuery(formula="$score"),
+        limit=6,
+    ).points
+    assert [p.id for p in rescored] == [p.id for p in prefetched]
+
+
+def test_group_by_array_keeps_the_payload_order(qdrant: QdrantClient):
+    # str group ids: a set would order the groups by the hash seed, different in every process
+    qdrant.create_collection(
+        collection_name="test_collection",
+        vectors_config=models.VectorParams(size=2, distance=models.Distance.DOT),
+    )
+    tags = ["red", "green", "blue", "black", "white"]
+    qdrant.upsert(
+        "test_collection", [models.PointStruct(id=1, vector=[1.0, 1.0], payload={"tags": tags})]
+    )
+
+    groups = qdrant.query_points_groups(
+        "test_collection", query=[1.0, 1.0], group_by="tags"
+    ).groups
+    assert [g.id for g in groups] == tags

@@ -2466,11 +2466,10 @@ class LocalCollection:
 
         defaults = query.defaults or {}
 
-        # a dict, not a set: keeps the order the points were first seen in, so ties do not depend on the hash seed
-        points_to_rescore: dict[models.ExtendedPointId, None] = {}
-        for prefetch in prefetches_results:
-            for point in prefetch:
-                points_to_rescore[point.id] = None
+        # dedup keeping the prefetch order: set() orders str ids by the hash seed
+        points_to_rescore = dict.fromkeys(
+            point.id for prefetch in prefetches_results for point in prefetch
+        )
 
         # Evaluate formula for each point
         rescored: list[models.ScoredPoint] = []
