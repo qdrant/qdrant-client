@@ -43,8 +43,23 @@ def reciprocal_rank_fusion(
 
 
 def distribution_based_score_fusion(
-    responses: list[list[models.ScoredPoint]], limit: int
+    responses: list[list[models.ScoredPoint]],
+    limit: int,
+    smaller_is_better: list[bool] | None = None,
 ) -> list[models.ScoredPoint]:
+    """Distribution-based score fusion.
+
+    Args:
+        responses: lists of scored points to fuse, each already sorted best-first.
+        limit: how many points to return.
+        smaller_is_better: for each response, whether a lower score means a better
+            match (Euclid/Manhattan nearest-neighbour searches). Those scores are
+            negated before normalization so that, like in core, every normalized
+            score is oriented "bigger is better" before being summed up.
+    """
+    if smaller_is_better is not None and len(smaller_is_better) != len(responses):
+        raise ValueError("Length of smaller_is_better must match the number of responses in DBSF")
+
     def normalize(response: list[models.ScoredPoint]) -> list[models.ScoredPoint]:
         if len(response) == 1:
             response[0].score = 0.5
@@ -69,9 +84,12 @@ def distribution_based_score_fusion(
         return response
 
     points_map: dict[models.ExtendedPointId, models.ScoredPoint] = {}
-    for response in responses:
+    for response_idx, response in enumerate(responses):
         if not response:
             continue
+        if smaller_is_better is not None and smaller_is_better[response_idx]:
+            for point in response:
+                point.score = -point.score
         normalized = normalize(response)
         for point in normalized:
             entry = points_map.get(point.id)
