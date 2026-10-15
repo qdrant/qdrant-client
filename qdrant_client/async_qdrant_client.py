@@ -54,6 +54,8 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         url: either host or str of "Optional[scheme], host, Optional[port], Optional[prefix]".
             Default: `None`
         port: Port of the REST API interface. Default: 6333
+            Also used when `url` has no port. Set to `None` to use the scheme's default port
+            (80 for http, 443 for https), for example behind a reverse proxy.
         grpc_port: Port of the gRPC interface. Default: 6334
         prefer_grpc: If `true` - use gPRC interface whenever possible in custom methods.
         https: If `true` - use HTTPS(SSL) protocol. Default: `None`
