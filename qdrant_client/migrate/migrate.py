@@ -20,8 +20,8 @@ def migrate(
             If None - migrate all source client collections. Defaults to None.
         recreate_on_collision (bool, optional): If True - recreate collection if it exists, otherwise
             raise ValueError.
-        batch_size (int, optional): Batch size for scrolling and uploading vectors, must be positive.
-            Defaults to 100.
+        batch_size (int, optional): Scroll page size, must be positive. Points are uploaded in
+            batches of 64, the `upload_points` default. Defaults to 100.
     """
     if batch_size <= 0:
         raise ValueError(f"batch_size must be greater than 0, got {batch_size}")
@@ -142,7 +142,8 @@ def _migrate_collection(
         collection_name (str): Collection name
         source_client (QdrantBase): Source client
         dest_client (QdrantBase): Destination client
-        batch_size (int, optional): Batch size for scrolling and uploading vectors. Defaults to 100.
+        batch_size (int, optional): Scroll page size. Points are uploaded in batches of 64, the
+            `upload_points` default. Defaults to 100.
     """
     records, next_offset = source_client.scroll(collection_name, limit=2, with_vectors=True)
     dest_client.upload_points(collection_name, records, wait=True)  # type: ignore
