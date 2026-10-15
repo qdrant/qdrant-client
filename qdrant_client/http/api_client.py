@@ -109,7 +109,7 @@ class ApiClient:
         """
         This method is not used by the generated apis, but is included for convenience
         """
-        return get_event_loop().run_until_complete(self.request(type_=type_, **kwargs))
+        return self.request(type_=type_, **kwargs)
 
     def send(self, request: Request, type_: Type[T]) -> T:
         response = self.middleware(request, self.send_inner)
