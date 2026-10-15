@@ -2219,8 +2219,10 @@ class QdrantRemote(QdrantBase):
         update_filter: types.Filter | None = None,
         update_mode: types.UpdateMode | None = None,
     ) -> None:
-        if self._auth_token_provider is not None and asyncio.iscoroutinefunction(
-            self._auth_token_provider
+        _provider = self._auth_token_provider
+        if _provider is not None and (
+            asyncio.iscoroutinefunction(_provider)
+            or asyncio.iscoroutinefunction(getattr(_provider, "__call__", None))
         ):
             raise ValueError(
                 "upload_points and upload_collection do not support an async "
@@ -2288,6 +2290,11 @@ class QdrantRemote(QdrantBase):
         update_mode: types.UpdateMode | None = None,
         **kwargs: Any,
     ) -> None:
+        """Upload PointStruct records to a collection in batches.
+
+        Raises ValueError when an async auth_token_provider is configured,
+        because the batch uploader runs in a worker thread that cannot await.
+        """
         batches_iterator = self._updater_class.iterate_records_batches(
             records=points, batch_size=batch_size
         )
@@ -2320,6 +2327,11 @@ class QdrantRemote(QdrantBase):
         update_mode: types.UpdateMode | None = None,
         **kwargs: Any,
     ) -> None:
+        """Upload vectors (and optional payloads/ids) to a collection in batches.
+
+        Raises ValueError when an async auth_token_provider is configured,
+        because the batch uploader runs in a worker thread that cannot await.
+        """
         batches_iterator = self._updater_class.iterate_batches(
             vectors=vectors,
             payload=payload,
