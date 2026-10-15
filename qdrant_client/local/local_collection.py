@@ -1210,7 +1210,8 @@ class LocalCollection:
         if any(type(value) not in group_id_types for value in values):
             return None
 
-        return list(set(values))
+        # dedup keeping the payload order: set() orders str values by the hash seed
+        return list(dict.fromkeys(values))
 
     def query_groups(
         self,
@@ -2465,10 +2466,10 @@ class LocalCollection:
 
         defaults = query.defaults or {}
 
-        points_to_rescore: set[models.ExtendedPointId] = set()
-        for prefetch in prefetches_results:
-            for point in prefetch:
-                points_to_rescore.add(point.id)
+        # dedup keeping the prefetch order: set() orders str ids by the hash seed
+        points_to_rescore = dict.fromkeys(
+            point.id for prefetch in prefetches_results for point in prefetch
+        )
 
         # Evaluate formula for each point
         rescored: list[models.ScoredPoint] = []
