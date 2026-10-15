@@ -286,21 +286,23 @@ operations such as `create_collection`, `upsert`, and `query_points`.
 The bulk helpers `upload_points` and `upload_collection` remain synchronous, blocking
 methods even on `AsyncQdrantClient`; do not `await` them. For asynchronous network
 uploads, split your points into batches and `await client.upsert(...)` for each batch.
-The example below sends batches sequentially; it does not add the bulk helpers'
+The example below sends batches sequentially; it does not add the remote bulk helpers'
 automatic retries or parallel uploads.
 
-Run this example against a local Qdrant server, using a new collection name.
-It leaves the example collection in place and closes the client even if a request fails.
+Run this example against a local Qdrant server. Each run creates a uniquely named
+collection and leaves it in place; remove these example collections when no longer needed.
+The client is closed even if a request fails.
 
 ```python
 import asyncio
+from uuid import uuid4
 
 from qdrant_client import AsyncQdrantClient, models
 
 
 async def main():
     client = AsyncQdrantClient(url="http://localhost:6333")
-    collection_name = "async_upload_example"
+    collection_name = f"async_upload_example_{uuid4().hex}"
     try:
         await client.create_collection(
             collection_name=collection_name,
