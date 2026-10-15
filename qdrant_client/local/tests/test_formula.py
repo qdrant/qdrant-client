@@ -103,3 +103,17 @@ def test_try_extract_payload_value() -> None:
         defaults = {"key": payload_value}
         empty_payload: dict[str, Any] = {}
         assert try_extract_payload_value("key", empty_payload, defaults) == expected
+
+
+def test_datetime_key_requires_a_datetime_string() -> None:
+    expression = models.DatetimeKeyExpression(datetime_key="when")
+
+    assert (
+        evaluate_expression(expression, 1, [], {"when": "2024-01-01T00:00:00Z"}, {}, {})
+        == 1704067200.0
+    )
+
+    # a payload value that is not a string is the same error as a string that is not a datetime
+    for value in (1700000000, ["2024-01-01", "2024-01-02"], {"a": 1}, True):
+        with pytest.raises(ValueError, match="Expected datetime for when"):
+            evaluate_expression(expression, 1, [], {"when": value}, {}, {})

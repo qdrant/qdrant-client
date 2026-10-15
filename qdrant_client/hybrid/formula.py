@@ -178,7 +178,7 @@ def evaluate_expression(
 
     elif isinstance(expression, models.DatetimeKeyExpression):
         dt_str = try_extract_payload_value(expression.datetime_key, payload, defaults)
-        dt = datetime_utils.parse(dt_str)
+        dt = datetime_utils.parse(dt_str) if isinstance(dt_str, str) else None
         if dt is None:
             raise ValueError(
                 f"Expected datetime for {expression.datetime_key} in the payload and/or in the formula defaults."
