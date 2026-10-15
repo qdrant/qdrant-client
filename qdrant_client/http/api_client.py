@@ -1,4 +1,3 @@
-from asyncio import get_event_loop
 from typing import Any, Awaitable, Callable, Dict, Generic, Type, TypeVar, overload
 from urllib.parse import urljoin
 
@@ -97,20 +96,6 @@ class ApiClient:
         request = self._client.build_request(method, url, **kwargs)
         return self.send(request, type_)
 
-    @overload
-    def request_sync(self, *, type_: Type[T], **kwargs: Any) -> T:
-        ...
-
-    @overload  # noqa F811
-    def request_sync(self, *, type_: None, **kwargs: Any) -> None:
-        ...
-
-    def request_sync(self, *, type_: Any, **kwargs: Any) -> Any:  # noqa F811
-        """
-        This method is not used by the generated apis, but is included for convenience
-        """
-        return get_event_loop().run_until_complete(self.request(type_=type_, **kwargs))
-
     def send(self, request: Request, type_: Type[T]) -> T:
         response = self.middleware(request, self.send_inner)
 
@@ -187,20 +172,6 @@ class AsyncApiClient:
             kwargs["timeout"] = int(kwargs["params"]["timeout"])
         request = self._async_client.build_request(method, url, **kwargs)
         return await self.send(request, type_)
-
-    @overload
-    def request_sync(self, *, type_: Type[T], **kwargs: Any) -> T:
-        ...
-
-    @overload  # noqa F811
-    def request_sync(self, *, type_: None, **kwargs: Any) -> None:
-        ...
-
-    def request_sync(self, *, type_: Any, **kwargs: Any) -> Any:  # noqa F811
-        """
-        This method is not used by the generated apis, but is included for convenience
-        """
-        return get_event_loop().run_until_complete(self.request(type_=type_, **kwargs))
 
     async def send(self, request: Request, type_: Type[T]) -> T:
         response = await self.middleware(request, self.send_inner)
