@@ -69,7 +69,15 @@ AsyncMiddlewareT = Callable[[Request, SendAsync], Awaitable[Response]]
 def quote_path_params(path_params: Dict[str, Any]) -> Dict[str, str]:
     # each path param is a single URL segment, so reserved characters have to be escaped,
     # otherwise a name like `example/collection1` would change the path of the request
-    return {name: quote(str(value), safe="") for name, value in path_params.items()}
+    quoted_params = {}
+    for name, value in path_params.items():
+        value = str(value)
+        # `.` and `..` are resolved as dot segments by urljoin, moving the request to a parent path,
+        # e.g. deleting a payload index `..` would delete the whole collection
+        if value in (".", ".."):
+            raise ValueError(f"{name} can't be {value!r}")
+        quoted_params[name] = quote(value, safe="")
+    return quoted_params
 
 
 class ApiClient:
