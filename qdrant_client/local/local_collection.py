@@ -556,6 +556,9 @@ class LocalCollection:
         >>> LocalCollection._process_payload(payload, selector)
         {'aa': {'b': 3}, 'a.b': 4, 'l': [{'c': 6}]}
         """
+        if isinstance(with_payload, grpc.WithPayloadSelector):
+            with_payload = GrpcToRest.convert_with_payload_selector(with_payload)
+
         # an empty list selects no fields, it doesn't disable the payload
         if with_payload is False or with_payload is None:
             return None
