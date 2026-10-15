@@ -286,7 +286,10 @@ class Embedder:
             ]
         else:
             embeddings = [
-                embedding.tolist() for embedding in embedding_model_inst.query_embed(query=texts)
+                embedding.tolist()
+                for embedding in embedding_model_inst.query_embed(
+                    query=texts, batch_size=batch_size
+                )
             ]
         return embeddings
 
@@ -322,7 +325,9 @@ class Embedder:
                     indices=sparse_embedding.indices.tolist(),
                     values=sparse_embedding.values.tolist(),
                 )
-                for sparse_embedding in embedding_model_inst.query_embed(query=texts)
+                for sparse_embedding in embedding_model_inst.query_embed(
+                    query=texts, batch_size=batch_size
+                )
             ]
         return embeddings
 
@@ -344,7 +349,10 @@ class Embedder:
             ]
         else:
             embeddings = [
-                embedding.tolist() for embedding in embedding_model_inst.query_embed(query=texts)
+                embedding.tolist()
+                for embedding in embedding_model_inst.query_embed(
+                    query=texts, batch_size=batch_size
+                )
             ]
         return embeddings
 
