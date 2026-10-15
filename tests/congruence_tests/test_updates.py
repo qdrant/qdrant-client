@@ -1267,3 +1267,83 @@ def test_upload_nothing(local_client, remote_client):
         client.upload_collection(COLLECTION_NAME, vectors=[], ids=[], wait=True)
 
     compare_collections(local_client, remote_client, len(points))
+
+
+@pytest.mark.parametrize("prefer_grpc", [False, True])
+def test_upload_collection_rejects_short_ids_and_payload(prefer_grpc):
+    """ids or payload ending before vectors with a length used to cut the upload short silently."""
+    local_client = init_local()
+    remote_client = init_remote(prefer_grpc=prefer_grpc)
+    initialize_fixture_collection(local_client)
+    initialize_fixture_collection(remote_client)
+
+    points = generate_fixtures(10)
+    vectors = [point.vector for point in points]
+    numpy_vectors = {name: np.array([vector[name] for vector in vectors]) for name in vectors[0]}
+    ids = [point.id for point in points]
+    payload = [point.payload for point in points]
+
+    for client in (local_client, remote_client):
+        # the vectors fit in one batch, so remote mode raises before it sends anything
+        with pytest.raises(ValueError, match="ids iterable is shorter"):
+            client.upload_collection(COLLECTION_NAME, vectors, ids=ids[:9], wait=True)
+        with pytest.raises(ValueError, match="ids iterable is shorter"):
+            client.upload_collection(COLLECTION_NAME, numpy_vectors, ids=iter(ids[:9]), wait=True)
+        with pytest.raises(ValueError, match="ids iterable is shorter"):
+            client.upload_collection(COLLECTION_NAME, vectors, ids=[], wait=True)
+        with pytest.raises(ValueError, match="payload iterable is shorter"):
+            client.upload_collection(COLLECTION_NAME, vectors, payload[:9], ids=ids, wait=True)
+        with pytest.raises(ValueError, match="payload iterable is shorter"):
+            client.upload_collection(COLLECTION_NAME, numpy_vectors, payload=[], wait=True)
+
+    compare_collections(local_client, remote_client, len(points))
+
+
+@pytest.mark.parametrize("prefer_grpc", [False, True])
+def test_upload_collection_generator_of_empty_vectors(prefer_grpc):
+    """A generator of vectors has no length, so ids or payload ending first end the upload."""
+    local_client = init_local()
+    remote_client = init_remote(prefer_grpc=prefer_grpc)
+    initialize_fixture_collection(local_client)
+    initialize_fixture_collection(remote_client)
+
+    points = generate_fixtures(10)
+    ids = [point.id for point in points]
+    payload = [point.payload for point in points]
+
+    for client in (local_client, remote_client):
+        client.upload_collection(COLLECTION_NAME, itertools.repeat({}, 100), ids=ids, wait=True)
+    compare_collections(local_client, remote_client, len(points))
+
+    for client in (local_client, remote_client):
+        # ids are generated, as many as there are payloads
+        client.upload_collection(COLLECTION_NAME, itertools.repeat({}, 100), payload, wait=True)
+        assert client.count(COLLECTION_NAME).count == 2 * len(points)
+
+
+@pytest.mark.parametrize("prefer_grpc", [False, True])
+def test_upload_collection_streams(prefer_grpc):
+    """tqdm(generator) has `__len__` but no length, and streams are read only as far as needed."""
+    tqdm = pytest.importorskip("tqdm").tqdm
+    local_client = init_local()
+    remote_client = init_remote(prefer_grpc=prefer_grpc)
+    initialize_fixture_collection(local_client)
+    initialize_fixture_collection(remote_client)
+
+    points = generate_fixtures(10)
+    vectors = [point.vector for point in points]
+    ids = [point.id for point in points]
+    payload = [point.payload for point in points]
+
+    for client in (local_client, remote_client):
+        vectors_stream = tqdm((vector for vector in vectors), disable=True)
+        client.upload_collection(COLLECTION_NAME, vectors_stream, payload, ids=ids, wait=True)
+
+        ids_stream = itertools.chain(ids, [UPLOAD_NUM_VECTORS])
+        payload_stream = tqdm((item for item in payload), disable=True)
+        client.upload_collection(
+            COLLECTION_NAME, vectors, payload_stream, ids=ids_stream, wait=True
+        )
+        assert next(ids_stream) == UPLOAD_NUM_VECTORS
+
+    compare_collections(local_client, remote_client, len(points))
