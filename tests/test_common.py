@@ -1,4 +1,7 @@
+import asyncio
 import pytest
+from qdrant_client import QdrantClient
+from qdrant_client.async_qdrant_client import AsyncQdrantClient
 
 from qdrant_client.common.version_check import is_compatible, parse_version
 
@@ -64,3 +67,99 @@ def test_check_compatibility(client_version, server_version, expected_result):
 def test_parse_versions_value_error(input_version):
     with pytest.raises(ValueError):
         parse_version(input_version)
+
+
+@pytest.mark.parametrize("prefer_grpc", [False, True])
+def test_upload_rejects_async_auth_token_provider_sync_client(prefer_grpc):
+    """upload_points and upload_collection must raise ValueError when an async
+    auth_token_provider is used with the sync client (batch uploader is sync-only)."""
+
+    async def async_provider() -> str:
+        return "token"
+
+    client = QdrantClient(
+        url="http://localhost:6333",
+        prefer_grpc=prefer_grpc,
+        check_compatibility=False,
+        auth_token_provider=async_provider,
+    )
+
+    with pytest.raises(ValueError, match="async auth_token_provider"):
+        client.upload_points(collection_name="test_collection", points=[])
+
+    with pytest.raises(ValueError, match="async auth_token_provider"):
+        client.upload_collection(
+            collection_name="test_collection", vectors=iter([])
+        )
+
+
+@pytest.mark.parametrize("prefer_grpc", [False, True])
+def test_upload_rejects_async_auth_token_provider_async_client(prefer_grpc):
+    """upload_points and upload_collection on AsyncQdrantClient must raise ValueError
+    when an async auth_token_provider is given (batch uploader runs in a sync thread)."""
+
+    async def async_provider() -> str:
+        return "token"
+
+    client = AsyncQdrantClient(
+        url="http://localhost:6333",
+        prefer_grpc=prefer_grpc,
+        check_compatibility=False,
+        auth_token_provider=async_provider,
+    )
+
+    with pytest.raises(ValueError, match="async auth_token_provider"):
+        client.upload_points(collection_name="test_collection", points=[])
+
+    with pytest.raises(ValueError, match="async auth_token_provider"):
+        client.upload_collection(
+            collection_name="test_collection", vectors=iter([])
+        )
+
+
+@pytest.mark.parametrize("prefer_grpc", [False, True])
+def test_upload_rejects_callable_object_with_async_call_sync_client(prefer_grpc):
+    """Callable objects whose __call__ is a coroutine must also be rejected."""
+
+    class AsyncCallableProvider:
+        async def __call__(self) -> str:
+            return "token"
+
+    client = QdrantClient(
+        url="http://localhost:6333",
+        prefer_grpc=prefer_grpc,
+        check_compatibility=False,
+        auth_token_provider=AsyncCallableProvider(),
+    )
+
+    with pytest.raises(ValueError, match="async auth_token_provider"):
+        client.upload_points(collection_name="test_collection", points=[])
+
+    with pytest.raises(ValueError, match="async auth_token_provider"):
+        client.upload_collection(
+            collection_name="test_collection", vectors=iter([])
+        )
+
+
+@pytest.mark.parametrize("prefer_grpc", [False, True])
+def test_upload_rejects_callable_object_with_async_call_async_client(prefer_grpc):
+    """AsyncQdrantClient: callable objects with async __call__ are also rejected."""
+
+    class AsyncCallableProvider:
+        async def __call__(self) -> str:
+            return "token"
+
+    client = AsyncQdrantClient(
+        url="http://localhost:6333",
+        prefer_grpc=prefer_grpc,
+        check_compatibility=False,
+        auth_token_provider=AsyncCallableProvider(),
+    )
+
+    with pytest.raises(ValueError, match="async auth_token_provider"):
+        client.upload_points(collection_name="test_collection", points=[])
+
+    with pytest.raises(ValueError, match="async auth_token_provider"):
+        client.upload_collection(
+            collection_name="test_collection", vectors=iter([])
+        )
