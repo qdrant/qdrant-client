@@ -1,5 +1,5 @@
 from abc import ABC
-from itertools import islice
+from itertools import count, islice
 from typing import Any, Generator, Iterable
 
 import numpy as np
@@ -21,18 +21,6 @@ def iter_batch(iterable: Iterable | Generator, size: int) -> Iterable:
         if len(b) == 0:
             break
         yield b
-
-
-def take_exactly(items: Iterable, size: int, name: str) -> list:
-    """Takes the next `size` items of `ids` or `payload`, one per vector, raises if fewer are left
-
-    Items after them are not consumed, so `ids` and `payload` may be longer than the vectors, e.g.
-    infinite generators.
-    """
-    taken = list(islice(items, size))
-    if len(taken) < size:
-        raise ValueError(f"{name} iterable is shorter than vectors iterable")
-    return taken
 
 
 class BaseUploader(Worker, ABC):
@@ -61,6 +49,16 @@ class BaseUploader(Worker, ABC):
         ids: Iterable[ExtendedPointId] | None,
         batch_size: int,
     ) -> Iterable:
+        if ids is None:
+            ids_batches: Iterable = (None for _ in count())
+        else:
+            ids_batches = iter_batch(ids, batch_size)
+
+        if payload is None:
+            payload_batches: Iterable = (None for _ in count())
+        else:
+            payload_batches = iter_batch(payload, batch_size)
+
         if isinstance(vectors, np.ndarray):
             vector_batches: Iterable[Any] = cls._vector_batches_from_numpy(vectors, batch_size)
         elif isinstance(vectors, dict) and any(
@@ -70,19 +68,7 @@ class BaseUploader(Worker, ABC):
         else:
             vector_batches = iter_batch(vectors, batch_size)
 
-        ids_iter = None if ids is None else iter(ids)
-        payload_iter = None if payload is None else iter(payload)
-        for vectors_batch in vector_batches:
-            # RestBatchUploader batches named numpy vectors as a dict of parts of the arrays
-            if isinstance(vectors_batch, dict):
-                size = len(next(iter(vectors_batch.values())))
-            else:
-                size = len(vectors_batch)
-            yield (
-                None if ids_iter is None else take_exactly(ids_iter, size, "ids"),
-                vectors_batch,
-                None if payload_iter is None else take_exactly(payload_iter, size, "payload"),
-            )
+        yield from zip(ids_batches, vector_batches, payload_batches)
 
     @staticmethod
     def _from_numpy(vectors: types.NumpyArray) -> Any:

@@ -15,6 +15,7 @@ import numpy as np
 from qdrant_client import grpc as grpc
 from qdrant_client.async_client_base import AsyncQdrantBase
 from qdrant_client.common.client_warnings import show_warning_once
+from qdrant_client.common.validation import require_length, vectors_length
 from qdrant_client.conversions import common_types as types
 from qdrant_client.embed.type_inspector import Inspector
 from qdrant_client.http import AsyncApiClient, AsyncApis
@@ -1926,6 +1927,10 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
                 yield from iterable
 
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+        num_vectors = vectors_length(vectors)
+        if num_vectors is not None:
+            ids = require_length(ids, num_vectors, "ids")
+            payload = require_length(payload, num_vectors, "payload")
         if not self.cloud_inference:
             if not isinstance(vectors, dict) and (not isinstance(vectors, np.ndarray)):
                 requires_inference = False
