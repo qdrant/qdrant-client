@@ -127,11 +127,20 @@ def to_jsonable_python(x: Any) -> Any:
 
 
 def validate_dense_vector(vector: Any, vector_name: str) -> None:
-    """Reject empty dense vectors and NaN values, as the server does at write time."""
+    """Reject empty, nested and NaN dense vectors, as the server does at write time."""
     if len(vector) == 0:
         raise ValueError(f"Wrong input: Dense vector must not be empty for vector '{vector_name}'")
 
-    if np.isnan(np.asarray(vector, dtype=np.float32)).any():
+    try:
+        vector_np = np.asarray(vector, dtype=np.float32)
+    except ValueError:  # ragged nested lists
+        vector_np = None
+    if vector_np is None or vector_np.ndim != 1:
+        raise ValueError(
+            f"Wrong input: Dense vector must be one-dimensional for vector '{vector_name}'"
+        )
+
+    if np.isnan(vector_np).any():
         raise ValueError("Vector contains NaN values")
 
 
