@@ -1042,9 +1042,9 @@ class QdrantLocal(QdrantBase):
                 payload=payload or {},
             )
             for (point_id, vector, payload) in zip(
-                ids or uuid_generator(),
+                uuid_generator() if ids is None else ids,
                 iter(vectors),
-                payload or itertools.cycle([{}]),
+                itertools.cycle([{}]) if payload is None else payload,
             )
         ]
         # remote mode sends no request for an empty upload, while an empty upsert is an error

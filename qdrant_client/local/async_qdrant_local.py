@@ -939,7 +939,9 @@ class AsyncQdrantLocal(AsyncQdrantBase):
                 payload=payload or {},
             )
             for (point_id, vector, payload) in zip(
-                ids or uuid_generator(), iter(vectors), payload or itertools.cycle([{}])
+                uuid_generator() if ids is None else ids,
+                iter(vectors),
+                itertools.cycle([{}]) if payload is None else payload,
             )
         ]
         if len(point_structs) > 0:
