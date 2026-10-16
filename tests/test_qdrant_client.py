@@ -1066,6 +1066,32 @@ def test_points_crud(prefer_grpc):
 
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])
+def test_url_reserved_chars_in_names(prefer_grpc):
+    client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
+    # REST used to cut the name at `#` and send requests to `/collections/client_test`
+    collection_name = f"{COLLECTION_NAME}#1"
+    for name in (COLLECTION_NAME, collection_name):
+        if client.collection_exists(name):
+            client.delete_collection(name)
+        client.create_collection(
+            name, vectors_config=VectorParams(size=DIM, distance=Distance.DOT)
+        )
+
+    client.create_payload_index(collection_name, "user", PayloadSchemaType.KEYWORD)
+    client.create_payload_index(collection_name, '"user#id"', PayloadSchemaType.KEYWORD)
+    client.delete_payload_index(collection_name, '"user#id"')
+    assert list(client.get_collection(collection_name).payload_schema) == ["user"]
+
+    # `..` would turn the request into `DELETE /collections/client_test`
+    with pytest.raises(RpcError if prefer_grpc else ValueError):
+        client.delete_payload_index(COLLECTION_NAME, "..")
+
+    client.delete_collection(collection_name)
+    assert not client.collection_exists(collection_name)
+    assert client.collection_exists(COLLECTION_NAME)
+
+
+@pytest.mark.parametrize("prefer_grpc", [False, True])
 def test_quantization_config(prefer_grpc):
     client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
     if client.collection_exists(COLLECTION_NAME):
