@@ -1252,18 +1252,19 @@ class TestSimpleSearcher:
 
 
 def group_by_keys():
-    return [
+    keys = [
         "maybe",
         "rand_digit",
         "two_words",
         "city.name",
         "maybe_null",
         "id",
-        "two_words[0]",
-        "nested.array[0].word",
-        "nested_array[0]",
         "nested_array[]",
     ]
+    major, minor, patch, dev = read_version()
+    if not dev and None not in (major, minor, patch) and (major, minor, patch) < (1, 19, 2):
+        return keys  # group_by on a path with an array index finds no groups before 1.19.2
+    return keys + ["two_words[0]", "nested.array[0].word", "nested_array[0]"]
 
 
 def init_clients(fixture_points, **kwargs) -> tuple[QdrantClient, QdrantClient, QdrantClient]:

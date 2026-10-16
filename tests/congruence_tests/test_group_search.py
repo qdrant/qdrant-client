@@ -18,6 +18,7 @@ from tests.congruence_tests.test_common import (
     text_vector_size,
 )
 from tests.fixtures.filters import one_random_filter_please
+from tests.utils import read_version
 
 LOOKUP_COLLECTION_NAME = "lookup_collection"
 
@@ -224,18 +225,19 @@ class TestGroupSearcher:
 
 
 def group_by_keys():
-    return [
+    keys = [
         "id",
         "rand_digit",
         "two_words",
         "city.name",
         "maybe",
         "maybe_null",
-        "two_words[0]",
-        "nested.array[0].word",
-        "nested_array[0]",
         "nested_array[]",
     ]
+    major, minor, patch, dev = read_version()
+    if not dev and None not in (major, minor, patch) and (major, minor, patch) < (1, 19, 2):
+        return keys  # group_by on a path with an array index finds no groups before 1.19.2
+    return keys + ["two_words[0]", "nested.array[0].word", "nested_array[0]"]
 
 
 def test_group_search_types():
@@ -476,6 +478,10 @@ def test_group_by_array_index():
         "m[]": {(1, (1,)), (2, (1,)), (3, (1,)), (4, (1,)), (8, (3,))},
         "m[][0]": {(1, (1,)), (3, (1,)), (5, (2,)), (6, (2,))},
     }
+    major, minor, patch, dev = read_version()
+    if not dev and None not in (major, minor, patch) and (major, minor, patch) < (1, 19, 2):
+        # group_by on a path with an array index finds no groups before 1.19.2
+        expected = {key: expected[key] for key in ("arr[].x", "m[]")}
 
     vectors_config = models.VectorParams(size=2, distance=models.Distance.DOT)
 
