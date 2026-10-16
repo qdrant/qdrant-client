@@ -122,41 +122,19 @@ class TestGroupSearcher:
             group_size=self.group_size,
         )
 
-    def group_search_score_threshold(self, client: QdrantBase) -> models.GroupsResult:
-        res1 = client.query_points_groups(
+    def group_search_score_threshold(
+        self, client: QdrantBase, score_threshold: float
+    ) -> models.GroupsResult:
+        return client.query_points_groups(
             collection_name=COLLECTION_NAME,
             using="text",
             query=self.query_text,
             with_payload=models.PayloadSelectorExclude(exclude=["city.geo", "rand_number"]),
             limit=self.limit,
             group_by=self.group_by,
-            score_threshold=0.9,
+            score_threshold=score_threshold,
             group_size=self.group_size,
         )
-
-        res2 = client.query_points_groups(
-            collection_name=COLLECTION_NAME,
-            using="text",
-            query=self.query_text,
-            with_payload=models.PayloadSelectorExclude(exclude=["city.geo", "rand_number"]),
-            limit=self.limit,
-            group_by=self.group_by,
-            score_threshold=0.95,
-            group_size=self.group_size,
-        )
-
-        res3 = client.query_points_groups(
-            collection_name=COLLECTION_NAME,
-            using="text",
-            query=self.query_text,
-            with_payload=models.PayloadSelectorExclude(exclude=["city.geo", "rand_number"]),
-            limit=self.limit,
-            group_by=self.group_by,
-            score_threshold=0.1,
-            group_size=self.group_size,
-        )
-
-        return models.GroupsResult(groups=res1.groups + res2.groups + res3.groups)
 
     def group_search_text_select_payload(self, client: QdrantBase) -> models.GroupsResult:
         return client.query_points_groups(
@@ -295,7 +273,16 @@ def test_simple_group_search():
     compare_client_results(local_client, remote_client, searcher.group_search_text)
     compare_client_results(local_client, remote_client, searcher.group_search_image)
     compare_client_results(local_client, remote_client, searcher.group_search_code)
-    compare_client_results(local_client, remote_client, searcher.group_search_score_threshold)
+    # one comparison per response: a point in several groups (e.g. by `nested_array[]`) can tie
+    # them on score, the tied groups may differ between local and remote, and in merged responses
+    # the shifted pairing would compare a group with the same id from another threshold
+    for score_threshold in (0.9, 0.95, 0.1):
+        compare_client_results(
+            local_client,
+            remote_client,
+            searcher.group_search_score_threshold,
+            score_threshold=score_threshold,
+        )
     compare_client_results(local_client, remote_client, searcher.group_search_text_select_payload)
     compare_client_results(local_client, remote_client, searcher.group_search_image_select_vector)
     compare_client_results(local_client, remote_client, searcher.group_search_payload_exclude)
