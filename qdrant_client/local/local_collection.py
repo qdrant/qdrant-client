@@ -27,7 +27,11 @@ from qdrant_client.conversions.conversion import GrpcToRest
 from qdrant_client.http import models
 from qdrant_client.http.models import ScoredPoint
 from qdrant_client.http.models.models import Distance, ExtendedPointId, SparseVector, OrderValue
-from qdrant_client.hybrid.formula import evaluate_expression, raise_non_finite_error
+from qdrant_client.hybrid.formula import (
+    evaluate_expression,
+    raise_non_finite_error,
+    validate_expression,
+)
 from qdrant_client.hybrid.fusion import reciprocal_rank_fusion, distribution_based_score_fusion
 from qdrant_client.local.distances import (
     ContextPair,
@@ -2459,6 +2463,8 @@ class LocalCollection:
         with_payload: types.WithPayloadInterface,
         with_vectors: types.WithVector,
     ) -> list[models.ScoredPoint]:
+        validate_expression(query.formula)
+
         # collect prefetches in vec of dicts for faster lookup
         prefetches_scores = [
             dict((point.id, point.score) for point in prefetch) for prefetch in prefetches_results
