@@ -1037,17 +1037,19 @@ class LocalCollection:
                 return []
             else:
                 filter_with_sources = _include_ids_in_filter(query_filter, list(sources_ids))
-                return self._query_collection(
+                is_random_sample = isinstance(query, models.SampleQuery)
+                result = self._query_collection(
                     query=query,
                     using=using,
                     query_filter=filter_with_sources,
-                    limit=limit,
+                    limit=limit + offset if is_random_sample else limit,
                     offset=offset,
                     with_payload=with_payload,
                     with_vectors=with_vectors,
                     score_threshold=score_threshold,
                     idf_corpus=idf_corpus,
                 )
+                return result[offset:] if is_random_sample else result
 
     def _query_collection(
         self,
