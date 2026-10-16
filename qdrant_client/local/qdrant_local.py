@@ -394,12 +394,12 @@ class QdrantLocal(QdrantBase):
         self,
         prefetch: Sequence[types.Prefetch] | types.Prefetch | None,
         collection_name: str,
-    ) -> list[types.Prefetch]:
+    ) -> tuple[list[types.Prefetch], set[types.PointId]]:
         if prefetch is None:
-            return []
+            return [], set()
 
         if isinstance(prefetch, list) and len(prefetch) == 0:
-            return []
+            return [], set()
 
         prefetches = []
         if isinstance(prefetch, types.Prefetch):
@@ -409,17 +409,26 @@ class QdrantLocal(QdrantBase):
         elif isinstance(prefetch, Sequence):
             prefetches = list(prefetch)
 
-        return [
-            self._resolve_prefetch_input(prefetch, collection_name)
-            for prefetch in prefetches
-            if prefetch is not None
-        ]
+        resolved_prefetches = []
+        mentioned_ids: set[types.PointId] = set()
+        for prefetch in prefetches:
+            if prefetch is not None:
+                resolved_prefetch, prefetch_mentioned_ids = self._resolve_prefetch_input(
+                    prefetch, collection_name
+                )
+                resolved_prefetches.append(resolved_prefetch)
+                mentioned_ids |= prefetch_mentioned_ids
+        return resolved_prefetches, mentioned_ids
 
     def _resolve_prefetch_input(
         self, prefetch: types.Prefetch, collection_name: str
-    ) -> types.Prefetch:
+    ) -> tuple[types.Prefetch, set[types.PointId]]:
+        """
+        Resolves a prefetch tree and returns it along with the point ids mentioned anywhere in it.
+        The server excludes these ids from every prefetch, so they belong in the root filter.
+        """
         if prefetch.query is None:
-            return prefetch
+            return prefetch, set()
 
         prefetch = deepcopy(prefetch)
         query, mentioned_ids = self._resolve_query_input(
@@ -430,11 +439,11 @@ class QdrantLocal(QdrantBase):
         )
         prefetch.query = query
 
-        prefetch.filter = ignore_mentioned_ids_filter(prefetch.filter, list(mentioned_ids))
+        prefetch.prefetch, nested_mentioned_ids = self._resolve_prefetches_input(
+            prefetch.prefetch, collection_name
+        )
 
-        prefetch.prefetch = self._resolve_prefetches_input(prefetch.prefetch, collection_name)
-
-        return prefetch
+        return prefetch, mentioned_ids | nested_mentioned_ids
 
     def query_points(
         self,
@@ -470,13 +479,18 @@ class QdrantLocal(QdrantBase):
                 stacklevel=5,
             )
 
+        mentioned_ids: set[types.PointId] = set()
         if query is not None:
             query, mentioned_ids = self._resolve_query_input(
                 collection_name, query, using, lookup_from
             )
-            query_filter = ignore_mentioned_ids_filter(query_filter, list(mentioned_ids))
 
-        prefetch = self._resolve_prefetches_input(prefetch, collection_name)
+        prefetch, prefetch_mentioned_ids = self._resolve_prefetches_input(
+            prefetch, collection_name
+        )
+        query_filter = ignore_mentioned_ids_filter(
+            query_filter, list(mentioned_ids | prefetch_mentioned_ids)
+        )
 
         return collection.query_points(
             query=query,
@@ -560,13 +574,18 @@ class QdrantLocal(QdrantBase):
                 stacklevel=5,
             )
 
+        mentioned_ids: set[types.PointId] = set()
         if query is not None:
             query, mentioned_ids = self._resolve_query_input(
                 collection_name, query, using, lookup_from
             )
-            query_filter = ignore_mentioned_ids_filter(query_filter, list(mentioned_ids))
 
-        prefetch = self._resolve_prefetches_input(prefetch, collection_name)
+        prefetch, prefetch_mentioned_ids = self._resolve_prefetches_input(
+            prefetch, collection_name
+        )
+        query_filter = ignore_mentioned_ids_filter(
+            query_filter, list(mentioned_ids | prefetch_mentioned_ids)
+        )
 
         with_lookup_collection = None
         if with_lookup is not None:
