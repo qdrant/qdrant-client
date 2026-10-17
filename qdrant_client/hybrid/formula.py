@@ -160,8 +160,7 @@ def evaluate_expression(
         geo_value = try_extract_payload_value(to, payload, defaults)
 
         if isinstance(geo_value, dict):
-            # let this fail if it is not a valid geo point
-            destination = models.GeoPoint(**geo_value)
+            destination = models.GeoPoint(**{key: geo_value[key] for key in ("lon", "lat") if key in geo_value})
             return geo_distance(origin.lon, origin.lat, destination.lon, destination.lat)
 
         raise ValueError(
