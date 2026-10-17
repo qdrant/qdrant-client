@@ -160,11 +160,7 @@ def evaluate_expression(
         geo_value = try_extract_payload_value(to, payload, defaults)
 
         if isinstance(geo_value, dict):
-            # The server reads a payload geo point as `{lat, lon}` and ignores every
-            # other field. Spreading the whole object into GeoPoint rejects those
-            # fields, because the model forbids extras. A missing or non-numeric
-            # coordinate still fails here, same as an invalid geo point.
-            destination = models.GeoPoint(lon=geo_value.get("lon"), lat=geo_value.get("lat"))
+            destination = models.GeoPoint(**{key: geo_value[key] for key in ("lon", "lat") if key in geo_value})
             return geo_distance(origin.lon, origin.lat, destination.lon, destination.lat)
 
         raise ValueError(
