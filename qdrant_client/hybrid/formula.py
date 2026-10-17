@@ -7,13 +7,53 @@ from typing import Any
 
 from qdrant_client.local import datetime_utils
 from qdrant_client.local.geo import geo_distance
-from qdrant_client.local.payload_filters import check_condition
+from qdrant_client.local.payload_filters import check_condition, validate_filter
 from qdrant_client.local.payload_value_extractor import value_by_key
 
 DEFAULT_SCORE = 0.0
 DEFAULT_DECAY_TARGET = 0.0
 DEFAULT_DECAY_MIDPOINT = 0.5
 DEFAULT_DECAY_SCALE = 1.0
+
+
+def validate_expression(expression: models.Expression) -> None:
+    """Reject conditions the server would refuse, before scoring any point."""
+    if isinstance(expression, get_args_subscribed(models.Condition)):
+        validate_filter(models.Filter(must=[expression]))  # type: ignore
+        return
+
+    if isinstance(expression, models.MultExpression):
+        sub_expressions = expression.mult
+    elif isinstance(expression, models.SumExpression):
+        sub_expressions = expression.sum
+    elif isinstance(expression, models.NegExpression):
+        sub_expressions = [expression.neg]
+    elif isinstance(expression, models.AbsExpression):
+        sub_expressions = [expression.abs]
+    elif isinstance(expression, models.DivExpression):
+        sub_expressions = [expression.div.left, expression.div.right]
+    elif isinstance(expression, models.SqrtExpression):
+        sub_expressions = [expression.sqrt]
+    elif isinstance(expression, models.PowExpression):
+        sub_expressions = [expression.pow.base, expression.pow.exponent]
+    elif isinstance(expression, models.ExpExpression):
+        sub_expressions = [expression.exp]
+    elif isinstance(expression, models.Log10Expression):
+        sub_expressions = [expression.log10]
+    elif isinstance(expression, models.LnExpression):
+        sub_expressions = [expression.ln]
+    elif isinstance(expression, models.LinDecayExpression):
+        sub_expressions = [expression.lin_decay.x, expression.lin_decay.target]
+    elif isinstance(expression, models.ExpDecayExpression):
+        sub_expressions = [expression.exp_decay.x, expression.exp_decay.target]
+    elif isinstance(expression, models.GaussDecayExpression):
+        sub_expressions = [expression.gauss_decay.x, expression.gauss_decay.target]
+    else:
+        return
+
+    for sub_expression in sub_expressions:
+        if sub_expression is not None:
+            validate_expression(sub_expression)
 
 
 def evaluate_expression(
