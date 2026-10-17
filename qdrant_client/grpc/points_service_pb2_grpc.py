@@ -264,6 +264,8 @@ class PointsServicer(object):
     def Search(self, request, context):
         """Retrieve closest points based on vector similarity and given filtering
         conditions
+
+        Deprecated: use `Query` instead.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -272,6 +274,8 @@ class PointsServicer(object):
     def SearchBatch(self, request, context):
         """Retrieve closest points based on vector similarity and given filtering
         conditions
+
+        Deprecated: use `QueryBatch` instead.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -280,6 +284,8 @@ class PointsServicer(object):
     def SearchGroups(self, request, context):
         """Retrieve closest points based on vector similarity and given filtering
         conditions, grouped by a given field
+
+        Deprecated: use `QueryGroups` instead.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -295,6 +301,8 @@ class PointsServicer(object):
     def Recommend(self, request, context):
         """Look for the points which are closer to stored positive examples and at
         the same time further to negative examples.
+
+        Deprecated: use `Query` with a `recommend` query instead.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -303,6 +311,8 @@ class PointsServicer(object):
     def RecommendBatch(self, request, context):
         """Look for the points which are closer to stored positive examples and at
         the same time further to negative examples.
+
+        Deprecated: use `QueryBatch` with `recommend` queries instead.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -311,6 +321,8 @@ class PointsServicer(object):
     def RecommendGroups(self, request, context):
         """Look for the points which are closer to stored positive examples and at
         the same time further to negative examples, grouped by a given field
+
+        Deprecated: use `QueryGroups` with a `recommend` query instead.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -336,6 +348,8 @@ class PointsServicer(object):
         distance to the target. The context part of the score for each pair is
         calculated +1 if the point is closer to a positive than to a negative part
         of a pair, and -1 otherwise.
+
+        Deprecated: use `Query` with a `discover` or `context` query instead.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -343,6 +357,8 @@ class PointsServicer(object):
 
     def DiscoverBatch(self, request, context):
         """Batch request points based on { positive, negative } pairs of examples, and/or a target
+
+        Deprecated: use `QueryBatch` with `discover` or `context` queries instead.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')

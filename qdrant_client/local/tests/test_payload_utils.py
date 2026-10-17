@@ -8,7 +8,41 @@ from qdrant_client.local.json_path_parser import (
     parse_json_path,
 )
 from qdrant_client.local.payload_value_extractor import value_by_key
-from qdrant_client.local.payload_value_setter import set_value_by_key
+from qdrant_client.local.payload_value_setter import delete_value_by_key, set_value_by_key
+
+
+@pytest.mark.parametrize(
+    "payload,key,target_key,expected_colors",
+    [
+        ({"items": [{}, {}]}, "items[]", "items[0].metadata", ["red", "blue"]),
+        ({"items": [None, None]}, "items[]", "items[0].metadata", ["red", "blue"]),
+        (
+            {"items": [{}, {}]},
+            "items[].nested",
+            "items[0].nested.metadata",
+            ["red", "blue"],
+        ),
+        (
+            {"items": [[{}, {}], [{}, {}]]},
+            "items[][]",
+            "items[0][0].metadata",
+            ["red", "blue", "blue", "blue"],
+        ),
+        (
+            {"items": [{"sub": [{}, {}]}, {"sub": [{}]}]},
+            "items[].sub[]",
+            "items[0].sub[0].metadata",
+            ["red", "blue", "blue"],
+        ),
+    ],
+)
+def test_wildcard_set_keeps_array_elements_independent(
+    payload: dict[str, Any], key: str, target_key: str, expected_colors: list[str]
+) -> None:
+    set_value_by_key(payload, parse_json_path(key), {"metadata": {"color": "blue"}})
+    set_value_by_key(payload, parse_json_path(target_key), {"color": "red"})
+
+    assert value_by_key(payload, f"{key}.metadata.color") == expected_colors
 
 
 def test_parse_json_path() -> None:
@@ -183,6 +217,25 @@ def test_parse_json_path() -> None:
         jp_key = "a.c[].[]"
         parse_json_path(jp_key)
 
+    # the server accepts only unsigned decimal digits that fit into u64
+    for jp_key in (
+        "a[-1]",
+        "a[-1].b",
+        "a[+1]",
+        "a[1_0]",
+        "a[ 1 ]",
+        "a[\u0661]",
+        f"a[{2**64}]",
+    ):
+        with pytest.raises(ValueError):
+            parse_json_path(jp_key)
+
+    assert parse_json_path("a[01]") == [
+        JsonPathItem(item_type=JsonPathItemType.KEY, key="a"),
+        JsonPathItem(item_type=JsonPathItemType.INDEX, index=1),
+    ]
+    assert parse_json_path(f"a[{2**64 - 1}]")[1].index == 2**64 - 1
+
 
 def test_value_by_key() -> None:
     payload = {
@@ -223,6 +276,8 @@ def test_value_by_key() -> None:
     assert value_by_key(payload, "double-nest-array[0][0]") == [1]
     assert value_by_key(payload, "double-nest-array[0][0]") == [1]
     assert value_by_key(payload, "double-nest-array[][1]") == [2, 4, 6]
+    assert value_by_key(payload, "double-nest-array[]") == [1, 2, 3, 4, 5, 6]
+    assert value_by_key(payload, "double-nest-array[0]") == [1, 2]
     # endregion
 
     # region flat=False
@@ -246,6 +301,8 @@ def test_value_by_key() -> None:
     ]
     assert value_by_key(payload, "nested[].empty", flat=False) == [[], [], None]
     assert value_by_key(payload, "the_null", flat=False) == [None]
+    assert value_by_key(payload, "double-nest-array[]", flat=False) == [[1, 2], [3, 4], [5, 6]]
+    assert value_by_key(payload, "double-nest-array[0]", flat=False) == [[1, 2]]
 
     assert value_by_key(payload, "age.nested.not_exist") is None
     # endregion
@@ -460,41 +517,32 @@ def test_set_value_by_key() -> None:
 
     # region exceptions
 
-    try:
+    # incorrect quotes
+    with pytest.raises(ValueError):
         payload = {"a": []}
         new_value = {"c": 3}
         key = "a.'b.c'"
         set_value_by_key(payload, parse_json_path(key), new_value)
-        assert False, f"Should've raised an exception due to the key with incorrect quotes: {key}"
-    except Exception:
-        assert True
 
-    try:
+    # negative indexation is not supported
+    with pytest.raises(ValueError):
         payload = {"a": [{"b": 1}, {"b": 2}]}
         new_value = {"c": 3}
         key = "a[-1]"
         set_value_by_key(payload, parse_json_path(key), new_value)
-        assert False, "Negative indexation is not supported"
-    except Exception:
-        assert True
 
-    try:
+    # unbalanced brackets
+    with pytest.raises(ValueError):
         payload = {"a": [{"b": 1}, {"b": 2}]}
         new_value = {"c": 3}
         key = "a["
         set_value_by_key(payload, parse_json_path(key), new_value)
-        assert False, f"Should've raised an exception due to the incorrect key: {key}"
-    except Exception:
-        assert True
 
-    try:
+    with pytest.raises(ValueError):
         payload = {"a": [{"b": 1}, {"b": 2}]}
         new_value = {"c": 3}
         key = "a]"
         set_value_by_key(payload, parse_json_path(key), new_value)
-        assert False, f"Should've raise an exception due to the incorrect key: {key}"
-    except Exception:
-        assert True
 
     # endregion
 
@@ -546,4 +594,43 @@ def test_set_value_by_key() -> None:
     key = "a.c[][]"
     set_value_by_key(payload, parse_json_path(key), new_value)
     assert payload == {"a": {"c": [[]]}}, payload
+    # endregion
+
+
+def test_delete_value_by_key() -> None:
+    def delete(payload: dict, key: str) -> dict:
+        delete_value_by_key(payload, parse_json_path(key))
+        return payload
+
+    # region top-level
+    assert delete({"a": 1, "b": 2}, "a") == {"b": 2}
+    assert delete({"a": {"c": 2}}, "nope") == {"a": {"c": 2}}
+    # endregion
+
+    # region nested keys, siblings preserved
+    assert delete({"a": {"b": 1, "c": 2}, "top": 9}, "a.b") == {"a": {"c": 2}, "top": 9}
+    assert delete({"a": {"b": {"c": 1, "d": 2}}}, "a.b.c") == {"a": {"b": {"d": 2}}}
+    assert delete({"the": {"nested.key": 1, "b": 2}}, 'the."nested.key"') == {"the": {"b": 2}}
+    # endregion
+
+    # region arrays
+    assert delete({"loc": [{"x": 1}, {"x": 2}]}, "loc[0].x") == {"loc": [{}, {"x": 2}]}
+    assert delete({"loc": [{"x": 1, "y": 2}, {"x": 3}]}, "loc[].x") == {"loc": [{"y": 2}, {}]}
+    assert delete({"loc": [[1, 2], [3, 4]]}, "loc[][]") == {"loc": [[], []]}
+    # a terminal wildcard clears the array, a terminal index is a no-op
+    assert delete({"loc": [1, 2, 3], "top": 9}, "loc[]") == {"loc": [], "top": 9}
+    assert delete({"loc": [{"x": 1}, {"x": 2}]}, "loc[0]") == {"loc": [{"x": 1}, {"x": 2}]}
+    assert delete({"loc": [1, 2, 3]}, "loc[1]") == {"loc": [1, 2, 3]}
+    # arrays are not implicitly flattened, unlike in filters
+    assert delete({"loc": [{"x": 1}]}, "loc.x") == {"loc": [{"x": 1}]}
+    # endregion
+
+    # region paths that do not resolve
+    assert delete({"loc": [{"x": 1}]}, "loc[5].x") == {"loc": [{"x": 1}]}
+    assert delete({"a": {"c": 2}}, "a.b") == {"a": {"c": 2}}
+    assert delete({"a": {"c": 2}}, "nope.nested") == {"a": {"c": 2}}
+    assert delete({"a": 5}, "a.b") == {"a": 5}
+    assert delete({"loc": {"x": 1}}, "loc[]") == {"loc": {"x": 1}}
+    # a dotted path never matches a literal key containing a dot
+    assert delete({"a.b": 1, "a": {"b": 2}}, "a.b") == {"a.b": 1, "a": {}}
     # endregion

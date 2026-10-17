@@ -12,7 +12,6 @@ CACHE_STR_PATH = {
     "ChangeAliasesOperation": [],
     "ClearPayloadOperation": [],
     "CollectionParamsDiff": [],
-    "ContextExamplePair": [],
     "ContextPair": ["negative", "positive"],
     "ContextQuery": ["context.negative", "context.positive"],
     "CountRequest": [],
@@ -36,10 +35,9 @@ CACHE_STR_PATH = {
     "DeleteVectorsOperation": [],
     "DenseVectorConfig": [],
     "DenseVectorNameConfig": [],
+    "DisabledStemmerParams": [],
     "DiscoverInput": ["context.negative", "context.positive", "target"],
     "DiscoverQuery": ["discover.context.negative", "discover.context.positive", "discover.target"],
-    "DiscoverRequest": [],
-    "DiscoverRequestBatch": [],
     "DivExpression": [],
     "DivParams": [],
     "Document": [],
@@ -69,6 +67,7 @@ CACHE_STR_PATH = {
     "HasIdCondition": [],
     "HasVectorCondition": [],
     "HnswConfigDiff": [],
+    "IdfCorpusParams": [],
     "Image": [],
     "InferenceObject": [],
     "IntegerIndexParams": [],
@@ -82,6 +81,7 @@ CACHE_STR_PATH = {
     "MatchAny": [],
     "MatchExcept": [],
     "MatchPhrase": [],
+    "MatchPrefix": [],
     "MatchText": [],
     "MatchTextAny": [],
     "MatchValue": [],
@@ -92,8 +92,6 @@ CACHE_STR_PATH = {
     "MultExpression": [],
     "MultiVectorConfig": [],
     "NaiveFeedbackStrategyParams": [],
-    "NamedSparseVector": [],
-    "NamedVector": [],
     "NearestQuery": ["nearest"],
     "NegExpression": [],
     "Nested": [],
@@ -105,6 +103,7 @@ CACHE_STR_PATH = {
     "PayloadField": [],
     "PayloadSelectorExclude": [],
     "PayloadSelectorInclude": [],
+    "PayloadStorageParams": [],
     "PointIdsList": [],
     "PointRequest": [],
     "PointStruct": ["vector"],
@@ -213,12 +212,10 @@ CACHE_STR_PATH = {
         "searches.query.relevance_feedback.target",
     ],
     "QueryResponse": ["document"],
+    "QuotaConfig": [],
     "Range": [],
-    "RecommendGroupsRequest": [],
     "RecommendInput": ["negative", "positive"],
     "RecommendQuery": ["recommend.negative", "recommend.positive"],
-    "RecommendRequest": [],
-    "RecommendRequestBatch": [],
     "RelevanceFeedbackInput": ["feedback.example", "target"],
     "RelevanceFeedbackQuery": ["relevance_feedback.feedback.example", "relevance_feedback.target"],
     "RenameAlias": [],
@@ -236,15 +233,14 @@ CACHE_STR_PATH = {
     "ScalarQuantization": [],
     "ScalarQuantizationConfig": [],
     "ScrollRequest": [],
-    "SearchGroupsRequest": [],
     "SearchMatrixRequest": [],
     "SearchParams": [],
-    "SearchRequest": [],
-    "SearchRequestBatch": [],
     "SetPayload": [],
     "SetPayloadOperation": [],
     "ShardKeyWithFallback": [],
     "ShardSnapshotRecover": [],
+    "Slice": [],
+    "SliceCondition": [],
     "SnapshotRecover": [],
     "SnowballParams": [],
     "SparseIndexParams": [],
@@ -303,6 +299,7 @@ DEFS = {
                     {"$ref": "#/$defs/IsNullCondition"},
                     {"$ref": "#/$defs/HasIdCondition"},
                     {"$ref": "#/$defs/HasVectorCondition"},
+                    {"$ref": "#/$defs/SliceCondition"},
                     {"$ref": "#/$defs/NestedCondition"},
                     {"$ref": "#/$defs/Filter"},
                     {"$ref": "#/$defs/GeoDistance"},
@@ -406,6 +403,7 @@ DEFS = {
                     {"$ref": "#/$defs/IsNullCondition"},
                     {"$ref": "#/$defs/HasIdCondition"},
                     {"$ref": "#/$defs/HasVectorCondition"},
+                    {"$ref": "#/$defs/SliceCondition"},
                     {"$ref": "#/$defs/NestedCondition"},
                     {"$ref": "#/$defs/Filter"},
                     {"$ref": "#/$defs/GeoDistance"},
@@ -437,6 +435,7 @@ DEFS = {
                     {"$ref": "#/$defs/IsNullCondition"},
                     {"$ref": "#/$defs/HasIdCondition"},
                     {"$ref": "#/$defs/HasVectorCondition"},
+                    {"$ref": "#/$defs/SliceCondition"},
                     {"$ref": "#/$defs/NestedCondition"},
                     {"$ref": "#/$defs/Filter"},
                     {"$ref": "#/$defs/GeoDistance"},
@@ -497,6 +496,7 @@ DEFS = {
                     {"$ref": "#/$defs/IsNullCondition"},
                     {"$ref": "#/$defs/HasIdCondition"},
                     {"$ref": "#/$defs/HasVectorCondition"},
+                    {"$ref": "#/$defs/SliceCondition"},
                     {"$ref": "#/$defs/NestedCondition"},
                     {"$ref": "#/$defs/Filter"},
                     {"$ref": "#/$defs/GeoDistance"},
@@ -528,6 +528,7 @@ DEFS = {
                     {"$ref": "#/$defs/IsNullCondition"},
                     {"$ref": "#/$defs/HasIdCondition"},
                     {"$ref": "#/$defs/HasVectorCondition"},
+                    {"$ref": "#/$defs/SliceCondition"},
                     {"$ref": "#/$defs/NestedCondition"},
                     {"$ref": "#/$defs/Filter"},
                     {"$ref": "#/$defs/GeoDistance"},
@@ -580,6 +581,7 @@ DEFS = {
                     {"$ref": "#/$defs/IsNullCondition"},
                     {"$ref": "#/$defs/HasIdCondition"},
                     {"$ref": "#/$defs/HasVectorCondition"},
+                    {"$ref": "#/$defs/SliceCondition"},
                     {"$ref": "#/$defs/NestedCondition"},
                     {"$ref": "#/$defs/Filter"},
                     {"$ref": "#/$defs/GeoDistance"},
@@ -618,6 +620,7 @@ DEFS = {
                     {"$ref": "#/$defs/MatchText"},
                     {"$ref": "#/$defs/MatchTextAny"},
                     {"$ref": "#/$defs/MatchPhrase"},
+                    {"$ref": "#/$defs/MatchPrefix"},
                     {"$ref": "#/$defs/MatchAny"},
                     {"$ref": "#/$defs/MatchExcept"},
                     {"type": "null"},
@@ -686,6 +689,7 @@ DEFS = {
                                 {"$ref": "#/$defs/IsNullCondition"},
                                 {"$ref": "#/$defs/HasIdCondition"},
                                 {"$ref": "#/$defs/HasVectorCondition"},
+                                {"$ref": "#/$defs/SliceCondition"},
                                 {"$ref": "#/$defs/NestedCondition"},
                                 {"$ref": "#/$defs/Filter"},
                             ]
@@ -697,6 +701,7 @@ DEFS = {
                     {"$ref": "#/$defs/IsNullCondition"},
                     {"$ref": "#/$defs/HasIdCondition"},
                     {"$ref": "#/$defs/HasVectorCondition"},
+                    {"$ref": "#/$defs/SliceCondition"},
                     {"$ref": "#/$defs/NestedCondition"},
                     {"$ref": "#/$defs/Filter"},
                     {"type": "null"},
@@ -720,6 +725,7 @@ DEFS = {
                                 {"$ref": "#/$defs/IsNullCondition"},
                                 {"$ref": "#/$defs/HasIdCondition"},
                                 {"$ref": "#/$defs/HasVectorCondition"},
+                                {"$ref": "#/$defs/SliceCondition"},
                                 {"$ref": "#/$defs/NestedCondition"},
                                 {"$ref": "#/$defs/Filter"},
                             ]
@@ -731,6 +737,7 @@ DEFS = {
                     {"$ref": "#/$defs/IsNullCondition"},
                     {"$ref": "#/$defs/HasIdCondition"},
                     {"$ref": "#/$defs/HasVectorCondition"},
+                    {"$ref": "#/$defs/SliceCondition"},
                     {"$ref": "#/$defs/NestedCondition"},
                     {"$ref": "#/$defs/Filter"},
                     {"type": "null"},
@@ -749,6 +756,7 @@ DEFS = {
                                 {"$ref": "#/$defs/IsNullCondition"},
                                 {"$ref": "#/$defs/HasIdCondition"},
                                 {"$ref": "#/$defs/HasVectorCondition"},
+                                {"$ref": "#/$defs/SliceCondition"},
                                 {"$ref": "#/$defs/NestedCondition"},
                                 {"$ref": "#/$defs/Filter"},
                             ]
@@ -760,6 +768,7 @@ DEFS = {
                     {"$ref": "#/$defs/IsNullCondition"},
                     {"$ref": "#/$defs/HasIdCondition"},
                     {"$ref": "#/$defs/HasVectorCondition"},
+                    {"$ref": "#/$defs/SliceCondition"},
                     {"$ref": "#/$defs/NestedCondition"},
                     {"$ref": "#/$defs/Filter"},
                     {"type": "null"},
@@ -965,6 +974,7 @@ DEFS = {
                     {"$ref": "#/$defs/IsNullCondition"},
                     {"$ref": "#/$defs/HasIdCondition"},
                     {"$ref": "#/$defs/HasVectorCondition"},
+                    {"$ref": "#/$defs/SliceCondition"},
                     {"$ref": "#/$defs/NestedCondition"},
                     {"$ref": "#/$defs/Filter"},
                     {"$ref": "#/$defs/GeoDistance"},
@@ -1004,6 +1014,7 @@ DEFS = {
                     {"$ref": "#/$defs/IsNullCondition"},
                     {"$ref": "#/$defs/HasIdCondition"},
                     {"$ref": "#/$defs/HasVectorCondition"},
+                    {"$ref": "#/$defs/SliceCondition"},
                     {"$ref": "#/$defs/NestedCondition"},
                     {"$ref": "#/$defs/Filter"},
                     {"$ref": "#/$defs/GeoDistance"},
@@ -1079,6 +1090,20 @@ DEFS = {
         "title": "MatchPhrase",
         "type": "object",
     },
+    "MatchPrefix": {
+        "additionalProperties": False,
+        "description": "Match keyword values that start with the given string.  Byte-wise (hence, for valid UTF-8, character-wise) and case-sensitive, consistent with exact keyword matching. Served efficiently by a keyword index created with the `prefix` option.",
+        "properties": {
+            "prefix": {
+                "description": "Match keyword values that start with the given string.  Byte-wise (hence, for valid UTF-8, character-wise) and case-sensitive, consistent with exact keyword matching. Served efficiently by a keyword index created with the `prefix` option.",
+                "title": "Prefix",
+                "type": "string",
+            }
+        },
+        "required": ["prefix"],
+        "title": "MatchPrefix",
+        "type": "object",
+    },
     "MatchText": {
         "additionalProperties": False,
         "description": "Full-text match of the strings.",
@@ -1133,6 +1158,7 @@ DEFS = {
                         {"$ref": "#/$defs/IsNullCondition"},
                         {"$ref": "#/$defs/HasIdCondition"},
                         {"$ref": "#/$defs/HasVectorCondition"},
+                        {"$ref": "#/$defs/SliceCondition"},
                         {"$ref": "#/$defs/NestedCondition"},
                         {"$ref": "#/$defs/Filter"},
                     ]
@@ -1160,6 +1186,7 @@ DEFS = {
                         {"$ref": "#/$defs/IsNullCondition"},
                         {"$ref": "#/$defs/HasIdCondition"},
                         {"$ref": "#/$defs/HasVectorCondition"},
+                        {"$ref": "#/$defs/SliceCondition"},
                         {"$ref": "#/$defs/NestedCondition"},
                         {"$ref": "#/$defs/Filter"},
                         {"$ref": "#/$defs/GeoDistance"},
@@ -1200,6 +1227,7 @@ DEFS = {
                     {"$ref": "#/$defs/IsNullCondition"},
                     {"$ref": "#/$defs/HasIdCondition"},
                     {"$ref": "#/$defs/HasVectorCondition"},
+                    {"$ref": "#/$defs/SliceCondition"},
                     {"$ref": "#/$defs/NestedCondition"},
                     {"$ref": "#/$defs/Filter"},
                     {"$ref": "#/$defs/GeoDistance"},
@@ -1281,6 +1309,7 @@ DEFS = {
                     {"$ref": "#/$defs/IsNullCondition"},
                     {"$ref": "#/$defs/HasIdCondition"},
                     {"$ref": "#/$defs/HasVectorCondition"},
+                    {"$ref": "#/$defs/SliceCondition"},
                     {"$ref": "#/$defs/NestedCondition"},
                     {"$ref": "#/$defs/Filter"},
                     {"$ref": "#/$defs/GeoDistance"},
@@ -1312,6 +1341,7 @@ DEFS = {
                     {"$ref": "#/$defs/IsNullCondition"},
                     {"$ref": "#/$defs/HasIdCondition"},
                     {"$ref": "#/$defs/HasVectorCondition"},
+                    {"$ref": "#/$defs/SliceCondition"},
                     {"$ref": "#/$defs/NestedCondition"},
                     {"$ref": "#/$defs/Filter"},
                     {"$ref": "#/$defs/GeoDistance"},
@@ -1371,6 +1401,38 @@ DEFS = {
         "title": "Range",
         "type": "object",
     },
+    "Slice": {
+        "additionalProperties": False,
+        "description": "One of `total` disjoint deterministic slices of the id space.  A point belongs to the slice iff `hash(id) % total == index`, where `hash` is SipHash-2-4 with a zero key over the canonical id bytes: 8 little-endian bytes for numeric ids, the 16 RFC 4122 bytes for UUIDs. For a fixed `total`, slices `0..total` are disjoint and together cover all points; membership is uniform regardless of the id scheme and stable across queries, segments, platforms and Qdrant versions.  Slices with different `total` values are correlated (same hash, no salt): e.g. slice `0` of `total: 4` is a strict subset of slice `0` of `total: 2`. This keeps a smaller sample contained in a larger one.",
+        "properties": {
+            "total": {
+                "description": "Total number of disjoint slices the id space is split into",
+                "title": "Total",
+                "type": "integer",
+            },
+            "index": {
+                "description": "Which slice to select, must be in `0..total`",
+                "title": "Index",
+                "type": "integer",
+            },
+        },
+        "required": ["total", "index"],
+        "title": "Slice",
+        "type": "object",
+    },
+    "SliceCondition": {
+        "additionalProperties": False,
+        "description": "Select points that fall into one of `total` disjoint deterministic slices of the id space, for parallel scans and reproducible sampling.",
+        "properties": {
+            "slice": {
+                "$ref": "#/$defs/Slice",
+                "description": "Select points that fall into one of `total` disjoint deterministic slices of the id space, for parallel scans and reproducible sampling.",
+            }
+        },
+        "required": ["slice"],
+        "title": "SliceCondition",
+        "type": "object",
+    },
     "SqrtExpression": {
         "additionalProperties": False,
         "properties": {
@@ -1383,6 +1445,7 @@ DEFS = {
                     {"$ref": "#/$defs/IsNullCondition"},
                     {"$ref": "#/$defs/HasIdCondition"},
                     {"$ref": "#/$defs/HasVectorCondition"},
+                    {"$ref": "#/$defs/SliceCondition"},
                     {"$ref": "#/$defs/NestedCondition"},
                     {"$ref": "#/$defs/Filter"},
                     {"$ref": "#/$defs/GeoDistance"},
@@ -1424,6 +1487,7 @@ DEFS = {
                         {"$ref": "#/$defs/IsNullCondition"},
                         {"$ref": "#/$defs/HasIdCondition"},
                         {"$ref": "#/$defs/HasVectorCondition"},
+                        {"$ref": "#/$defs/SliceCondition"},
                         {"$ref": "#/$defs/NestedCondition"},
                         {"$ref": "#/$defs/Filter"},
                         {"$ref": "#/$defs/GeoDistance"},
@@ -1514,7 +1578,7 @@ DEFS = {
             "language": {
                 "anyOf": [{"type": "string"}, {"type": "null"}],
                 "default": None,
-                "description": "Defines which language to use for text preprocessing. This parameter is used to construct default stopwords filter and stemmer. To disable language-specific processing, set this to `'language': 'none'`. If not specified, English is assumed.",
+                "description": "Defines which language to use for text preprocessing. This parameter is used to construct default stopwords filter and stemmer. To disable language-specific processing, set `stemmer` to `{'type': 'none'}` and configure an empty stopword set. The legacy `'language': 'none'` hack is deprecated and may be rejected in a future release. If not specified, English is assumed.",
                 "title": "Language",
             },
             "lowercase": {
@@ -1540,9 +1604,14 @@ DEFS = {
                 "title": "Stopwords",
             },
             "stemmer": {
-                "anyOf": [{"$ref": "#/$defs/SnowballParams"}, {"type": "null"}],
+                "anyOf": [
+                    {"$ref": "#/$defs/SnowballParams"},
+                    {"$ref": "#/$defs/DisabledStemmerParams"},
+                    {"type": "null"},
+                ],
                 "default": None,
                 "description": "Configuration of the stemmer. Processes tokens to their root form. Default: initialized Snowball stemmer for specified `language` or English if not specified.",
+                "title": "Stemmer",
             },
             "min_token_len": {
                 "anyOf": [{"type": "integer"}, {"type": "null"}],
@@ -1558,6 +1627,13 @@ DEFS = {
             },
         },
         "title": "Bm25Config",
+        "type": "object",
+    },
+    "DisabledStemmerParams": {
+        "additionalProperties": False,
+        "properties": {"type": {"$ref": "#/$defs/NoStemmer", "description": ""}},
+        "required": ["type"],
+        "title": "DisabledStemmerParams",
         "type": "object",
     },
     "Document": {
@@ -1673,6 +1749,12 @@ DEFS = {
         "title": "Language",
         "type": "string",
     },
+    "NoStemmer": {
+        "description": "Tag selecting the explicit 'no stemming' algorithm.",
+        "enum": ["none"],
+        "title": "NoStemmer",
+        "type": "string",
+    },
     "Snowball": {"enum": ["snowball"], "title": "Snowball", "type": "string"},
     "SnowballLanguage": {
         "description": "Languages supported by snowball stemmer.",
@@ -1764,8 +1846,13 @@ DEFS = {
             "always_ram": {
                 "anyOf": [{"type": "boolean"}, {"type": "null"}],
                 "default": None,
-                "description": "",
+                "description": "Deprecated: use `memory` instead.",
                 "title": "Always Ram",
+            },
+            "memory": {
+                "anyOf": [{"$ref": "#/$defs/Memory"}, {"type": "null"}],
+                "default": None,
+                "description": "Memory placement of quantized vectors. Overrides the deprecated `always_ram` flag if both are set. Default: follow the memory placement of the original vector storage.",
             },
             "encoding": {
                 "anyOf": [{"$ref": "#/$defs/BinaryQuantizationEncoding"}, {"type": "null"}],
@@ -1789,6 +1876,12 @@ DEFS = {
     "BinaryQuantizationQueryEncoding": {
         "enum": ["default", "binary", "scalar4bits", "scalar8bits"],
         "title": "BinaryQuantizationQueryEncoding",
+        "type": "string",
+    },
+    "Memory": {
+        "description": "Memory placement of a component&#x27;s data.  Data is always persisted on disk regardless of this setting; it only controls how the data is held in RAM.  Options:  * `Cold` - Data is not pre-loaded from disk to RAM. Preferred for rarely queried components or components larger than RAM size. First request might be slow, but data is cached with usage.  * `Cached` - Data is pre-loaded into disk-cache RAM on start. First request is fast, but data may be evicted if there is not enough memory and some other component&#x27;s data is used more frequently.  * `Pinned` - Data is loaded in RAM and never evicted. First request is fast, but the component must fit in RAM at all times. Recommended for frequently queried small components like quantized vectors or primary indexes.",
+        "enum": ["cold", "cached", "pinned"],
+        "title": "Memory",
         "type": "string",
     },
     "BoolIndexType": {"enum": ["bool"], "title": "BoolIndexType", "type": "string"},
@@ -1944,6 +2037,19 @@ DEFS = {
         "title": "ShardKeyWithFallback",
         "type": "object",
     },
+    "PayloadStorageParams": {
+        "additionalProperties": False,
+        "description": "Params of the payload storage",
+        "properties": {
+            "memory": {
+                "anyOf": [{"$ref": "#/$defs/Memory"}, {"type": "null"}],
+                "default": None,
+                "description": "Memory placement of the payload storage. Overrides the deprecated `on_disk_payload` flag if both are set. `pinned` is not supported for payload storage. Default: `cold` (`cached` if `on_disk_payload` is set to false).",
+            }
+        },
+        "title": "PayloadStorageParams",
+        "type": "object",
+    },
     "ContextPair": {
         "additionalProperties": False,
         "properties": {
@@ -1994,7 +2100,11 @@ DEFS = {
         "title": "CompressionRatio",
         "type": "string",
     },
-    "Datatype": {"enum": ["float32", "uint8", "float16"], "title": "Datatype", "type": "string"},
+    "Datatype": {
+        "enum": ["float32", "uint8", "float16", "turbo4"],
+        "title": "Datatype",
+        "type": "string",
+    },
     "Distance": {
         "description": "Type of internal tags, build from payload Distance function types used to compare vectors",
         "enum": ["Cosine", "Euclid", "Dot", "Manhattan"],
@@ -2031,8 +2141,13 @@ DEFS = {
             "on_disk": {
                 "anyOf": [{"type": "boolean"}, {"type": "null"}],
                 "default": None,
-                "description": "Store HNSW index on disk. If set to false, the index will be stored in RAM. Default: false",
+                "description": "Deprecated: use `memory` instead. Store HNSW index on disk. If set to false, the index will be stored in RAM. Default: false",
                 "title": "On Disk",
+            },
+            "memory": {
+                "anyOf": [{"$ref": "#/$defs/Memory"}, {"type": "null"}],
+                "default": None,
+                "description": "Memory placement of the HNSW graph. Overrides the deprecated `on_disk` flag if both are set. Default: `cached` (`cold` if `on_disk` is set to true).",
             },
             "payload_m": {
                 "anyOf": [{"type": "integer"}, {"type": "null"}],
@@ -2131,7 +2246,7 @@ DEFS = {
             "prevent_unoptimized": {
                 "anyOf": [{"type": "boolean"}, {"type": "null"}],
                 "default": None,
-                "description": "If this option is set, service will try to prevent creation of large unoptimized segments. When enabled, updates may be blocked at request level if there are unoptimized segments larger than indexing threshold. Updates will be resumed when optimization is completed and segments are optimized below the threshold. Using this option may lead to increased delay between submitting an update and its application. Default is disabled.",
+                "description": "If enabled, the service will try to prevent the creation of large unoptimized segments. When enabled, new points written to segments larger than the indexing threshold are stored as 'deferred points': they are persisted in the WAL and segments, but excluded from read/search results until the corresponding segments are optimized (e.g. indexed, quantized, or moved to mmap storage). Update requests with `wait=true` will only return after the deferred points become visible, which may significantly increase the perceived latency between submitting an update and its completion. Update requests with `wait=false` are not affected. Default is disabled.",
                 "title": "Prevent Unoptimized",
             },
         },
@@ -2154,8 +2269,13 @@ DEFS = {
             "always_ram": {
                 "anyOf": [{"type": "boolean"}, {"type": "null"}],
                 "default": None,
-                "description": "",
+                "description": "Deprecated: use `memory` instead.",
                 "title": "Always Ram",
+            },
+            "memory": {
+                "anyOf": [{"$ref": "#/$defs/Memory"}, {"type": "null"}],
+                "default": None,
+                "description": "Memory placement of quantized vectors. Overrides the deprecated `always_ram` flag if both are set. Default: follow the memory placement of the original vector storage.",
             },
         },
         "required": ["compression"],
@@ -2182,8 +2302,13 @@ DEFS = {
             "always_ram": {
                 "anyOf": [{"type": "boolean"}, {"type": "null"}],
                 "default": None,
-                "description": "If true - quantized vectors always will be stored in RAM, ignoring the config of main storage",
+                "description": "Deprecated: use `memory` instead. If true - quantized vectors always will be stored in RAM, ignoring the config of main storage",
                 "title": "Always Ram",
+            },
+            "memory": {
+                "anyOf": [{"$ref": "#/$defs/Memory"}, {"type": "null"}],
+                "default": None,
+                "description": "Memory placement of quantized vectors. Overrides the deprecated `always_ram` flag if both are set. Default: follow the memory placement of the original vector storage.",
             },
         },
         "required": ["type"],
@@ -2205,8 +2330,13 @@ DEFS = {
             "on_disk": {
                 "anyOf": [{"type": "boolean"}, {"type": "null"}],
                 "default": None,
-                "description": "Store index on disk. If set to false, the index will be stored in RAM. Default: false",
+                "description": "Deprecated: use `memory` instead. Store index on disk. If set to false, the index will be stored in RAM. Default: false",
                 "title": "On Disk",
+            },
+            "memory": {
+                "anyOf": [{"$ref": "#/$defs/Memory"}, {"type": "null"}],
+                "default": None,
+                "description": "Memory placement of the index. Overrides the deprecated `on_disk` flag if both are set. Default: `pinned` (`cold` if `on_disk` is set to true).",
             },
             "datatype": {
                 "anyOf": [{"$ref": "#/$defs/Datatype"}, {"type": "null"}],
@@ -2373,7 +2503,7 @@ DEFS = {
             "max_resident_memory_percent": {
                 "anyOf": [{"type": "integer"}, {"type": "null"}],
                 "default": None,
-                "description": "Reject memory-consuming update operations (e.g. upsert, set payload) when the process resident memory exceeds this percentage of total system memory (or cgroup limit). Value in [1, 100]. Applied uniformly to external and internal (replication) traffic — rejection is deterministic so it does not cause replica divergence. Delete operations are not affected, so callers can still free memory.",
+                "description": "Deprecated: use the node-wide quota config (`PUT /quotas`) instead, which caps the same resource for every collection. Scheduled for removal in 1.21.  Reject memory-consuming update operations (e.g. upsert, set payload) when the process resident memory exceeds this percentage of total system memory (or cgroup limit). Value in [1, 100]. Memory is a node-wide resource, so this only tightens the quota for one collection; it cannot lift it. Delete operations are not affected, so callers can still free memory.",
                 "title": "Max Resident Memory Percent",
             },
         },
@@ -2417,8 +2547,13 @@ DEFS = {
             "always_ram": {
                 "anyOf": [{"type": "boolean"}, {"type": "null"}],
                 "default": None,
-                "description": "",
+                "description": "Deprecated: use `memory` instead.",
                 "title": "Always Ram",
+            },
+            "memory": {
+                "anyOf": [{"$ref": "#/$defs/Memory"}, {"type": "null"}],
+                "default": None,
+                "description": "Memory placement of quantized vectors. Overrides the deprecated `always_ram` flag if both are set. Default: follow the memory placement of the original vector storage.",
             },
             "bits": {
                 "anyOf": [{"$ref": "#/$defs/TurboQuantBitSize"}, {"type": "null"}],
@@ -2467,13 +2602,18 @@ DEFS = {
             "on_disk": {
                 "anyOf": [{"type": "boolean"}, {"type": "null"}],
                 "default": None,
-                "description": "If true, vectors are served from disk, improving RAM usage at the cost of latency Default: false",
+                "description": "Deprecated: use `memory` instead. If true, vectors are served from disk, improving RAM usage at the cost of latency Default: false",
                 "title": "On Disk",
+            },
+            "memory": {
+                "anyOf": [{"$ref": "#/$defs/Memory"}, {"type": "null"}],
+                "default": None,
+                "description": "Memory placement of the original vector storage. Overrides the deprecated `on_disk` flag if both are set. `pinned` is not supported for dense vector storage. Default: `cached` (`cold` if `on_disk` is set to true).",
             },
             "datatype": {
                 "anyOf": [{"$ref": "#/$defs/Datatype"}, {"type": "null"}],
                 "default": None,
-                "description": "Defines which datatype should be used to represent vectors in the storage. Choosing different datatypes allows to optimize memory usage and performance vs accuracy.  - For `float32` datatype - vectors are stored as single-precision floating point numbers, 4 bytes. - For `float16` datatype - vectors are stored as half-precision floating point numbers, 2 bytes. - For `uint8` datatype - vectors are stored as unsigned 8-bit integers, 1 byte. It expects vector elements to be in range `[0, 255]`.",
+                "description": "Defines which datatype should be used to represent vectors in the storage. Choosing different datatypes allows to optimize memory usage and performance vs accuracy.  - For `float32` datatype - vectors are stored as single-precision floating point numbers, 4 bytes. - For `float16` datatype - vectors are stored as half-precision floating point numbers, 2 bytes. - For `uint8` datatype - vectors are stored as unsigned 8-bit integers, 1 byte. It expects vector elements to be in range `[0, 255]`. - For `turbo4` datatype - vectors are quantized to 4 bits per element using the TurboQuant algorithm.",
             },
             "multivector_config": {
                 "anyOf": [{"$ref": "#/$defs/MultiVectorConfig"}, {"type": "null"}],
@@ -2517,8 +2657,13 @@ DEFS = {
             "on_disk": {
                 "anyOf": [{"type": "boolean"}, {"type": "null"}],
                 "default": None,
-                "description": "If true, store the index on disk. Default: false.",
+                "description": "Deprecated: use `memory` instead. If true, store the index on disk. Default: false.",
                 "title": "On Disk",
+            },
+            "memory": {
+                "anyOf": [{"$ref": "#/$defs/Memory"}, {"type": "null"}],
+                "default": None,
+                "description": "Memory placement of the index. Overrides the deprecated `on_disk` flag if both are set. Default: `pinned` (`cold` if `on_disk` is set to true).",
             },
             "enable_hnsw": {
                 "anyOf": [{"type": "boolean"}, {"type": "null"}],
@@ -2544,8 +2689,13 @@ DEFS = {
             "on_disk": {
                 "anyOf": [{"type": "boolean"}, {"type": "null"}],
                 "default": None,
-                "description": "If true, store the index on disk. Default: false.",
+                "description": "Deprecated: use `memory` instead. If true, store the index on disk. Default: false.",
                 "title": "On Disk",
+            },
+            "memory": {
+                "anyOf": [{"$ref": "#/$defs/Memory"}, {"type": "null"}],
+                "default": None,
+                "description": "Memory placement of the index. Overrides the deprecated `on_disk` flag if both are set. Default: `pinned` (`cold` if `on_disk` is set to true).",
             },
             "enable_hnsw": {
                 "anyOf": [{"type": "boolean"}, {"type": "null"}],
@@ -2572,8 +2722,13 @@ DEFS = {
             "on_disk": {
                 "anyOf": [{"type": "boolean"}, {"type": "null"}],
                 "default": None,
-                "description": "If true, store the index on disk. Default: false.",
+                "description": "Deprecated: use `memory` instead. If true, store the index on disk. Default: false.",
                 "title": "On Disk",
+            },
+            "memory": {
+                "anyOf": [{"$ref": "#/$defs/Memory"}, {"type": "null"}],
+                "default": None,
+                "description": "Memory placement of the index. Overrides the deprecated `on_disk` flag if both are set. Default: `pinned` (`cold` if `on_disk` is set to true).",
             },
             "enable_hnsw": {
                 "anyOf": [{"type": "boolean"}, {"type": "null"}],
@@ -2594,8 +2749,13 @@ DEFS = {
             "on_disk": {
                 "anyOf": [{"type": "boolean"}, {"type": "null"}],
                 "default": None,
-                "description": "If true, store the index on disk. Default: false.",
+                "description": "Deprecated: use `memory` instead. If true, store the index on disk. Default: false.",
                 "title": "On Disk",
+            },
+            "memory": {
+                "anyOf": [{"$ref": "#/$defs/Memory"}, {"type": "null"}],
+                "default": None,
+                "description": "Memory placement of the index. Overrides the deprecated `on_disk` flag if both are set. Default: `pinned` (`cold` if `on_disk` is set to true).",
             },
             "enable_hnsw": {
                 "anyOf": [{"type": "boolean"}, {"type": "null"}],
@@ -2634,8 +2794,13 @@ DEFS = {
             "on_disk": {
                 "anyOf": [{"type": "boolean"}, {"type": "null"}],
                 "default": None,
-                "description": "If true, store the index on disk. Default: false. Default is false.",
+                "description": "Deprecated: use `memory` instead. If true, store the index on disk. Default: false.",
                 "title": "On Disk",
+            },
+            "memory": {
+                "anyOf": [{"$ref": "#/$defs/Memory"}, {"type": "null"}],
+                "default": None,
+                "description": "Memory placement of the index. Overrides the deprecated `on_disk` flag if both are set. Default: `pinned` (`cold` if `on_disk` is set to true).",
             },
             "enable_hnsw": {
                 "anyOf": [{"type": "boolean"}, {"type": "null"}],
@@ -2662,14 +2827,25 @@ DEFS = {
             "on_disk": {
                 "anyOf": [{"type": "boolean"}, {"type": "null"}],
                 "default": None,
-                "description": "If true, store the index on disk. Default: false.",
+                "description": "Deprecated: use `memory` instead. If true, store the index on disk. Default: false.",
                 "title": "On Disk",
+            },
+            "memory": {
+                "anyOf": [{"$ref": "#/$defs/Memory"}, {"type": "null"}],
+                "default": None,
+                "description": "Memory placement of the index. Overrides the deprecated `on_disk` flag if both are set. Default: `pinned` (`cold` if `on_disk` is set to true).",
             },
             "enable_hnsw": {
                 "anyOf": [{"type": "boolean"}, {"type": "null"}],
                 "default": None,
                 "description": "Enable HNSW graph building for this payload field. If true, builds additional HNSW links (Need payload_m &gt; 0). Default: true.",
                 "title": "Enable Hnsw",
+            },
+            "prefix": {
+                "anyOf": [{"type": "boolean"}, {"type": "null"}],
+                "default": None,
+                "description": "If true, enable prefix matching (`match: { 'prefix': ... }`) on this field. Default: false.",
+                "title": "Prefix",
             },
         },
         "required": ["type"],
@@ -2735,13 +2911,23 @@ DEFS = {
             "on_disk": {
                 "anyOf": [{"type": "boolean"}, {"type": "null"}],
                 "default": None,
-                "description": "If true, store the index on disk. Default: false.",
+                "description": "Deprecated: use `memory` instead. If true, store the index on disk. Default: false.",
                 "title": "On Disk",
             },
+            "memory": {
+                "anyOf": [{"$ref": "#/$defs/Memory"}, {"type": "null"}],
+                "default": None,
+                "description": "Memory placement of the index. Overrides the deprecated `on_disk` flag if both are set. Default: `pinned` (`cold` if `on_disk` is set to true).",
+            },
             "stemmer": {
-                "anyOf": [{"$ref": "#/$defs/SnowballParams"}, {"type": "null"}],
+                "anyOf": [
+                    {"$ref": "#/$defs/SnowballParams"},
+                    {"$ref": "#/$defs/DisabledStemmerParams"},
+                    {"type": "null"},
+                ],
                 "default": None,
                 "description": "Algorithm for stemming. Default: disabled.",
+                "title": "Stemmer",
             },
             "enable_hnsw": {
                 "anyOf": [{"type": "boolean"}, {"type": "null"}],
@@ -2768,8 +2954,13 @@ DEFS = {
             "on_disk": {
                 "anyOf": [{"type": "boolean"}, {"type": "null"}],
                 "default": None,
-                "description": "If true, store the index on disk. Default: false.",
+                "description": "Deprecated: use `memory` instead. If true, store the index on disk. Default: false.",
                 "title": "On Disk",
+            },
+            "memory": {
+                "anyOf": [{"$ref": "#/$defs/Memory"}, {"type": "null"}],
+                "default": None,
+                "description": "Memory placement of the index. Overrides the deprecated `on_disk` flag if both are set. Default: `pinned` (`cold` if `on_disk` is set to true).",
             },
             "enable_hnsw": {
                 "anyOf": [{"type": "boolean"}, {"type": "null"}],
@@ -2944,7 +3135,7 @@ DEFS = {
     },
     "VectorStorageDatatype": {
         "description": "Storage types for vectors",
-        "enum": ["float32", "float16", "uint8"],
+        "enum": ["float32", "float16", "uint8", "turbo4"],
         "title": "VectorStorageDatatype",
         "type": "string",
     },
@@ -2969,7 +3160,7 @@ DEFS = {
             "datatype": {
                 "anyOf": [{"$ref": "#/$defs/VectorStorageDatatype"}, {"type": "null"}],
                 "default": None,
-                "description": "Element storage type (Float32, Float16, Uint8)",
+                "description": "Element storage type (Float32, Float16, Uint8, Turbo4)",
             },
         },
         "required": ["size", "distance"],
@@ -3005,281 +3196,6 @@ DEFS = {
         },
         "required": ["target", "context"],
         "title": "DiscoverInput",
-        "type": "object",
-    },
-    "AcornSearchParams": {
-        "additionalProperties": False,
-        "description": "ACORN-related search parameters",
-        "properties": {
-            "enable": {
-                "anyOf": [{"type": "boolean"}, {"type": "null"}],
-                "default": False,
-                "description": "If true, then ACORN may be used for the HNSW search based on filters selectivity. Improves search recall for searches with multiple low-selectivity payload filters, at cost of performance.",
-                "title": "Enable",
-            },
-            "max_selectivity": {
-                "anyOf": [{"type": "number"}, {"type": "null"}],
-                "default": None,
-                "description": "Maximum selectivity of filters to enable ACORN.  If estimated filters selectivity is higher than this value, ACORN will not be used. Selectivity is estimated as: `estimated number of points satisfying the filters / total number of points`.  0.0 for never, 1.0 for always. Default is 0.4.",
-                "title": "Max Selectivity",
-            },
-        },
-        "title": "AcornSearchParams",
-        "type": "object",
-    },
-    "ContextExamplePair": {
-        "additionalProperties": False,
-        "properties": {
-            "positive": {
-                "anyOf": [
-                    {"type": "integer"},
-                    {"type": "string"},
-                    {"format": "uuid", "type": "string"},
-                    {"items": {"type": "number"}, "type": "array"},
-                    {"$ref": "#/$defs/SparseVector"},
-                ],
-                "description": "",
-                "title": "Positive",
-            },
-            "negative": {
-                "anyOf": [
-                    {"type": "integer"},
-                    {"type": "string"},
-                    {"format": "uuid", "type": "string"},
-                    {"items": {"type": "number"}, "type": "array"},
-                    {"$ref": "#/$defs/SparseVector"},
-                ],
-                "description": "",
-                "title": "Negative",
-            },
-        },
-        "required": ["positive", "negative"],
-        "title": "ContextExamplePair",
-        "type": "object",
-    },
-    "LookupLocation": {
-        "additionalProperties": False,
-        "description": "Defines a location to use for looking up the vector. Specifies collection and vector field name.",
-        "properties": {
-            "collection": {
-                "description": "Name of the collection used for lookup",
-                "title": "Collection",
-                "type": "string",
-            },
-            "vector": {
-                "anyOf": [{"type": "string"}, {"type": "null"}],
-                "default": None,
-                "description": "Optional name of the vector field within the collection. If not provided, the default vector field will be used.",
-                "title": "Vector",
-            },
-            "shard_key": {
-                "anyOf": [
-                    {"type": "integer"},
-                    {"type": "string"},
-                    {
-                        "items": {"anyOf": [{"type": "integer"}, {"type": "string"}]},
-                        "type": "array",
-                    },
-                    {"$ref": "#/$defs/ShardKeyWithFallback"},
-                    {"type": "null"},
-                ],
-                "default": None,
-                "description": "Specify in which shards to look for the points, if not specified - look in all shards",
-                "title": "Shard Key",
-            },
-        },
-        "required": ["collection"],
-        "title": "LookupLocation",
-        "type": "object",
-    },
-    "PayloadSelectorExclude": {
-        "additionalProperties": False,
-        "properties": {
-            "exclude": {
-                "description": "Exclude this fields from returning payload",
-                "items": {"type": "string"},
-                "title": "Exclude",
-                "type": "array",
-            }
-        },
-        "required": ["exclude"],
-        "title": "PayloadSelectorExclude",
-        "type": "object",
-    },
-    "PayloadSelectorInclude": {
-        "additionalProperties": False,
-        "properties": {
-            "include": {
-                "description": "Only include this payload keys",
-                "items": {"type": "string"},
-                "title": "Include",
-                "type": "array",
-            }
-        },
-        "required": ["include"],
-        "title": "PayloadSelectorInclude",
-        "type": "object",
-    },
-    "QuantizationSearchParams": {
-        "additionalProperties": False,
-        "description": "Additional parameters of the search",
-        "properties": {
-            "ignore": {
-                "anyOf": [{"type": "boolean"}, {"type": "null"}],
-                "default": False,
-                "description": "If true, quantized vectors are ignored. Default is false.",
-                "title": "Ignore",
-            },
-            "rescore": {
-                "anyOf": [{"type": "boolean"}, {"type": "null"}],
-                "default": None,
-                "description": "If true, use original vectors to re-score top-k results. Might require more time in case if original vectors are stored on disk. If not set, qdrant decides automatically apply rescoring or not.",
-                "title": "Rescore",
-            },
-            "oversampling": {
-                "anyOf": [{"type": "number"}, {"type": "null"}],
-                "default": None,
-                "description": "Oversampling factor for quantization. Default is 1.0.  Defines how many extra vectors should be preselected using quantized index, and then re-scored using original vectors.  For example, if `oversampling` is 2.4 and `limit` is 100, then 240 vectors will be preselected using quantized index, and then top-100 will be returned after re-scoring.",
-                "title": "Oversampling",
-            },
-        },
-        "title": "QuantizationSearchParams",
-        "type": "object",
-    },
-    "SearchParams": {
-        "additionalProperties": False,
-        "description": "Additional parameters of the search",
-        "properties": {
-            "hnsw_ef": {
-                "anyOf": [{"type": "integer"}, {"type": "null"}],
-                "default": None,
-                "description": "Params relevant to HNSW index Size of the beam in a beam-search. Larger the value - more accurate the result, more time required for search.",
-                "title": "Hnsw Ef",
-            },
-            "exact": {
-                "anyOf": [{"type": "boolean"}, {"type": "null"}],
-                "default": False,
-                "description": "Search without approximation. If set to true, search may run long but with exact results.",
-                "title": "Exact",
-            },
-            "quantization": {
-                "anyOf": [{"$ref": "#/$defs/QuantizationSearchParams"}, {"type": "null"}],
-                "default": None,
-                "description": "Quantization params",
-            },
-            "indexed_only": {
-                "anyOf": [{"type": "boolean"}, {"type": "null"}],
-                "default": False,
-                "description": "If enabled, the engine will only perform search among indexed or small segments. Using this option prevents slow searches in case of delayed index, but does not guarantee that all uploaded vectors will be included in search results",
-                "title": "Indexed Only",
-            },
-            "acorn": {
-                "anyOf": [{"$ref": "#/$defs/AcornSearchParams"}, {"type": "null"}],
-                "default": None,
-                "description": "ACORN search params",
-            },
-        },
-        "title": "SearchParams",
-        "type": "object",
-    },
-    "DiscoverRequest": {
-        "additionalProperties": False,
-        "description": "Use context and a target to find the most similar points, constrained by the context.",
-        "properties": {
-            "shard_key": {
-                "anyOf": [
-                    {"type": "integer"},
-                    {"type": "string"},
-                    {
-                        "items": {"anyOf": [{"type": "integer"}, {"type": "string"}]},
-                        "type": "array",
-                    },
-                    {"$ref": "#/$defs/ShardKeyWithFallback"},
-                    {"type": "null"},
-                ],
-                "default": None,
-                "description": "Specify in which shards to look for the points, if not specified - look in all shards",
-                "title": "Shard Key",
-            },
-            "target": {
-                "anyOf": [
-                    {"type": "integer"},
-                    {"type": "string"},
-                    {"format": "uuid", "type": "string"},
-                    {"items": {"type": "number"}, "type": "array"},
-                    {"$ref": "#/$defs/SparseVector"},
-                    {"type": "null"},
-                ],
-                "default": None,
-                "description": "Look for vectors closest to this.  When using the target (with or without context), the integer part of the score represents the rank with respect to the context, while the decimal part of the score relates to the distance to the target.",
-                "title": "Target",
-            },
-            "context": {
-                "anyOf": [
-                    {"items": {"$ref": "#/$defs/ContextExamplePair"}, "type": "array"},
-                    {"type": "null"},
-                ],
-                "default": None,
-                "description": "Pairs of { positive, negative } examples to constrain the search.  When using only the context (without a target), a special search - called context search - is performed where pairs of points are used to generate a loss that guides the search towards the zone where most positive examples overlap. This means that the score minimizes the scenario of finding a point closer to a negative than to a positive part of a pair.  Since the score of a context relates to loss, the maximum score a point can get is 0.0, and it becomes normal that many points can have a score of 0.0.  For discovery search (when including a target), the context part of the score for each pair is calculated +1 if the point is closer to a positive than to a negative part of a pair, and -1 otherwise.",
-                "title": "Context",
-            },
-            "filter": {
-                "anyOf": [{"$ref": "#/$defs/Filter"}, {"type": "null"}],
-                "default": None,
-                "description": "Look only for points which satisfies this conditions",
-            },
-            "params": {
-                "anyOf": [{"$ref": "#/$defs/SearchParams"}, {"type": "null"}],
-                "default": None,
-                "description": "Additional search params",
-            },
-            "limit": {
-                "description": "Max number of result to return",
-                "title": "Limit",
-                "type": "integer",
-            },
-            "offset": {
-                "anyOf": [{"type": "integer"}, {"type": "null"}],
-                "default": None,
-                "description": "Offset of the first result to return. May be used to paginate results. Note: large offset values may cause performance issues.",
-                "title": "Offset",
-            },
-            "with_payload": {
-                "anyOf": [
-                    {"type": "boolean"},
-                    {"items": {"type": "string"}, "type": "array"},
-                    {"$ref": "#/$defs/PayloadSelectorInclude"},
-                    {"$ref": "#/$defs/PayloadSelectorExclude"},
-                    {"type": "null"},
-                ],
-                "default": None,
-                "description": "Select which payload to return with the response. Default is false.",
-                "title": "With Payload",
-            },
-            "with_vector": {
-                "anyOf": [
-                    {"type": "boolean"},
-                    {"items": {"type": "string"}, "type": "array"},
-                    {"type": "null"},
-                ],
-                "default": None,
-                "description": "Options for specifying which vectors to include into response. Default is false.",
-                "title": "With Vector",
-            },
-            "using": {
-                "anyOf": [{"type": "string"}, {"type": "null"}],
-                "default": None,
-                "description": "Define which vector to use for recommendation, if not specified - try to use default vector",
-                "title": "Using",
-            },
-            "lookup_from": {
-                "anyOf": [{"$ref": "#/$defs/LookupLocation"}, {"type": "null"}],
-                "default": None,
-                "description": "The location used to lookup vectors. If not specified - use current collection. Note: the other collection should have the same vector size as the current collection",
-            },
-        },
-        "required": ["limit"],
-        "title": "DiscoverRequest",
         "type": "object",
     },
     "Replica": {
@@ -3450,6 +3366,34 @@ DEFS = {
         "title": "SetPayload",
         "type": "object",
     },
+    "PayloadSelectorExclude": {
+        "additionalProperties": False,
+        "properties": {
+            "exclude": {
+                "description": "Exclude this fields from returning payload",
+                "items": {"type": "string"},
+                "title": "Exclude",
+                "type": "array",
+            }
+        },
+        "required": ["exclude"],
+        "title": "PayloadSelectorExclude",
+        "type": "object",
+    },
+    "PayloadSelectorInclude": {
+        "additionalProperties": False,
+        "properties": {
+            "include": {
+                "description": "Only include this payload keys",
+                "items": {"type": "string"},
+                "title": "Include",
+                "type": "array",
+            }
+        },
+        "required": ["include"],
+        "title": "PayloadSelectorInclude",
+        "type": "object",
+    },
     "Batch": {
         "additionalProperties": False,
         "properties": {
@@ -3571,6 +3515,26 @@ DEFS = {
         "title": "PointStruct",
         "type": "object",
     },
+    "AcornSearchParams": {
+        "additionalProperties": False,
+        "description": "ACORN-related search parameters",
+        "properties": {
+            "enable": {
+                "anyOf": [{"type": "boolean"}, {"type": "null"}],
+                "default": False,
+                "description": "If true, then ACORN may be used for the HNSW search based on filters selectivity. Improves search recall for searches with multiple low-selectivity payload filters, at cost of performance.",
+                "title": "Enable",
+            },
+            "max_selectivity": {
+                "anyOf": [{"type": "number"}, {"type": "null"}],
+                "default": None,
+                "description": "Maximum selectivity of filters to enable ACORN.  If estimated filters selectivity is higher than this value, ACORN will not be used. Selectivity is estimated as: `estimated number of points satisfying the filters / total number of points`.  0.0 for never, 1.0 for always. Default is 0.4.",
+                "title": "Max Selectivity",
+            },
+        },
+        "title": "AcornSearchParams",
+        "type": "object",
+    },
     "ContextQuery": {
         "additionalProperties": False,
         "properties": {
@@ -3630,6 +3594,7 @@ DEFS = {
                     {"$ref": "#/$defs/IsNullCondition"},
                     {"$ref": "#/$defs/HasIdCondition"},
                     {"$ref": "#/$defs/HasVectorCondition"},
+                    {"$ref": "#/$defs/SliceCondition"},
                     {"$ref": "#/$defs/NestedCondition"},
                     {"$ref": "#/$defs/Filter"},
                     {"$ref": "#/$defs/GeoDistance"},
@@ -3668,6 +3633,60 @@ DEFS = {
         "properties": {"fusion": {"$ref": "#/$defs/Fusion", "description": ""}},
         "required": ["fusion"],
         "title": "FusionQuery",
+        "type": "object",
+    },
+    "IdfCorpusParams": {
+        "additionalProperties": False,
+        "description": "IDF statistics computed over the points matching a corpus filter.",
+        "properties": {
+            "corpus": {
+                "$ref": "#/$defs/Filter",
+                "description": "IDF statistics computed over the points matching a corpus filter.",
+            }
+        },
+        "required": ["corpus"],
+        "title": "IdfCorpusParams",
+        "type": "object",
+    },
+    "IdfScope": {
+        "description": "Named IDF scope without a corpus filter.",
+        "enum": ["global"],
+        "title": "IdfScope",
+        "type": "string",
+    },
+    "LookupLocation": {
+        "additionalProperties": False,
+        "description": "Defines a location to use for looking up the vector. Specifies collection and vector field name.",
+        "properties": {
+            "collection": {
+                "description": "Name of the collection used for lookup",
+                "title": "Collection",
+                "type": "string",
+            },
+            "vector": {
+                "anyOf": [{"type": "string"}, {"type": "null"}],
+                "default": None,
+                "description": "Optional name of the vector field within the collection. If not provided, the default vector field will be used.",
+                "title": "Vector",
+            },
+            "shard_key": {
+                "anyOf": [
+                    {"type": "integer"},
+                    {"type": "string"},
+                    {
+                        "items": {"anyOf": [{"type": "integer"}, {"type": "string"}]},
+                        "type": "array",
+                    },
+                    {"$ref": "#/$defs/ShardKeyWithFallback"},
+                    {"type": "null"},
+                ],
+                "default": None,
+                "description": "Specify in which shards to look for the points, if not specified - look in all shards",
+                "title": "Shard Key",
+            },
+        },
+        "required": ["collection"],
+        "title": "LookupLocation",
         "type": "object",
     },
     "NaiveFeedbackStrategy": {
@@ -3795,6 +3814,32 @@ DEFS = {
             },
         },
         "title": "Prefetch",
+        "type": "object",
+    },
+    "QuantizationSearchParams": {
+        "additionalProperties": False,
+        "description": "Additional parameters of the search",
+        "properties": {
+            "ignore": {
+                "anyOf": [{"type": "boolean"}, {"type": "null"}],
+                "default": False,
+                "description": "If true, quantized vectors are ignored. Default is false.",
+                "title": "Ignore",
+            },
+            "rescore": {
+                "anyOf": [{"type": "boolean"}, {"type": "null"}],
+                "default": None,
+                "description": "If true, use original vectors to re-score top-k results. Might require more time in case if original vectors are stored on disk. If not set, qdrant decides automatically apply rescoring or not.",
+                "title": "Rescore",
+            },
+            "oversampling": {
+                "anyOf": [{"type": "number"}, {"type": "null"}],
+                "default": None,
+                "description": "Oversampling factor for quantization. Default is 1.0.  Defines how many extra vectors should be preselected using quantized index, and then re-scored using original vectors.  For example, if `oversampling` is 2.4 and `limit` is 100, then 240 vectors will be preselected using quantized index, and then top-100 will be returned after re-scoring.",
+                "title": "Oversampling",
+            },
+        },
+        "title": "QuantizationSearchParams",
         "type": "object",
     },
     "RecommendInput": {
@@ -3948,6 +3993,52 @@ DEFS = {
         "properties": {"sample": {"$ref": "#/$defs/Sample", "description": ""}},
         "required": ["sample"],
         "title": "SampleQuery",
+        "type": "object",
+    },
+    "SearchParams": {
+        "additionalProperties": False,
+        "description": "Additional parameters of the search",
+        "properties": {
+            "hnsw_ef": {
+                "anyOf": [{"type": "integer"}, {"type": "null"}],
+                "default": None,
+                "description": "Params relevant to HNSW index Size of the beam in a beam-search. Larger the value - more accurate the result, more time required for search.",
+                "title": "Hnsw Ef",
+            },
+            "exact": {
+                "anyOf": [{"type": "boolean"}, {"type": "null"}],
+                "default": False,
+                "description": "Search without approximation. If set to true, search may run long but with exact results.",
+                "title": "Exact",
+            },
+            "quantization": {
+                "anyOf": [{"$ref": "#/$defs/QuantizationSearchParams"}, {"type": "null"}],
+                "default": None,
+                "description": "Quantization params",
+            },
+            "indexed_only": {
+                "anyOf": [{"type": "boolean"}, {"type": "null"}],
+                "default": False,
+                "description": "If enabled, the engine will only perform search among indexed or small segments. Using this option prevents slow searches in case of delayed index, but does not guarantee that all uploaded vectors will be included in search results",
+                "title": "Indexed Only",
+            },
+            "acorn": {
+                "anyOf": [{"$ref": "#/$defs/AcornSearchParams"}, {"type": "null"}],
+                "default": None,
+                "description": "ACORN search params",
+            },
+            "idf": {
+                "anyOf": [
+                    {"$ref": "#/$defs/IdfScope"},
+                    {"$ref": "#/$defs/IdfCorpusParams"},
+                    {"type": "null"},
+                ],
+                "default": None,
+                "description": "Which population sparse vector IDF statistics are computed over. By default (or with explicit `&quot;global&quot;`) statistics are collection-wide. Only applicable to sparse vectors with the IDF modifier enabled.",
+                "title": "Idf",
+            },
+        },
+        "title": "SearchParams",
         "type": "object",
     },
     "WithLookup": {
@@ -4105,135 +4196,6 @@ DEFS = {
         "title": "QueryRequest",
         "type": "object",
     },
-    "RecommendRequest": {
-        "additionalProperties": False,
-        "description": "Recommendation request. Provides positive and negative examples of the vectors, which can be ids of points that are already stored in the collection, raw vectors, or even ids and vectors combined.  Service should look for the points which are closer to positive examples and at the same time further to negative examples. The concrete way of how to compare negative and positive distances is up to the `strategy` chosen.",
-        "properties": {
-            "shard_key": {
-                "anyOf": [
-                    {"type": "integer"},
-                    {"type": "string"},
-                    {
-                        "items": {"anyOf": [{"type": "integer"}, {"type": "string"}]},
-                        "type": "array",
-                    },
-                    {"$ref": "#/$defs/ShardKeyWithFallback"},
-                    {"type": "null"},
-                ],
-                "default": None,
-                "description": "Specify in which shards to look for the points, if not specified - look in all shards",
-                "title": "Shard Key",
-            },
-            "positive": {
-                "anyOf": [
-                    {
-                        "items": {
-                            "anyOf": [
-                                {"type": "integer"},
-                                {"type": "string"},
-                                {"format": "uuid", "type": "string"},
-                                {"items": {"type": "number"}, "type": "array"},
-                                {"$ref": "#/$defs/SparseVector"},
-                            ]
-                        },
-                        "type": "array",
-                    },
-                    {"type": "null"},
-                ],
-                "default": [],
-                "description": "Look for vectors closest to those",
-                "title": "Positive",
-            },
-            "negative": {
-                "anyOf": [
-                    {
-                        "items": {
-                            "anyOf": [
-                                {"type": "integer"},
-                                {"type": "string"},
-                                {"format": "uuid", "type": "string"},
-                                {"items": {"type": "number"}, "type": "array"},
-                                {"$ref": "#/$defs/SparseVector"},
-                            ]
-                        },
-                        "type": "array",
-                    },
-                    {"type": "null"},
-                ],
-                "default": [],
-                "description": "Try to avoid vectors like this",
-                "title": "Negative",
-            },
-            "strategy": {
-                "anyOf": [{"$ref": "#/$defs/RecommendStrategy"}, {"type": "null"}],
-                "default": None,
-                "description": "How to use positive and negative examples to find the results",
-            },
-            "filter": {
-                "anyOf": [{"$ref": "#/$defs/Filter"}, {"type": "null"}],
-                "default": None,
-                "description": "Look only for points which satisfies this conditions",
-            },
-            "params": {
-                "anyOf": [{"$ref": "#/$defs/SearchParams"}, {"type": "null"}],
-                "default": None,
-                "description": "Additional search params",
-            },
-            "limit": {
-                "description": "Max number of result to return",
-                "title": "Limit",
-                "type": "integer",
-            },
-            "offset": {
-                "anyOf": [{"type": "integer"}, {"type": "null"}],
-                "default": None,
-                "description": "Offset of the first result to return. May be used to paginate results. Note: large offset values may cause performance issues.",
-                "title": "Offset",
-            },
-            "with_payload": {
-                "anyOf": [
-                    {"type": "boolean"},
-                    {"items": {"type": "string"}, "type": "array"},
-                    {"$ref": "#/$defs/PayloadSelectorInclude"},
-                    {"$ref": "#/$defs/PayloadSelectorExclude"},
-                    {"type": "null"},
-                ],
-                "default": None,
-                "description": "Select which payload to return with the response. Default is false.",
-                "title": "With Payload",
-            },
-            "with_vector": {
-                "anyOf": [
-                    {"type": "boolean"},
-                    {"items": {"type": "string"}, "type": "array"},
-                    {"type": "null"},
-                ],
-                "default": None,
-                "description": "Options for specifying which vectors to include into response. Default is false.",
-                "title": "With Vector",
-            },
-            "score_threshold": {
-                "anyOf": [{"type": "number"}, {"type": "null"}],
-                "default": None,
-                "description": "Define a minimal score threshold for the result. If defined, less similar results will not be returned. Score of the returned result might be higher or smaller than the threshold depending on the Distance function used. E.g. for cosine similarity only higher scores will be returned.",
-                "title": "Score Threshold",
-            },
-            "using": {
-                "anyOf": [{"type": "string"}, {"type": "null"}],
-                "default": None,
-                "description": "Define which vector to use for recommendation, if not specified - try to use default vector",
-                "title": "Using",
-            },
-            "lookup_from": {
-                "anyOf": [{"$ref": "#/$defs/LookupLocation"}, {"type": "null"}],
-                "default": None,
-                "description": "The location used to lookup vectors. If not specified - use current collection. Note: the other collection should have the same vector size as the current collection",
-            },
-        },
-        "required": ["limit"],
-        "title": "RecommendRequest",
-        "type": "object",
-    },
     "ReplicatePoints": {
         "additionalProperties": False,
         "properties": {
@@ -4285,118 +4247,6 @@ DEFS = {
         "title": "RestartTransfer",
         "type": "object",
     },
-    "NamedSparseVector": {
-        "additionalProperties": False,
-        "description": "Sparse vector data with name",
-        "properties": {
-            "name": {"description": "Name of vector data", "title": "Name", "type": "string"},
-            "vector": {
-                "$ref": "#/$defs/SparseVector",
-                "description": "Sparse vector data with name",
-            },
-        },
-        "required": ["name", "vector"],
-        "title": "NamedSparseVector",
-        "type": "object",
-    },
-    "NamedVector": {
-        "additionalProperties": False,
-        "description": "Dense vector data with name",
-        "properties": {
-            "name": {"description": "Name of vector data", "title": "Name", "type": "string"},
-            "vector": {
-                "description": "Vector data",
-                "items": {"type": "number"},
-                "title": "Vector",
-                "type": "array",
-            },
-        },
-        "required": ["name", "vector"],
-        "title": "NamedVector",
-        "type": "object",
-    },
-    "SearchRequest": {
-        "additionalProperties": False,
-        "description": "Search request. Holds all conditions and parameters for the search of most similar points by vector similarity given the filtering restrictions.",
-        "properties": {
-            "shard_key": {
-                "anyOf": [
-                    {"type": "integer"},
-                    {"type": "string"},
-                    {
-                        "items": {"anyOf": [{"type": "integer"}, {"type": "string"}]},
-                        "type": "array",
-                    },
-                    {"$ref": "#/$defs/ShardKeyWithFallback"},
-                    {"type": "null"},
-                ],
-                "default": None,
-                "description": "Specify in which shards to look for the points, if not specified - look in all shards",
-                "title": "Shard Key",
-            },
-            "vector": {
-                "anyOf": [
-                    {"items": {"type": "number"}, "type": "array"},
-                    {"$ref": "#/$defs/NamedVector"},
-                    {"$ref": "#/$defs/NamedSparseVector"},
-                ],
-                "description": "Search request. Holds all conditions and parameters for the search of most similar points by vector similarity given the filtering restrictions.",
-                "title": "Vector",
-            },
-            "filter": {
-                "anyOf": [{"$ref": "#/$defs/Filter"}, {"type": "null"}],
-                "default": None,
-                "description": "Look only for points which satisfies this conditions",
-            },
-            "params": {
-                "anyOf": [{"$ref": "#/$defs/SearchParams"}, {"type": "null"}],
-                "default": None,
-                "description": "Additional search params",
-            },
-            "limit": {
-                "description": "Max number of result to return",
-                "title": "Limit",
-                "type": "integer",
-            },
-            "offset": {
-                "anyOf": [{"type": "integer"}, {"type": "null"}],
-                "default": None,
-                "description": "Offset of the first result to return. May be used to paginate results. Note: large offset values may cause performance issues.",
-                "title": "Offset",
-            },
-            "with_payload": {
-                "anyOf": [
-                    {"type": "boolean"},
-                    {"items": {"type": "string"}, "type": "array"},
-                    {"$ref": "#/$defs/PayloadSelectorInclude"},
-                    {"$ref": "#/$defs/PayloadSelectorExclude"},
-                    {"type": "null"},
-                ],
-                "default": None,
-                "description": "Select which payload to return with the response. Default is false.",
-                "title": "With Payload",
-            },
-            "with_vector": {
-                "anyOf": [
-                    {"type": "boolean"},
-                    {"items": {"type": "string"}, "type": "array"},
-                    {"type": "null"},
-                ],
-                "default": None,
-                "description": "Options for specifying which vectors to include into response. Default is false.",
-                "title": "With Vector",
-            },
-            "score_threshold": {
-                "anyOf": [{"type": "number"}, {"type": "null"}],
-                "default": None,
-                "description": "Define a minimal score threshold for the result. If defined, less similar results will not be returned. Score of the returned result might be higher or smaller than the threshold depending on the Distance function used. E.g. for cosine similarity only higher scores will be returned.",
-                "title": "Score Threshold",
-            },
-        },
-        "required": ["vector", "limit"],
-        "title": "SearchRequest",
-        "type": "object",
-    },
     "SnapshotPriority": {
         "description": "Defines source of truth for snapshot recovery:  `NoSync` means - restore snapshot without *any* additional synchronization. `Snapshot` means - prefer snapshot data over the current state. `Replica` means - prefer existing data over the snapshot.",
         "enum": ["no_sync", "snapshot", "replica"],
@@ -4434,13 +4284,13 @@ DEFS = {
             "peer_id": {
                 "anyOf": [{"type": "integer"}, {"type": "null"}],
                 "default": None,
-                "description": "",
+                "description": "Peer to create the new shard on, or to migrate points away from when scaling down. If not specified, the least loaded peer is picked when scaling up, a peer holding the removed shard when scaling down.",
                 "title": "Peer Id",
             },
             "shard_key": {
                 "anyOf": [{"type": "integer"}, {"type": "string"}, {"type": "null"}],
                 "default": None,
-                "description": "",
+                "description": "Custom shard key to reshard, must already exist. If not specified, shards without a shard key are resharded.",
                 "title": "Shard Key",
             },
         },
@@ -4478,8 +4328,13 @@ DEFS = {
             "on_disk_payload": {
                 "anyOf": [{"type": "boolean"}, {"type": "null"}],
                 "default": None,
-                "description": "If true - point&#x27;s payload will not be stored in memory. It will be read from the disk every time it is requested. This setting saves RAM by (slightly) increasing the response time. Note: those payload values that are involved in filtering and are indexed - remain in RAM.",
+                "description": "Deprecated: use `payload.memory` instead. If true - point&#x27;s payload will not be stored in memory. It will be read from the disk every time it is requested. This setting saves RAM by (slightly) increasing the response time. Note: those payload values that are involved in filtering and are indexed - remain in RAM.",
                 "title": "On Disk Payload",
+            },
+            "payload": {
+                "anyOf": [{"$ref": "#/$defs/PayloadStorageParams"}, {"type": "null"}],
+                "default": None,
+                "description": "Update params of the payload storage. If none - it is left unchanged.",
             },
         },
         "title": "CollectionParamsDiff",
@@ -4510,8 +4365,13 @@ DEFS = {
             "on_disk": {
                 "anyOf": [{"type": "boolean"}, {"type": "null"}],
                 "default": None,
-                "description": "If true, vectors are served from disk, improving RAM usage at the cost of latency",
+                "description": "Deprecated: use `memory` instead. If true, vectors are served from disk, improving RAM usage at the cost of latency",
                 "title": "On Disk",
+            },
+            "memory": {
+                "anyOf": [{"$ref": "#/$defs/Memory"}, {"type": "null"}],
+                "default": None,
+                "description": "Memory placement of the original vector storage. Overrides the deprecated `on_disk` flag if both are set. `pinned` is not supported for dense vector storage.",
             },
         },
         "title": "VectorParamsDiff",

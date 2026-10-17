@@ -391,6 +391,22 @@ def test_inspect_query_requests():
     paths = inspector_embed.inspect([document_only_prefetch_request])
     assert len(paths) == 1 and paths[0].as_str_list() == ["prefetch.query"]
 
+    # mixed direct Document and nested NearestQuery — both prefix paths must be kept
+    mixed_prefix_prefetch_request = models.QueryRequest(
+        query=doc,
+        prefetch=[
+            models.Prefetch(query=doc),
+            models.Prefetch(query=models.NearestQuery(nearest=doc)),
+        ],
+    )
+    assert inspector.inspect(mixed_prefix_prefetch_request)
+    paths = inspector_embed.inspect(mixed_prefix_prefetch_request)
+    assert {path for field_path in paths for path in field_path.as_str_list()} == {
+        "query",
+        "prefetch.query",
+        "prefetch.query.nearest",
+    }
+
     assert inspector.inspect([query_request_vector, document_only_query_request])
     paths = inspector_embed.inspect([query_request_vector, document_only_query_request])
     assert len(paths) == 1 and paths[0].as_str_list() == ["query"]
@@ -710,3 +726,26 @@ def test_inspect_update_operations():
     paths = inspector_embed.inspect([mixed_point_vectors_update_op])
     assert len(paths) == 1 and paths[0].as_str_list() == ["update_vectors.points.vector"]
     # endregion
+
+
+def test_inspect_lists_of_numbers_and_models():
+    inspector = Inspector()
+    document = models.Document(text="text", model="model")
+    vector = [0.1, 0.2]
+
+    # inference objects after numbers and vectors in the same list or dict
+    positive = [1, vector, [vector, vector], document]
+    assert inspector.inspect(
+        models.RecommendQuery(recommend=models.RecommendInput(positive=positive))
+    )
+    assert inspector.inspect(
+        models.PointStruct(id=1, vector={"dense": vector, "multi": [vector], "doc": document})
+    )
+
+    positive = [1, vector, [vector, vector]]
+    assert not inspector.inspect(
+        models.RecommendQuery(recommend=models.RecommendInput(positive=positive))
+    )
+    assert not inspector.inspect(
+        models.PointStruct(id=1, vector={"dense": vector, "multi": [vector, vector]})
+    )

@@ -31,8 +31,7 @@ pip install "grpcio-tools==1.62.0"  # as of 1.63.0 grpc complaining that our min
 pip install "mypy-protobuf==3.3.0"  # ^3.3.0
 
 cd "$QDRANT_PATH"
-git clone --sparse --filter=blob:none --depth=1 git@github.com:qdrant/qdrant.git
-
+git clone --sparse --filter=blob:none --depth=1 -b dev git@github.com:qdrant/qdrant.git
 cd qdrant
 git sparse-checkout add lib/api/src/grpc/proto
 PROTO_DIR="$(pwd)/lib/api/src/grpc/proto"
@@ -49,6 +48,7 @@ rm -f $CLIENT_DIR/telemetry_internal.proto
 rm -f $CLIENT_DIR/raft_service.proto
 rm -f $CLIENT_DIR/health_check.proto
 rm -f $CLIENT_DIR/storage_read_service.proto
+rm -f $CLIENT_DIR/quota_internal.proto
 
 # Clean qdrant.proto references to those removed files
 cat $CLIENT_DIR/qdrant.proto \
@@ -59,6 +59,7 @@ cat $CLIENT_DIR/qdrant.proto \
  | grep -v 'raft_service.proto' \
  | grep -v 'health_check.proto' \
  | grep -v 'storage_read_service.proto' \
+ | grep -v 'quota_internal.proto' \
   > $CLIENT_DIR/qdrant_tmp.proto
 mv "$CLIENT_DIR/qdrant_tmp.proto" "$CLIENT_DIR/qdrant.proto"
 

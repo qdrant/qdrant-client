@@ -1,4 +1,5 @@
 import datetime
+import decimal
 import random
 import uuid
 
@@ -80,6 +81,82 @@ def test_delete_payload(prefer_grpc):
 
     compare_collections(local_client, remote_client, NUM_VECTORS)
     # endregion
+
+
+@pytest.mark.parametrize("prefer_grpc", [True, False])
+def test_delete_payload_with_nested_key(prefer_grpc):
+    local_client = init_local()
+    remote_client = init_remote(prefer_grpc=prefer_grpc)
+
+    vector_size = 2
+    vectors_config = models.VectorParams(size=vector_size, distance=models.Distance.COSINE)
+    initialize_fixture_collection(local_client, vectors_config=vectors_config)
+    initialize_fixture_collection(remote_client, vectors_config=vectors_config)
+
+    vector = np.random.rand(vector_size).tolist()
+
+    def delete_keys(payload, keys):
+        for client in (local_client, remote_client):
+            client.upsert(
+                collection_name=COLLECTION_NAME,
+                points=[PointStruct(id=9999, payload=payload, vector=vector)],
+                wait=True,
+            )
+            client.delete_payload(
+                collection_name=COLLECTION_NAME, keys=keys, points=[9999], wait=True
+            )
+        compare_collections(local_client, remote_client, 1)
+
+    # nested dict key: only the leaf is removed, siblings preserved
+    delete_keys({"a": {"b": 1, "c": 2}, "top": 9}, ["a.b"])
+
+    # a non-existent nested path is a no-op
+    delete_keys({"a": {"c": 2}}, ["a.b"])
+
+    # field inside every element of a nested array
+    delete_keys({"loc": [{"x": 1, "y": 2}, {"x": 3, "y": 4}]}, ["loc[].x"])
+
+    # a terminal array index is a no-op on the server (deleting a single
+    # element by index is not idempotent), so both sides leave it untouched
+    delete_keys({"loc": [{"x": 1}, {"x": 2}]}, ["loc[0]"])
+
+    # a terminal wildcard clears the array instead
+    delete_keys({"loc": [1, 2, 3], "top": 9}, ["loc[]"])
+
+    # arrays are not implicitly flattened: "loc.x" does not reach into elements,
+    # unlike in filters, where "loc.x" and "loc[].x" are equivalent
+    delete_keys({"loc": [{"x": 1, "y": 2}]}, ["loc.x"])
+
+    # a dotted path never matches a literal key containing a dot
+    delete_keys({"a.b": 1, "a": {"b": 2}}, ["a.b"])
+
+    # nested wildcards clear each inner array
+    delete_keys({"loc": [[1, 2], [3, 4]]}, ["loc[][]"])
+
+    # top-level and nested keys together
+    delete_keys({"a": {"b": 1}, "top": 9}, ["a.b", "top"])
+
+    # an invalid json path rejects the whole request on both sides: nothing is
+    # deleted, not even for the keys preceding the invalid one. "loc[-1]" is
+    # invalid too: the server addresses array elements with an unsigned index.
+    for invalid_key in ("not a valid path", "loc[-1]", "loc[-1].x"):
+        for client in (local_client, remote_client):
+            client.upsert(
+                collection_name=COLLECTION_NAME,
+                points=[
+                    PointStruct(id=9999, payload={"a": {"b": 1}, "loc": [1, 2]}, vector=vector),
+                    PointStruct(id=10000, payload={"a": {"b": 1}, "loc": [1, 2]}, vector=vector),
+                ],
+                wait=True,
+            )
+            with pytest.raises((ValueError, UnexpectedResponse, grpc.RpcError)):
+                client.delete_payload(
+                    collection_name=COLLECTION_NAME,
+                    keys=["a.b", invalid_key],
+                    points=[9999, 10000],
+                    wait=True,
+                )
+        compare_collections(local_client, remote_client, 2)
 
 
 @pytest.mark.parametrize("prefer_grpc", [True, False])
@@ -173,9 +250,10 @@ def test_update_payload(prefer_grpc):
     compare_collections(local_client, remote_client, NUM_VECTORS)  # sanity check
 
 
-def test_not_jsonable_payload():
+@pytest.mark.parametrize("prefer_grpc", [True, False])
+def test_not_jsonable_payload(prefer_grpc):
     local_client = init_local()
-    remote_client = init_remote()
+    remote_client = init_remote(prefer_grpc=prefer_grpc)
 
     vector_size = 2
     vectors_config = models.VectorParams(size=vector_size, distance=models.Distance.COSINE)
@@ -183,8 +261,8 @@ def test_not_jsonable_payload():
     initialize_fixture_collection(local_client, vectors_config=vectors_config)
     initialize_fixture_collection(remote_client, vectors_config=vectors_config)
 
-    # subset of types from pydantic.json.ENCODERS_BY_TYPE (pydantic v1)
-    # is not supported by grpc
+    # subset of types from pydantic.json.ENCODERS_BY_TYPE (pydantic v1), which are not JSON types,
+    # but local mode, REST and gRPC all convert them to the same jsonable values
 
     payloads = [
         {"bytes": b"123"},
@@ -192,7 +270,7 @@ def test_not_jsonable_payload():
         {"datetime": datetime.datetime(2021, 1, 1, 1, 1, 1)},
         {"time": datetime.time(1, 1, 1)},
         {"timedelta": datetime.timedelta(seconds=1)},
-        {"decimal": 1.0},
+        {"decimal": decimal.Decimal("1.5")},
         {"frozenset": frozenset([1, 2])},
         {"set": {1, 2}},
         {"uuid": uuid.uuid4()},
@@ -668,3 +746,58 @@ def test_set_or_overwrite_payload_operation(prefer_grpc):
         collection_name=COLLECTION_NAME, update_operations=[overwrite_payload_op_points_no_key]
     )
     compare_collections(local_client, remote_client, num_vectors)
+
+
+@pytest.mark.parametrize("prefer_grpc", [True, False])
+def test_local_set_payload_does_not_leak_across_points(prefer_grpc):
+    """Regression test: a single set_payload(..., points=[...]) call with a nested payload
+    must not leave sibling points sharing the same nested dict object. A later, differently
+    scoped set_payload(key=...) call on one point must not silently mutate the others."""
+    local_client: QdrantClient = init_local()
+    initialize_fixture_collection(local_client)
+    remote_client: QdrantClient = init_remote(prefer_grpc=prefer_grpc)
+    initialize_fixture_collection(remote_client)
+    num_vectors = 10
+    upload(local_client, remote_client, num_vectors)
+
+    payload = {"category": {"name": "invoice", "reviewed": False}}
+    for client in (local_client, remote_client):
+        client.set_payload(
+            collection_name=COLLECTION_NAME,
+            payload=payload,
+            points=[1, 2, 3],
+        )
+
+    new_payload = {"reviewed": True}
+    for client in (local_client, remote_client):
+        client.set_payload(
+            collection_name=COLLECTION_NAME, payload=new_payload, points=[1], key="category"
+        )
+
+    compare_collections(local_client, remote_client, num_vectors)
+
+
+@pytest.mark.parametrize("prefer_grpc", [True, False])
+def test_set_payload_null_removes_key(prefer_grpc):
+    local_client: QdrantClient = init_local()
+    remote_client: QdrantClient = init_remote(prefer_grpc=prefer_grpc)
+    vectors_config = models.VectorParams(size=2, distance=models.Distance.COSINE)
+    initialize_fixture_collection(local_client, vectors_config=vectors_config)
+    initialize_fixture_collection(remote_client, vectors_config=vectors_config)
+
+    payload = {"a": 1, "b": {"c": 2, "d": 3}, "arr": [{"c": 2}, 1], "kept": None}
+    # top-level nulls remove keys at the target, nested nulls are stored as is
+    new_payload = {"a": None, "c": None, "missing": None, "e": {"f": None}}
+    keys = [None, "a", "b", "a.x", "arr[0]", "arr[1]", "arr[]", "arr[1].x", "arr[].x", "new.path"]
+
+    for key in keys:
+        for client in (local_client, remote_client):
+            client.upsert(
+                COLLECTION_NAME,
+                points=[PointStruct(id=1, vector=[0.1, 0.2], payload=payload)],
+                wait=True,
+            )
+            client.set_payload(
+                COLLECTION_NAME, payload=new_payload, points=[1], key=key, wait=True
+            )
+        compare_collections(local_client, remote_client, 1)

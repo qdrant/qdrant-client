@@ -7,11 +7,16 @@ from pydantic import BaseModel, Field
 class FieldPath(BaseModel):
     current: str
     tail: list["FieldPath"] | None = Field(default=None)
+    # marks the node as a valid endpoint, e.g. in ["a.b", "a.b.c"] both "b" and "c" are endpoints.
+    # Nodes without a tail are always endpoints, regardless of the flag value.
+    leaf: bool = Field(default=False)
 
     def as_str_list(self) -> list[str]:
         """
         >>> FieldPath(current='a', tail=[FieldPath(current='b', tail=[FieldPath(current='c'), FieldPath(current='d')])]).as_str_list()
         ['a.b.c', 'a.b.d']
+        >>> FieldPath(current='a', tail=[FieldPath(current='b', leaf=True, tail=[FieldPath(current='c')])]).as_str_list()
+        ['a.b', 'a.b.c']
         """
 
         # Recursive function to collect all paths
@@ -21,6 +26,8 @@ class FieldPath(BaseModel):
                 return [current_path]
             else:
                 paths = []
+                if path.leaf:
+                    paths.append(current_path)
                 for sub_path in path.tail:
                     paths.extend(collect_paths(sub_path, current_path + "."))
                 return paths
@@ -64,6 +71,7 @@ def convert_paths(paths: list[str]) -> list[FieldPath]:
                 assert current.tail is not None
                 current.tail.append(new_tail)
                 current = new_tail
+        current.leaf = True  # the last node of each path is a valid endpoint
     return converted_paths
 
 

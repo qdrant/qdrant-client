@@ -1,5 +1,6 @@
 import logging
 import os
+import time
 from collections import defaultdict
 from enum import Enum
 from multiprocessing import Queue, get_context
@@ -12,7 +13,9 @@ from typing import Any, Iterable, Type
 # Single item should be processed in less than:
 processing_timeout = 10 * 60  # seconds
 
-MAX_INTERNAL_BATCH_SIZE = 200
+# items in flight per worker, a batch of points each for uploads: those not sent yet wait in the
+# main process, so lazy inputs are read that far ahead. Workers need only a few waiting
+MAX_INTERNAL_BATCH_SIZE = 64
 
 
 class QueueSignals(str, Enum):
@@ -85,6 +88,24 @@ def _worker(
 
 
 class ParallelWorkerPool:
+    """Process-based worker pool that streams items through `Worker` subclasses.
+
+    Spawns `num_workers` child processes via `multiprocessing`. Items pushed onto
+    the input queue are picked up by any free worker; results return on the output
+    queue. Backpressure is bounded by `num_workers * max_internal_batch_size`.
+
+    Three map variants:
+
+    - `unordered_map` — yields in completion order.
+    - `semi_ordered_map` — same, but each result carries its source index.
+    - `ordered_map` — yields in input order (buffers out-of-order results).
+
+    Worker failures surface as `QueueSignals.error`, causing the active map call
+    to raise `RuntimeError` after terminating remaining workers. Drain the map
+    generator, or close it (an early close terminates the workers), so cleanup
+    runs in the `finally` block; relying on `__del__` for cleanup is a fallback only.
+    """
+
     def __init__(
         self,
         num_workers: int,
@@ -92,6 +113,11 @@ class ParallelWorkerPool:
         start_method: str | None = None,
         max_internal_batch_size: int = MAX_INTERNAL_BATCH_SIZE,
     ):
+        if num_workers < 0:
+            raise ValueError(f"Number of workers must be non-negative, got {num_workers}")
+        # 0 means one worker per core, as in ModelEmbedder
+        if num_workers == 0:
+            num_workers = os.cpu_count() or 1
         self.worker_class = worker
         self.num_workers = num_workers
         self.input_queue: Queue | None = None
@@ -104,6 +130,9 @@ class ParallelWorkerPool:
 
     def start(self, **kwargs: Any) -> None:
         self.input_queue = self.ctx.Queue(self.queue_size)
+        # An emergency shutdown unblocks the feeder thread with EPIPE (see unordered_map), let it
+        # exit quietly instead of printing a traceback. ProcessPoolExecutor does the same.
+        self.input_queue._ignore_epipe = True  # type: ignore[attr-defined]
         self.output_queue = self.ctx.Queue(self.queue_size)
 
         ctx_value = self.ctx.Value("i", self.num_workers)
@@ -127,6 +156,7 @@ class ParallelWorkerPool:
             self.processes.append(process)
 
     def unordered_map(self, stream: Iterable[Any], *args: Any, **kwargs: Any) -> Iterable[Any]:
+        completed = False
         try:
             self.start(**kwargs)
 
@@ -144,7 +174,7 @@ class ParallelWorkerPool:
                         out_item = None
                 else:
                     try:
-                        out_item = self.output_queue.get(timeout=processing_timeout)
+                        out_item = self._get_output()
                     except Empty as e:
                         self.join_or_terminate()
                         raise e
@@ -162,16 +192,34 @@ class ParallelWorkerPool:
                 self.input_queue.put(QueueSignals.stop)
 
             while read < pushed:
-                out_item = self.output_queue.get(timeout=processing_timeout)
+                out_item = self._get_output()
                 if out_item == QueueSignals.error:
                     self.join_or_terminate()
                     raise RuntimeError("Thread unexpectedly terminated")
                 yield out_item
                 read += 1
+            completed = True
         finally:
             assert self.input_queue is not None, "Input queue is None"
             assert self.output_queue is not None, "Output queue is None"
-            self.join()
+            if completed:
+                self.join()
+            else:
+                # The generator may stop before the input stream is exhausted (for example,
+                # when the stream raises or the caller stops iterating). In that case workers
+                # have not necessarily received their stop signals and a normal join would
+                # wait forever for processes blocked on the input queue.
+                self.join_or_terminate()
+                # Nothing reads the input pipe anymore, so the feeder thread can be stuck
+                # writing to it, holding every item it hasn't sent. On POSIX, closing our
+                # read end fails that write with EPIPE; Windows also needs to cancel the send.
+                terminate_broken = getattr(self.input_queue, "_terminate_broken", None)
+                if terminate_broken is not None:
+                    terminate_broken()
+                else:
+                    # Best effort on older Python. Windows before Python 3.12.1
+                    # can still leave a feeder blocked in send_bytes().
+                    self.input_queue._reader.close()  # type: ignore[attr-defined]
             self.input_queue.close()
             self.output_queue.close()
             if self.emergency_shutdown:
@@ -194,6 +242,24 @@ class ParallelWorkerPool:
                 yield buffer.pop(next_expected)
                 next_expected += 1
 
+    def _get_output(self) -> Any:
+        """
+        Wait for output, checking worker health after each one-second queue timeout.
+        A worker that dies without reporting an error (e.g. killed by the OOM killer)
+        would otherwise leave us waiting the whole timeout for results that never come.
+        Successful reads do not scan the workers.
+        """
+        assert self.output_queue is not None, "Output queue was not initialized"
+        deadline = time.monotonic() + processing_timeout
+        while True:
+            remaining = deadline - time.monotonic()
+            try:
+                return self.output_queue.get(timeout=min(1.0, max(0.0, remaining)))
+            except Empty:
+                self.check_worker_health()
+                if remaining <= 1.0:
+                    raise
+
     def check_worker_health(self) -> None:
         """
         Checks if any worker process has terminated unexpectedly
@@ -213,10 +279,17 @@ class ParallelWorkerPool:
         @return:
         """
         self.emergency_shutdown = True
+        # One deadline for the whole pool: workers that can't finish (e.g. after an early close)
+        # would otherwise each use up the full timeout, one after another.
+        deadline = None if timeout is None else time.monotonic() + timeout
         for process in self.processes:
-            process.join(timeout=timeout)
+            remaining = None if deadline is None else max(0.0, deadline - time.monotonic())
+            process.join(timeout=remaining)
+        for process in self.processes:
             if process.is_alive():
                 process.terminate()
+        for process in self.processes:
+            process.join(timeout=timeout)
         self.processes.clear()
 
     def join(self) -> None:
@@ -234,6 +307,7 @@ class ParallelWorkerPool:
         For a discussion of using destructors in Python in this manner, see
         https://eli.thegreenplace.net/2009/06/12/safely-using-destructors-in-python/.
         """
-        for process in self.processes:
+        # __init__ may raise before `processes` is set
+        for process in getattr(self, "processes", []):
             if process.is_alive():
                 process.terminate()

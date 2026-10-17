@@ -30,6 +30,7 @@ class _DatatypeEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumT
     Float32: _Datatype.ValueType  # 1
     Uint8: _Datatype.ValueType  # 2
     Float16: _Datatype.ValueType  # 3
+    Turbo4: _Datatype.ValueType  # 4
 
 class Datatype(_Datatype, metaclass=_DatatypeEnumTypeWrapper): ...
 
@@ -37,7 +38,37 @@ Default: Datatype.ValueType  # 0
 Float32: Datatype.ValueType  # 1
 Uint8: Datatype.ValueType  # 2
 Float16: Datatype.ValueType  # 3
+Turbo4: Datatype.ValueType  # 4
 global___Datatype = Datatype
+
+class _Memory:
+    ValueType = typing.NewType("ValueType", builtins.int)
+    V: typing_extensions.TypeAlias = ValueType
+
+class _MemoryEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[_Memory.ValueType], builtins.type):  # noqa: F821
+    DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
+    MemoryUnknown: _Memory.ValueType  # 0
+    Cold: _Memory.ValueType  # 1
+    """Data is not pre-loaded from disk to RAM; cached with usage."""
+    Cached: _Memory.ValueType  # 2
+    """Data is pre-loaded into disk-cache RAM on start, but may be evicted under memory pressure."""
+    Pinned: _Memory.ValueType  # 3
+    """Data is loaded in RAM and never evicted."""
+
+class Memory(_Memory, metaclass=_MemoryEnumTypeWrapper):
+    """Memory placement of a component's data.
+    Data is always persisted on disk regardless of this setting;
+    it only controls how the data is held in RAM.
+    """
+
+MemoryUnknown: Memory.ValueType  # 0
+Cold: Memory.ValueType  # 1
+"""Data is not pre-loaded from disk to RAM; cached with usage."""
+Cached: Memory.ValueType  # 2
+"""Data is pre-loaded into disk-cache RAM on start, but may be evicted under memory pressure."""
+Pinned: Memory.ValueType  # 3
+"""Data is loaded in RAM and never evicted."""
+global___Memory = Memory
 
 class _Modifier:
     ValueType = typing.NewType("ValueType", builtins.int)
@@ -397,6 +428,7 @@ class VectorParams(google.protobuf.message.Message):
     ON_DISK_FIELD_NUMBER: builtins.int
     DATATYPE_FIELD_NUMBER: builtins.int
     MULTIVECTOR_CONFIG_FIELD_NUMBER: builtins.int
+    MEMORY_FIELD_NUMBER: builtins.int
     size: builtins.int
     """Size of the vectors"""
     distance: global___Distance.ValueType
@@ -412,7 +444,8 @@ class VectorParams(google.protobuf.message.Message):
         If omitted - the collection configuration will be used
         """
     on_disk: builtins.bool
-    """If true - serve vectors from disk.
+    """Deprecated: use `memory` instead.
+    If true - serve vectors from disk.
     If set to false, the vectors will be loaded in RAM.
     """
     datatype: global___Datatype.ValueType
@@ -420,6 +453,11 @@ class VectorParams(google.protobuf.message.Message):
     @property
     def multivector_config(self) -> global___MultiVectorConfig:
         """Configuration for multi-vector search"""
+    memory: global___Memory.ValueType
+    """Memory placement of the original vector storage.
+    Overrides the deprecated `on_disk` flag if both are set.
+    `Pinned` is not supported for dense vector storage.
+    """
     def __init__(
         self,
         *,
@@ -430,13 +468,16 @@ class VectorParams(google.protobuf.message.Message):
         on_disk: builtins.bool | None = ...,
         datatype: global___Datatype.ValueType | None = ...,
         multivector_config: global___MultiVectorConfig | None = ...,
+        memory: global___Memory.ValueType | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_datatype", b"_datatype", "_hnsw_config", b"_hnsw_config", "_multivector_config", b"_multivector_config", "_on_disk", b"_on_disk", "_quantization_config", b"_quantization_config", "datatype", b"datatype", "hnsw_config", b"hnsw_config", "multivector_config", b"multivector_config", "on_disk", b"on_disk", "quantization_config", b"quantization_config"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_datatype", b"_datatype", "_hnsw_config", b"_hnsw_config", "_multivector_config", b"_multivector_config", "_on_disk", b"_on_disk", "_quantization_config", b"_quantization_config", "datatype", b"datatype", "distance", b"distance", "hnsw_config", b"hnsw_config", "multivector_config", b"multivector_config", "on_disk", b"on_disk", "quantization_config", b"quantization_config", "size", b"size"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_datatype", b"_datatype", "_hnsw_config", b"_hnsw_config", "_memory", b"_memory", "_multivector_config", b"_multivector_config", "_on_disk", b"_on_disk", "_quantization_config", b"_quantization_config", "datatype", b"datatype", "hnsw_config", b"hnsw_config", "memory", b"memory", "multivector_config", b"multivector_config", "on_disk", b"on_disk", "quantization_config", b"quantization_config"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_datatype", b"_datatype", "_hnsw_config", b"_hnsw_config", "_memory", b"_memory", "_multivector_config", b"_multivector_config", "_on_disk", b"_on_disk", "_quantization_config", b"_quantization_config", "datatype", b"datatype", "distance", b"distance", "hnsw_config", b"hnsw_config", "memory", b"memory", "multivector_config", b"multivector_config", "on_disk", b"on_disk", "quantization_config", b"quantization_config", "size", b"size"]) -> None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_datatype", b"_datatype"]) -> typing_extensions.Literal["datatype"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_hnsw_config", b"_hnsw_config"]) -> typing_extensions.Literal["hnsw_config"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_memory", b"_memory"]) -> typing_extensions.Literal["memory"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_multivector_config", b"_multivector_config"]) -> typing_extensions.Literal["multivector_config"] | None: ...
     @typing.overload
@@ -452,6 +493,7 @@ class VectorParamsDiff(google.protobuf.message.Message):
     HNSW_CONFIG_FIELD_NUMBER: builtins.int
     QUANTIZATION_CONFIG_FIELD_NUMBER: builtins.int
     ON_DISK_FIELD_NUMBER: builtins.int
+    MEMORY_FIELD_NUMBER: builtins.int
     @property
     def hnsw_config(self) -> global___HnswConfigDiff:
         """Update params for HNSW index.
@@ -461,8 +503,14 @@ class VectorParamsDiff(google.protobuf.message.Message):
     def quantization_config(self) -> global___QuantizationConfigDiff:
         """Update quantization params. If none - it is left unchanged."""
     on_disk: builtins.bool
-    """If true - serve vectors from disk.
+    """Deprecated: use `memory` instead.
+    If true - serve vectors from disk.
     If set to false, the vectors will be loaded in RAM.
+    """
+    memory: global___Memory.ValueType
+    """Memory placement of the original vector storage.
+    Overrides the deprecated `on_disk` flag if both are set.
+    `Pinned` is not supported for dense vector storage.
     """
     def __init__(
         self,
@@ -470,11 +518,14 @@ class VectorParamsDiff(google.protobuf.message.Message):
         hnsw_config: global___HnswConfigDiff | None = ...,
         quantization_config: global___QuantizationConfigDiff | None = ...,
         on_disk: builtins.bool | None = ...,
+        memory: global___Memory.ValueType | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_hnsw_config", b"_hnsw_config", "_on_disk", b"_on_disk", "_quantization_config", b"_quantization_config", "hnsw_config", b"hnsw_config", "on_disk", b"on_disk", "quantization_config", b"quantization_config"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_hnsw_config", b"_hnsw_config", "_on_disk", b"_on_disk", "_quantization_config", b"_quantization_config", "hnsw_config", b"hnsw_config", "on_disk", b"on_disk", "quantization_config", b"quantization_config"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_hnsw_config", b"_hnsw_config", "_memory", b"_memory", "_on_disk", b"_on_disk", "_quantization_config", b"_quantization_config", "hnsw_config", b"hnsw_config", "memory", b"memory", "on_disk", b"on_disk", "quantization_config", b"quantization_config"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_hnsw_config", b"_hnsw_config", "_memory", b"_memory", "_on_disk", b"_on_disk", "_quantization_config", b"_quantization_config", "hnsw_config", b"hnsw_config", "memory", b"memory", "on_disk", b"on_disk", "quantization_config", b"quantization_config"]) -> None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_hnsw_config", b"_hnsw_config"]) -> typing_extensions.Literal["hnsw_config"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_memory", b"_memory"]) -> typing_extensions.Literal["memory"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_on_disk", b"_on_disk"]) -> typing_extensions.Literal["on_disk"] | None: ...
     @typing.overload
@@ -857,6 +908,7 @@ class HnswConfigDiff(google.protobuf.message.Message):
     ON_DISK_FIELD_NUMBER: builtins.int
     PAYLOAD_M_FIELD_NUMBER: builtins.int
     INLINE_STORAGE_FIELD_NUMBER: builtins.int
+    MEMORY_FIELD_NUMBER: builtins.int
     m: builtins.int
     """Number of edges per node in the index graph.
     Larger the value - more accurate the search, more space required.
@@ -880,7 +932,9 @@ class HnswConfigDiff(google.protobuf.message.Message):
     On small CPUs, less threads are used.
     """
     on_disk: builtins.bool
-    """Store HNSW index on disk. If set to false, the index will be stored in RAM."""
+    """Deprecated: use `memory` instead.
+    Store HNSW index on disk. If set to false, the index will be stored in RAM.
+    """
     payload_m: builtins.int
     """Number of additional payload-aware links per node in the index graph.
     If not set - regular M parameter will be used.
@@ -890,6 +944,10 @@ class HnswConfigDiff(google.protobuf.message.Message):
     Enabling this option will trade the search speed for disk usage by reducing amount of
     random seeks during the search.
     Requires quantized vectors to be enabled. Multi-vectors are not supported.
+    """
+    memory: global___Memory.ValueType
+    """Memory placement of the HNSW graph.
+    Overrides the deprecated `on_disk` flag if both are set.
     """
     def __init__(
         self,
@@ -901,9 +959,10 @@ class HnswConfigDiff(google.protobuf.message.Message):
         on_disk: builtins.bool | None = ...,
         payload_m: builtins.int | None = ...,
         inline_storage: builtins.bool | None = ...,
+        memory: global___Memory.ValueType | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_ef_construct", b"_ef_construct", "_full_scan_threshold", b"_full_scan_threshold", "_inline_storage", b"_inline_storage", "_m", b"_m", "_max_indexing_threads", b"_max_indexing_threads", "_on_disk", b"_on_disk", "_payload_m", b"_payload_m", "ef_construct", b"ef_construct", "full_scan_threshold", b"full_scan_threshold", "inline_storage", b"inline_storage", "m", b"m", "max_indexing_threads", b"max_indexing_threads", "on_disk", b"on_disk", "payload_m", b"payload_m"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_ef_construct", b"_ef_construct", "_full_scan_threshold", b"_full_scan_threshold", "_inline_storage", b"_inline_storage", "_m", b"_m", "_max_indexing_threads", b"_max_indexing_threads", "_on_disk", b"_on_disk", "_payload_m", b"_payload_m", "ef_construct", b"ef_construct", "full_scan_threshold", b"full_scan_threshold", "inline_storage", b"inline_storage", "m", b"m", "max_indexing_threads", b"max_indexing_threads", "on_disk", b"on_disk", "payload_m", b"payload_m"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_ef_construct", b"_ef_construct", "_full_scan_threshold", b"_full_scan_threshold", "_inline_storage", b"_inline_storage", "_m", b"_m", "_max_indexing_threads", b"_max_indexing_threads", "_memory", b"_memory", "_on_disk", b"_on_disk", "_payload_m", b"_payload_m", "ef_construct", b"ef_construct", "full_scan_threshold", b"full_scan_threshold", "inline_storage", b"inline_storage", "m", b"m", "max_indexing_threads", b"max_indexing_threads", "memory", b"memory", "on_disk", b"on_disk", "payload_m", b"payload_m"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_ef_construct", b"_ef_construct", "_full_scan_threshold", b"_full_scan_threshold", "_inline_storage", b"_inline_storage", "_m", b"_m", "_max_indexing_threads", b"_max_indexing_threads", "_memory", b"_memory", "_on_disk", b"_on_disk", "_payload_m", b"_payload_m", "ef_construct", b"ef_construct", "full_scan_threshold", b"full_scan_threshold", "inline_storage", b"inline_storage", "m", b"m", "max_indexing_threads", b"max_indexing_threads", "memory", b"memory", "on_disk", b"on_disk", "payload_m", b"payload_m"]) -> None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_ef_construct", b"_ef_construct"]) -> typing_extensions.Literal["ef_construct"] | None: ...
     @typing.overload
@@ -914,6 +973,8 @@ class HnswConfigDiff(google.protobuf.message.Message):
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_m", b"_m"]) -> typing_extensions.Literal["m"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_max_indexing_threads", b"_max_indexing_threads"]) -> typing_extensions.Literal["max_indexing_threads"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_memory", b"_memory"]) -> typing_extensions.Literal["memory"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_on_disk", b"_on_disk"]) -> typing_extensions.Literal["on_disk"] | None: ...
     @typing.overload
@@ -927,27 +988,37 @@ class SparseIndexConfig(google.protobuf.message.Message):
     FULL_SCAN_THRESHOLD_FIELD_NUMBER: builtins.int
     ON_DISK_FIELD_NUMBER: builtins.int
     DATATYPE_FIELD_NUMBER: builtins.int
+    MEMORY_FIELD_NUMBER: builtins.int
     full_scan_threshold: builtins.int
     """Prefer a full scan search upto (excluding) this number of vectors.
     Note: this is number of vectors, not KiloBytes.
     """
     on_disk: builtins.bool
-    """Store inverted index on disk. If set to false, the index will be stored in RAM."""
+    """Deprecated: use `memory` instead.
+    Store inverted index on disk. If set to false, the index will be stored in RAM.
+    """
     datatype: global___Datatype.ValueType
     """Datatype used to store weights in the index."""
+    memory: global___Memory.ValueType
+    """Memory placement of the index.
+    Overrides the deprecated `on_disk` flag if both are set.
+    """
     def __init__(
         self,
         *,
         full_scan_threshold: builtins.int | None = ...,
         on_disk: builtins.bool | None = ...,
         datatype: global___Datatype.ValueType | None = ...,
+        memory: global___Memory.ValueType | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_datatype", b"_datatype", "_full_scan_threshold", b"_full_scan_threshold", "_on_disk", b"_on_disk", "datatype", b"datatype", "full_scan_threshold", b"full_scan_threshold", "on_disk", b"on_disk"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_datatype", b"_datatype", "_full_scan_threshold", b"_full_scan_threshold", "_on_disk", b"_on_disk", "datatype", b"datatype", "full_scan_threshold", b"full_scan_threshold", "on_disk", b"on_disk"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_datatype", b"_datatype", "_full_scan_threshold", b"_full_scan_threshold", "_memory", b"_memory", "_on_disk", b"_on_disk", "datatype", b"datatype", "full_scan_threshold", b"full_scan_threshold", "memory", b"memory", "on_disk", b"on_disk"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_datatype", b"_datatype", "_full_scan_threshold", b"_full_scan_threshold", "_memory", b"_memory", "_on_disk", b"_on_disk", "datatype", b"datatype", "full_scan_threshold", b"full_scan_threshold", "memory", b"memory", "on_disk", b"on_disk"]) -> None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_datatype", b"_datatype"]) -> typing_extensions.Literal["datatype"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_full_scan_threshold", b"_full_scan_threshold"]) -> typing_extensions.Literal["full_scan_threshold"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_memory", b"_memory"]) -> typing_extensions.Literal["memory"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_on_disk", b"_on_disk"]) -> typing_extensions.Literal["on_disk"] | None: ...
 
@@ -1059,10 +1130,14 @@ class OptimizersConfigDiff(google.protobuf.message.Message):
         If 0 - no optimization threads, optimizations will be disabled.
         """
     prevent_unoptimized: builtins.bool
-    """If this option is set, service will try to prevent creation of large unoptimized segments.
-    When enabled, updates may be blocked at request level if there are unoptimized segments larger than indexing threshold.
-    Updates will be resumed when optimization is completed and segments are optimized below the threshold.
-    Using this option may lead to increased delay between submitting an update and its application.
+    """If enabled, the service will try to prevent the creation of large unoptimized segments.
+    When enabled, new points written to segments larger than the indexing threshold are stored
+    as "deferred points": they are persisted in the WAL and segments, but excluded from
+    read/search results until the corresponding segments are optimized (e.g. indexed,
+    quantized, or moved to mmap storage).
+    Update requests with wait=true will only return after the deferred points become visible,
+    which may significantly increase the perceived latency between submitting an update and its
+    completion. Update requests with wait=false are not affected.
     Default is disabled.
     """
     def __init__(
@@ -1110,23 +1185,33 @@ class ScalarQuantization(google.protobuf.message.Message):
     TYPE_FIELD_NUMBER: builtins.int
     QUANTILE_FIELD_NUMBER: builtins.int
     ALWAYS_RAM_FIELD_NUMBER: builtins.int
+    MEMORY_FIELD_NUMBER: builtins.int
     type: global___QuantizationType.ValueType
     """Type of quantization"""
     quantile: builtins.float
     """Number of bits to use for quantization"""
     always_ram: builtins.bool
-    """If true - quantized vectors always will be stored in RAM, ignoring the config of main storage"""
+    """Deprecated: use `memory` instead.
+    If true - quantized vectors always will be stored in RAM, ignoring the config of main storage
+    """
+    memory: global___Memory.ValueType
+    """Memory placement of quantized vectors.
+    Overrides the deprecated `always_ram` flag if both are set.
+    """
     def __init__(
         self,
         *,
         type: global___QuantizationType.ValueType = ...,
         quantile: builtins.float | None = ...,
         always_ram: builtins.bool | None = ...,
+        memory: global___Memory.ValueType | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_always_ram", b"_always_ram", "_quantile", b"_quantile", "always_ram", b"always_ram", "quantile", b"quantile"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_always_ram", b"_always_ram", "_quantile", b"_quantile", "always_ram", b"always_ram", "quantile", b"quantile", "type", b"type"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_always_ram", b"_always_ram", "_memory", b"_memory", "_quantile", b"_quantile", "always_ram", b"always_ram", "memory", b"memory", "quantile", b"quantile"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_always_ram", b"_always_ram", "_memory", b"_memory", "_quantile", b"_quantile", "always_ram", b"always_ram", "memory", b"memory", "quantile", b"quantile", "type", b"type"]) -> None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_always_ram", b"_always_ram"]) -> typing_extensions.Literal["always_ram"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_memory", b"_memory"]) -> typing_extensions.Literal["memory"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_quantile", b"_quantile"]) -> typing_extensions.Literal["quantile"] | None: ...
 
@@ -1137,19 +1222,30 @@ class ProductQuantization(google.protobuf.message.Message):
 
     COMPRESSION_FIELD_NUMBER: builtins.int
     ALWAYS_RAM_FIELD_NUMBER: builtins.int
+    MEMORY_FIELD_NUMBER: builtins.int
     compression: global___CompressionRatio.ValueType
     """Compression ratio"""
     always_ram: builtins.bool
-    """If true - quantized vectors always will be stored in RAM, ignoring the config of main storage"""
+    """Deprecated: use `memory` instead.
+    If true - quantized vectors always will be stored in RAM, ignoring the config of main storage
+    """
+    memory: global___Memory.ValueType
+    """Memory placement of quantized vectors.
+    Overrides the deprecated `always_ram` flag if both are set.
+    """
     def __init__(
         self,
         *,
         compression: global___CompressionRatio.ValueType = ...,
         always_ram: builtins.bool | None = ...,
+        memory: global___Memory.ValueType | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_always_ram", b"_always_ram", "always_ram", b"always_ram"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_always_ram", b"_always_ram", "always_ram", b"always_ram", "compression", b"compression"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_always_ram", b"_always_ram", "_memory", b"_memory", "always_ram", b"always_ram", "memory", b"memory"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_always_ram", b"_always_ram", "_memory", b"_memory", "always_ram", b"always_ram", "compression", b"compression", "memory", b"memory"]) -> None: ...
+    @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_always_ram", b"_always_ram"]) -> typing_extensions.Literal["always_ram"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_memory", b"_memory"]) -> typing_extensions.Literal["memory"] | None: ...
 
 global___ProductQuantization = ProductQuantization
 
@@ -1192,8 +1288,11 @@ class BinaryQuantization(google.protobuf.message.Message):
     ALWAYS_RAM_FIELD_NUMBER: builtins.int
     ENCODING_FIELD_NUMBER: builtins.int
     QUERY_ENCODING_FIELD_NUMBER: builtins.int
+    MEMORY_FIELD_NUMBER: builtins.int
     always_ram: builtins.bool
-    """If true - quantized vectors always will be stored in RAM, ignoring the config of main storage"""
+    """Deprecated: use `memory` instead.
+    If true - quantized vectors always will be stored in RAM, ignoring the config of main storage
+    """
     encoding: global___BinaryQuantizationEncoding.ValueType
     """Binary quantization encoding method"""
     @property
@@ -1202,19 +1301,26 @@ class BinaryQuantization(google.protobuf.message.Message):
         quantization than stored vectors.
         It can increase the accuracy of search at the cost of performance.
         """
+    memory: global___Memory.ValueType
+    """Memory placement of quantized vectors.
+    Overrides the deprecated `always_ram` flag if both are set.
+    """
     def __init__(
         self,
         *,
         always_ram: builtins.bool | None = ...,
         encoding: global___BinaryQuantizationEncoding.ValueType | None = ...,
         query_encoding: global___BinaryQuantizationQueryEncoding | None = ...,
+        memory: global___Memory.ValueType | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_always_ram", b"_always_ram", "_encoding", b"_encoding", "_query_encoding", b"_query_encoding", "always_ram", b"always_ram", "encoding", b"encoding", "query_encoding", b"query_encoding"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_always_ram", b"_always_ram", "_encoding", b"_encoding", "_query_encoding", b"_query_encoding", "always_ram", b"always_ram", "encoding", b"encoding", "query_encoding", b"query_encoding"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_always_ram", b"_always_ram", "_encoding", b"_encoding", "_memory", b"_memory", "_query_encoding", b"_query_encoding", "always_ram", b"always_ram", "encoding", b"encoding", "memory", b"memory", "query_encoding", b"query_encoding"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_always_ram", b"_always_ram", "_encoding", b"_encoding", "_memory", b"_memory", "_query_encoding", b"_query_encoding", "always_ram", b"always_ram", "encoding", b"encoding", "memory", b"memory", "query_encoding", b"query_encoding"]) -> None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_always_ram", b"_always_ram"]) -> typing_extensions.Literal["always_ram"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_encoding", b"_encoding"]) -> typing_extensions.Literal["encoding"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_memory", b"_memory"]) -> typing_extensions.Literal["memory"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_query_encoding", b"_query_encoding"]) -> typing_extensions.Literal["query_encoding"] | None: ...
 
@@ -1225,20 +1331,29 @@ class TurboQuantization(google.protobuf.message.Message):
 
     ALWAYS_RAM_FIELD_NUMBER: builtins.int
     BITS_FIELD_NUMBER: builtins.int
+    MEMORY_FIELD_NUMBER: builtins.int
     always_ram: builtins.bool
+    """Deprecated: use `memory` instead."""
     bits: global___TurboQuantBitSize.ValueType
+    memory: global___Memory.ValueType
+    """Memory placement of quantized vectors.
+    Overrides the deprecated `always_ram` flag if both are set.
+    """
     def __init__(
         self,
         *,
         always_ram: builtins.bool | None = ...,
         bits: global___TurboQuantBitSize.ValueType | None = ...,
+        memory: global___Memory.ValueType | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_always_ram", b"_always_ram", "_bits", b"_bits", "always_ram", b"always_ram", "bits", b"bits"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_always_ram", b"_always_ram", "_bits", b"_bits", "always_ram", b"always_ram", "bits", b"bits"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_always_ram", b"_always_ram", "_bits", b"_bits", "_memory", b"_memory", "always_ram", b"always_ram", "bits", b"bits", "memory", b"memory"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_always_ram", b"_always_ram", "_bits", b"_bits", "_memory", b"_memory", "always_ram", b"always_ram", "bits", b"bits", "memory", b"memory"]) -> None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_always_ram", b"_always_ram"]) -> typing_extensions.Literal["always_ram"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_bits", b"_bits"]) -> typing_extensions.Literal["bits"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_memory", b"_memory"]) -> typing_extensions.Literal["memory"] | None: ...
 
 global___TurboQuantization = TurboQuantization
 
@@ -1380,7 +1495,8 @@ class StrictModeConfig(google.protobuf.message.Message):
     max_payload_index_count: builtins.int
     """Max number of payload indexes in a collection"""
     max_resident_memory_percent: builtins.int
-    """Reject memory-consuming update operations when process resident memory exceeds this percentage of total RAM (cgroup-aware, 1-100).
+    """Deprecated: memory is node-wide, use the global quota config instead. Removal planned for 1.21.
+    Reject memory-consuming update operations when process resident memory exceeds this percentage of total RAM (cgroup-aware, 1-100).
     Delete-style operations are still allowed so memory can be freed.
     """
     def __init__(
@@ -1553,6 +1669,28 @@ class StrictModeMultivector(google.protobuf.message.Message):
 
 global___StrictModeMultivector = StrictModeMultivector
 
+class PayloadStorageParams(google.protobuf.message.Message):
+    """Params of the payload storage"""
+
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    MEMORY_FIELD_NUMBER: builtins.int
+    memory: global___Memory.ValueType
+    """Memory placement of the payload storage.
+    Overrides the deprecated `on_disk_payload` flag if both are set.
+    `Pinned` is not supported for payload storage.
+    """
+    def __init__(
+        self,
+        *,
+        memory: global___Memory.ValueType | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_memory", b"_memory", "memory", b"memory"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_memory", b"_memory", "memory", b"memory"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_memory", b"_memory"]) -> typing_extensions.Literal["memory"] | None: ...
+
+global___PayloadStorageParams = PayloadStorageParams
+
 class CreateCollection(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -1588,6 +1726,7 @@ class CreateCollection(google.protobuf.message.Message):
     SPARSE_VECTORS_CONFIG_FIELD_NUMBER: builtins.int
     STRICT_MODE_CONFIG_FIELD_NUMBER: builtins.int
     METADATA_FIELD_NUMBER: builtins.int
+    PAYLOAD_FIELD_NUMBER: builtins.int
     collection_name: builtins.str
     """Name of the collection"""
     @property
@@ -1604,7 +1743,9 @@ class CreateCollection(google.protobuf.message.Message):
     equal to the number of nodes. Minimum is 1
     """
     on_disk_payload: builtins.bool
-    """If true - point's payload will not be stored in memory"""
+    """Deprecated: use `payload.memory` instead.
+    If true - point's payload will not be stored in memory
+    """
     timeout: builtins.int
     """Wait timeout for operation commit in seconds, if not specified - default
     value will be supplied
@@ -1630,6 +1771,9 @@ class CreateCollection(google.protobuf.message.Message):
     @property
     def metadata(self) -> google.protobuf.internal.containers.MessageMap[builtins.str, json_with_int_pb2.Value]:
         """Arbitrary JSON metadata for the collection"""
+    @property
+    def payload(self) -> global___PayloadStorageParams:
+        """Configuration of the payload storage"""
     def __init__(
         self,
         *,
@@ -1648,15 +1792,18 @@ class CreateCollection(google.protobuf.message.Message):
         sparse_vectors_config: global___SparseVectorConfig | None = ...,
         strict_mode_config: global___StrictModeConfig | None = ...,
         metadata: collections.abc.Mapping[builtins.str, json_with_int_pb2.Value] | None = ...,
+        payload: global___PayloadStorageParams | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_hnsw_config", b"_hnsw_config", "_on_disk_payload", b"_on_disk_payload", "_optimizers_config", b"_optimizers_config", "_quantization_config", b"_quantization_config", "_replication_factor", b"_replication_factor", "_shard_number", b"_shard_number", "_sharding_method", b"_sharding_method", "_sparse_vectors_config", b"_sparse_vectors_config", "_strict_mode_config", b"_strict_mode_config", "_timeout", b"_timeout", "_vectors_config", b"_vectors_config", "_wal_config", b"_wal_config", "_write_consistency_factor", b"_write_consistency_factor", "hnsw_config", b"hnsw_config", "on_disk_payload", b"on_disk_payload", "optimizers_config", b"optimizers_config", "quantization_config", b"quantization_config", "replication_factor", b"replication_factor", "shard_number", b"shard_number", "sharding_method", b"sharding_method", "sparse_vectors_config", b"sparse_vectors_config", "strict_mode_config", b"strict_mode_config", "timeout", b"timeout", "vectors_config", b"vectors_config", "wal_config", b"wal_config", "write_consistency_factor", b"write_consistency_factor"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_hnsw_config", b"_hnsw_config", "_on_disk_payload", b"_on_disk_payload", "_optimizers_config", b"_optimizers_config", "_quantization_config", b"_quantization_config", "_replication_factor", b"_replication_factor", "_shard_number", b"_shard_number", "_sharding_method", b"_sharding_method", "_sparse_vectors_config", b"_sparse_vectors_config", "_strict_mode_config", b"_strict_mode_config", "_timeout", b"_timeout", "_vectors_config", b"_vectors_config", "_wal_config", b"_wal_config", "_write_consistency_factor", b"_write_consistency_factor", "collection_name", b"collection_name", "hnsw_config", b"hnsw_config", "metadata", b"metadata", "on_disk_payload", b"on_disk_payload", "optimizers_config", b"optimizers_config", "quantization_config", b"quantization_config", "replication_factor", b"replication_factor", "shard_number", b"shard_number", "sharding_method", b"sharding_method", "sparse_vectors_config", b"sparse_vectors_config", "strict_mode_config", b"strict_mode_config", "timeout", b"timeout", "vectors_config", b"vectors_config", "wal_config", b"wal_config", "write_consistency_factor", b"write_consistency_factor"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_hnsw_config", b"_hnsw_config", "_on_disk_payload", b"_on_disk_payload", "_optimizers_config", b"_optimizers_config", "_payload", b"_payload", "_quantization_config", b"_quantization_config", "_replication_factor", b"_replication_factor", "_shard_number", b"_shard_number", "_sharding_method", b"_sharding_method", "_sparse_vectors_config", b"_sparse_vectors_config", "_strict_mode_config", b"_strict_mode_config", "_timeout", b"_timeout", "_vectors_config", b"_vectors_config", "_wal_config", b"_wal_config", "_write_consistency_factor", b"_write_consistency_factor", "hnsw_config", b"hnsw_config", "on_disk_payload", b"on_disk_payload", "optimizers_config", b"optimizers_config", "payload", b"payload", "quantization_config", b"quantization_config", "replication_factor", b"replication_factor", "shard_number", b"shard_number", "sharding_method", b"sharding_method", "sparse_vectors_config", b"sparse_vectors_config", "strict_mode_config", b"strict_mode_config", "timeout", b"timeout", "vectors_config", b"vectors_config", "wal_config", b"wal_config", "write_consistency_factor", b"write_consistency_factor"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_hnsw_config", b"_hnsw_config", "_on_disk_payload", b"_on_disk_payload", "_optimizers_config", b"_optimizers_config", "_payload", b"_payload", "_quantization_config", b"_quantization_config", "_replication_factor", b"_replication_factor", "_shard_number", b"_shard_number", "_sharding_method", b"_sharding_method", "_sparse_vectors_config", b"_sparse_vectors_config", "_strict_mode_config", b"_strict_mode_config", "_timeout", b"_timeout", "_vectors_config", b"_vectors_config", "_wal_config", b"_wal_config", "_write_consistency_factor", b"_write_consistency_factor", "collection_name", b"collection_name", "hnsw_config", b"hnsw_config", "metadata", b"metadata", "on_disk_payload", b"on_disk_payload", "optimizers_config", b"optimizers_config", "payload", b"payload", "quantization_config", b"quantization_config", "replication_factor", b"replication_factor", "shard_number", b"shard_number", "sharding_method", b"sharding_method", "sparse_vectors_config", b"sparse_vectors_config", "strict_mode_config", b"strict_mode_config", "timeout", b"timeout", "vectors_config", b"vectors_config", "wal_config", b"wal_config", "write_consistency_factor", b"write_consistency_factor"]) -> None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_hnsw_config", b"_hnsw_config"]) -> typing_extensions.Literal["hnsw_config"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_on_disk_payload", b"_on_disk_payload"]) -> typing_extensions.Literal["on_disk_payload"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_optimizers_config", b"_optimizers_config"]) -> typing_extensions.Literal["optimizers_config"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_payload", b"_payload"]) -> typing_extensions.Literal["payload"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_quantization_config", b"_quantization_config"]) -> typing_extensions.Literal["quantization_config"] | None: ...
     @typing.overload
@@ -1834,10 +1981,13 @@ class CollectionParams(google.protobuf.message.Message):
     SHARDING_METHOD_FIELD_NUMBER: builtins.int
     SPARSE_VECTORS_CONFIG_FIELD_NUMBER: builtins.int
     READ_FAN_OUT_DELAY_MS_FIELD_NUMBER: builtins.int
+    PAYLOAD_FIELD_NUMBER: builtins.int
     shard_number: builtins.int
     """Number of shards in collection"""
     on_disk_payload: builtins.bool
-    """If true - point's payload will not be stored in memory"""
+    """Deprecated: use `payload.memory` instead.
+    If true - point's payload will not be stored in memory
+    """
     @property
     def vectors_config(self) -> global___VectorsConfig:
         """Configuration for vectors"""
@@ -1854,6 +2004,9 @@ class CollectionParams(google.protobuf.message.Message):
         """Configuration for sparse vectors"""
     read_fan_out_delay_ms: builtins.int
     """Define number of milliseconds to wait before attempting to read from another replica."""
+    @property
+    def payload(self) -> global___PayloadStorageParams:
+        """Configuration of the payload storage"""
     def __init__(
         self,
         *,
@@ -1866,9 +2019,12 @@ class CollectionParams(google.protobuf.message.Message):
         sharding_method: global___ShardingMethod.ValueType | None = ...,
         sparse_vectors_config: global___SparseVectorConfig | None = ...,
         read_fan_out_delay_ms: builtins.int | None = ...,
+        payload: global___PayloadStorageParams | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_read_fan_out_delay_ms", b"_read_fan_out_delay_ms", "_read_fan_out_factor", b"_read_fan_out_factor", "_replication_factor", b"_replication_factor", "_sharding_method", b"_sharding_method", "_sparse_vectors_config", b"_sparse_vectors_config", "_vectors_config", b"_vectors_config", "_write_consistency_factor", b"_write_consistency_factor", "read_fan_out_delay_ms", b"read_fan_out_delay_ms", "read_fan_out_factor", b"read_fan_out_factor", "replication_factor", b"replication_factor", "sharding_method", b"sharding_method", "sparse_vectors_config", b"sparse_vectors_config", "vectors_config", b"vectors_config", "write_consistency_factor", b"write_consistency_factor"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_read_fan_out_delay_ms", b"_read_fan_out_delay_ms", "_read_fan_out_factor", b"_read_fan_out_factor", "_replication_factor", b"_replication_factor", "_sharding_method", b"_sharding_method", "_sparse_vectors_config", b"_sparse_vectors_config", "_vectors_config", b"_vectors_config", "_write_consistency_factor", b"_write_consistency_factor", "on_disk_payload", b"on_disk_payload", "read_fan_out_delay_ms", b"read_fan_out_delay_ms", "read_fan_out_factor", b"read_fan_out_factor", "replication_factor", b"replication_factor", "shard_number", b"shard_number", "sharding_method", b"sharding_method", "sparse_vectors_config", b"sparse_vectors_config", "vectors_config", b"vectors_config", "write_consistency_factor", b"write_consistency_factor"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_payload", b"_payload", "_read_fan_out_delay_ms", b"_read_fan_out_delay_ms", "_read_fan_out_factor", b"_read_fan_out_factor", "_replication_factor", b"_replication_factor", "_sharding_method", b"_sharding_method", "_sparse_vectors_config", b"_sparse_vectors_config", "_vectors_config", b"_vectors_config", "_write_consistency_factor", b"_write_consistency_factor", "payload", b"payload", "read_fan_out_delay_ms", b"read_fan_out_delay_ms", "read_fan_out_factor", b"read_fan_out_factor", "replication_factor", b"replication_factor", "sharding_method", b"sharding_method", "sparse_vectors_config", b"sparse_vectors_config", "vectors_config", b"vectors_config", "write_consistency_factor", b"write_consistency_factor"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_payload", b"_payload", "_read_fan_out_delay_ms", b"_read_fan_out_delay_ms", "_read_fan_out_factor", b"_read_fan_out_factor", "_replication_factor", b"_replication_factor", "_sharding_method", b"_sharding_method", "_sparse_vectors_config", b"_sparse_vectors_config", "_vectors_config", b"_vectors_config", "_write_consistency_factor", b"_write_consistency_factor", "on_disk_payload", b"on_disk_payload", "payload", b"payload", "read_fan_out_delay_ms", b"read_fan_out_delay_ms", "read_fan_out_factor", b"read_fan_out_factor", "replication_factor", b"replication_factor", "shard_number", b"shard_number", "sharding_method", b"sharding_method", "sparse_vectors_config", b"sparse_vectors_config", "vectors_config", b"vectors_config", "write_consistency_factor", b"write_consistency_factor"]) -> None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_payload", b"_payload"]) -> typing_extensions.Literal["payload"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_read_fan_out_delay_ms", b"_read_fan_out_delay_ms"]) -> typing_extensions.Literal["read_fan_out_delay_ms"] | None: ...
     @typing.overload
@@ -1894,16 +2050,22 @@ class CollectionParamsDiff(google.protobuf.message.Message):
     ON_DISK_PAYLOAD_FIELD_NUMBER: builtins.int
     READ_FAN_OUT_FACTOR_FIELD_NUMBER: builtins.int
     READ_FAN_OUT_DELAY_MS_FIELD_NUMBER: builtins.int
+    PAYLOAD_FIELD_NUMBER: builtins.int
     replication_factor: builtins.int
     """Number of replicas of each shard that network tries to maintain"""
     write_consistency_factor: builtins.int
     """How many replicas should apply the operation for us to consider it successful"""
     on_disk_payload: builtins.bool
-    """If true - point's payload will not be stored in memory"""
+    """Deprecated: use `payload.memory` instead.
+    If true - point's payload will not be stored in memory
+    """
     read_fan_out_factor: builtins.int
     """Fan-out every read request to these many additional remote nodes (and return first available response)"""
     read_fan_out_delay_ms: builtins.int
     """Define number of milliseconds to wait before attempting to read from another replica."""
+    @property
+    def payload(self) -> global___PayloadStorageParams:
+        """Update params of the payload storage"""
     def __init__(
         self,
         *,
@@ -1912,11 +2074,14 @@ class CollectionParamsDiff(google.protobuf.message.Message):
         on_disk_payload: builtins.bool | None = ...,
         read_fan_out_factor: builtins.int | None = ...,
         read_fan_out_delay_ms: builtins.int | None = ...,
+        payload: global___PayloadStorageParams | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_on_disk_payload", b"_on_disk_payload", "_read_fan_out_delay_ms", b"_read_fan_out_delay_ms", "_read_fan_out_factor", b"_read_fan_out_factor", "_replication_factor", b"_replication_factor", "_write_consistency_factor", b"_write_consistency_factor", "on_disk_payload", b"on_disk_payload", "read_fan_out_delay_ms", b"read_fan_out_delay_ms", "read_fan_out_factor", b"read_fan_out_factor", "replication_factor", b"replication_factor", "write_consistency_factor", b"write_consistency_factor"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_on_disk_payload", b"_on_disk_payload", "_read_fan_out_delay_ms", b"_read_fan_out_delay_ms", "_read_fan_out_factor", b"_read_fan_out_factor", "_replication_factor", b"_replication_factor", "_write_consistency_factor", b"_write_consistency_factor", "on_disk_payload", b"on_disk_payload", "read_fan_out_delay_ms", b"read_fan_out_delay_ms", "read_fan_out_factor", b"read_fan_out_factor", "replication_factor", b"replication_factor", "write_consistency_factor", b"write_consistency_factor"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_on_disk_payload", b"_on_disk_payload", "_payload", b"_payload", "_read_fan_out_delay_ms", b"_read_fan_out_delay_ms", "_read_fan_out_factor", b"_read_fan_out_factor", "_replication_factor", b"_replication_factor", "_write_consistency_factor", b"_write_consistency_factor", "on_disk_payload", b"on_disk_payload", "payload", b"payload", "read_fan_out_delay_ms", b"read_fan_out_delay_ms", "read_fan_out_factor", b"read_fan_out_factor", "replication_factor", b"replication_factor", "write_consistency_factor", b"write_consistency_factor"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_on_disk_payload", b"_on_disk_payload", "_payload", b"_payload", "_read_fan_out_delay_ms", b"_read_fan_out_delay_ms", "_read_fan_out_factor", b"_read_fan_out_factor", "_replication_factor", b"_replication_factor", "_write_consistency_factor", b"_write_consistency_factor", "on_disk_payload", b"on_disk_payload", "payload", b"payload", "read_fan_out_delay_ms", b"read_fan_out_delay_ms", "read_fan_out_factor", b"read_fan_out_factor", "replication_factor", b"replication_factor", "write_consistency_factor", b"write_consistency_factor"]) -> None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_on_disk_payload", b"_on_disk_payload"]) -> typing_extensions.Literal["on_disk_payload"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_payload", b"_payload"]) -> typing_extensions.Literal["payload"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_read_fan_out_delay_ms", b"_read_fan_out_delay_ms"]) -> typing_extensions.Literal["read_fan_out_delay_ms"] | None: ...
     @typing.overload
@@ -2002,14 +2167,25 @@ class KeywordIndexParams(google.protobuf.message.Message):
     IS_TENANT_FIELD_NUMBER: builtins.int
     ON_DISK_FIELD_NUMBER: builtins.int
     ENABLE_HNSW_FIELD_NUMBER: builtins.int
+    PREFIX_FIELD_NUMBER: builtins.int
+    MEMORY_FIELD_NUMBER: builtins.int
     is_tenant: builtins.bool
     """If true - used for tenant optimization."""
     on_disk: builtins.bool
-    """If true - store index on disk."""
+    """Deprecated: use `memory` instead.
+    If true - store index on disk.
+    """
     enable_hnsw: builtins.bool
     """Enable HNSW graph building for this payload field.
     If true, builds additional HNSW links (Need payload_m > 0).
     Default: true.
+    """
+    @property
+    def prefix(self) -> global___KeywordPrefixParams:
+        """If set, enable prefix matching (`match: { "prefix": ... }`) on this field."""
+    memory: global___Memory.ValueType
+    """Memory placement of the index.
+    Overrides the deprecated `on_disk` flag if both are set.
     """
     def __init__(
         self,
@@ -2017,17 +2193,36 @@ class KeywordIndexParams(google.protobuf.message.Message):
         is_tenant: builtins.bool | None = ...,
         on_disk: builtins.bool | None = ...,
         enable_hnsw: builtins.bool | None = ...,
+        prefix: global___KeywordPrefixParams | None = ...,
+        memory: global___Memory.ValueType | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw", "_is_tenant", b"_is_tenant", "_on_disk", b"_on_disk", "enable_hnsw", b"enable_hnsw", "is_tenant", b"is_tenant", "on_disk", b"on_disk"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw", "_is_tenant", b"_is_tenant", "_on_disk", b"_on_disk", "enable_hnsw", b"enable_hnsw", "is_tenant", b"is_tenant", "on_disk", b"on_disk"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw", "_is_tenant", b"_is_tenant", "_memory", b"_memory", "_on_disk", b"_on_disk", "_prefix", b"_prefix", "enable_hnsw", b"enable_hnsw", "is_tenant", b"is_tenant", "memory", b"memory", "on_disk", b"on_disk", "prefix", b"prefix"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw", "_is_tenant", b"_is_tenant", "_memory", b"_memory", "_on_disk", b"_on_disk", "_prefix", b"_prefix", "enable_hnsw", b"enable_hnsw", "is_tenant", b"is_tenant", "memory", b"memory", "on_disk", b"on_disk", "prefix", b"prefix"]) -> None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw"]) -> typing_extensions.Literal["enable_hnsw"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_is_tenant", b"_is_tenant"]) -> typing_extensions.Literal["is_tenant"] | None: ...
     @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_memory", b"_memory"]) -> typing_extensions.Literal["memory"] | None: ...
+    @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_on_disk", b"_on_disk"]) -> typing_extensions.Literal["on_disk"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_prefix", b"_prefix"]) -> typing_extensions.Literal["prefix"] | None: ...
 
 global___KeywordIndexParams = KeywordIndexParams
+
+class KeywordPrefixParams(google.protobuf.message.Message):
+    """Prefix matching options for the keyword index. Has no options yet:
+    presence of this message enables prefix matching.
+    """
+
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    def __init__(
+        self,
+    ) -> None: ...
+
+global___KeywordPrefixParams = KeywordPrefixParams
 
 class IntegerIndexParams(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
@@ -2037,6 +2232,7 @@ class IntegerIndexParams(google.protobuf.message.Message):
     IS_PRINCIPAL_FIELD_NUMBER: builtins.int
     ON_DISK_FIELD_NUMBER: builtins.int
     ENABLE_HNSW_FIELD_NUMBER: builtins.int
+    MEMORY_FIELD_NUMBER: builtins.int
     lookup: builtins.bool
     """If true - support direct lookups. Default is true."""
     range: builtins.bool
@@ -2047,11 +2243,17 @@ class IntegerIndexParams(google.protobuf.message.Message):
     Default is false.
     """
     on_disk: builtins.bool
-    """If true - store index on disk. Default is false."""
+    """Deprecated: use `memory` instead.
+    If true - store index on disk. Default is false.
+    """
     enable_hnsw: builtins.bool
     """Enable HNSW graph building for this payload field.
     If true, builds additional HNSW links (Need payload_m > 0).
     Default: true.
+    """
+    memory: global___Memory.ValueType
+    """Memory placement of the index.
+    Overrides the deprecated `on_disk` flag if both are set.
     """
     def __init__(
         self,
@@ -2061,15 +2263,18 @@ class IntegerIndexParams(google.protobuf.message.Message):
         is_principal: builtins.bool | None = ...,
         on_disk: builtins.bool | None = ...,
         enable_hnsw: builtins.bool | None = ...,
+        memory: global___Memory.ValueType | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw", "_is_principal", b"_is_principal", "_lookup", b"_lookup", "_on_disk", b"_on_disk", "_range", b"_range", "enable_hnsw", b"enable_hnsw", "is_principal", b"is_principal", "lookup", b"lookup", "on_disk", b"on_disk", "range", b"range"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw", "_is_principal", b"_is_principal", "_lookup", b"_lookup", "_on_disk", b"_on_disk", "_range", b"_range", "enable_hnsw", b"enable_hnsw", "is_principal", b"is_principal", "lookup", b"lookup", "on_disk", b"on_disk", "range", b"range"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw", "_is_principal", b"_is_principal", "_lookup", b"_lookup", "_memory", b"_memory", "_on_disk", b"_on_disk", "_range", b"_range", "enable_hnsw", b"enable_hnsw", "is_principal", b"is_principal", "lookup", b"lookup", "memory", b"memory", "on_disk", b"on_disk", "range", b"range"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw", "_is_principal", b"_is_principal", "_lookup", b"_lookup", "_memory", b"_memory", "_on_disk", b"_on_disk", "_range", b"_range", "enable_hnsw", b"enable_hnsw", "is_principal", b"is_principal", "lookup", b"lookup", "memory", b"memory", "on_disk", b"on_disk", "range", b"range"]) -> None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw"]) -> typing_extensions.Literal["enable_hnsw"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_is_principal", b"_is_principal"]) -> typing_extensions.Literal["is_principal"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_lookup", b"_lookup"]) -> typing_extensions.Literal["lookup"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_memory", b"_memory"]) -> typing_extensions.Literal["memory"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_on_disk", b"_on_disk"]) -> typing_extensions.Literal["on_disk"] | None: ...
     @typing.overload
@@ -2083,8 +2288,11 @@ class FloatIndexParams(google.protobuf.message.Message):
     ON_DISK_FIELD_NUMBER: builtins.int
     IS_PRINCIPAL_FIELD_NUMBER: builtins.int
     ENABLE_HNSW_FIELD_NUMBER: builtins.int
+    MEMORY_FIELD_NUMBER: builtins.int
     on_disk: builtins.bool
-    """If true - store index on disk."""
+    """Deprecated: use `memory` instead.
+    If true - store index on disk.
+    """
     is_principal: builtins.bool
     """If true - use this key to organize storage of the collection data.
     This option assumes that this key will be used in majority of filtered requests.
@@ -2094,19 +2302,26 @@ class FloatIndexParams(google.protobuf.message.Message):
     If true, builds additional HNSW links (Need payload_m > 0).
     Default: true.
     """
+    memory: global___Memory.ValueType
+    """Memory placement of the index.
+    Overrides the deprecated `on_disk` flag if both are set.
+    """
     def __init__(
         self,
         *,
         on_disk: builtins.bool | None = ...,
         is_principal: builtins.bool | None = ...,
         enable_hnsw: builtins.bool | None = ...,
+        memory: global___Memory.ValueType | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw", "_is_principal", b"_is_principal", "_on_disk", b"_on_disk", "enable_hnsw", b"enable_hnsw", "is_principal", b"is_principal", "on_disk", b"on_disk"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw", "_is_principal", b"_is_principal", "_on_disk", b"_on_disk", "enable_hnsw", b"enable_hnsw", "is_principal", b"is_principal", "on_disk", b"on_disk"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw", "_is_principal", b"_is_principal", "_memory", b"_memory", "_on_disk", b"_on_disk", "enable_hnsw", b"enable_hnsw", "is_principal", b"is_principal", "memory", b"memory", "on_disk", b"on_disk"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw", "_is_principal", b"_is_principal", "_memory", b"_memory", "_on_disk", b"_on_disk", "enable_hnsw", b"enable_hnsw", "is_principal", b"is_principal", "memory", b"memory", "on_disk", b"on_disk"]) -> None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw"]) -> typing_extensions.Literal["enable_hnsw"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_is_principal", b"_is_principal"]) -> typing_extensions.Literal["is_principal"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_memory", b"_memory"]) -> typing_extensions.Literal["memory"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_on_disk", b"_on_disk"]) -> typing_extensions.Literal["on_disk"] | None: ...
 
@@ -2117,23 +2332,33 @@ class GeoIndexParams(google.protobuf.message.Message):
 
     ON_DISK_FIELD_NUMBER: builtins.int
     ENABLE_HNSW_FIELD_NUMBER: builtins.int
+    MEMORY_FIELD_NUMBER: builtins.int
     on_disk: builtins.bool
-    """If true - store index on disk."""
+    """Deprecated: use `memory` instead.
+    If true - store index on disk.
+    """
     enable_hnsw: builtins.bool
     """Enable HNSW graph building for this payload field.
     If true, builds additional HNSW links (Need payload_m > 0).
     Default: true.
+    """
+    memory: global___Memory.ValueType
+    """Memory placement of the index.
+    Overrides the deprecated `on_disk` flag if both are set.
     """
     def __init__(
         self,
         *,
         on_disk: builtins.bool | None = ...,
         enable_hnsw: builtins.bool | None = ...,
+        memory: global___Memory.ValueType | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw", "_on_disk", b"_on_disk", "enable_hnsw", b"enable_hnsw", "on_disk", b"on_disk"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw", "_on_disk", b"_on_disk", "enable_hnsw", b"enable_hnsw", "on_disk", b"on_disk"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw", "_memory", b"_memory", "_on_disk", b"_on_disk", "enable_hnsw", b"enable_hnsw", "memory", b"memory", "on_disk", b"on_disk"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw", "_memory", b"_memory", "_on_disk", b"_on_disk", "enable_hnsw", b"enable_hnsw", "memory", b"memory", "on_disk", b"on_disk"]) -> None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw"]) -> typing_extensions.Literal["enable_hnsw"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_memory", b"_memory"]) -> typing_extensions.Literal["memory"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_on_disk", b"_on_disk"]) -> typing_extensions.Literal["on_disk"] | None: ...
 
@@ -2173,6 +2398,7 @@ class TextIndexParams(google.protobuf.message.Message):
     STEMMER_FIELD_NUMBER: builtins.int
     ASCII_FOLDING_FIELD_NUMBER: builtins.int
     ENABLE_HNSW_FIELD_NUMBER: builtins.int
+    MEMORY_FIELD_NUMBER: builtins.int
     tokenizer: global___TokenizerType.ValueType
     """Tokenizer type"""
     lowercase: builtins.bool
@@ -2182,7 +2408,9 @@ class TextIndexParams(google.protobuf.message.Message):
     max_token_len: builtins.int
     """Maximal token length"""
     on_disk: builtins.bool
-    """If true - store index on disk."""
+    """Deprecated: use `memory` instead.
+    If true - store index on disk.
+    """
     @property
     def stopwords(self) -> global___StopwordsSet:
         """Stopwords for the text index"""
@@ -2200,6 +2428,10 @@ class TextIndexParams(google.protobuf.message.Message):
     If true, builds additional HNSW links (Need payload_m > 0).
     Default: true.
     """
+    memory: global___Memory.ValueType
+    """Memory placement of the index.
+    Overrides the deprecated `on_disk` flag if both are set.
+    """
     def __init__(
         self,
         *,
@@ -2213,9 +2445,10 @@ class TextIndexParams(google.protobuf.message.Message):
         stemmer: global___StemmingAlgorithm | None = ...,
         ascii_folding: builtins.bool | None = ...,
         enable_hnsw: builtins.bool | None = ...,
+        memory: global___Memory.ValueType | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_ascii_folding", b"_ascii_folding", "_enable_hnsw", b"_enable_hnsw", "_lowercase", b"_lowercase", "_max_token_len", b"_max_token_len", "_min_token_len", b"_min_token_len", "_on_disk", b"_on_disk", "_phrase_matching", b"_phrase_matching", "_stemmer", b"_stemmer", "_stopwords", b"_stopwords", "ascii_folding", b"ascii_folding", "enable_hnsw", b"enable_hnsw", "lowercase", b"lowercase", "max_token_len", b"max_token_len", "min_token_len", b"min_token_len", "on_disk", b"on_disk", "phrase_matching", b"phrase_matching", "stemmer", b"stemmer", "stopwords", b"stopwords"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_ascii_folding", b"_ascii_folding", "_enable_hnsw", b"_enable_hnsw", "_lowercase", b"_lowercase", "_max_token_len", b"_max_token_len", "_min_token_len", b"_min_token_len", "_on_disk", b"_on_disk", "_phrase_matching", b"_phrase_matching", "_stemmer", b"_stemmer", "_stopwords", b"_stopwords", "ascii_folding", b"ascii_folding", "enable_hnsw", b"enable_hnsw", "lowercase", b"lowercase", "max_token_len", b"max_token_len", "min_token_len", b"min_token_len", "on_disk", b"on_disk", "phrase_matching", b"phrase_matching", "stemmer", b"stemmer", "stopwords", b"stopwords", "tokenizer", b"tokenizer"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_ascii_folding", b"_ascii_folding", "_enable_hnsw", b"_enable_hnsw", "_lowercase", b"_lowercase", "_max_token_len", b"_max_token_len", "_memory", b"_memory", "_min_token_len", b"_min_token_len", "_on_disk", b"_on_disk", "_phrase_matching", b"_phrase_matching", "_stemmer", b"_stemmer", "_stopwords", b"_stopwords", "ascii_folding", b"ascii_folding", "enable_hnsw", b"enable_hnsw", "lowercase", b"lowercase", "max_token_len", b"max_token_len", "memory", b"memory", "min_token_len", b"min_token_len", "on_disk", b"on_disk", "phrase_matching", b"phrase_matching", "stemmer", b"stemmer", "stopwords", b"stopwords"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_ascii_folding", b"_ascii_folding", "_enable_hnsw", b"_enable_hnsw", "_lowercase", b"_lowercase", "_max_token_len", b"_max_token_len", "_memory", b"_memory", "_min_token_len", b"_min_token_len", "_on_disk", b"_on_disk", "_phrase_matching", b"_phrase_matching", "_stemmer", b"_stemmer", "_stopwords", b"_stopwords", "ascii_folding", b"ascii_folding", "enable_hnsw", b"enable_hnsw", "lowercase", b"lowercase", "max_token_len", b"max_token_len", "memory", b"memory", "min_token_len", b"min_token_len", "on_disk", b"on_disk", "phrase_matching", b"phrase_matching", "stemmer", b"stemmer", "stopwords", b"stopwords", "tokenizer", b"tokenizer"]) -> None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_ascii_folding", b"_ascii_folding"]) -> typing_extensions.Literal["ascii_folding"] | None: ...
     @typing.overload
@@ -2224,6 +2457,8 @@ class TextIndexParams(google.protobuf.message.Message):
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_lowercase", b"_lowercase"]) -> typing_extensions.Literal["lowercase"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_max_token_len", b"_max_token_len"]) -> typing_extensions.Literal["max_token_len"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_memory", b"_memory"]) -> typing_extensions.Literal["memory"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_min_token_len", b"_min_token_len"]) -> typing_extensions.Literal["min_token_len"] | None: ...
     @typing.overload
@@ -2241,17 +2476,22 @@ class StemmingAlgorithm(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
     SNOWBALL_FIELD_NUMBER: builtins.int
+    DISABLED_FIELD_NUMBER: builtins.int
     @property
     def snowball(self) -> global___SnowballParams:
         """Parameters for snowball stemming"""
+    @property
+    def disabled(self) -> global___DisabledStemmer:
+        """Explicitly disable stemming (overrides the language default)"""
     def __init__(
         self,
         *,
         snowball: global___SnowballParams | None = ...,
+        disabled: global___DisabledStemmer | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["snowball", b"snowball", "stemming_params", b"stemming_params"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["snowball", b"snowball", "stemming_params", b"stemming_params"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["stemming_params", b"stemming_params"]) -> typing_extensions.Literal["snowball"] | None: ...
+    def HasField(self, field_name: typing_extensions.Literal["disabled", b"disabled", "snowball", b"snowball", "stemming_params", b"stemming_params"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["disabled", b"disabled", "snowball", b"snowball", "stemming_params", b"stemming_params"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["stemming_params", b"stemming_params"]) -> typing_extensions.Literal["snowball", "disabled"] | None: ...
 
 global___StemmingAlgorithm = StemmingAlgorithm
 
@@ -2270,28 +2510,49 @@ class SnowballParams(google.protobuf.message.Message):
 
 global___SnowballParams = SnowballParams
 
+class DisabledStemmer(google.protobuf.message.Message):
+    """Marker selecting the "no stemming" algorithm."""
+
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    def __init__(
+        self,
+    ) -> None: ...
+
+global___DisabledStemmer = DisabledStemmer
+
 class BoolIndexParams(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
     ON_DISK_FIELD_NUMBER: builtins.int
     ENABLE_HNSW_FIELD_NUMBER: builtins.int
+    MEMORY_FIELD_NUMBER: builtins.int
     on_disk: builtins.bool
-    """If true - store index on disk."""
+    """Deprecated: use `memory` instead.
+    If true - store index on disk.
+    """
     enable_hnsw: builtins.bool
     """Enable HNSW graph building for this payload field.
     If true, builds additional HNSW links (Need payload_m > 0).
     Default: true.
+    """
+    memory: global___Memory.ValueType
+    """Memory placement of the index.
+    Overrides the deprecated `on_disk` flag if both are set.
     """
     def __init__(
         self,
         *,
         on_disk: builtins.bool | None = ...,
         enable_hnsw: builtins.bool | None = ...,
+        memory: global___Memory.ValueType | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw", "_on_disk", b"_on_disk", "enable_hnsw", b"enable_hnsw", "on_disk", b"on_disk"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw", "_on_disk", b"_on_disk", "enable_hnsw", b"enable_hnsw", "on_disk", b"on_disk"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw", "_memory", b"_memory", "_on_disk", b"_on_disk", "enable_hnsw", b"enable_hnsw", "memory", b"memory", "on_disk", b"on_disk"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw", "_memory", b"_memory", "_on_disk", b"_on_disk", "enable_hnsw", b"enable_hnsw", "memory", b"memory", "on_disk", b"on_disk"]) -> None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw"]) -> typing_extensions.Literal["enable_hnsw"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_memory", b"_memory"]) -> typing_extensions.Literal["memory"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_on_disk", b"_on_disk"]) -> typing_extensions.Literal["on_disk"] | None: ...
 
@@ -2303,8 +2564,11 @@ class DatetimeIndexParams(google.protobuf.message.Message):
     ON_DISK_FIELD_NUMBER: builtins.int
     IS_PRINCIPAL_FIELD_NUMBER: builtins.int
     ENABLE_HNSW_FIELD_NUMBER: builtins.int
+    MEMORY_FIELD_NUMBER: builtins.int
     on_disk: builtins.bool
-    """If true - store index on disk."""
+    """Deprecated: use `memory` instead.
+    If true - store index on disk.
+    """
     is_principal: builtins.bool
     """If true - use this key to organize storage of the collection data.
     This option assumes that this key will be used in majority of filtered requests.
@@ -2314,19 +2578,26 @@ class DatetimeIndexParams(google.protobuf.message.Message):
     If true, builds additional HNSW links (Need payload_m > 0).
     Default: true.
     """
+    memory: global___Memory.ValueType
+    """Memory placement of the index.
+    Overrides the deprecated `on_disk` flag if both are set.
+    """
     def __init__(
         self,
         *,
         on_disk: builtins.bool | None = ...,
         is_principal: builtins.bool | None = ...,
         enable_hnsw: builtins.bool | None = ...,
+        memory: global___Memory.ValueType | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw", "_is_principal", b"_is_principal", "_on_disk", b"_on_disk", "enable_hnsw", b"enable_hnsw", "is_principal", b"is_principal", "on_disk", b"on_disk"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw", "_is_principal", b"_is_principal", "_on_disk", b"_on_disk", "enable_hnsw", b"enable_hnsw", "is_principal", b"is_principal", "on_disk", b"on_disk"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw", "_is_principal", b"_is_principal", "_memory", b"_memory", "_on_disk", b"_on_disk", "enable_hnsw", b"enable_hnsw", "is_principal", b"is_principal", "memory", b"memory", "on_disk", b"on_disk"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw", "_is_principal", b"_is_principal", "_memory", b"_memory", "_on_disk", b"_on_disk", "enable_hnsw", b"enable_hnsw", "is_principal", b"is_principal", "memory", b"memory", "on_disk", b"on_disk"]) -> None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw"]) -> typing_extensions.Literal["enable_hnsw"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_is_principal", b"_is_principal"]) -> typing_extensions.Literal["is_principal"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_memory", b"_memory"]) -> typing_extensions.Literal["memory"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_on_disk", b"_on_disk"]) -> typing_extensions.Literal["on_disk"] | None: ...
 
@@ -2338,14 +2609,21 @@ class UuidIndexParams(google.protobuf.message.Message):
     IS_TENANT_FIELD_NUMBER: builtins.int
     ON_DISK_FIELD_NUMBER: builtins.int
     ENABLE_HNSW_FIELD_NUMBER: builtins.int
+    MEMORY_FIELD_NUMBER: builtins.int
     is_tenant: builtins.bool
     """If true - used for tenant optimization."""
     on_disk: builtins.bool
-    """If true - store index on disk."""
+    """Deprecated: use `memory` instead.
+    If true - store index on disk.
+    """
     enable_hnsw: builtins.bool
     """Enable HNSW graph building for this payload field.
     If true, builds additional HNSW links (Need payload_m > 0).
     Default: true.
+    """
+    memory: global___Memory.ValueType
+    """Memory placement of the index.
+    Overrides the deprecated `on_disk` flag if both are set.
     """
     def __init__(
         self,
@@ -2353,13 +2631,16 @@ class UuidIndexParams(google.protobuf.message.Message):
         is_tenant: builtins.bool | None = ...,
         on_disk: builtins.bool | None = ...,
         enable_hnsw: builtins.bool | None = ...,
+        memory: global___Memory.ValueType | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw", "_is_tenant", b"_is_tenant", "_on_disk", b"_on_disk", "enable_hnsw", b"enable_hnsw", "is_tenant", b"is_tenant", "on_disk", b"on_disk"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw", "_is_tenant", b"_is_tenant", "_on_disk", b"_on_disk", "enable_hnsw", b"enable_hnsw", "is_tenant", b"is_tenant", "on_disk", b"on_disk"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw", "_is_tenant", b"_is_tenant", "_memory", b"_memory", "_on_disk", b"_on_disk", "enable_hnsw", b"enable_hnsw", "is_tenant", b"is_tenant", "memory", b"memory", "on_disk", b"on_disk"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw", "_is_tenant", b"_is_tenant", "_memory", b"_memory", "_on_disk", b"_on_disk", "enable_hnsw", b"enable_hnsw", "is_tenant", b"is_tenant", "memory", b"memory", "on_disk", b"on_disk"]) -> None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw"]) -> typing_extensions.Literal["enable_hnsw"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_is_tenant", b"_is_tenant"]) -> typing_extensions.Literal["is_tenant"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_memory", b"_memory"]) -> typing_extensions.Literal["memory"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_on_disk", b"_on_disk"]) -> typing_extensions.Literal["on_disk"] | None: ...
 
@@ -2867,6 +3148,7 @@ class CollectionClusterInfoResponse(google.protobuf.message.Message):
     REMOTE_SHARDS_FIELD_NUMBER: builtins.int
     SHARD_TRANSFERS_FIELD_NUMBER: builtins.int
     RESHARDING_OPERATIONS_FIELD_NUMBER: builtins.int
+    TIME_FIELD_NUMBER: builtins.int
     peer_id: builtins.int
     """ID of this peer"""
     shard_count: builtins.int
@@ -2883,6 +3165,8 @@ class CollectionClusterInfoResponse(google.protobuf.message.Message):
     @property
     def resharding_operations(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___ReshardingInfo]:
         """Resharding operations"""
+    time: builtins.float
+    """Time spent to process"""
     def __init__(
         self,
         *,
@@ -2892,8 +3176,9 @@ class CollectionClusterInfoResponse(google.protobuf.message.Message):
         remote_shards: collections.abc.Iterable[global___RemoteShardInfo] | None = ...,
         shard_transfers: collections.abc.Iterable[global___ShardTransferInfo] | None = ...,
         resharding_operations: collections.abc.Iterable[global___ReshardingInfo] | None = ...,
+        time: builtins.float = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["local_shards", b"local_shards", "peer_id", b"peer_id", "remote_shards", b"remote_shards", "resharding_operations", b"resharding_operations", "shard_count", b"shard_count", "shard_transfers", b"shard_transfers"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["local_shards", b"local_shards", "peer_id", b"peer_id", "remote_shards", b"remote_shards", "resharding_operations", b"resharding_operations", "shard_count", b"shard_count", "shard_transfers", b"shard_transfers", "time", b"time"]) -> None: ...
 
 global___CollectionClusterInfoResponse = CollectionClusterInfoResponse
 
@@ -3180,13 +3465,17 @@ class UpdateCollectionClusterSetupResponse(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
     RESULT_FIELD_NUMBER: builtins.int
+    TIME_FIELD_NUMBER: builtins.int
     result: builtins.bool
+    time: builtins.float
+    """Time spent to process"""
     def __init__(
         self,
         *,
         result: builtins.bool = ...,
+        time: builtins.float = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["result", b"result"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["result", b"result", "time", b"time"]) -> None: ...
 
 global___UpdateCollectionClusterSetupResponse = UpdateCollectionClusterSetupResponse
 
@@ -3265,13 +3554,17 @@ class CreateShardKeyResponse(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
     RESULT_FIELD_NUMBER: builtins.int
+    TIME_FIELD_NUMBER: builtins.int
     result: builtins.bool
+    time: builtins.float
+    """Time spent to process"""
     def __init__(
         self,
         *,
         result: builtins.bool = ...,
+        time: builtins.float = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["result", b"result"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["result", b"result", "time", b"time"]) -> None: ...
 
 global___CreateShardKeyResponse = CreateShardKeyResponse
 
@@ -3279,13 +3572,17 @@ class DeleteShardKeyResponse(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
     RESULT_FIELD_NUMBER: builtins.int
+    TIME_FIELD_NUMBER: builtins.int
     result: builtins.bool
+    time: builtins.float
+    """Time spent to process"""
     def __init__(
         self,
         *,
         result: builtins.bool = ...,
+        time: builtins.float = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["result", b"result"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["result", b"result", "time", b"time"]) -> None: ...
 
 global___DeleteShardKeyResponse = DeleteShardKeyResponse
 

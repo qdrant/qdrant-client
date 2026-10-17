@@ -157,6 +157,22 @@ def test_simple():
     compare_client_results(local_client, remote_client, searcher.simple_search_code)
 
 
+def test_simple_opt_vectors_search():
+    fixture_points = generate_multivector_fixtures(100, skip_vectors=True)
+
+    searcher = TestSimpleSearcher()
+
+    local_client = init_local()
+    init_client(local_client, fixture_points, vectors_config=multi_vector_config)
+
+    remote_client = init_remote()
+    init_client(remote_client, fixture_points, vectors_config=multi_vector_config)
+
+    compare_client_results(local_client, remote_client, searcher.simple_search_text)
+    compare_client_results(local_client, remote_client, searcher.simple_search_image)
+    compare_client_results(local_client, remote_client, searcher.simple_search_code)
+
+
 def test_mmr():
     fixture_points = generate_multivector_fixtures(10)
 
@@ -214,7 +230,7 @@ def test_search_with_persistence():
         local_client = init_local(tmpdir)
         init_client(local_client, fixture_points, vectors_config=multi_vector_config)
 
-        del local_client
+        local_client.close()
         local_client_2 = init_local(tmpdir)
 
         remote_client = init_remote()
@@ -257,7 +273,7 @@ def test_query_with_nan():
 
     vector = generate_random_multivector(text_vector_size, 10)
     vector[0][4] = np.nan
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         local_client.query_points(COLLECTION_NAME, query=vector, using="multi-text")
     with pytest.raises(UnexpectedResponse):
         remote_client.query_points(COLLECTION_NAME, query=vector, using="multi-text")
@@ -280,7 +296,7 @@ def test_query_with_nan():
     init_client(local_client, fixture_points, vectors_config=single_multi_vector_config)
     init_client(remote_client, fixture_points, vectors_config=single_multi_vector_config)
 
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         local_client.query_points(COLLECTION_NAME, query=vector)
     with pytest.raises(UnexpectedResponse):
         remote_client.query_points(COLLECTION_NAME, query=vector)

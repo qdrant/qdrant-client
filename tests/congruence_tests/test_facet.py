@@ -206,3 +206,58 @@ def test_other_types_in_local():
 
     # Assertion is that it doesn't raise an exception
     client.facet(collection_name=collection_name, key="a")
+
+
+# `False == 0` and `True == 1` in python, so a key holding both bools and ints is where
+# local mode risks merging them into a single bucket. Every key below carries the same
+# mixed values, but gets a different payload index on the server: (key, the index to
+# build on it, the type of value that faceting through that index yields).
+MIXED_TYPE_INDEXES = [
+    ("mixed_bool", models.PayloadSchemaType.BOOL, bool),
+    ("mixed_int", models.PayloadSchemaType.INTEGER, int),
+    ("mixed_str", models.PayloadSchemaType.KEYWORD, str),
+]
+MIXED_TYPE_VALUES = [[False, 0], True, 1, "0", [True, 1], [True, True]]
+
+
+def test_mixed_scalar_types():
+    """Facet a key whose values span bools, ints and strings.
+
+    A facet on the server reads a single payload index, so it only ever returns values
+    of that index's type. Local mode facets the raw payload and returns every type at
+    once, so its hits are compared per type against the matching indexed key.
+    """
+    collection_name = f"{COLLECTION_NAME}_mixed_facet"
+    points = [
+        models.PointStruct(
+            id=idx,
+            vector=[0.1, 0.2],
+            payload={key: values for key, _, _ in MIXED_TYPE_INDEXES},
+        )
+        for idx, values in enumerate(MIXED_TYPE_VALUES)
+    ]
+    vectors_config = models.VectorParams(size=2, distance=models.Distance.DOT)
+
+    local_client = init_local()
+    init_client(local_client, points, collection_name, vectors_config=vectors_config)
+
+    remote_client = init_remote()
+    init_client(remote_client, points, collection_name, vectors_config=vectors_config)
+    for key, schema, _ in MIXED_TYPE_INDEXES:
+        remote_client.create_payload_index(collection_name, key, field_schema=schema)
+
+    def hits(client: QdrantBase, facet_key: str) -> list[models.FacetValueHit]:
+        return client.facet(
+            collection_name=collection_name, key=facet_key, limit=100, exact=True
+        ).hits
+
+    for key, _, value_type in MIXED_TYPE_INDEXES:
+        remote_hits = hits(remote_client, key)
+        local_hits = [hit for hit in hits(local_client, key) if type(hit.value) is value_type]
+
+        # compare the types explicitly: pydantic considers FacetValueHit(value=True)
+        # and FacetValueHit(value=1) equal, which is the very thing under test here
+        assert [(type(hit.value), hit.value, hit.count) for hit in local_hits] == [
+            (type(hit.value), hit.value, hit.count) for hit in remote_hits
+        ]
+        assert remote_hits, f"no {value_type.__name__} values were faceted for {key}"

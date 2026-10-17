@@ -37,8 +37,7 @@ cd "$PROJECT_ROOT"
 poetry install
 
 cd "$QDRANT_PATH"
-git clone --sparse --filter=blob:none --depth=1 git@github.com:qdrant/qdrant.git
-
+git clone --sparse --filter=blob:none --depth=1 -b dev git@github.com:qdrant/qdrant.git
 cd qdrant
 git sparse-checkout add docs/redoc/master
 

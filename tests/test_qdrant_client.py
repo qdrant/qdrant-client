@@ -52,6 +52,7 @@ from qdrant_client.models import (
     VectorParamsDiff,
 )
 from qdrant_client.qdrant_remote import QdrantRemote
+from qdrant_client.uploader import grpc_uploader
 from qdrant_client.uploader.grpc_uploader import payload_to_grpc
 from tests.congruence_tests.test_common import (
     generate_fixtures,
@@ -1065,6 +1066,32 @@ def test_points_crud(prefer_grpc):
 
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])
+def test_url_reserved_chars_in_names(prefer_grpc):
+    client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
+    # REST used to cut the name at `#` and send requests to `/collections/client_test`
+    collection_name = f"{COLLECTION_NAME}#1"
+    for name in (COLLECTION_NAME, collection_name):
+        if client.collection_exists(name):
+            client.delete_collection(name)
+        client.create_collection(
+            name, vectors_config=VectorParams(size=DIM, distance=Distance.DOT)
+        )
+
+    client.create_payload_index(collection_name, "user", PayloadSchemaType.KEYWORD)
+    client.create_payload_index(collection_name, '"user#id"', PayloadSchemaType.KEYWORD)
+    client.delete_payload_index(collection_name, '"user#id"')
+    assert list(client.get_collection(collection_name).payload_schema) == ["user"]
+
+    # `..` would turn the request into `DELETE /collections/client_test`
+    with pytest.raises(RpcError if prefer_grpc else ValueError):
+        client.delete_payload_index(COLLECTION_NAME, "..")
+
+    client.delete_collection(collection_name)
+    assert not client.collection_exists(collection_name)
+    assert client.collection_exists(COLLECTION_NAME)
+
+
+@pytest.mark.parametrize("prefer_grpc", [False, True])
 def test_quantization_config(prefer_grpc):
     client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
     if client.collection_exists(COLLECTION_NAME):
@@ -1116,6 +1143,8 @@ def test_quantization_config(prefer_grpc):
 @pytest.mark.parametrize("prefer_grpc", [False, True])
 def test_custom_sharding(prefer_grpc):
     client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
+    if client.cluster_status().status == "disabled":
+        pytest.skip("Requires distributed mode")
 
     def init_collection():
         if client.collection_exists(COLLECTION_NAME):
@@ -1250,6 +1279,157 @@ def test_custom_sharding(prefer_grpc):
     # endregion
 
     client.delete_shard_key(collection_name=COLLECTION_NAME, shard_key=dogs_shard_key)
+
+
+@pytest.mark.parametrize("prefer_grpc", [False, True])
+def test_shard_key_from_points_selector(prefer_grpc):
+    """A shard key set inside a points selector must be used, and an explicitly passed
+    `shard_key_selector` must take precedence over it, even if it is falsy."""
+    client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
+    if client.cluster_status().status == "disabled":
+        pytest.skip("Requires distributed mode")
+
+    # `0` is a valid shard key, it must not be treated as a missing one
+    zero_shard_key, one_shard_key = 0, 1
+    shard_key_ids = {zero_shard_key: [1, 2], one_shard_key: [3, 4]}
+    cat_payload = {"name": "Barsik"}
+    dog_payload = {"name": "Sharik"}
+
+    def points(shard_key):
+        return [
+            PointStruct(
+                id=point_id, vector={"text": np.random.rand(DIM).tolist()}, payload=cat_payload
+            )
+            for point_id in shard_key_ids[shard_key]
+        ]
+
+    def init_collection():
+        if client.collection_exists(COLLECTION_NAME):
+            client.delete_collection(collection_name=COLLECTION_NAME)
+        client.create_collection(
+            collection_name=COLLECTION_NAME,
+            vectors_config={"text": VectorParams(size=DIM, distance=Distance.DOT)},
+            sharding_method=models.ShardingMethod.CUSTOM,
+        )
+        for shard_key in shard_key_ids:
+            client.create_shard_key(collection_name=COLLECTION_NAME, shard_key=shard_key)
+        reset_points()
+
+    # restores payloads, vectors and points changed by the previous case
+    def reset_points():
+        for shard_key in shard_key_ids:
+            client.upsert(
+                collection_name=COLLECTION_NAME,
+                points=points(shard_key),
+                shard_key_selector=shard_key,
+            )
+
+    def records(shard_key):
+        return client.scroll(
+            collection_name=COLLECTION_NAME,
+            shard_key_selector=shard_key,
+            with_vectors=True,
+            limit=10,
+        )[0]
+
+    def payloads(shard_key):
+        return [record.payload for record in records(shard_key)]
+
+    # both selectors are meant for the `zero_shard_key` shard: the ids are the ones of its
+    # points, the filter matches every point of whichever shard the operation reaches
+    def selectors(selector_shard_key):
+        return [
+            models.PointIdsList(
+                points=shard_key_ids[zero_shard_key], shard_key=selector_shard_key
+            ),
+            models.FilterSelector(filter=models.Filter(), shard_key=selector_shard_key),
+        ]
+
+    # shard key in the points selector, explicitly passed shard_key_selector. Every combination
+    # must apply the operation to the `zero_shard_key` shard, and only to it
+    shard_key_combinations = [
+        (zero_shard_key, None),  # taken from the points selector
+        (one_shard_key, zero_shard_key),  # explicit one wins over the one in the selector
+        (None, zero_shard_key),  # explicit one is used if the selector has none
+    ]
+
+    def cases():
+        for selector_shard_key, explicit_shard_key in shard_key_combinations:
+            for points_selector in selectors(selector_shard_key):
+                reset_points()
+                yield points_selector, explicit_shard_key
+
+    init_collection()
+
+    # region delete_payload
+    for points_selector, explicit_shard_key in cases():
+        client.delete_payload(
+            COLLECTION_NAME,
+            keys=["name"],
+            points=points_selector,
+            shard_key_selector=explicit_shard_key,
+        )
+        assert payloads(zero_shard_key) == [{}, {}]
+        assert payloads(one_shard_key) == [cat_payload, cat_payload]
+    # endregion
+
+    # region set_payload
+    for points_selector, explicit_shard_key in cases():
+        client.set_payload(
+            COLLECTION_NAME,
+            payload={"age": 3},
+            points=points_selector,
+            shard_key_selector=explicit_shard_key,
+        )
+        assert payloads(zero_shard_key) == [{**cat_payload, "age": 3}] * 2
+        assert payloads(one_shard_key) == [cat_payload, cat_payload]
+    # endregion
+
+    # region overwrite_payload
+    for points_selector, explicit_shard_key in cases():
+        client.overwrite_payload(
+            COLLECTION_NAME,
+            payload=dog_payload,
+            points=points_selector,
+            shard_key_selector=explicit_shard_key,
+        )
+        assert payloads(zero_shard_key) == [dog_payload, dog_payload]
+        assert payloads(one_shard_key) == [cat_payload, cat_payload]
+    # endregion
+
+    # region clear_payload
+    for points_selector, explicit_shard_key in cases():
+        client.clear_payload(
+            COLLECTION_NAME,
+            points_selector=points_selector,
+            shard_key_selector=explicit_shard_key,
+        )
+        assert payloads(zero_shard_key) == [{}, {}]
+        assert payloads(one_shard_key) == [cat_payload, cat_payload]
+    # endregion
+
+    # region delete_vectors
+    for points_selector, explicit_shard_key in cases():
+        client.delete_vectors(
+            COLLECTION_NAME,
+            vectors=["text"],
+            points=points_selector,
+            shard_key_selector=explicit_shard_key,
+        )
+        assert [record.vector for record in records(zero_shard_key)] == [{}, {}]
+        assert all(record.vector for record in records(one_shard_key))
+    # endregion
+
+    # region delete
+    for points_selector, explicit_shard_key in cases():
+        client.delete(
+            COLLECTION_NAME,
+            points_selector=points_selector,
+            shard_key_selector=explicit_shard_key,
+        )
+        assert records(zero_shard_key) == []
+        assert [record.id for record in records(one_shard_key)] == shard_key_ids[one_shard_key]
+    # endregion
 
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])
@@ -1794,6 +1974,29 @@ def test_grpc_compression():
         QdrantClient(prefer_grpc=True, grpc_compression="gzip")
 
 
+def test_grpc_compression_upload(mocker):
+    """Check that upload_points sends batches over a channel with the client's compression."""
+    client = QdrantClient(prefer_grpc=True, grpc_compression=Compression.Gzip)
+    if client.collection_exists(COLLECTION_NAME):
+        client.delete_collection(COLLECTION_NAME)
+    client.create_collection(
+        COLLECTION_NAME,
+        vectors_config=VectorParams(size=DIM, distance=Distance.DOT),
+    )
+
+    get_channel_spy = mocker.spy(grpc_uploader, "get_channel")
+    client.upload_points(
+        COLLECTION_NAME,
+        points=[PointStruct(id=idx, vector=np.random.rand(DIM).tolist()) for idx in range(10)],
+        wait=True,
+    )
+    get_channel_spy.assert_called()
+    assert get_channel_spy.call_args.kwargs.get("compression") == Compression.Gzip
+    assert client.count(COLLECTION_NAME).count == 10
+
+    client.delete_collection(COLLECTION_NAME)
+
+
 def test_auth_token_provider():
     """Check that the token provided is called for both http and grpc clients."""
     token = ""
@@ -1853,6 +2056,37 @@ def test_auth_token_provider():
     assert token == "token_2"
 
 
+@pytest.mark.parametrize("prefer_grpc", [False, True])
+def test_auth_token_provider_upload(prefer_grpc):
+    """Check that upload_points authenticates with the token provider."""
+    call_num = 0
+
+    def auth_token_provider():
+        nonlocal call_num
+        call_num += 1
+        return f"token_{call_num}"
+
+    client = QdrantClient(
+        prefer_grpc=prefer_grpc, check_compatibility=False, auth_token_provider=auth_token_provider
+    )
+    if client.collection_exists(COLLECTION_NAME):
+        client.delete_collection(COLLECTION_NAME)
+    client.create_collection(
+        COLLECTION_NAME,
+        vectors_config=VectorParams(size=DIM, distance=Distance.DOT),
+    )
+
+    calls_before = call_num
+    client.upload_points(
+        COLLECTION_NAME,
+        points=[PointStruct(id=idx, vector=np.random.rand(DIM).tolist()) for idx in range(10)],
+        wait=True,
+    )
+    assert call_num > calls_before
+
+    client.delete_collection(COLLECTION_NAME)
+
+
 def test_async_auth_token_provider():
     """Check that initialization fails if async auth_token_provider is provided to sync client."""
     token = ""
@@ -1870,6 +2104,8 @@ def test_async_auth_token_provider():
         match="Synchronous token provider is not set.",
     ):
         client.get_collections()
+    with pytest.raises(ValueError, match="require a synchronous auth_token_provider"):
+        client.upload_points(COLLECTION_NAME, points=[PointStruct(id=0, vector=[0.1] * DIM)])
 
     assert token == ""
 
@@ -1878,6 +2114,8 @@ def test_async_auth_token_provider():
         ValueError, match="Synchronous channel requires synchronous auth token provider."
     ):
         client.get_collections()
+    with pytest.raises(ValueError, match="require a synchronous auth_token_provider"):
+        client.upload_points(COLLECTION_NAME, points=[PointStruct(id=0, vector=[0.1] * DIM)])
 
     assert token == ""
 
@@ -2092,6 +2330,15 @@ def test_strict_mode(prefer_grpc):
         strict_mode_config = collection_info.config.strict_mode_config
         assert strict_mode_config.max_points_count == 100
 
+    if major is None or dev or (major, minor, patch) >= (1, 18, 0):
+        strict_mode_config = StrictModeConfig(
+            max_resident_memory_percent=90,
+        )
+        client.update_collection(COLLECTION_NAME, strict_mode_config=strict_mode_config)
+        collection_info = client.get_collection(COLLECTION_NAME)
+        strict_mode_config = collection_info.config.strict_mode_config
+        assert strict_mode_config.max_resident_memory_percent == 90
+
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])
 def test_upsert_hits_large_request_limit(prefer_grpc):
@@ -2282,6 +2529,9 @@ def test_cluster_collection_update(prefer_grpc):
             pytest.skip("Cluster collection update is supported as of qdrant 1.16.0")
 
     client = QdrantClient(prefer_grpc=prefer_grpc)
+    if client.cluster_status().status == "disabled":
+        pytest.skip("Requires distributed mode")
+
     if client.collection_exists(COLLECTION_NAME):
         client.delete_collection(COLLECTION_NAME, timeout=TIMEOUT)
     client.create_collection(
@@ -2354,6 +2604,9 @@ def test_cluster_methods(prefer_grpc):
             pytest.skip("Cluster collection update is supported as of qdrant 1.16.0")
 
     client = QdrantClient(prefer_grpc=prefer_grpc)
+    if client.cluster_status().status == "disabled":
+        pytest.skip("You need a cluster to test cluster methods")
+
     if client.collection_exists(COLLECTION_NAME):
         client.delete_collection(COLLECTION_NAME, timeout=TIMEOUT)
     client.create_collection(
@@ -2477,3 +2730,139 @@ def test_create_payload_index_enable_hnsw(prefer_grpc: bool):
         "datetime_field",
     ]:
         assert info.payload_schema[field_name].params.enable_hnsw is False, field_name
+
+
+@pytest.mark.parametrize("prefer_grpc", [False, True])
+def test_memory_placement(prefer_grpc):
+    """Memory placement can be set on every component that accepts it.
+
+    `payload` supersedes the deprecated `on_disk_payload` flag, and `memory` supersedes
+    `on_disk` / `always_ram` on the storage components.
+    """
+    major, minor, patch, dev = read_version()
+    if not (major is None or dev):
+        if (major, minor, patch) < (1, 19, 0):
+            pytest.skip("Memory placement is supported as of qdrant 1.19.0")
+
+    client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
+    if client.collection_exists(COLLECTION_NAME):
+        client.delete_collection(COLLECTION_NAME)
+
+    client.create_collection(
+        COLLECTION_NAME,
+        # `Pinned` is not supported for dense vector storage nor for the payload storage,
+        # only for the smaller components like the quantized copy or an index
+        payload=models.PayloadStorageParams(memory=models.Memory.CACHED),
+        vectors_config=models.VectorParams(
+            size=DIM,
+            distance=models.Distance.DOT,
+            memory=models.Memory.CACHED,
+            quantization_config=models.ScalarQuantization(
+                scalar=models.ScalarQuantizationConfig(
+                    type=models.ScalarType.INT8, memory=models.Memory.PINNED
+                )
+            ),
+        ),
+        hnsw_config=models.HnswConfigDiff(memory=models.Memory.PINNED),
+        sparse_vectors_config={
+            "sparse": models.SparseVectorParams(
+                index=models.SparseIndexParams(memory=models.Memory.COLD),
+            )
+        },
+    )
+
+    config = client.get_collection(COLLECTION_NAME).config
+    assert config.params.payload.memory == models.Memory.CACHED
+    assert config.params.vectors.memory == models.Memory.CACHED
+    assert config.params.vectors.quantization_config.scalar.memory == models.Memory.PINNED
+    assert config.hnsw_config.memory == models.Memory.PINNED
+    assert config.params.sparse_vectors["sparse"].index.memory == models.Memory.COLD
+
+    # payload storage placement can also be updated through the collection params diff
+    client.update_collection(
+        COLLECTION_NAME,
+        collection_params=models.CollectionParamsDiff(
+            payload=models.PayloadStorageParams(memory=models.Memory.COLD)
+        ),
+    )
+    config = client.get_collection(COLLECTION_NAME).config
+    assert config.params.payload.memory == models.Memory.COLD
+
+
+@pytest.mark.parametrize("prefer_grpc", [False, True])
+def test_keyword_index_prefix(prefer_grpc):
+    major, minor, patch, dev = read_version()
+    if not (major is None or dev):
+        if (major, minor, patch) < (1, 19, 0):
+            pytest.skip("Keyword index prefix matching is supported as of qdrant 1.19.0")
+
+    client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
+    if client.collection_exists(COLLECTION_NAME):
+        client.delete_collection(COLLECTION_NAME)
+    client.create_collection(
+        COLLECTION_NAME,
+        vectors_config=models.VectorParams(size=DIM, distance=models.Distance.DOT),
+    )
+
+    client.create_payload_index(
+        COLLECTION_NAME,
+        "keyword_field",
+        field_schema=models.KeywordIndexParams(type=models.KeywordIndexType.KEYWORD, prefix=True),
+        wait=True,
+    )
+    assert client.get_collection(COLLECTION_NAME).payload_schema["keyword_field"].params.prefix
+
+    client.create_payload_index(
+        COLLECTION_NAME,
+        "keyword_no_prefix",
+        field_schema=models.KeywordIndexParams(type=models.KeywordIndexType.KEYWORD),
+        wait=True,
+    )
+    schema = client.get_collection(COLLECTION_NAME).payload_schema["keyword_no_prefix"]
+    assert not schema.params.prefix
+
+
+@pytest.mark.parametrize("prefer_grpc", [False, True])
+def test_get_optimizations(prefer_grpc):
+    major, minor, patch, dev = read_version()
+    if not (major is None or dev):
+        if (major, minor, patch) < (1, 17, 0):
+            pytest.skip("Get optimizations is supported as of qdrant 1.17.0")
+
+    client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
+    if client.collection_exists(COLLECTION_NAME):
+        client.delete_collection(COLLECTION_NAME)
+    client.create_collection(
+        COLLECTION_NAME,
+        vectors_config=models.VectorParams(size=DIM, distance=models.Distance.DOT),
+    )
+
+    optimizations = client.get_optimizations(COLLECTION_NAME)
+    assert optimizations.queued is None
+    assert optimizations.completed is None
+    assert optimizations.idle_segments is None
+
+    optimizations = client.get_optimizations(COLLECTION_NAME, with_="queued")
+    assert optimizations.queued is not None
+    assert optimizations.completed is None
+    assert optimizations.idle_segments is None
+
+    optimizations = client.get_optimizations(
+        COLLECTION_NAME, with_=["queued", "completed", "idle_segments"]
+    )
+    assert optimizations.queued is not None
+    assert optimizations.completed is not None
+    assert optimizations.idle_segments is not None
+
+    # server ignores `completed_limit` unless completed optimizations are requested
+    optimizations = client.get_optimizations(COLLECTION_NAME, completed_limit=1)
+    assert optimizations.queued is None
+    assert optimizations.completed is not None
+    assert optimizations.idle_segments is None
+
+    optimizations = client.get_optimizations(
+        COLLECTION_NAME, completed_limit=1, with_=["queued", "completed"]
+    )
+    assert optimizations.queued is not None
+    assert optimizations.completed is not None
+    assert optimizations.idle_segments is None

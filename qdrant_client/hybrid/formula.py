@@ -106,12 +106,15 @@ def evaluate_expression(
             expression.pow.exponent, point_id, scores, payload, has_vector, defaults
         )
 
-        # Check for valid input
-        if base >= 0 or (base != 0 and exponent.is_integer()):
-            try:
-                return math.pow(base, exponent)
-            except OverflowError:
-                pass
+        try:
+            # OverflowError: the result, or a too large integer operand, doesn't fit in a float.
+            # ValueError: undefined, e.g. a negative base with a non-integer exponent.
+            result = math.pow(base, exponent)
+        except (OverflowError, ValueError):
+            pass
+        else:
+            if math.isfinite(result):
+                return result
 
         raise_non_finite_error(f"{base}^{exponent}")
 
@@ -157,8 +160,7 @@ def evaluate_expression(
         geo_value = try_extract_payload_value(to, payload, defaults)
 
         if isinstance(geo_value, dict):
-            # let this fail if it is not a valid geo point
-            destination = models.GeoPoint(**geo_value)
+            destination = models.GeoPoint(**{key: geo_value[key] for key in ("lon", "lat") if key in geo_value})
             return geo_distance(origin.lon, origin.lat, destination.lon, destination.lat)
 
         raise ValueError(
@@ -188,6 +190,11 @@ def evaluate_expression(
             expression.lin_decay, point_id, scores, payload, has_vector, defaults
         )
 
+        if not 0.0 <= midpoint <= 1.0:
+            raise ValueError(
+                f"Linear decay midpoint should be in the range [0.0, 1.0], got {midpoint}"
+            )
+
         lambda_factor = (1.0 - midpoint) / scale
         diff = abs(x - target)
         return max(0.0, -lambda_factor * diff + 1.0)
@@ -197,6 +204,9 @@ def evaluate_expression(
             expression.exp_decay, point_id, scores, payload, has_vector, defaults
         )
 
+        if midpoint <= 0.0 or midpoint >= 1.0:
+            raise ValueError(f"Decay midpoint should be in the range (0.0, 1.0), got {midpoint}")
+
         lambda_factor = math.log(midpoint) / scale
         diff = abs(x - target)
         return math.exp(lambda_factor * diff)
@@ -205,6 +215,9 @@ def evaluate_expression(
         x, target, midpoint, scale = evaluate_decay_params(
             expression.gauss_decay, point_id, scores, payload, has_vector, defaults
         )
+
+        if midpoint <= 0.0 or midpoint >= 1.0:
+            raise ValueError(f"Decay midpoint should be in the range (0.0, 1.0), got {midpoint}")
 
         lambda_factor = math.log(midpoint) / (scale * scale)
         diff = x - target
@@ -231,9 +244,6 @@ def evaluate_decay_params(
         )
 
     midpoint = params.midpoint if params.midpoint is not None else DEFAULT_DECAY_MIDPOINT
-
-    if midpoint <= 0.0 or midpoint >= 1.0:
-        raise ValueError(f"Midpoint must be between 0 and 1, got {midpoint}")
 
     scale = params.scale if params.scale is not None else DEFAULT_DECAY_SCALE
     if scale <= 0.0:
@@ -318,11 +328,14 @@ def parse_variable(var: str) -> str | int:
     if bracket_end == -1:
         raise ValueError(f"Invalid score pattern: {var}")
 
-    # try parsing the content in between brackets as integer
-    try:
-        idx = int(remaining[:bracket_end])
-    except ValueError:
+    # parse the content in between brackets as an unsigned integer. qdrant core represents
+    # the score index as a usize, while `int()` would also accept a sign, underscore
+    # separators and surrounding whitespace
+    raw_idx = remaining[:bracket_end]
+    if not (raw_idx.isascii() and raw_idx.isdigit()):
         raise ValueError(f"Invalid score pattern: {var}")
+
+    idx = int(raw_idx)
 
     # make sure the string ends after the closing bracket
     if len(remaining) > bracket_end + 1:
@@ -337,34 +350,3 @@ def raise_non_finite_error(expression: str) -> None:
 
 def is_number(value: Any) -> bool:
     return isinstance(value, (int, float)) and not isinstance(value, bool)
-
-
-def test_parsing_variable() -> None:
-    assert parse_variable("$score") == 0
-    assert parse_variable("$score[0]") == 0
-    assert parse_variable("$score[1]") == 1
-    assert parse_variable("$score[2]") == 2
-
-    try:
-        parse_variable("$score[invalid]")
-        assert False
-    except ValueError as e:
-        assert str(e) == "Invalid score pattern: $score[invalid]"
-
-    try:
-        parse_variable("$score[10].other")
-        assert False
-    except ValueError as e:
-        assert str(e) == "Invalid score pattern: $score[10].other"
-
-
-def test_try_extract_payload_value() -> None:
-    for payload_value, expected in [(1.2, 1.2), ([1.2], 1.2), ([1.2, 2.3], [1.2, 2.3])]:
-        empty_defaults: dict[str, Any] = {}
-
-        payload = {"key": payload_value}
-        assert try_extract_payload_value("key", payload, empty_defaults) == expected
-
-        defaults = {"key": payload_value}
-        empty_payload: dict[str, Any] = {}
-        assert try_extract_payload_value("key", empty_payload, defaults) == expected

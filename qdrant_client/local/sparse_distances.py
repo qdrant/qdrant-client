@@ -178,7 +178,7 @@ def calculate_sparse_discovery_scores(
     # Get distances to target
     distances_to_target = calculate_distance_sparse(query.target, vectors, empty_is_zero=True)
 
-    sigmoided_distances = np.fromiter(
+    sigmoided_distances: types.NumpyArray = np.fromiter(
         (scaled_fast_sigmoid(xi) for xi in distances_to_target), np.float32
     )
 
@@ -195,7 +195,7 @@ def calculate_sparse_context_scores(
         neg = calculate_distance_sparse(pair.negative, vectors, empty_is_zero=True)
 
         difference = pos - neg - EPSILON
-        pair_scores = np.fromiter(
+        pair_scores: types.NumpyArray = np.fromiter(
             (fast_sigmoid(xi) for xi in np.minimum(difference, 0.0)), np.float32
         )
         overall_scores += pair_scores

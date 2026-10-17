@@ -1,5 +1,7 @@
 import numpy as np
+import pytest
 
+from qdrant_client.http.exceptions import UnexpectedResponse
 from qdrant_client.http.models import models
 from tests.congruence_tests.test_common import (
     COLLECTION_NAME,
@@ -169,3 +171,64 @@ def test_simple_opt_sparse_vectors_search():
             key=lambda x: x.id,
         ),
     )
+
+
+def test_point_id_input_with_missing_vector():
+    vectors_config = {
+        "dense": models.VectorParams(size=4, distance=models.Distance.COSINE),
+        "multi": models.VectorParams(
+            size=4,
+            distance=models.Distance.COSINE,
+            multivector_config=models.MultiVectorConfig(
+                comparator=models.MultiVectorComparator.MAX_SIM
+            ),
+        ),
+    }
+    # point 1 has no value for either named vector, it can neither be scored nor be used as a query
+    points = [
+        models.PointStruct(id=1, vector={}),
+        models.PointStruct(
+            id=2, vector={"dense": [1.0, 0.0, 0.0, 0.0], "multi": [[1.0, 0.0, 0.0, 0.0]]}
+        ),
+        models.PointStruct(
+            id=3, vector={"dense": [0.0, 1.0, 0.0, 0.0], "multi": [[0.0, 1.0, 0.0, 0.0]]}
+        ),
+    ]
+
+    local_client = init_local()
+    init_client(local_client, points, vectors_config=vectors_config)
+
+    remote_client = init_remote()
+    init_client(remote_client, points, vectors_config=vectors_config)
+
+    queries = [
+        1,
+        models.RecommendQuery(
+            recommend=models.RecommendInput(
+                positive=[1], strategy=models.RecommendStrategy.BEST_SCORE
+            )
+        ),
+        models.DiscoverQuery(
+            discover=models.DiscoverInput(
+                target=1, context=models.ContextPair(positive=2, negative=3)
+            )
+        ),
+        models.ContextQuery(context=models.ContextPair(positive=1, negative=3)),
+        models.RelevanceFeedbackQuery(
+            relevance_feedback=models.RelevanceFeedbackInput(
+                target=2,
+                feedback=[models.FeedbackItem(example=1, score=0.9)],
+                strategy=models.NaiveFeedbackStrategy(
+                    naive=models.NaiveFeedbackStrategyParams(a=0.5, b=1.0, c=0.7)
+                ),
+            )
+        ),
+    ]
+
+    for using in ("dense", "multi"):
+        for query in queries:
+            with pytest.raises(ValueError):
+                local_client.query_points(COLLECTION_NAME, query=query, using=using)
+
+            with pytest.raises(UnexpectedResponse):
+                remote_client.query_points(COLLECTION_NAME, query=query, using=using)

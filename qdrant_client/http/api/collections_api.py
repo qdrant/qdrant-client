@@ -65,7 +65,7 @@ class _CollectionsApi:
 
         headers = {}
         return self.api_client.request(
-            type_=m.InlineResponse2008,
+            type_=m.InlineResponse2009,
             method="GET",
             url="/collections/{collection_name}/exists",
             headers=headers if headers else None,
@@ -133,7 +133,7 @@ class _CollectionsApi:
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse2007,
+            type_=m.InlineResponse2008,
             method="PUT",
             url="/collections/{collection_name}/vectors/{vector_name}",
             headers=headers if headers else None,
@@ -194,7 +194,7 @@ class _CollectionsApi:
 
         headers = {}
         return self.api_client.request(
-            type_=m.InlineResponse2007,
+            type_=m.InlineResponse2008,
             method="DELETE",
             url="/collections/{collection_name}/vectors/{vector_name}",
             headers=headers if headers else None,
@@ -215,7 +215,7 @@ class _CollectionsApi:
 
         headers = {}
         return self.api_client.request(
-            type_=m.InlineResponse2006,
+            type_=m.InlineResponse2007,
             method="GET",
             url="/collections/{collection_name}",
             headers=headers if headers else None,
@@ -230,7 +230,7 @@ class _CollectionsApi:
         """
         headers = {}
         return self.api_client.request(
-            type_=m.InlineResponse2005,
+            type_=m.InlineResponse2006,
             method="GET",
             url="/collections",
             headers=headers if headers else None,
@@ -257,7 +257,7 @@ class _CollectionsApi:
 
         headers = {}
         return self.api_client.request(
-            type_=m.InlineResponse20010,
+            type_=m.InlineResponse20011,
             method="GET",
             url="/collections/{collection_name}/optimizations",
             headers=headers if headers else None,
@@ -301,7 +301,7 @@ class AsyncCollectionsApi(_CollectionsApi):
     async def collection_exists(
         self,
         collection_name: str,
-    ) -> m.InlineResponse2008:
+    ) -> m.InlineResponse2009:
         """
         Returns \"true\" if the given collection name exists, and \"false\" otherwise
         """
@@ -332,7 +332,7 @@ class AsyncCollectionsApi(_CollectionsApi):
         ordering: WriteOrdering = None,
         timeout: int = None,
         vector_name_config: m.VectorNameConfig = None,
-    ) -> m.InlineResponse2007:
+    ) -> m.InlineResponse2008:
         """
         Create a new named vector on an existing collection
         """
@@ -365,7 +365,7 @@ class AsyncCollectionsApi(_CollectionsApi):
         wait: bool = None,
         ordering: WriteOrdering = None,
         timeout: int = None,
-    ) -> m.InlineResponse2007:
+    ) -> m.InlineResponse2008:
         """
         Delete a named vector from a collection
         """
@@ -380,7 +380,7 @@ class AsyncCollectionsApi(_CollectionsApi):
     async def get_collection(
         self,
         collection_name: str,
-    ) -> m.InlineResponse2006:
+    ) -> m.InlineResponse2007:
         """
         Get detailed information about specified existing collection
         """
@@ -390,7 +390,7 @@ class AsyncCollectionsApi(_CollectionsApi):
 
     async def get_collections(
         self,
-    ) -> m.InlineResponse2005:
+    ) -> m.InlineResponse2006:
         """
         Get list name of all existing collections
         """
@@ -401,7 +401,7 @@ class AsyncCollectionsApi(_CollectionsApi):
         collection_name: str,
         _with: str = None,
         completed_limit: int = None,
-    ) -> m.InlineResponse20010:
+    ) -> m.InlineResponse20011:
         """
         Get progress of ongoing and completed optimizations for a collection
         """
@@ -431,7 +431,7 @@ class SyncCollectionsApi(_CollectionsApi):
     def collection_exists(
         self,
         collection_name: str,
-    ) -> m.InlineResponse2008:
+    ) -> m.InlineResponse2009:
         """
         Returns \"true\" if the given collection name exists, and \"false\" otherwise
         """
@@ -462,7 +462,7 @@ class SyncCollectionsApi(_CollectionsApi):
         ordering: WriteOrdering = None,
         timeout: int = None,
         vector_name_config: m.VectorNameConfig = None,
-    ) -> m.InlineResponse2007:
+    ) -> m.InlineResponse2008:
         """
         Create a new named vector on an existing collection
         """
@@ -495,7 +495,7 @@ class SyncCollectionsApi(_CollectionsApi):
         wait: bool = None,
         ordering: WriteOrdering = None,
         timeout: int = None,
-    ) -> m.InlineResponse2007:
+    ) -> m.InlineResponse2008:
         """
         Delete a named vector from a collection
         """
@@ -510,7 +510,7 @@ class SyncCollectionsApi(_CollectionsApi):
     def get_collection(
         self,
         collection_name: str,
-    ) -> m.InlineResponse2006:
+    ) -> m.InlineResponse2007:
         """
         Get detailed information about specified existing collection
         """
@@ -520,7 +520,7 @@ class SyncCollectionsApi(_CollectionsApi):
 
     def get_collections(
         self,
-    ) -> m.InlineResponse2005:
+    ) -> m.InlineResponse2006:
         """
         Get list name of all existing collections
         """
@@ -531,7 +531,7 @@ class SyncCollectionsApi(_CollectionsApi):
         collection_name: str,
         _with: str = None,
         completed_limit: int = None,
-    ) -> m.InlineResponse20010:
+    ) -> m.InlineResponse20011:
         """
         Get progress of ongoing and completed optimizations for a collection
         """

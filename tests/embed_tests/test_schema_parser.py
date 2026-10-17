@@ -51,3 +51,8 @@ def test_parser(model):
             count += check_path_recursive(plain_path.split("."), paths)
 
         assert count == len(plain_paths)
+
+        # convert_paths must keep every plain path, including ones that are
+        # prefixes of longer paths (e.g. "query" and "query.nearest")
+        flattened = {path for field_path in paths for path in field_path.as_str_list()}
+        assert set(plain_paths) == flattened

@@ -263,7 +263,7 @@ def test_search_with_persistence():
         payload_update_filter = one_random_filter_please()
         local_client.set_payload(COLLECTION_NAME, {"test": f"test"}, payload_update_filter)
 
-        del local_client
+        local_client.close()
         local_client_2 = init_local(tmpdir)
 
         remote_client = init_remote()
@@ -302,7 +302,7 @@ def test_search_with_persistence_and_skipped_vectors():
         local_client.set_payload(COLLECTION_NAME, {"test": f"test"}, payload_update_filter)
 
         count_before_load = local_client.count(COLLECTION_NAME)
-        del local_client
+        local_client.close()
         local_client_2 = init_local(tmpdir)
 
         count_after_load = local_client_2.count(COLLECTION_NAME)
@@ -362,7 +362,7 @@ def test_query_with_nan():
     vector[4] = np.nan
     query_vector = vector.tolist()
 
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         local_client.query_points(COLLECTION_NAME, query_vector, using="text")
     with pytest.raises(UnexpectedResponse):
         remote_client.query_points(COLLECTION_NAME, query_vector, using="text")
@@ -381,7 +381,7 @@ def test_query_with_nan():
     init_client(local_client, fixture_points, vectors_config=single_vector_config)
     init_client(remote_client, fixture_points, vectors_config=single_vector_config)
 
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         local_client.query_points(COLLECTION_NAME, vector.tolist())
     with pytest.raises(UnexpectedResponse):
         remote_client.query_points(COLLECTION_NAME, vector.tolist())

@@ -9,6 +9,7 @@ from tests.congruence_tests.test_common import (
     init_remote,
 )
 from tests.fixtures.filters import one_random_filter_please
+from tests.utils import read_version
 
 secondary_collection_name = "congruence_secondary_collection"
 
@@ -117,7 +118,19 @@ class TestGroupRecommendation:
 
 
 def group_by_keys():
-    return ["id", "rand_digit", "two_words", "city.name", "maybe", "maybe_null"]
+    keys = [
+        "id",
+        "rand_digit",
+        "two_words",
+        "city.name",
+        "maybe",
+        "maybe_null",
+        "nested_array[]",
+    ]
+    major, minor, patch, dev = read_version()
+    if not dev and None not in (major, minor, patch) and (major, minor, patch) < (1, 19, 2):
+        return keys  # group_by on a path with an array index finds no groups before 1.19.2
+    return keys + ["two_words[0]", "nested.array[0].word", "nested_array[0]"]
 
 
 def test_simple_recommend_groups() -> None:

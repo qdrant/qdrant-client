@@ -1,17 +1,17 @@
-from asyncio import get_event_loop
-from functools import lru_cache
 from typing import Any, Awaitable, Callable, Dict, Generic, Type, TypeVar, overload
-from urllib.parse import urljoin
+from urllib.parse import quote, urljoin
 
 from httpx import AsyncClient, Client, Request, Response
 from pydantic import ValidationError
 from qdrant_client.common.client_exceptions import ResourceExhaustedResponse
+from qdrant_client.common.response_parsing import parse_response
 from qdrant_client.http.api.aliases_api import AsyncAliasesApi, SyncAliasesApi
 from qdrant_client.http.api.beta_api import AsyncBetaApi, SyncBetaApi
 from qdrant_client.http.api.collections_api import AsyncCollectionsApi, SyncCollectionsApi
 from qdrant_client.http.api.distributed_api import AsyncDistributedApi, SyncDistributedApi
 from qdrant_client.http.api.indexes_api import AsyncIndexesApi, SyncIndexesApi
 from qdrant_client.http.api.points_api import AsyncPointsApi, SyncPointsApi
+from qdrant_client.http.api.quotas_api import AsyncQuotasApi, SyncQuotasApi
 from qdrant_client.http.api.search_api import AsyncSearchApi, SyncSearchApi
 from qdrant_client.http.api.service_api import AsyncServiceApi, SyncServiceApi
 from qdrant_client.http.api.snapshots_api import AsyncSnapshotsApi, SyncSnapshotsApi
@@ -31,6 +31,7 @@ class AsyncApis(Generic[AsyncClientT]):
         self.distributed_api = AsyncDistributedApi(self.client)
         self.indexes_api = AsyncIndexesApi(self.client)
         self.points_api = AsyncPointsApi(self.client)
+        self.quotas_api = AsyncQuotasApi(self.client)
         self.search_api = AsyncSearchApi(self.client)
         self.service_api = AsyncServiceApi(self.client)
         self.snapshots_api = AsyncSnapshotsApi(self.client)
@@ -49,6 +50,7 @@ class SyncApis(Generic[ClientT]):
         self.distributed_api = SyncDistributedApi(self.client)
         self.indexes_api = SyncIndexesApi(self.client)
         self.points_api = SyncPointsApi(self.client)
+        self.quotas_api = SyncQuotasApi(self.client)
         self.search_api = SyncSearchApi(self.client)
         self.service_api = SyncServiceApi(self.client)
         self.snapshots_api = SyncSnapshotsApi(self.client)
@@ -62,6 +64,20 @@ Send = Callable[[Request], Response]
 SendAsync = Callable[[Request], Awaitable[Response]]
 MiddlewareT = Callable[[Request, Send], Response]
 AsyncMiddlewareT = Callable[[Request, SendAsync], Awaitable[Response]]
+
+
+def quote_path_params(path_params: Dict[str, Any]) -> Dict[str, str]:
+    # each path param is a single URL segment, so reserved characters have to be escaped,
+    # otherwise a name like `example/collection1` would change the path of the request
+    quoted_params = {}
+    for name, value in path_params.items():
+        value = str(value)
+        # `.` and `..` are resolved as dot segments by urljoin, moving the request to a parent path,
+        # e.g. deleting a payload index `..` would delete the whole collection
+        if value in (".", ".."):
+            raise ValueError(f"{name} can't be {value!r}")
+        quoted_params[name] = quote(value, safe="")
+    return quoted_params
 
 
 class ApiClient:
@@ -88,25 +104,11 @@ class ApiClient:
         url = url[1:] if url.startswith("/") else url
         # in order to do a correct join, url join requires base_url to end with /, and url to not start with /,
         # since url is treated as an absolute path and might truncate prefix in base_url
-        url = urljoin(host, url.format(**path_params))
+        url = urljoin(host, url.format(**quote_path_params(path_params)))
         if "params" in kwargs and "timeout" in kwargs["params"]:
             kwargs["timeout"] = int(kwargs["params"]["timeout"])
         request = self._client.build_request(method, url, **kwargs)
         return self.send(request, type_)
-
-    @overload
-    def request_sync(self, *, type_: Type[T], **kwargs: Any) -> T:
-        ...
-
-    @overload  # noqa F811
-    def request_sync(self, *, type_: None, **kwargs: Any) -> None:
-        ...
-
-    def request_sync(self, *, type_: Any, **kwargs: Any) -> Any:  # noqa F811
-        """
-        This method is not used by the generated apis, but is included for convenience
-        """
-        return get_event_loop().run_until_complete(self.request(type_=type_, **kwargs))
 
     def send(self, request: Request, type_: Type[T]) -> T:
         response = self.middleware(request, self.send_inner)
@@ -124,7 +126,7 @@ class ApiClient:
 
         if response.status_code in [200, 201, 202]:
             try:
-                return parse_as_type(response.json(), type_)
+                return parse_response(response.content, type_)
             except ValidationError as e:
                 raise ResponseHandlingException(e)
         raise UnexpectedResponse.for_response(response)
@@ -179,23 +181,11 @@ class AsyncApiClient:
         url = url[1:] if url.startswith("/") else url
         # in order to do a correct join, url join requires base_url to end with /, and url to not start with /,
         # since url is treated as an absolute path and might truncate prefix in base_url
-        url = urljoin(host, url.format(**path_params))
+        url = urljoin(host, url.format(**quote_path_params(path_params)))
+        if "params" in kwargs and "timeout" in kwargs["params"]:
+            kwargs["timeout"] = int(kwargs["params"]["timeout"])
         request = self._async_client.build_request(method, url, **kwargs)
         return await self.send(request, type_)
-
-    @overload
-    def request_sync(self, *, type_: Type[T], **kwargs: Any) -> T:
-        ...
-
-    @overload  # noqa F811
-    def request_sync(self, *, type_: None, **kwargs: Any) -> None:
-        ...
-
-    def request_sync(self, *, type_: Any, **kwargs: Any) -> Any:  # noqa F811
-        """
-        This method is not used by the generated apis, but is included for convenience
-        """
-        return get_event_loop().run_until_complete(self.request(type_=type_, **kwargs))
 
     async def send(self, request: Request, type_: Type[T]) -> T:
         response = await self.middleware(request, self.send_inner)
@@ -213,7 +203,7 @@ class AsyncApiClient:
 
         if response.status_code in [200, 201, 202]:
             try:
-                return parse_as_type(response.json(), type_)
+                return parse_response(response.content, type_)
             except ValidationError as e:
                 raise ResponseHandlingException(e)
         raise UnexpectedResponse.for_response(response)
@@ -248,16 +238,3 @@ class BaseAsyncMiddleware:
 class BaseMiddleware:
     def __call__(self, request: Request, call_next: Send) -> Response:
         return call_next(request)
-
-
-@lru_cache(maxsize=None)
-def _get_parsing_type(type_: Any, source: str) -> Any:
-    from pydantic.main import create_model
-
-    type_name = getattr(type_, "__name__", str(type_))
-    return create_model(f"ParsingModel[{type_name}] (for {source})", obj=(type_, ...))
-
-
-def parse_as_type(obj: Any, type_: Type[T]) -> T:
-    model_type = _get_parsing_type(type_, source=parse_as_type.__name__)
-    return model_type(obj=obj).obj

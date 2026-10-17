@@ -56,7 +56,7 @@ class _ServiceApi:
         self,
     ):
         """
-        An endpoint for health checking used in Kubernetes.
+        Liveness-style health check. Returns 200 as soon as the HTTP API is serving requests. It does not inspect collections, shards or consensus state, and is identical to `/livez`. Use it only to detect whether the process is up and responsive.
         """
         headers = {}
         return self.api_client.request(
@@ -70,7 +70,7 @@ class _ServiceApi:
         self,
     ):
         """
-        An endpoint for health checking used in Kubernetes.
+        Kubernetes liveness probe. Returns 200 as soon as the HTTP API is serving requests. It does not inspect collections, shards or consensus state, and is identical to `/healthz`. A failure indicates the process is unresponsive and should be restarted.
         """
         headers = {}
         return self.api_client.request(
@@ -110,7 +110,7 @@ class _ServiceApi:
         self,
     ):
         """
-        An endpoint for health checking used in Kubernetes.
+        Kubernetes readiness probe. Checks the instance and waits out pending data operations to see when it can start accepting traffic. In a distributed deployment it returns 200 only once the node has caught up with the cluster consensus commit and its local shards are healthy; otherwise it returns 503. In a single-node deployment it always returns 200 once the API is up. Use it to decide when to route traffic to the instance.
         """
         headers = {}
         return self.api_client.request(
@@ -169,7 +169,7 @@ class AsyncServiceApi(_ServiceApi):
         self,
     ) -> str:
         """
-        An endpoint for health checking used in Kubernetes.
+        Liveness-style health check. Returns 200 as soon as the HTTP API is serving requests. It does not inspect collections, shards or consensus state, and is identical to `/livez`. Use it only to detect whether the process is up and responsive.
         """
         return await self._build_for_healthz()
 
@@ -177,7 +177,7 @@ class AsyncServiceApi(_ServiceApi):
         self,
     ) -> str:
         """
-        An endpoint for health checking used in Kubernetes.
+        Kubernetes liveness probe. Returns 200 as soon as the HTTP API is serving requests. It does not inspect collections, shards or consensus state, and is identical to `/healthz`. A failure indicates the process is unresponsive and should be restarted.
         """
         return await self._build_for_livez()
 
@@ -200,7 +200,7 @@ class AsyncServiceApi(_ServiceApi):
         self,
     ) -> str:
         """
-        An endpoint for health checking used in Kubernetes.
+        Kubernetes readiness probe. Checks the instance and waits out pending data operations to see when it can start accepting traffic. In a distributed deployment it returns 200 only once the node has caught up with the cluster consensus commit and its local shards are healthy; otherwise it returns 503. In a single-node deployment it always returns 200 once the API is up. Use it to decide when to route traffic to the instance.
         """
         return await self._build_for_readyz()
 
@@ -235,7 +235,7 @@ class SyncServiceApi(_ServiceApi):
         self,
     ) -> str:
         """
-        An endpoint for health checking used in Kubernetes.
+        Liveness-style health check. Returns 200 as soon as the HTTP API is serving requests. It does not inspect collections, shards or consensus state, and is identical to `/livez`. Use it only to detect whether the process is up and responsive.
         """
         return self._build_for_healthz()
 
@@ -243,7 +243,7 @@ class SyncServiceApi(_ServiceApi):
         self,
     ) -> str:
         """
-        An endpoint for health checking used in Kubernetes.
+        Kubernetes liveness probe. Returns 200 as soon as the HTTP API is serving requests. It does not inspect collections, shards or consensus state, and is identical to `/healthz`. A failure indicates the process is unresponsive and should be restarted.
         """
         return self._build_for_livez()
 
@@ -266,7 +266,7 @@ class SyncServiceApi(_ServiceApi):
         self,
     ) -> str:
         """
-        An endpoint for health checking used in Kubernetes.
+        Kubernetes readiness probe. Checks the instance and waits out pending data operations to see when it can start accepting traffic. In a distributed deployment it returns 200 only once the node has caught up with the cluster consensus commit and its local shards are healthy; otherwise it returns 503. In a single-node deployment it always returns 200 once the API is up. Use it to decide when to route traffic to the instance.
         """
         return self._build_for_readyz()
 

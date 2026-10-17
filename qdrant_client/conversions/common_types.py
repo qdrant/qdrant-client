@@ -1,9 +1,7 @@
-import sys
-
 import numpy as np
 import numpy.typing as npt
 
-from typing import Union, get_args, Sequence, TypeAlias
+from typing import Literal, Union, get_args, Sequence, TypeAlias
 from uuid import UUID
 
 from qdrant_client import grpc
@@ -84,8 +82,6 @@ CollectionsResponse: TypeAlias = rest.CollectionsResponse
 CollectionInfo: TypeAlias = rest.CollectionInfo
 CountResult: TypeAlias = rest.CountResult
 SnapshotDescription: TypeAlias = rest.SnapshotDescription
-NamedVector: TypeAlias = rest.NamedVector
-NamedSparseVector: TypeAlias = rest.NamedSparseVector
 SparseVector: TypeAlias = rest.SparseVector
 PointVectors: TypeAlias = rest.PointVectors
 Vector: TypeAlias = rest.Vector
@@ -95,6 +91,7 @@ VectorParams: TypeAlias = rest.VectorParams
 SparseVectorParams: TypeAlias = rest.SparseVectorParams
 VectorNameConfig: TypeAlias = rest.VectorNameConfig
 SnapshotPriority: TypeAlias = rest.SnapshotPriority
+PayloadStorageParams: TypeAlias = rest.PayloadStorageParams
 CollectionsAliasesResponse: TypeAlias = rest.CollectionsAliasesResponse
 UpdateOperation: TypeAlias = rest.UpdateOperation
 Query: TypeAlias = rest.Query
@@ -112,6 +109,8 @@ Mmr: TypeAlias = rest.Mmr
 ReadConsistency: TypeAlias = rest.ReadConsistency
 WriteOrdering: TypeAlias = rest.WriteOrdering
 WithLookupInterface: TypeAlias = rest.WithLookupInterface
+WithPayloadInterface: TypeAlias = rest.WithPayloadInterface | grpc.WithPayloadSelector
+WithVector: TypeAlias = rest.WithVector
 
 GroupsResult: TypeAlias = rest.GroupsResult
 QueryResponse: TypeAlias = rest.QueryResponse
@@ -130,6 +129,7 @@ ClusterOperations: TypeAlias = rest.ClusterOperations
 ClusterStatus: TypeAlias = rest.ClusterStatus
 CollectionClusterInfo: TypeAlias = rest.CollectionClusterInfo
 OptimizationsResponse: TypeAlias = rest.OptimizationsResponse
+OptimizationsWith: TypeAlias = Literal["queued", "completed", "idle_segments"]
 ShardKeysResponse: TypeAlias = rest.ShardKeysResponse
 DistributedTelemetryData: TypeAlias = rest.DistributedTelemetryData
 

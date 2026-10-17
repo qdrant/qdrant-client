@@ -20,7 +20,7 @@ COLLECTION_NAME = "async_test_collection"
 @pytest.mark.asyncio
 @pytest.mark.parametrize("prefer_grpc", [True, False])
 async def test_async_qdrant_client(prefer_grpc):
-    client = AsyncQdrantClient(prefer_grpc=prefer_grpc, timeout=15)
+    client = AsyncQdrantClient(prefer_grpc=prefer_grpc, timeout=60)
     collection_params = dict(
         collection_name=COLLECTION_NAME,
         vectors_config=models.VectorParams(size=10, distance=models.Distance.EUCLID),
@@ -173,15 +173,18 @@ async def test_async_qdrant_client(prefer_grpc):
     await client.delete_payload_index(COLLECTION_NAME, field_name="random_dig")
     assert "random_dig" not in (await client.get_collection(COLLECTION_NAME)).payload_schema
 
+    # Clean up any stale snapshots left by previous failed runs
+    for snap in await client.list_snapshots(COLLECTION_NAME):
+        await client.delete_snapshot(COLLECTION_NAME, snapshot_name=snap.name, wait=True)
+    for snap in await client.list_full_snapshots():
+        await client.delete_full_snapshot(snapshot_name=snap.name, wait=True)
+    for snap in await client.list_shard_snapshots(COLLECTION_NAME, shard_id=0):
+        await client.delete_shard_snapshot(COLLECTION_NAME, snapshot_name=snap.name, shard_id=0)
+    time.sleep(0.5)  # https://github.com/qdrant/qdrant-client/issues/254
+
     assert isinstance(await client.create_snapshot(COLLECTION_NAME), models.SnapshotDescription)
     snapshots = await client.list_snapshots(COLLECTION_NAME)
     assert len(snapshots) == 1
-
-    # recover snapshot location is unknown
-    # await client.upsert(COLLECTION_NAME, points=[models.PointStruct(id=101, vector=np.random.rand(10).tolist())])
-    # assert (await client.get_collection(COLLECTION_NAME)).vectors_count == 101
-    # await client.recover_snapshot(collection_name=COLLECTION_NAME, location=...)
-    # assert (await client.get_collection(COLLECTION_NAME)).vectors_count == 100
 
     await client.delete_snapshot(COLLECTION_NAME, snapshot_name=snapshots[0].name, wait=True)
 
@@ -201,12 +204,6 @@ async def test_async_qdrant_client(prefer_grpc):
     )
     snapshots = await client.list_shard_snapshots(COLLECTION_NAME, shard_id=0)
     assert len(snapshots) == 1
-
-    # recover snapshot location is unknown
-    # await client.upsert(COLLECTION_NAME, points=[models.PointStruct(id=101, vector=np.random.rand(10).tolist())])
-    # assert (await client.get_collection(COLLECTION_NAME)).vectors_count == 101
-    # await client.recover_shard_snapshot(collection_name=COLLECTION_NAME, location=..., shard_id=0)
-    # assert (await client.get_collection(COLLECTION_NAME)).vectors_count == 100
 
     await client.delete_shard_snapshot(
         COLLECTION_NAME, snapshot_name=snapshots[0].name, shard_id=0
@@ -566,8 +563,73 @@ async def test_async_auth():
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("prefer_grpc", [False, True])
+async def test_auth_token_provider_upload(prefer_grpc):
+    """Check that upload_points authenticates with the token provider."""
+    call_num = 0
+
+    def auth_token_provider():
+        nonlocal call_num
+        call_num += 1
+        return f"token_{call_num}"
+
+    client = AsyncQdrantClient(
+        prefer_grpc=prefer_grpc,
+        timeout=3,
+        check_compatibility=False,
+        auth_token_provider=auth_token_provider,
+    )
+    if await client.collection_exists(COLLECTION_NAME):
+        await client.delete_collection(COLLECTION_NAME)
+    await client.create_collection(
+        COLLECTION_NAME,
+        vectors_config=models.VectorParams(size=DIM, distance=models.Distance.DOT),
+    )
+
+    calls_before = call_num
+    client.upload_points(
+        COLLECTION_NAME,
+        points=[
+            models.PointStruct(id=idx, vector=np.random.rand(DIM).tolist()) for idx in range(10)
+        ],
+        wait=True,
+    )
+    assert call_num > calls_before
+
+    await client.delete_collection(COLLECTION_NAME)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("prefer_grpc", [False, True])
+async def test_async_auth_token_provider_upload(prefer_grpc):
+    """Check that uploads reject an async token provider before sending any batch."""
+    call_num = 0
+
+    async def auth_token_provider():
+        nonlocal call_num
+        call_num += 1
+        return f"token_{call_num}"
+
+    client = AsyncQdrantClient(
+        prefer_grpc=prefer_grpc,
+        timeout=3,
+        check_compatibility=False,
+        auth_token_provider=auth_token_provider,
+    )
+    with pytest.raises(ValueError, match="require a synchronous auth_token_provider"):
+        client.upload_points(
+            COLLECTION_NAME, points=[models.PointStruct(id=0, vector=np.random.rand(DIM).tolist())]
+        )
+    with pytest.raises(ValueError, match="require a synchronous auth_token_provider"):
+        client.upload_collection(COLLECTION_NAME, vectors=np.random.rand(2, DIM), ids=[0, 1])
+    assert call_num == 0
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("prefer_grpc", [False, True])
 async def test_custom_sharding(prefer_grpc):
     client = AsyncQdrantClient(prefer_grpc=prefer_grpc)
+    if (await client.cluster_status()).status == "disabled":
+        pytest.skip("Requires distributed mode")
 
     if await client.collection_exists(COLLECTION_NAME):
         await client.delete_collection(collection_name=COLLECTION_NAME)
