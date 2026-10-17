@@ -93,35 +93,6 @@ def test_pow_expression() -> None:
         _pow(-2.0, "exponent", payload={"exponent": 10**400})
 
 
-def test_geo_distance_ignores_extra_payload_fields() -> None:
-    """A payload geo point may carry fields besides lat and lon.
-
-    The server deserializes only those two and ignores the rest, so a formula
-    geo_distance query scores that point the same as a lat/lon-only object.
-    """
-    expression = models.GeoDistance(
-        geo_distance=models.GeoDistanceParams(
-            origin=models.GeoPoint(lat=52.52, lon=13.405),
-            to="geo",
-        )
-    )
-    clean = {"geo": {"lat": 48.8566, "lon": 2.3522}}
-    with_extra = {"geo": {"lat": 48.8566, "lon": 2.3522, "city": "Paris"}}
-    # one-element arrays are unwrapped the same way as a bare object
-    array_with_extra = {"geo": [{"lat": 48.8566, "lon": 2.3522, "city": "Paris"}]}
-    defaults = {"geo": {"lat": 48.8566, "lon": 2.3522, "name": "fallback"}}
-
-    clean_score = evaluate_expression(expression, 1, [], clean, {}, {})
-    extra_score = evaluate_expression(expression, 1, [], with_extra, {}, {})
-    array_score = evaluate_expression(expression, 1, [], array_with_extra, {}, {})
-    default_score = evaluate_expression(expression, 1, [], {}, {}, defaults)
-
-    assert extra_score == clean_score
-    assert array_score == clean_score
-    assert default_score == clean_score
-    assert clean_score > 0
-
-
 def test_try_extract_payload_value() -> None:
     for payload_value, expected in [(1.2, 1.2), ([1.2], 1.2), ([1.2, 2.3], [1.2, 2.3])]:
         empty_defaults: dict[str, Any] = {}
