@@ -188,16 +188,21 @@ def check_datetime_range(condition: models.DatetimeRange, value: Any) -> bool:
     if dt is None:
         return False
 
+    # datetime truncates fractions to microseconds; keep the remainder for range boundaries.
+    fraction = re.search(r"\.(\d+)", value)
+    nanosecond_remainder = int(fraction.group(1)[6:9].ljust(3, "0")) if fraction else 0
+    precise_dt = (dt, nanosecond_remainder)
+
     lt = make_condition_tz_aware(condition.lt)
     lte = make_condition_tz_aware(condition.lte)
     gt = make_condition_tz_aware(condition.gt)
     gte = make_condition_tz_aware(condition.gte)
 
     return (
-        (lt is None or dt < lt)
-        and (lte is None or dt <= lte)
-        and (gt is None or dt > gt)
-        and (gte is None or dt >= gte)
+        (lt is None or precise_dt < (lt, 0))
+        and (lte is None or precise_dt <= (lte, 0))
+        and (gt is None or precise_dt > (gt, 0))
+        and (gte is None or precise_dt >= (gte, 0))
     )
 
 

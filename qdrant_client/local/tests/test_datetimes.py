@@ -2,8 +2,10 @@ from datetime import date, datetime, timedelta, timezone, tzinfo
 
 import pytest
 
+from qdrant_client import models
 from qdrant_client.local.datetime_utils import parse
 from qdrant_client.local.order_by import datetime_to_microseconds, to_order_value
+from qdrant_client.local.payload_filters import check_datetime_range
 
 
 @pytest.mark.parametrize(  # type: ignore
@@ -98,6 +100,51 @@ def test_parse_dates(date_str: str, expected: datetime):
 )
 def test_parse_unsupported_dates(date_str: str):
     assert parse(date_str) is None
+
+
+@pytest.mark.parametrize(  # type: ignore
+    "comparator, result_index", [("lt", 0), ("lte", 1), ("gt", 2), ("gte", 3)]
+)
+@pytest.mark.parametrize(  # type: ignore
+    "value, boundary, expected",
+    [
+        ("2024-01-01T00:00:00.000000001Z", "2024-01-01T00:00:00Z", (False, False, True, True)),
+        ("2024-01-01T00:00:00.0000001Z", "2024-01-01T00:00:00Z", (False, False, True, True)),
+        ("2024-01-01T00:00:00.00000001Z", "2024-01-01T00:00:00Z", (False, False, True, True)),
+        ("2024-01-01T00:00:00.000000000Z", "2024-01-01T00:00:00Z", (False, True, False, True)),
+        (
+            "2024-01-01T00:00:00.123456789Z",
+            "2024-01-01T00:00:00.123456Z",
+            (False, False, True, True),
+        ),
+        (
+            "2024-01-01T00:00:00.123456789Z",
+            "2024-01-01T00:00:00.123457Z",
+            (True, True, False, False),
+        ),
+        (
+            "2024-01-01T01:00:00.000000001+01:00",
+            "2024-01-01T00:00:00Z",
+            (False, False, True, True),
+        ),
+        (
+            "1969-12-31T23:59:59.999999999Z",
+            "1969-12-31T23:59:59.999999Z",
+            (False, False, True, True),
+        ),
+        ("2024-01-01T00:00:00.123456Z", "2024-01-01T00:00:00.123456Z", (False, True, False, True)),
+        ("2024-01-01T00:00:00Z", "2024-01-01T00:00:00Z", (False, True, False, True)),
+    ],
+)
+def test_datetime_range_nanosecond_boundary(
+    value: str,
+    boundary: str,
+    expected: tuple[bool, bool, bool, bool],
+    comparator: str,
+    result_index: int,
+) -> None:
+    condition = models.DatetimeRange(**{comparator: boundary})
+    assert check_datetime_range(condition, value) is expected[result_index]
 
 
 @pytest.mark.parametrize(  # type: ignore
