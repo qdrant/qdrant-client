@@ -279,50 +279,66 @@ client = QdrantClient(host="localhost", grpc_port=6334, prefer_grpc=True)
 
 ## Async client
 
-Starting from version 1.6.1, all python client methods are available in async version.
+An asynchronous client is available starting from version 1.6.1.
+Import `AsyncQdrantClient` instead of `QdrantClient` and `await` asynchronous
+operations such as `create_collection`, `upsert`, and `query_points`.
 
-To use it, just import `AsyncQdrantClient` instead of `QdrantClient`:
+The bulk helpers `upload_points` and `upload_collection` remain synchronous, blocking
+methods even on `AsyncQdrantClient`; do not `await` them. For asynchronous network
+uploads, split your points into batches and `await client.upsert(...)` for each batch.
+The example below sends batches sequentially; it does not add the remote bulk helpers'
+automatic retries or parallel uploads.
+
+Run this example against a local Qdrant server. Each run creates a uniquely named
+collection and leaves it in place; remove these example collections when no longer needed.
+The client is closed even if a request fails.
 
 ```python
 import asyncio
-
-import numpy as np
+from uuid import uuid4
 
 from qdrant_client import AsyncQdrantClient, models
 
 
 async def main():
-    # Your async code using QdrantClient might be put here
     client = AsyncQdrantClient(url="http://localhost:6333")
+    collection_name = f"async_upload_example_{uuid4().hex}"
+    try:
+        await client.create_collection(
+            collection_name=collection_name,
+            vectors_config=models.VectorParams(size=2, distance=models.Distance.COSINE),
+        )
 
-    await client.create_collection(
-        collection_name="my_collection",
-        vectors_config=models.VectorParams(size=10, distance=models.Distance.COSINE),
-    )
-
-    await client.upsert(
-        collection_name="my_collection",
-        points=[
-            models.PointStruct(
-                id=i,
-                vector=np.random.rand(10).tolist(),
+        points = [
+            models.PointStruct(id=0, vector=[1.0, 0.0]),
+            models.PointStruct(id=1, vector=[0.8, 0.2]),
+            models.PointStruct(id=2, vector=[0.0, 1.0]),
+        ]
+        batch_size = 2
+        for start in range(0, len(points), batch_size):
+            await client.upsert(
+                collection_name=collection_name,
+                points=points[start : start + batch_size],
+                wait=True,
             )
-            for i in range(100)
-        ],
-    )
 
-    res = await client.query_points(
-        collection_name="my_collection",
-        query=np.random.rand(10).tolist(),  # type: ignore
-        limit=10,
-    )
+        res = await client.query_points(
+            collection_name=collection_name,
+            query=[1.0, 0.0],
+            limit=3,
+        )
+        print(res)
+    finally:
+        await client.close()
 
-    print(res)
 
 asyncio.run(main())
 ```
 
-Both, gRPC and REST API are supported in async mode.
+In an existing event loop, such as a notebook or an async web handler, use
+`await main()` instead of `asyncio.run(main())`.
+
+Both gRPC and REST API are supported in async mode.
 More examples can be found [here](./tests/test_async_qdrant_client.py).
 
 ### Development
