@@ -928,3 +928,107 @@ def test_convert_collection_info_points_count_presence():
     round_tripped = RestToGrpc.convert_collection_info(GrpcToRest.convert_collection_info(zero))
     assert round_tripped.HasField("points_count")
     assert round_tripped.points_count == 0
+
+
+def test_convert_vector_params_accepts_dict():
+    from qdrant_client import models
+    from qdrant_client.conversions.conversion import RestToGrpc
+
+    from qdrant_client import grpc
+
+    raw = {
+        "size": 1024,
+        "distance": "Cosine",
+        "on_disk": False,
+        "datatype": "float16",
+        "memory": "cached",
+    }
+    from_dict = RestToGrpc.convert_vector_params(raw)
+    from_model = RestToGrpc.convert_vector_params(models.VectorParams(**raw))
+
+    assert from_dict == from_model
+    assert from_dict == grpc.VectorParams(
+        size=1024,
+        distance=grpc.Distance.Cosine,
+        on_disk=False,
+        datatype=grpc.Datatype.Float16,
+        memory=grpc.Memory.Cached,
+    )
+    assert from_dict.HasField("on_disk")
+    assert from_dict.HasField("memory")
+
+
+def test_convert_vectors_config_named_dict_values():
+    from qdrant_client import models
+    from qdrant_client.conversions.conversion import RestToGrpc
+
+    raw = {
+        "vector1": {
+            "size": 1024,
+            "distance": "Cosine",
+            "on_disk": True,
+            "datatype": "float16",
+        },
+        "vector2": {"size": 768, "distance": "Dot"},
+    }
+    from_dict = RestToGrpc.convert_vectors_config(raw)
+    from_models = RestToGrpc.convert_vectors_config(
+        {name: models.VectorParams(**params) for name, params in raw.items()}
+    )
+
+    assert from_dict == from_models
+
+
+def test_convert_vector_params_diff_accepts_dict():
+    from qdrant_client import models
+    from qdrant_client.conversions.conversion import RestToGrpc
+
+    raw = {"on_disk": True}
+    assert RestToGrpc.convert_vector_params_diff(raw) == RestToGrpc.convert_vector_params_diff(
+        models.VectorParamsDiff(**raw)
+    )
+
+
+def test_convert_sparse_vector_config_dict_values():
+    from qdrant_client import models
+    from qdrant_client.conversions.conversion import RestToGrpc
+
+    raw = {"sparse1": {"modifier": "idf"}, "sparse2": {}}
+    from_dict = RestToGrpc.convert_sparse_vector_config(raw)
+    from_models = RestToGrpc.convert_sparse_vector_config(
+        {name: models.SparseVectorParams(**params) for name, params in raw.items()}
+    )
+
+    assert from_dict == from_models
+
+
+def test_convert_vectors_config_diff_named_dict_values():
+    from qdrant_client import grpc
+    from qdrant_client.conversions.conversion import RestToGrpc
+
+    result = RestToGrpc.convert_vectors_config_diff(
+        {"dense": {"on_disk": False, "memory": "cached"}}
+    )
+
+    assert result == grpc.VectorsConfigDiff(
+        params_map=grpc.VectorParamsDiffMap(
+            map={"dense": grpc.VectorParamsDiff(on_disk=False, memory=grpc.Memory.Cached)}
+        )
+    )
+    assert result.WhichOneof("config") == "params_map"
+    assert result.params_map.map["dense"].HasField("on_disk")
+    assert result.params_map.map["dense"].HasField("memory")
+
+
+def test_convert_vectors_config_diff_unnamed_dict_values():
+    from qdrant_client import grpc
+    from qdrant_client.conversions.conversion import RestToGrpc
+
+    result = RestToGrpc.convert_vectors_config_diff({"": {"on_disk": False, "memory": "cached"}})
+
+    assert result == grpc.VectorsConfigDiff(
+        params=grpc.VectorParamsDiff(on_disk=False, memory=grpc.Memory.Cached)
+    )
+    assert result.WhichOneof("config") == "params"
+    assert result.params.HasField("on_disk")
+    assert result.params.HasField("memory")

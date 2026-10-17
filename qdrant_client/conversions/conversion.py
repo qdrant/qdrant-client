@@ -3825,6 +3825,8 @@ class RestToGrpc:
 
     @classmethod
     def convert_vector_params(cls, model: rest.VectorParams) -> grpc.VectorParams:
+        if isinstance(model, dict):
+            model = rest.VectorParams(**model)
         return grpc.VectorParams(
             size=model.size,
             distance=cls.convert_distance(model.distance),
@@ -4787,6 +4789,8 @@ class RestToGrpc:
 
     @classmethod
     def convert_vector_params_diff(cls, model: rest.VectorParamsDiff) -> grpc.VectorParamsDiff:
+        if isinstance(model, dict):
+            model = rest.VectorParamsDiff(**model)
         return grpc.VectorParamsDiff(
             hnsw_config=(
                 cls.convert_hnsw_config_diff(model.hnsw_config)
@@ -5048,6 +5052,8 @@ class RestToGrpc:
     def convert_sparse_vector_params(
         cls, model: rest.SparseVectorParams
     ) -> grpc.SparseVectorParams:
+        if isinstance(model, dict):
+            model = rest.SparseVectorParams(**model)
         return grpc.SparseVectorParams(
             index=(
                 cls.convert_sparse_index_params(model.index) if model.index is not None else None
