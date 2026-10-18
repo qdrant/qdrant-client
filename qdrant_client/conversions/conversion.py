@@ -335,7 +335,9 @@ class GrpcToRest:
                 if model.HasField("strict_mode_config")
                 else None
             ),
-            metadata=cls.convert_payload(model.metadata) if model.metadata is not None else None,
+            # metadata is a proto map, and a map getter is always a (possibly empty)
+            # container: absence has to be read from the container, not from None
+            metadata=cls.convert_payload(model.metadata) if len(model.metadata) > 0 else None,
         )
 
     @classmethod
@@ -926,7 +928,8 @@ class GrpcToRest:
                 if model.HasField("strict_mode_config")
                 else None
             ),
-            metadata=(cls.convert_payload(model.metadata) if model.metadata is not None else None),
+            # metadata is a proto map, see convert_collection_config
+            metadata=(cls.convert_payload(model.metadata) if len(model.metadata) > 0 else None),
         )
 
     @classmethod
