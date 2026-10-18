@@ -9,6 +9,7 @@ from qdrant_client import QdrantClient, models
     + [("sparse", models.Distance.DOT)],
 )
 def test_discovery_on_empty_collection(vector_kind: str, distance: models.Distance) -> None:
+    """Check discovery before insertion, after insertion, and after deleting all points."""
     client = QdrantClient(":memory:")
     collection_name = "empty-discovery"
     positive: models.SparseVector | list[float] | list[list[float]]
@@ -49,6 +50,7 @@ def test_discovery_on_empty_collection(vector_kind: str, distance: models.Distan
         )
 
         def discover() -> list[models.ScoredPoint]:
+            """Run the prepared discovery query against the current collection contents."""
             return client.query_points(collection_name, query=query, using="vector").points
 
         assert discover() == []
