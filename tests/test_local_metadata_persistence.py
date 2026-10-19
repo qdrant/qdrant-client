@@ -1,4 +1,6 @@
 import inspect
+import os
+import stat
 from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
@@ -290,3 +292,54 @@ async def test_failed_metadata_open_closes_descriptor(
         await assert_unchanged(client)
     finally:
         await call(client.close)
+
+
+@pytest.mark.asyncio
+@pytest.mark.skipif(os.name != "posix", reason="POSIX file modes")
+@pytest.mark.parametrize("client_class", [QdrantClient, AsyncQdrantClient])
+async def test_metadata_save_keeps_file_mode(client_class: type[Client], tmp_path: Path) -> None:
+    client = client_class(path=str(tmp_path))
+    meta_path = tmp_path / "meta.json"
+    try:
+        meta_path.chmod(0o640)
+        await call(client.create_collection, "docs", vectors_config={})
+        assert stat.S_IMODE(meta_path.stat().st_mode) == 0o640
+    finally:
+        await call(client.close)
+
+
+@pytest.mark.asyncio
+@pytest.mark.skipif(os.name != "posix", reason="directories cannot be fsynced on Windows")
+@pytest.mark.parametrize("client_class", [QdrantClient, AsyncQdrantClient])
+@pytest.mark.parametrize("dir_fsync_fails", [False, True])
+async def test_metadata_replace_fsyncs_directory(
+    client_class: type[Client],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    dir_fsync_fails: bool,
+) -> None:
+    client = await populated_client(client_class, tmp_path)
+    module = qdrant_local if client_class is QdrantClient else async_qdrant_local
+    real_fsync = module.os.fsync
+    synced_dirs: list[int] = []
+
+    def fsync(fd: int) -> None:
+        if stat.S_ISDIR(os.fstat(fd).st_mode):
+            synced_dirs.append(fd)
+            if dir_fsync_fails:
+                raise OSError("injected directory fsync failure")
+        real_fsync(fd)
+
+    try:
+        with monkeypatch.context() as patch:
+            patch.setattr(module.os, "fsync", fsync)
+            await change(client, "create", {"added": True})
+        assert synced_dirs
+        assert (await call(client.get_collection, "new")).config.metadata == {"added": True}
+    finally:
+        await call(client.close)
+    reopened = client_class(path=str(tmp_path))
+    try:
+        assert (await call(reopened.get_collection, "new")).config.metadata == {"added": True}
+    finally:
+        await call(reopened.close)

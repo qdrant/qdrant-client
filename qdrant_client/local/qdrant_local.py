@@ -3,6 +3,7 @@ import itertools
 import json
 import os
 import shutil
+import stat
 import tempfile
 import uuid
 from copy import deepcopy
@@ -209,6 +210,11 @@ class QdrantLocal(QdrantBase):
                     pass
                 raise
             os.close(fd)
+            # mkstemp creates the file as 0o600; keep the mode meta.json already has.
+            try:
+                os.chmod(temp_path, stat.S_IMODE(os.stat(meta_path).st_mode))
+            except FileNotFoundError:
+                pass
             os.replace(temp_path, meta_path)
         except BaseException:
             try:
@@ -216,6 +222,16 @@ class QdrantLocal(QdrantBase):
             except OSError:
                 pass
             raise
+        if os.name == "posix":
+            # Persist the rename too. The new file is already in place, so ignore errors here.
+            try:
+                dir_fd = os.open(self.location, os.O_RDONLY)
+                try:
+                    os.fsync(dir_fd)
+                finally:
+                    os.close(dir_fd)
+            except OSError:
+                pass
 
     def _get_collection(self, collection_name: str) -> LocalCollection:
         if self.closed:
