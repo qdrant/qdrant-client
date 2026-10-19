@@ -1030,6 +1030,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         else:
             if isinstance(update_filter, grpc.Filter):
                 update_filter = GrpcToRest.convert_filter(model=update_filter)
+            if isinstance(update_mode, int) and not isinstance(update_mode, bool):
+                update_mode = GrpcToRest.convert_update_mode(update_mode)
             if isinstance(points, list):
                 points = [
                     GrpcToRest.convert_point_struct(point)
@@ -2081,6 +2083,9 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 "update_mode": update_mode,
             }
         else:
+            if isinstance(update_mode, int) and not isinstance(update_mode, bool):
+                update_mode = GrpcToRest.convert_update_mode(update_mode)
+
             updater_kwargs = {
                 "collection_name": collection_name,
                 "uri": self.rest_uri,

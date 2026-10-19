@@ -6,7 +6,7 @@ from unittest.mock import MagicMock
 import numpy as np
 import pytest
 
-from qdrant_client import QdrantClient, models
+from qdrant_client import QdrantClient, grpc, models
 from qdrant_client.conversions.conversion import RestToGrpc
 from qdrant_client.parallel_processor import ParallelWorkerPool, Worker
 from qdrant_client.uploader.grpc_uploader import (
@@ -179,3 +179,41 @@ def test_grpc_uploader_rejects_unknown_named_vectors(value: Any) -> None:
     # used to be skipped, uploading the point without the vector
     with pytest.raises(ValueError, match="invalid VectorStruct model: vector 'dense'"):
         convert_vector_struct({"dense": value, "sparse": sparse})
+
+
+def test_rest_transport_accepts_grpc_update_mode(monkeypatch: pytest.MonkeyPatch) -> None:
+    """`types.UpdateMode` covers both structures, so a gRPC mode needs a conversion too.
+
+    It used to reach `models.PointsList` unchanged and fail pydantic validation there,
+    while the gRPC branch converted the REST enum the other way.
+    """
+    insertions: list[models.PointInsertOperations] = []
+
+    def ok(request: Any) -> Any:
+        return models.InlineResponse2008(
+            result=models.UpdateResult(operation_id=1, status="completed")
+        )
+
+    def upsert_points(**kwargs: Any) -> Any:
+        insertions.append(kwargs["point_insert_operations"])
+        return ok(kwargs)
+
+    api = MagicMock()
+    api.points_api.upsert_points = upsert_points
+    api.request = ok  # RestBatchUploader builds its own SyncApis, mock it too
+    monkeypatch.setattr("qdrant_client.qdrant_remote.SyncApis", lambda **kwargs: api)
+    monkeypatch.setattr("qdrant_client.uploader.rest_uploader.SyncApis", lambda **kwargs: api)
+
+    client = QdrantClient(url="http://localhost:6333", check_compatibility=False)
+    client._client._rest_args = {}  # no middleware or auth setup for the mocked call
+    points = [models.PointStruct(id=1, vector=[0.1])]
+
+    client.upsert("test_collection", points, update_mode=grpc.UpdateMode.InsertOnly)
+    client.upload_points("test_collection", points, update_mode=grpc.UpdateMode.InsertOnly)
+
+    # the mode arrives converted, not as the gRPC int
+    assert [insertion.update_mode for insertion in insertions] == [
+        models.UpdateMode.INSERT_ONLY,
+        models.UpdateMode.INSERT_ONLY,
+    ]
+    assert all(isinstance(insertion, models.PointsList) for insertion in insertions)

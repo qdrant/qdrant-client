@@ -119,7 +119,11 @@ class RestBatchUploader(BaseUploader):
             if isinstance(update_filter, grpc.Filter)
             else update_filter
         )
-        self._update_mode = update_mode
+        self._update_mode = (
+            GrpcToRest.convert_update_mode(update_mode)
+            if isinstance(update_mode, int) and not isinstance(update_mode, bool)
+            else update_mode
+        )
 
     @staticmethod
     def _from_numpy(vectors: types.NumpyArray) -> Any:
