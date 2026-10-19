@@ -3,6 +3,7 @@ import itertools
 import json
 import os
 import shutil
+import tempfile
 import uuid
 from copy import deepcopy
 from io import TextIOWrapper
@@ -184,18 +185,37 @@ class QdrantLocal(QdrantBase):
             raise RuntimeError("QdrantLocal instance is closed. Please create a new instance.")
 
         meta_path = os.path.join(self.location, META_INFO_FILENAME)
-        with open(meta_path, "w") as f:
-            f.write(
-                json.dumps(
-                    {
-                        "collections": {
-                            collection_name: to_dict(collection.config)
-                            for collection_name, collection in self.collections.items()
-                        },
-                        "aliases": self.aliases if aliases is None else aliases,
-                    }
-                )
-            )
+        metadata = json.dumps(
+            {
+                "collections": {
+                    collection_name: to_dict(collection.config)
+                    for collection_name, collection in self.collections.items()
+                },
+                "aliases": self.aliases if aliases is None else aliases,
+            }
+        )
+        # Keep the last complete metadata file until the new one is safely written.
+        fd, temp_path = tempfile.mkstemp(prefix=".meta-", dir=self.location)
+        try:
+            try:
+                with open(fd, "w", closefd=False) as f:
+                    f.write(metadata)
+                    f.flush()
+                    os.fsync(f.fileno())
+            except BaseException:
+                try:
+                    os.close(fd)
+                except OSError:
+                    pass
+                raise
+            os.close(fd)
+            os.replace(temp_path, meta_path)
+        except BaseException:
+            try:
+                os.unlink(temp_path)
+            except OSError:
+                pass
+            raise
 
     def _get_collection(self, collection_name: str) -> LocalCollection:
         if self.closed:
@@ -846,20 +866,26 @@ class QdrantLocal(QdrantBase):
         **kwargs: Any,
     ) -> bool:
         _collection = self._get_collection(collection_name)
+        original_config = _collection.config
+        _collection.config = deepcopy(original_config)
         updated = False
-        if sparse_vectors_config is not None:
-            for vector_name, vector_params in sparse_vectors_config.items():
-                _collection.update_sparse_vectors_config(vector_name, vector_params)
-            updated = True
+        try:
+            if sparse_vectors_config is not None:
+                for vector_name, vector_params in sparse_vectors_config.items():
+                    _collection.update_sparse_vectors_config(vector_name, vector_params)
+                updated = True
 
-        if metadata is not None:
-            if _collection.config.metadata is not None:
-                merge_payload(_collection.config.metadata, deepcopy(metadata))
-            else:
-                _collection.config.metadata = deepcopy(metadata)
-            updated = True
+            if metadata is not None:
+                if _collection.config.metadata is not None:
+                    merge_payload(_collection.config.metadata, deepcopy(metadata))
+                else:
+                    _collection.config.metadata = deepcopy(metadata)
+                updated = True
 
-        self._save()
+            self._save()
+        except Exception:
+            _collection.config = original_config
+            raise
         return updated
 
     @staticmethod
@@ -952,8 +978,12 @@ class QdrantLocal(QdrantBase):
             force_disable_check_same_thread=self.force_disable_check_same_thread,
         )
         self.collections[collection_name] = collection
-
-        self._save()
+        try:
+            self._save()
+        except Exception:
+            del self.collections[collection_name]
+            collection.close()
+            raise
         return True
 
     def recreate_collection(
