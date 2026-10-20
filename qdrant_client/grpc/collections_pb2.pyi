@@ -8,6 +8,7 @@ import google.protobuf.descriptor
 import google.protobuf.internal.containers
 import google.protobuf.internal.enum_type_wrapper
 import google.protobuf.message
+import google.protobuf.timestamp_pb2
 import json_with_int_pb2
 import qdrant_common_pb2
 import sys
@@ -31,6 +32,8 @@ class _DatatypeEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumT
     Uint8: _Datatype.ValueType  # 2
     Float16: _Datatype.ValueType  # 3
     Turbo4: _Datatype.ValueType  # 4
+    Turbo8: _Datatype.ValueType  # 5
+    Turbo16: _Datatype.ValueType  # 6
 
 class Datatype(_Datatype, metaclass=_DatatypeEnumTypeWrapper): ...
 
@@ -39,6 +42,8 @@ Float32: Datatype.ValueType  # 1
 Uint8: Datatype.ValueType  # 2
 Float16: Datatype.ValueType  # 3
 Turbo4: Datatype.ValueType  # 4
+Turbo8: Datatype.ValueType  # 5
+Turbo16: Datatype.ValueType  # 6
 global___Datatype = Datatype
 
 class _Memory:
@@ -240,6 +245,7 @@ class _TurboQuantBitSizeEnumTypeWrapper(google.protobuf.internal.enum_type_wrapp
     Bits1_5: _TurboQuantBitSize.ValueType  # 1
     Bits2: _TurboQuantBitSize.ValueType  # 2
     Bits4: _TurboQuantBitSize.ValueType  # 3
+    Bits8: _TurboQuantBitSize.ValueType  # 4
 
 class TurboQuantBitSize(_TurboQuantBitSize, metaclass=_TurboQuantBitSizeEnumTypeWrapper): ...
 
@@ -247,6 +253,7 @@ Bits1: TurboQuantBitSize.ValueType  # 0
 Bits1_5: TurboQuantBitSize.ValueType  # 1
 Bits2: TurboQuantBitSize.ValueType  # 2
 Bits4: TurboQuantBitSize.ValueType  # 3
+Bits8: TurboQuantBitSize.ValueType  # 4
 global___TurboQuantBitSize = TurboQuantBitSize
 
 class _ShardingMethod:
@@ -279,6 +286,7 @@ class _TokenizerTypeEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._
     Whitespace: _TokenizerType.ValueType  # 2
     Word: _TokenizerType.ValueType  # 3
     Multilingual: _TokenizerType.ValueType  # 4
+    Code: _TokenizerType.ValueType  # 5
 
 class TokenizerType(_TokenizerType, metaclass=_TokenizerTypeEnumTypeWrapper): ...
 
@@ -287,7 +295,21 @@ Prefix: TokenizerType.ValueType  # 1
 Whitespace: TokenizerType.ValueType  # 2
 Word: TokenizerType.ValueType  # 3
 Multilingual: TokenizerType.ValueType  # 4
+Code: TokenizerType.ValueType  # 5
 global___TokenizerType = TokenizerType
+
+class _TextScoringType:
+    ValueType = typing.NewType("ValueType", builtins.int)
+    V: typing_extensions.TypeAlias = ValueType
+
+class _TextScoringTypeEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[_TextScoringType.ValueType], builtins.type):  # noqa: F821
+    DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
+    Bm25: _TextScoringType.ValueType  # 0
+
+class TextScoringType(_TextScoringType, metaclass=_TextScoringTypeEnumTypeWrapper): ...
+
+Bm25: TextScoringType.ValueType  # 0
+global___TextScoringType = TextScoringType
 
 class _ReplicaState:
     ValueType = typing.NewType("ValueType", builtins.int)
@@ -912,6 +934,9 @@ class HnswConfigDiff(google.protobuf.message.Message):
     m: builtins.int
     """Number of edges per node in the index graph.
     Larger the value - more accurate the search, more space required.
+    Set to 0 to disable the main HNSW graph. Additional payload-aware links
+    may still be built when the effective payload M is positive (see payload_m).
+    This setting alone does not guarantee exact search.
     """
     ef_construct: builtins.int
     """Number of neighbours to consider during the index building.
@@ -936,8 +961,9 @@ class HnswConfigDiff(google.protobuf.message.Message):
     Store HNSW index on disk. If set to false, the index will be stored in RAM.
     """
     payload_m: builtins.int
-    """Number of additional payload-aware links per node in the index graph.
-    If not set - regular M parameter will be used.
+    """Number of additional payload-aware links per node. If unset, the value of m is used.
+    An effective value of 0 disables these additional links. A positive value allows
+    them for indexed payload fields with HNSW enabled, even when m is 0.
     """
     inline_storage: builtins.bool
     """Store copies of original and quantized vectors within the HNSW index file. Default: false.
@@ -1088,7 +1114,7 @@ class OptimizersConfigDiff(google.protobuf.message.Message):
     max_segment_size: builtins.int
     """Deprecated:
 
-    Do not create segments larger this size (in kilobytes).
+    Do not create segments larger than this size (in kilobytes).
     Large segments might require disproportionately long indexation times,
     therefore it makes sense to limit the size of segments.
 
@@ -1691,6 +1717,26 @@ class PayloadStorageParams(google.protobuf.message.Message):
 
 global___PayloadStorageParams = PayloadStorageParams
 
+class IdTrackerParams(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    MEMORY_FIELD_NUMBER: builtins.int
+    memory: global___Memory.ValueType
+    """Memory placement of the point id mapping in indexed segments:
+    `Cold` keeps it on disk and reads it on demand, `Cached` keeps it on disk
+    but primes the page cache with it on load, `Pinned` keeps it in RAM.
+    """
+    def __init__(
+        self,
+        *,
+        memory: global___Memory.ValueType | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_memory", b"_memory", "memory", b"memory"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_memory", b"_memory", "memory", b"memory"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_memory", b"_memory"]) -> typing_extensions.Literal["memory"] | None: ...
+
+global___IdTrackerParams = IdTrackerParams
+
 class CreateCollection(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -1727,6 +1773,7 @@ class CreateCollection(google.protobuf.message.Message):
     STRICT_MODE_CONFIG_FIELD_NUMBER: builtins.int
     METADATA_FIELD_NUMBER: builtins.int
     PAYLOAD_FIELD_NUMBER: builtins.int
+    ID_TRACKER_FIELD_NUMBER: builtins.int
     collection_name: builtins.str
     """Name of the collection"""
     @property
@@ -1774,6 +1821,9 @@ class CreateCollection(google.protobuf.message.Message):
     @property
     def payload(self) -> global___PayloadStorageParams:
         """Configuration of the payload storage"""
+    @property
+    def id_tracker(self) -> global___IdTrackerParams:
+        """Configuration of the point id tracker"""
     def __init__(
         self,
         *,
@@ -1793,11 +1843,14 @@ class CreateCollection(google.protobuf.message.Message):
         strict_mode_config: global___StrictModeConfig | None = ...,
         metadata: collections.abc.Mapping[builtins.str, json_with_int_pb2.Value] | None = ...,
         payload: global___PayloadStorageParams | None = ...,
+        id_tracker: global___IdTrackerParams | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_hnsw_config", b"_hnsw_config", "_on_disk_payload", b"_on_disk_payload", "_optimizers_config", b"_optimizers_config", "_payload", b"_payload", "_quantization_config", b"_quantization_config", "_replication_factor", b"_replication_factor", "_shard_number", b"_shard_number", "_sharding_method", b"_sharding_method", "_sparse_vectors_config", b"_sparse_vectors_config", "_strict_mode_config", b"_strict_mode_config", "_timeout", b"_timeout", "_vectors_config", b"_vectors_config", "_wal_config", b"_wal_config", "_write_consistency_factor", b"_write_consistency_factor", "hnsw_config", b"hnsw_config", "on_disk_payload", b"on_disk_payload", "optimizers_config", b"optimizers_config", "payload", b"payload", "quantization_config", b"quantization_config", "replication_factor", b"replication_factor", "shard_number", b"shard_number", "sharding_method", b"sharding_method", "sparse_vectors_config", b"sparse_vectors_config", "strict_mode_config", b"strict_mode_config", "timeout", b"timeout", "vectors_config", b"vectors_config", "wal_config", b"wal_config", "write_consistency_factor", b"write_consistency_factor"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_hnsw_config", b"_hnsw_config", "_on_disk_payload", b"_on_disk_payload", "_optimizers_config", b"_optimizers_config", "_payload", b"_payload", "_quantization_config", b"_quantization_config", "_replication_factor", b"_replication_factor", "_shard_number", b"_shard_number", "_sharding_method", b"_sharding_method", "_sparse_vectors_config", b"_sparse_vectors_config", "_strict_mode_config", b"_strict_mode_config", "_timeout", b"_timeout", "_vectors_config", b"_vectors_config", "_wal_config", b"_wal_config", "_write_consistency_factor", b"_write_consistency_factor", "collection_name", b"collection_name", "hnsw_config", b"hnsw_config", "metadata", b"metadata", "on_disk_payload", b"on_disk_payload", "optimizers_config", b"optimizers_config", "payload", b"payload", "quantization_config", b"quantization_config", "replication_factor", b"replication_factor", "shard_number", b"shard_number", "sharding_method", b"sharding_method", "sparse_vectors_config", b"sparse_vectors_config", "strict_mode_config", b"strict_mode_config", "timeout", b"timeout", "vectors_config", b"vectors_config", "wal_config", b"wal_config", "write_consistency_factor", b"write_consistency_factor"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_hnsw_config", b"_hnsw_config", "_id_tracker", b"_id_tracker", "_on_disk_payload", b"_on_disk_payload", "_optimizers_config", b"_optimizers_config", "_payload", b"_payload", "_quantization_config", b"_quantization_config", "_replication_factor", b"_replication_factor", "_shard_number", b"_shard_number", "_sharding_method", b"_sharding_method", "_sparse_vectors_config", b"_sparse_vectors_config", "_strict_mode_config", b"_strict_mode_config", "_timeout", b"_timeout", "_vectors_config", b"_vectors_config", "_wal_config", b"_wal_config", "_write_consistency_factor", b"_write_consistency_factor", "hnsw_config", b"hnsw_config", "id_tracker", b"id_tracker", "on_disk_payload", b"on_disk_payload", "optimizers_config", b"optimizers_config", "payload", b"payload", "quantization_config", b"quantization_config", "replication_factor", b"replication_factor", "shard_number", b"shard_number", "sharding_method", b"sharding_method", "sparse_vectors_config", b"sparse_vectors_config", "strict_mode_config", b"strict_mode_config", "timeout", b"timeout", "vectors_config", b"vectors_config", "wal_config", b"wal_config", "write_consistency_factor", b"write_consistency_factor"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_hnsw_config", b"_hnsw_config", "_id_tracker", b"_id_tracker", "_on_disk_payload", b"_on_disk_payload", "_optimizers_config", b"_optimizers_config", "_payload", b"_payload", "_quantization_config", b"_quantization_config", "_replication_factor", b"_replication_factor", "_shard_number", b"_shard_number", "_sharding_method", b"_sharding_method", "_sparse_vectors_config", b"_sparse_vectors_config", "_strict_mode_config", b"_strict_mode_config", "_timeout", b"_timeout", "_vectors_config", b"_vectors_config", "_wal_config", b"_wal_config", "_write_consistency_factor", b"_write_consistency_factor", "collection_name", b"collection_name", "hnsw_config", b"hnsw_config", "id_tracker", b"id_tracker", "metadata", b"metadata", "on_disk_payload", b"on_disk_payload", "optimizers_config", b"optimizers_config", "payload", b"payload", "quantization_config", b"quantization_config", "replication_factor", b"replication_factor", "shard_number", b"shard_number", "sharding_method", b"sharding_method", "sparse_vectors_config", b"sparse_vectors_config", "strict_mode_config", b"strict_mode_config", "timeout", b"timeout", "vectors_config", b"vectors_config", "wal_config", b"wal_config", "write_consistency_factor", b"write_consistency_factor"]) -> None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_hnsw_config", b"_hnsw_config"]) -> typing_extensions.Literal["hnsw_config"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_id_tracker", b"_id_tracker"]) -> typing_extensions.Literal["id_tracker"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_on_disk_payload", b"_on_disk_payload"]) -> typing_extensions.Literal["on_disk_payload"] | None: ...
     @typing.overload
@@ -1982,6 +2035,7 @@ class CollectionParams(google.protobuf.message.Message):
     SPARSE_VECTORS_CONFIG_FIELD_NUMBER: builtins.int
     READ_FAN_OUT_DELAY_MS_FIELD_NUMBER: builtins.int
     PAYLOAD_FIELD_NUMBER: builtins.int
+    ID_TRACKER_FIELD_NUMBER: builtins.int
     shard_number: builtins.int
     """Number of shards in collection"""
     on_disk_payload: builtins.bool
@@ -2007,6 +2061,9 @@ class CollectionParams(google.protobuf.message.Message):
     @property
     def payload(self) -> global___PayloadStorageParams:
         """Configuration of the payload storage"""
+    @property
+    def id_tracker(self) -> global___IdTrackerParams:
+        """Configuration of the point id tracker"""
     def __init__(
         self,
         *,
@@ -2020,9 +2077,12 @@ class CollectionParams(google.protobuf.message.Message):
         sparse_vectors_config: global___SparseVectorConfig | None = ...,
         read_fan_out_delay_ms: builtins.int | None = ...,
         payload: global___PayloadStorageParams | None = ...,
+        id_tracker: global___IdTrackerParams | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_payload", b"_payload", "_read_fan_out_delay_ms", b"_read_fan_out_delay_ms", "_read_fan_out_factor", b"_read_fan_out_factor", "_replication_factor", b"_replication_factor", "_sharding_method", b"_sharding_method", "_sparse_vectors_config", b"_sparse_vectors_config", "_vectors_config", b"_vectors_config", "_write_consistency_factor", b"_write_consistency_factor", "payload", b"payload", "read_fan_out_delay_ms", b"read_fan_out_delay_ms", "read_fan_out_factor", b"read_fan_out_factor", "replication_factor", b"replication_factor", "sharding_method", b"sharding_method", "sparse_vectors_config", b"sparse_vectors_config", "vectors_config", b"vectors_config", "write_consistency_factor", b"write_consistency_factor"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_payload", b"_payload", "_read_fan_out_delay_ms", b"_read_fan_out_delay_ms", "_read_fan_out_factor", b"_read_fan_out_factor", "_replication_factor", b"_replication_factor", "_sharding_method", b"_sharding_method", "_sparse_vectors_config", b"_sparse_vectors_config", "_vectors_config", b"_vectors_config", "_write_consistency_factor", b"_write_consistency_factor", "on_disk_payload", b"on_disk_payload", "payload", b"payload", "read_fan_out_delay_ms", b"read_fan_out_delay_ms", "read_fan_out_factor", b"read_fan_out_factor", "replication_factor", b"replication_factor", "shard_number", b"shard_number", "sharding_method", b"sharding_method", "sparse_vectors_config", b"sparse_vectors_config", "vectors_config", b"vectors_config", "write_consistency_factor", b"write_consistency_factor"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_id_tracker", b"_id_tracker", "_payload", b"_payload", "_read_fan_out_delay_ms", b"_read_fan_out_delay_ms", "_read_fan_out_factor", b"_read_fan_out_factor", "_replication_factor", b"_replication_factor", "_sharding_method", b"_sharding_method", "_sparse_vectors_config", b"_sparse_vectors_config", "_vectors_config", b"_vectors_config", "_write_consistency_factor", b"_write_consistency_factor", "id_tracker", b"id_tracker", "payload", b"payload", "read_fan_out_delay_ms", b"read_fan_out_delay_ms", "read_fan_out_factor", b"read_fan_out_factor", "replication_factor", b"replication_factor", "sharding_method", b"sharding_method", "sparse_vectors_config", b"sparse_vectors_config", "vectors_config", b"vectors_config", "write_consistency_factor", b"write_consistency_factor"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_id_tracker", b"_id_tracker", "_payload", b"_payload", "_read_fan_out_delay_ms", b"_read_fan_out_delay_ms", "_read_fan_out_factor", b"_read_fan_out_factor", "_replication_factor", b"_replication_factor", "_sharding_method", b"_sharding_method", "_sparse_vectors_config", b"_sparse_vectors_config", "_vectors_config", b"_vectors_config", "_write_consistency_factor", b"_write_consistency_factor", "id_tracker", b"id_tracker", "on_disk_payload", b"on_disk_payload", "payload", b"payload", "read_fan_out_delay_ms", b"read_fan_out_delay_ms", "read_fan_out_factor", b"read_fan_out_factor", "replication_factor", b"replication_factor", "shard_number", b"shard_number", "sharding_method", b"sharding_method", "sparse_vectors_config", b"sparse_vectors_config", "vectors_config", b"vectors_config", "write_consistency_factor", b"write_consistency_factor"]) -> None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_id_tracker", b"_id_tracker"]) -> typing_extensions.Literal["id_tracker"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_payload", b"_payload"]) -> typing_extensions.Literal["payload"] | None: ...
     @typing.overload
@@ -2051,6 +2111,7 @@ class CollectionParamsDiff(google.protobuf.message.Message):
     READ_FAN_OUT_FACTOR_FIELD_NUMBER: builtins.int
     READ_FAN_OUT_DELAY_MS_FIELD_NUMBER: builtins.int
     PAYLOAD_FIELD_NUMBER: builtins.int
+    ID_TRACKER_FIELD_NUMBER: builtins.int
     replication_factor: builtins.int
     """Number of replicas of each shard that network tries to maintain"""
     write_consistency_factor: builtins.int
@@ -2066,6 +2127,9 @@ class CollectionParamsDiff(google.protobuf.message.Message):
     @property
     def payload(self) -> global___PayloadStorageParams:
         """Update params of the payload storage"""
+    @property
+    def id_tracker(self) -> global___IdTrackerParams:
+        """Update params of the point id tracker"""
     def __init__(
         self,
         *,
@@ -2075,9 +2139,12 @@ class CollectionParamsDiff(google.protobuf.message.Message):
         read_fan_out_factor: builtins.int | None = ...,
         read_fan_out_delay_ms: builtins.int | None = ...,
         payload: global___PayloadStorageParams | None = ...,
+        id_tracker: global___IdTrackerParams | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_on_disk_payload", b"_on_disk_payload", "_payload", b"_payload", "_read_fan_out_delay_ms", b"_read_fan_out_delay_ms", "_read_fan_out_factor", b"_read_fan_out_factor", "_replication_factor", b"_replication_factor", "_write_consistency_factor", b"_write_consistency_factor", "on_disk_payload", b"on_disk_payload", "payload", b"payload", "read_fan_out_delay_ms", b"read_fan_out_delay_ms", "read_fan_out_factor", b"read_fan_out_factor", "replication_factor", b"replication_factor", "write_consistency_factor", b"write_consistency_factor"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_on_disk_payload", b"_on_disk_payload", "_payload", b"_payload", "_read_fan_out_delay_ms", b"_read_fan_out_delay_ms", "_read_fan_out_factor", b"_read_fan_out_factor", "_replication_factor", b"_replication_factor", "_write_consistency_factor", b"_write_consistency_factor", "on_disk_payload", b"on_disk_payload", "payload", b"payload", "read_fan_out_delay_ms", b"read_fan_out_delay_ms", "read_fan_out_factor", b"read_fan_out_factor", "replication_factor", b"replication_factor", "write_consistency_factor", b"write_consistency_factor"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_id_tracker", b"_id_tracker", "_on_disk_payload", b"_on_disk_payload", "_payload", b"_payload", "_read_fan_out_delay_ms", b"_read_fan_out_delay_ms", "_read_fan_out_factor", b"_read_fan_out_factor", "_replication_factor", b"_replication_factor", "_write_consistency_factor", b"_write_consistency_factor", "id_tracker", b"id_tracker", "on_disk_payload", b"on_disk_payload", "payload", b"payload", "read_fan_out_delay_ms", b"read_fan_out_delay_ms", "read_fan_out_factor", b"read_fan_out_factor", "replication_factor", b"replication_factor", "write_consistency_factor", b"write_consistency_factor"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_id_tracker", b"_id_tracker", "_on_disk_payload", b"_on_disk_payload", "_payload", b"_payload", "_read_fan_out_delay_ms", b"_read_fan_out_delay_ms", "_read_fan_out_factor", b"_read_fan_out_factor", "_replication_factor", b"_replication_factor", "_write_consistency_factor", b"_write_consistency_factor", "id_tracker", b"id_tracker", "on_disk_payload", b"on_disk_payload", "payload", b"payload", "read_fan_out_delay_ms", b"read_fan_out_delay_ms", "read_fan_out_factor", b"read_fan_out_factor", "replication_factor", b"replication_factor", "write_consistency_factor", b"write_consistency_factor"]) -> None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_id_tracker", b"_id_tracker"]) -> typing_extensions.Literal["id_tracker"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_on_disk_payload", b"_on_disk_payload"]) -> typing_extensions.Literal["on_disk_payload"] | None: ...
     @typing.overload
@@ -2169,6 +2236,7 @@ class KeywordIndexParams(google.protobuf.message.Message):
     ENABLE_HNSW_FIELD_NUMBER: builtins.int
     PREFIX_FIELD_NUMBER: builtins.int
     MEMORY_FIELD_NUMBER: builtins.int
+    NESTED_FIELD_NUMBER: builtins.int
     is_tenant: builtins.bool
     """If true - used for tenant optimization."""
     on_disk: builtins.bool
@@ -2187,6 +2255,11 @@ class KeywordIndexParams(google.protobuf.message.Message):
     """Memory placement of the index.
     Overrides the deprecated `on_disk` flag if both are set.
     """
+    nested: builtins.str
+    """Index every object of this array as a separate entry, e.g. `offers` for the field `offers[].price`.
+    The field must be inside the array's elements. `is_empty` on the field matches a point when one of
+    its elements lacks the field, and never a point without elements. Default: disabled.
+    """
     def __init__(
         self,
         *,
@@ -2195,15 +2268,18 @@ class KeywordIndexParams(google.protobuf.message.Message):
         enable_hnsw: builtins.bool | None = ...,
         prefix: global___KeywordPrefixParams | None = ...,
         memory: global___Memory.ValueType | None = ...,
+        nested: builtins.str | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw", "_is_tenant", b"_is_tenant", "_memory", b"_memory", "_on_disk", b"_on_disk", "_prefix", b"_prefix", "enable_hnsw", b"enable_hnsw", "is_tenant", b"is_tenant", "memory", b"memory", "on_disk", b"on_disk", "prefix", b"prefix"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw", "_is_tenant", b"_is_tenant", "_memory", b"_memory", "_on_disk", b"_on_disk", "_prefix", b"_prefix", "enable_hnsw", b"enable_hnsw", "is_tenant", b"is_tenant", "memory", b"memory", "on_disk", b"on_disk", "prefix", b"prefix"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw", "_is_tenant", b"_is_tenant", "_memory", b"_memory", "_nested", b"_nested", "_on_disk", b"_on_disk", "_prefix", b"_prefix", "enable_hnsw", b"enable_hnsw", "is_tenant", b"is_tenant", "memory", b"memory", "nested", b"nested", "on_disk", b"on_disk", "prefix", b"prefix"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw", "_is_tenant", b"_is_tenant", "_memory", b"_memory", "_nested", b"_nested", "_on_disk", b"_on_disk", "_prefix", b"_prefix", "enable_hnsw", b"enable_hnsw", "is_tenant", b"is_tenant", "memory", b"memory", "nested", b"nested", "on_disk", b"on_disk", "prefix", b"prefix"]) -> None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw"]) -> typing_extensions.Literal["enable_hnsw"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_is_tenant", b"_is_tenant"]) -> typing_extensions.Literal["is_tenant"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_memory", b"_memory"]) -> typing_extensions.Literal["memory"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_nested", b"_nested"]) -> typing_extensions.Literal["nested"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_on_disk", b"_on_disk"]) -> typing_extensions.Literal["on_disk"] | None: ...
     @typing.overload
@@ -2233,6 +2309,7 @@ class IntegerIndexParams(google.protobuf.message.Message):
     ON_DISK_FIELD_NUMBER: builtins.int
     ENABLE_HNSW_FIELD_NUMBER: builtins.int
     MEMORY_FIELD_NUMBER: builtins.int
+    NESTED_FIELD_NUMBER: builtins.int
     lookup: builtins.bool
     """If true - support direct lookups. Default is true."""
     range: builtins.bool
@@ -2255,6 +2332,11 @@ class IntegerIndexParams(google.protobuf.message.Message):
     """Memory placement of the index.
     Overrides the deprecated `on_disk` flag if both are set.
     """
+    nested: builtins.str
+    """Index every object of this array as a separate entry, e.g. `offers` for the field `offers[].price`.
+    The field must be inside the array's elements. `is_empty` on the field matches a point when one of
+    its elements lacks the field, and never a point without elements. Default: disabled.
+    """
     def __init__(
         self,
         *,
@@ -2264,9 +2346,10 @@ class IntegerIndexParams(google.protobuf.message.Message):
         on_disk: builtins.bool | None = ...,
         enable_hnsw: builtins.bool | None = ...,
         memory: global___Memory.ValueType | None = ...,
+        nested: builtins.str | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw", "_is_principal", b"_is_principal", "_lookup", b"_lookup", "_memory", b"_memory", "_on_disk", b"_on_disk", "_range", b"_range", "enable_hnsw", b"enable_hnsw", "is_principal", b"is_principal", "lookup", b"lookup", "memory", b"memory", "on_disk", b"on_disk", "range", b"range"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw", "_is_principal", b"_is_principal", "_lookup", b"_lookup", "_memory", b"_memory", "_on_disk", b"_on_disk", "_range", b"_range", "enable_hnsw", b"enable_hnsw", "is_principal", b"is_principal", "lookup", b"lookup", "memory", b"memory", "on_disk", b"on_disk", "range", b"range"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw", "_is_principal", b"_is_principal", "_lookup", b"_lookup", "_memory", b"_memory", "_nested", b"_nested", "_on_disk", b"_on_disk", "_range", b"_range", "enable_hnsw", b"enable_hnsw", "is_principal", b"is_principal", "lookup", b"lookup", "memory", b"memory", "nested", b"nested", "on_disk", b"on_disk", "range", b"range"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw", "_is_principal", b"_is_principal", "_lookup", b"_lookup", "_memory", b"_memory", "_nested", b"_nested", "_on_disk", b"_on_disk", "_range", b"_range", "enable_hnsw", b"enable_hnsw", "is_principal", b"is_principal", "lookup", b"lookup", "memory", b"memory", "nested", b"nested", "on_disk", b"on_disk", "range", b"range"]) -> None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw"]) -> typing_extensions.Literal["enable_hnsw"] | None: ...
     @typing.overload
@@ -2275,6 +2358,8 @@ class IntegerIndexParams(google.protobuf.message.Message):
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_lookup", b"_lookup"]) -> typing_extensions.Literal["lookup"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_memory", b"_memory"]) -> typing_extensions.Literal["memory"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_nested", b"_nested"]) -> typing_extensions.Literal["nested"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_on_disk", b"_on_disk"]) -> typing_extensions.Literal["on_disk"] | None: ...
     @typing.overload
@@ -2289,6 +2374,7 @@ class FloatIndexParams(google.protobuf.message.Message):
     IS_PRINCIPAL_FIELD_NUMBER: builtins.int
     ENABLE_HNSW_FIELD_NUMBER: builtins.int
     MEMORY_FIELD_NUMBER: builtins.int
+    NESTED_FIELD_NUMBER: builtins.int
     on_disk: builtins.bool
     """Deprecated: use `memory` instead.
     If true - store index on disk.
@@ -2306,6 +2392,11 @@ class FloatIndexParams(google.protobuf.message.Message):
     """Memory placement of the index.
     Overrides the deprecated `on_disk` flag if both are set.
     """
+    nested: builtins.str
+    """Index every object of this array as a separate entry, e.g. `offers` for the field `offers[].price`.
+    The field must be inside the array's elements. `is_empty` on the field matches a point when one of
+    its elements lacks the field, and never a point without elements. Default: disabled.
+    """
     def __init__(
         self,
         *,
@@ -2313,15 +2404,18 @@ class FloatIndexParams(google.protobuf.message.Message):
         is_principal: builtins.bool | None = ...,
         enable_hnsw: builtins.bool | None = ...,
         memory: global___Memory.ValueType | None = ...,
+        nested: builtins.str | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw", "_is_principal", b"_is_principal", "_memory", b"_memory", "_on_disk", b"_on_disk", "enable_hnsw", b"enable_hnsw", "is_principal", b"is_principal", "memory", b"memory", "on_disk", b"on_disk"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw", "_is_principal", b"_is_principal", "_memory", b"_memory", "_on_disk", b"_on_disk", "enable_hnsw", b"enable_hnsw", "is_principal", b"is_principal", "memory", b"memory", "on_disk", b"on_disk"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw", "_is_principal", b"_is_principal", "_memory", b"_memory", "_nested", b"_nested", "_on_disk", b"_on_disk", "enable_hnsw", b"enable_hnsw", "is_principal", b"is_principal", "memory", b"memory", "nested", b"nested", "on_disk", b"on_disk"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw", "_is_principal", b"_is_principal", "_memory", b"_memory", "_nested", b"_nested", "_on_disk", b"_on_disk", "enable_hnsw", b"enable_hnsw", "is_principal", b"is_principal", "memory", b"memory", "nested", b"nested", "on_disk", b"on_disk"]) -> None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw"]) -> typing_extensions.Literal["enable_hnsw"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_is_principal", b"_is_principal"]) -> typing_extensions.Literal["is_principal"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_memory", b"_memory"]) -> typing_extensions.Literal["memory"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_nested", b"_nested"]) -> typing_extensions.Literal["nested"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_on_disk", b"_on_disk"]) -> typing_extensions.Literal["on_disk"] | None: ...
 
@@ -2333,6 +2427,7 @@ class GeoIndexParams(google.protobuf.message.Message):
     ON_DISK_FIELD_NUMBER: builtins.int
     ENABLE_HNSW_FIELD_NUMBER: builtins.int
     MEMORY_FIELD_NUMBER: builtins.int
+    NESTED_FIELD_NUMBER: builtins.int
     on_disk: builtins.bool
     """Deprecated: use `memory` instead.
     If true - store index on disk.
@@ -2346,19 +2441,27 @@ class GeoIndexParams(google.protobuf.message.Message):
     """Memory placement of the index.
     Overrides the deprecated `on_disk` flag if both are set.
     """
+    nested: builtins.str
+    """Index every object of this array as a separate entry, e.g. `offers` for the field `offers[].price`.
+    The field must be inside the array's elements. `is_empty` on the field matches a point when one of
+    its elements lacks the field, and never a point without elements. Default: disabled.
+    """
     def __init__(
         self,
         *,
         on_disk: builtins.bool | None = ...,
         enable_hnsw: builtins.bool | None = ...,
         memory: global___Memory.ValueType | None = ...,
+        nested: builtins.str | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw", "_memory", b"_memory", "_on_disk", b"_on_disk", "enable_hnsw", b"enable_hnsw", "memory", b"memory", "on_disk", b"on_disk"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw", "_memory", b"_memory", "_on_disk", b"_on_disk", "enable_hnsw", b"enable_hnsw", "memory", b"memory", "on_disk", b"on_disk"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw", "_memory", b"_memory", "_nested", b"_nested", "_on_disk", b"_on_disk", "enable_hnsw", b"enable_hnsw", "memory", b"memory", "nested", b"nested", "on_disk", b"on_disk"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw", "_memory", b"_memory", "_nested", b"_nested", "_on_disk", b"_on_disk", "enable_hnsw", b"enable_hnsw", "memory", b"memory", "nested", b"nested", "on_disk", b"on_disk"]) -> None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw"]) -> typing_extensions.Literal["enable_hnsw"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_memory", b"_memory"]) -> typing_extensions.Literal["memory"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_nested", b"_nested"]) -> typing_extensions.Literal["nested"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_on_disk", b"_on_disk"]) -> typing_extensions.Literal["on_disk"] | None: ...
 
@@ -2399,6 +2502,8 @@ class TextIndexParams(google.protobuf.message.Message):
     ASCII_FOLDING_FIELD_NUMBER: builtins.int
     ENABLE_HNSW_FIELD_NUMBER: builtins.int
     MEMORY_FIELD_NUMBER: builtins.int
+    SCORING_FIELD_NUMBER: builtins.int
+    NESTED_FIELD_NUMBER: builtins.int
     tokenizer: global___TokenizerType.ValueType
     """Tokenizer type"""
     lowercase: builtins.bool
@@ -2432,6 +2537,19 @@ class TextIndexParams(google.protobuf.message.Message):
     """Memory placement of the index.
     Overrides the deprecated `on_disk` flag if both are set.
     """
+    @property
+    def scoring(self) -> global___TextScoringParams:
+        """Enable ranking points by BM25 over this field.
+        Changing it rebuilds the index.
+        Default: disabled.
+        """
+    nested: builtins.str
+    """Index every object of this array as a separate entry, e.g. `offers` for the field `offers[].title`.
+    The field must be inside the array's elements. Every query on the field, not only nested filters,
+    treats each element as its own document: a condition matches a point when a single element
+    matches it, and BM25 scores elements separately. `is_empty` on the field matches a point when
+    one of its elements lacks the field, and never a point without elements. Default: disabled.
+    """
     def __init__(
         self,
         *,
@@ -2446,9 +2564,11 @@ class TextIndexParams(google.protobuf.message.Message):
         ascii_folding: builtins.bool | None = ...,
         enable_hnsw: builtins.bool | None = ...,
         memory: global___Memory.ValueType | None = ...,
+        scoring: global___TextScoringParams | None = ...,
+        nested: builtins.str | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_ascii_folding", b"_ascii_folding", "_enable_hnsw", b"_enable_hnsw", "_lowercase", b"_lowercase", "_max_token_len", b"_max_token_len", "_memory", b"_memory", "_min_token_len", b"_min_token_len", "_on_disk", b"_on_disk", "_phrase_matching", b"_phrase_matching", "_stemmer", b"_stemmer", "_stopwords", b"_stopwords", "ascii_folding", b"ascii_folding", "enable_hnsw", b"enable_hnsw", "lowercase", b"lowercase", "max_token_len", b"max_token_len", "memory", b"memory", "min_token_len", b"min_token_len", "on_disk", b"on_disk", "phrase_matching", b"phrase_matching", "stemmer", b"stemmer", "stopwords", b"stopwords"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_ascii_folding", b"_ascii_folding", "_enable_hnsw", b"_enable_hnsw", "_lowercase", b"_lowercase", "_max_token_len", b"_max_token_len", "_memory", b"_memory", "_min_token_len", b"_min_token_len", "_on_disk", b"_on_disk", "_phrase_matching", b"_phrase_matching", "_stemmer", b"_stemmer", "_stopwords", b"_stopwords", "ascii_folding", b"ascii_folding", "enable_hnsw", b"enable_hnsw", "lowercase", b"lowercase", "max_token_len", b"max_token_len", "memory", b"memory", "min_token_len", b"min_token_len", "on_disk", b"on_disk", "phrase_matching", b"phrase_matching", "stemmer", b"stemmer", "stopwords", b"stopwords", "tokenizer", b"tokenizer"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_ascii_folding", b"_ascii_folding", "_enable_hnsw", b"_enable_hnsw", "_lowercase", b"_lowercase", "_max_token_len", b"_max_token_len", "_memory", b"_memory", "_min_token_len", b"_min_token_len", "_nested", b"_nested", "_on_disk", b"_on_disk", "_phrase_matching", b"_phrase_matching", "_scoring", b"_scoring", "_stemmer", b"_stemmer", "_stopwords", b"_stopwords", "ascii_folding", b"ascii_folding", "enable_hnsw", b"enable_hnsw", "lowercase", b"lowercase", "max_token_len", b"max_token_len", "memory", b"memory", "min_token_len", b"min_token_len", "nested", b"nested", "on_disk", b"on_disk", "phrase_matching", b"phrase_matching", "scoring", b"scoring", "stemmer", b"stemmer", "stopwords", b"stopwords"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_ascii_folding", b"_ascii_folding", "_enable_hnsw", b"_enable_hnsw", "_lowercase", b"_lowercase", "_max_token_len", b"_max_token_len", "_memory", b"_memory", "_min_token_len", b"_min_token_len", "_nested", b"_nested", "_on_disk", b"_on_disk", "_phrase_matching", b"_phrase_matching", "_scoring", b"_scoring", "_stemmer", b"_stemmer", "_stopwords", b"_stopwords", "ascii_folding", b"ascii_folding", "enable_hnsw", b"enable_hnsw", "lowercase", b"lowercase", "max_token_len", b"max_token_len", "memory", b"memory", "min_token_len", b"min_token_len", "nested", b"nested", "on_disk", b"on_disk", "phrase_matching", b"phrase_matching", "scoring", b"scoring", "stemmer", b"stemmer", "stopwords", b"stopwords", "tokenizer", b"tokenizer"]) -> None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_ascii_folding", b"_ascii_folding"]) -> typing_extensions.Literal["ascii_folding"] | None: ...
     @typing.overload
@@ -2462,15 +2582,34 @@ class TextIndexParams(google.protobuf.message.Message):
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_min_token_len", b"_min_token_len"]) -> typing_extensions.Literal["min_token_len"] | None: ...
     @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_nested", b"_nested"]) -> typing_extensions.Literal["nested"] | None: ...
+    @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_on_disk", b"_on_disk"]) -> typing_extensions.Literal["on_disk"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_phrase_matching", b"_phrase_matching"]) -> typing_extensions.Literal["phrase_matching"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_scoring", b"_scoring"]) -> typing_extensions.Literal["scoring"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_stemmer", b"_stemmer"]) -> typing_extensions.Literal["stemmer"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_stopwords", b"_stopwords"]) -> typing_extensions.Literal["stopwords"] | None: ...
 
 global___TextIndexParams = TextIndexParams
+
+class TextScoringParams(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    TYPE_FIELD_NUMBER: builtins.int
+    type: global___TextScoringType.ValueType
+    """How documents are ranked"""
+    def __init__(
+        self,
+        *,
+        type: global___TextScoringType.ValueType = ...,
+    ) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["type", b"type"]) -> None: ...
+
+global___TextScoringParams = TextScoringParams
 
 class StemmingAlgorithm(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
@@ -2527,6 +2666,7 @@ class BoolIndexParams(google.protobuf.message.Message):
     ON_DISK_FIELD_NUMBER: builtins.int
     ENABLE_HNSW_FIELD_NUMBER: builtins.int
     MEMORY_FIELD_NUMBER: builtins.int
+    NESTED_FIELD_NUMBER: builtins.int
     on_disk: builtins.bool
     """Deprecated: use `memory` instead.
     If true - store index on disk.
@@ -2540,19 +2680,27 @@ class BoolIndexParams(google.protobuf.message.Message):
     """Memory placement of the index.
     Overrides the deprecated `on_disk` flag if both are set.
     """
+    nested: builtins.str
+    """Index every object of this array as a separate entry, e.g. `offers` for the field `offers[].price`.
+    The field must be inside the array's elements. `is_empty` on the field matches a point when one of
+    its elements lacks the field, and never a point without elements. Default: disabled.
+    """
     def __init__(
         self,
         *,
         on_disk: builtins.bool | None = ...,
         enable_hnsw: builtins.bool | None = ...,
         memory: global___Memory.ValueType | None = ...,
+        nested: builtins.str | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw", "_memory", b"_memory", "_on_disk", b"_on_disk", "enable_hnsw", b"enable_hnsw", "memory", b"memory", "on_disk", b"on_disk"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw", "_memory", b"_memory", "_on_disk", b"_on_disk", "enable_hnsw", b"enable_hnsw", "memory", b"memory", "on_disk", b"on_disk"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw", "_memory", b"_memory", "_nested", b"_nested", "_on_disk", b"_on_disk", "enable_hnsw", b"enable_hnsw", "memory", b"memory", "nested", b"nested", "on_disk", b"on_disk"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw", "_memory", b"_memory", "_nested", b"_nested", "_on_disk", b"_on_disk", "enable_hnsw", b"enable_hnsw", "memory", b"memory", "nested", b"nested", "on_disk", b"on_disk"]) -> None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw"]) -> typing_extensions.Literal["enable_hnsw"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_memory", b"_memory"]) -> typing_extensions.Literal["memory"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_nested", b"_nested"]) -> typing_extensions.Literal["nested"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_on_disk", b"_on_disk"]) -> typing_extensions.Literal["on_disk"] | None: ...
 
@@ -2565,6 +2713,7 @@ class DatetimeIndexParams(google.protobuf.message.Message):
     IS_PRINCIPAL_FIELD_NUMBER: builtins.int
     ENABLE_HNSW_FIELD_NUMBER: builtins.int
     MEMORY_FIELD_NUMBER: builtins.int
+    NESTED_FIELD_NUMBER: builtins.int
     on_disk: builtins.bool
     """Deprecated: use `memory` instead.
     If true - store index on disk.
@@ -2582,6 +2731,11 @@ class DatetimeIndexParams(google.protobuf.message.Message):
     """Memory placement of the index.
     Overrides the deprecated `on_disk` flag if both are set.
     """
+    nested: builtins.str
+    """Index every object of this array as a separate entry, e.g. `offers` for the field `offers[].price`.
+    The field must be inside the array's elements. `is_empty` on the field matches a point when one of
+    its elements lacks the field, and never a point without elements. Default: disabled.
+    """
     def __init__(
         self,
         *,
@@ -2589,15 +2743,18 @@ class DatetimeIndexParams(google.protobuf.message.Message):
         is_principal: builtins.bool | None = ...,
         enable_hnsw: builtins.bool | None = ...,
         memory: global___Memory.ValueType | None = ...,
+        nested: builtins.str | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw", "_is_principal", b"_is_principal", "_memory", b"_memory", "_on_disk", b"_on_disk", "enable_hnsw", b"enable_hnsw", "is_principal", b"is_principal", "memory", b"memory", "on_disk", b"on_disk"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw", "_is_principal", b"_is_principal", "_memory", b"_memory", "_on_disk", b"_on_disk", "enable_hnsw", b"enable_hnsw", "is_principal", b"is_principal", "memory", b"memory", "on_disk", b"on_disk"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw", "_is_principal", b"_is_principal", "_memory", b"_memory", "_nested", b"_nested", "_on_disk", b"_on_disk", "enable_hnsw", b"enable_hnsw", "is_principal", b"is_principal", "memory", b"memory", "nested", b"nested", "on_disk", b"on_disk"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw", "_is_principal", b"_is_principal", "_memory", b"_memory", "_nested", b"_nested", "_on_disk", b"_on_disk", "enable_hnsw", b"enable_hnsw", "is_principal", b"is_principal", "memory", b"memory", "nested", b"nested", "on_disk", b"on_disk"]) -> None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw"]) -> typing_extensions.Literal["enable_hnsw"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_is_principal", b"_is_principal"]) -> typing_extensions.Literal["is_principal"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_memory", b"_memory"]) -> typing_extensions.Literal["memory"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_nested", b"_nested"]) -> typing_extensions.Literal["nested"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_on_disk", b"_on_disk"]) -> typing_extensions.Literal["on_disk"] | None: ...
 
@@ -2610,6 +2767,7 @@ class UuidIndexParams(google.protobuf.message.Message):
     ON_DISK_FIELD_NUMBER: builtins.int
     ENABLE_HNSW_FIELD_NUMBER: builtins.int
     MEMORY_FIELD_NUMBER: builtins.int
+    NESTED_FIELD_NUMBER: builtins.int
     is_tenant: builtins.bool
     """If true - used for tenant optimization."""
     on_disk: builtins.bool
@@ -2625,6 +2783,11 @@ class UuidIndexParams(google.protobuf.message.Message):
     """Memory placement of the index.
     Overrides the deprecated `on_disk` flag if both are set.
     """
+    nested: builtins.str
+    """Index every object of this array as a separate entry, e.g. `offers` for the field `offers[].price`.
+    The field must be inside the array's elements. `is_empty` on the field matches a point when one of
+    its elements lacks the field, and never a point without elements. Default: disabled.
+    """
     def __init__(
         self,
         *,
@@ -2632,15 +2795,18 @@ class UuidIndexParams(google.protobuf.message.Message):
         on_disk: builtins.bool | None = ...,
         enable_hnsw: builtins.bool | None = ...,
         memory: global___Memory.ValueType | None = ...,
+        nested: builtins.str | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw", "_is_tenant", b"_is_tenant", "_memory", b"_memory", "_on_disk", b"_on_disk", "enable_hnsw", b"enable_hnsw", "is_tenant", b"is_tenant", "memory", b"memory", "on_disk", b"on_disk"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw", "_is_tenant", b"_is_tenant", "_memory", b"_memory", "_on_disk", b"_on_disk", "enable_hnsw", b"enable_hnsw", "is_tenant", b"is_tenant", "memory", b"memory", "on_disk", b"on_disk"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw", "_is_tenant", b"_is_tenant", "_memory", b"_memory", "_nested", b"_nested", "_on_disk", b"_on_disk", "enable_hnsw", b"enable_hnsw", "is_tenant", b"is_tenant", "memory", b"memory", "nested", b"nested", "on_disk", b"on_disk"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw", "_is_tenant", b"_is_tenant", "_memory", b"_memory", "_nested", b"_nested", "_on_disk", b"_on_disk", "enable_hnsw", b"enable_hnsw", "is_tenant", b"is_tenant", "memory", b"memory", "nested", b"nested", "on_disk", b"on_disk"]) -> None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_enable_hnsw", b"_enable_hnsw"]) -> typing_extensions.Literal["enable_hnsw"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_is_tenant", b"_is_tenant"]) -> typing_extensions.Literal["is_tenant"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_memory", b"_memory"]) -> typing_extensions.Literal["memory"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_nested", b"_nested"]) -> typing_extensions.Literal["nested"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_on_disk", b"_on_disk"]) -> typing_extensions.Literal["on_disk"] | None: ...
 
@@ -2778,6 +2944,7 @@ class CollectionInfo(google.protobuf.message.Message):
     INDEXED_VECTORS_COUNT_FIELD_NUMBER: builtins.int
     WARNINGS_FIELD_NUMBER: builtins.int
     UPDATE_QUEUE_FIELD_NUMBER: builtins.int
+    CREATED_AT_FIELD_NUMBER: builtins.int
     status: global___CollectionStatus.ValueType
     """operating condition of the collection"""
     @property
@@ -2801,6 +2968,9 @@ class CollectionInfo(google.protobuf.message.Message):
     @property
     def update_queue(self) -> global___UpdateQueueInfo:
         """Update queue info"""
+    @property
+    def created_at(self) -> google.protobuf.timestamp_pb2.Timestamp:
+        """Time of the collection creation, absent for collections created before it was recorded"""
     def __init__(
         self,
         *,
@@ -2813,9 +2983,12 @@ class CollectionInfo(google.protobuf.message.Message):
         indexed_vectors_count: builtins.int | None = ...,
         warnings: collections.abc.Iterable[global___CollectionWarning] | None = ...,
         update_queue: global___UpdateQueueInfo | None = ...,
+        created_at: google.protobuf.timestamp_pb2.Timestamp | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_indexed_vectors_count", b"_indexed_vectors_count", "_points_count", b"_points_count", "config", b"config", "indexed_vectors_count", b"indexed_vectors_count", "optimizer_status", b"optimizer_status", "points_count", b"points_count", "update_queue", b"update_queue"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_indexed_vectors_count", b"_indexed_vectors_count", "_points_count", b"_points_count", "config", b"config", "indexed_vectors_count", b"indexed_vectors_count", "optimizer_status", b"optimizer_status", "payload_schema", b"payload_schema", "points_count", b"points_count", "segments_count", b"segments_count", "status", b"status", "update_queue", b"update_queue", "warnings", b"warnings"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_created_at", b"_created_at", "_indexed_vectors_count", b"_indexed_vectors_count", "_points_count", b"_points_count", "config", b"config", "created_at", b"created_at", "indexed_vectors_count", b"indexed_vectors_count", "optimizer_status", b"optimizer_status", "points_count", b"points_count", "update_queue", b"update_queue"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_created_at", b"_created_at", "_indexed_vectors_count", b"_indexed_vectors_count", "_points_count", b"_points_count", "config", b"config", "created_at", b"created_at", "indexed_vectors_count", b"indexed_vectors_count", "optimizer_status", b"optimizer_status", "payload_schema", b"payload_schema", "points_count", b"points_count", "segments_count", b"segments_count", "status", b"status", "update_queue", b"update_queue", "warnings", b"warnings"]) -> None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_created_at", b"_created_at"]) -> typing_extensions.Literal["created_at"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_indexed_vectors_count", b"_indexed_vectors_count"]) -> typing_extensions.Literal["indexed_vectors_count"] | None: ...
     @typing.overload

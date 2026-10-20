@@ -1,5 +1,5 @@
 from typing import Any, Awaitable, Callable, Dict, Generic, Type, TypeVar, overload
-from urllib.parse import quote, urljoin
+from urllib.parse import urljoin
 
 from httpx import AsyncClient, Client, Request, Response
 from pydantic import ValidationError
@@ -66,20 +66,6 @@ MiddlewareT = Callable[[Request, Send], Response]
 AsyncMiddlewareT = Callable[[Request, SendAsync], Awaitable[Response]]
 
 
-def quote_path_params(path_params: Dict[str, Any]) -> Dict[str, str]:
-    # each path param is a single URL segment, so reserved characters have to be escaped,
-    # otherwise a name like `example/collection1` would change the path of the request
-    quoted_params = {}
-    for name, value in path_params.items():
-        value = str(value)
-        # `.` and `..` are resolved as dot segments by urljoin, moving the request to a parent path,
-        # e.g. deleting a payload index `..` would delete the whole collection
-        if value in (".", ".."):
-            raise ValueError(f"{name} can't be {value!r}")
-        quoted_params[name] = quote(value, safe="")
-    return quoted_params
-
-
 class ApiClient:
     def __init__(self, host: str, **kwargs: Any) -> None:
         self.host = host
@@ -87,12 +73,14 @@ class ApiClient:
         self._client = Client(**kwargs)
 
     @overload
-    def request(self, *, type_: Type[T], method: str, url: str, path_params: Dict[str, Any] = None, **kwargs: Any) -> T:
-        ...
+    def request(
+        self, *, type_: Type[T], method: str, url: str, path_params: Dict[str, Any] = None, **kwargs: Any
+    ) -> T: ...
 
     @overload  # noqa F811
-    def request(self, *, type_: None, method: str, url: str, path_params: Dict[str, Any] = None, **kwargs: Any) -> None:
-        ...
+    def request(
+        self, *, type_: None, method: str, url: str, path_params: Dict[str, Any] = None, **kwargs: Any
+    ) -> None: ...
 
     def request(  # noqa F811
         self, *, type_: Any, method: str, url: str, path_params: Dict[str, Any] = None, **kwargs: Any
@@ -104,7 +92,7 @@ class ApiClient:
         url = url[1:] if url.startswith("/") else url
         # in order to do a correct join, url join requires base_url to end with /, and url to not start with /,
         # since url is treated as an absolute path and might truncate prefix in base_url
-        url = urljoin(host, url.format(**quote_path_params(path_params)))
+        url = urljoin(host, url.format(**path_params))
         if "params" in kwargs and "timeout" in kwargs["params"]:
             kwargs["timeout"] = int(kwargs["params"]["timeout"])
         request = self._client.build_request(method, url, **kwargs)
@@ -162,14 +150,12 @@ class AsyncApiClient:
     @overload
     async def request(
         self, *, type_: Type[T], method: str, url: str, path_params: Dict[str, Any] = None, **kwargs: Any
-    ) -> T:
-        ...
+    ) -> T: ...
 
     @overload  # noqa F811
     async def request(
         self, *, type_: None, method: str, url: str, path_params: Dict[str, Any] = None, **kwargs: Any
-    ) -> None:
-        ...
+    ) -> None: ...
 
     async def request(  # noqa F811
         self, *, type_: Any, method: str, url: str, path_params: Dict[str, Any] = None, **kwargs: Any
@@ -181,7 +167,7 @@ class AsyncApiClient:
         url = url[1:] if url.startswith("/") else url
         # in order to do a correct join, url join requires base_url to end with /, and url to not start with /,
         # since url is treated as an absolute path and might truncate prefix in base_url
-        url = urljoin(host, url.format(**quote_path_params(path_params)))
+        url = urljoin(host, url.format(**path_params))
         if "params" in kwargs and "timeout" in kwargs["params"]:
             kwargs["timeout"] = int(kwargs["params"]["timeout"])
         request = self._async_client.build_request(method, url, **kwargs)
