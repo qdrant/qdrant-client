@@ -1173,9 +1173,6 @@ class QdrantRemote(QdrantBase):
             if isinstance(update_filter, grpc.Filter):
                 update_filter = GrpcToRest.convert_filter(model=update_filter)
 
-            if isinstance(update_mode, int) and not isinstance(update_mode, bool):
-                update_mode = GrpcToRest.convert_update_mode(update_mode)
-
             if isinstance(points, list):
                 points = [
                     (
@@ -2272,9 +2269,6 @@ class QdrantRemote(QdrantBase):
                 "update_mode": update_mode,
             }
         else:
-            if isinstance(update_mode, int) and not isinstance(update_mode, bool):
-                update_mode = GrpcToRest.convert_update_mode(update_mode)
-
             updater_kwargs = {
                 "collection_name": collection_name,
                 "uri": self.rest_uri,
@@ -2428,6 +2422,9 @@ class QdrantRemote(QdrantBase):
                 if isinstance(index_params, grpc.UuidIndexParams):
                     field_schema = grpc.FieldType.FieldTypeUuid
 
+            if isinstance(ordering, models.WriteOrdering):
+                ordering = RestToGrpc.convert_write_ordering(ordering)
+
             request = grpc.CreateFieldIndexCollection(
                 collection_name=collection_name,
                 field_name=field_name,
@@ -2469,6 +2466,9 @@ class QdrantRemote(QdrantBase):
         **kwargs: Any,
     ) -> types.UpdateResult:
         if self._prefer_grpc:
+            if isinstance(ordering, models.WriteOrdering):
+                ordering = RestToGrpc.convert_write_ordering(ordering)
+
             request = grpc.DeleteFieldIndexCollection(
                 collection_name=collection_name,
                 field_name=field_name,
