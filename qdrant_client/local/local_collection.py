@@ -2967,18 +2967,26 @@ class LocalCollection:
         if missing is not None:
             raise KeyError(missing)
 
-    def _delete_ids(self, ids: list[types.PointId]) -> None:
-        for point_id in ids:
-            if point_id in self.ids:
-                idx = self.ids[point_id]
-                for vector_name in self.sparse_vectors:
-                    self._drop_idf_contribution(idx, vector_name)
-                self.deleted[idx] = 1
+    def _mark_deleted(self, idx: int) -> None:
+        for vector_name in self.sparse_vectors:
+            self._drop_idf_contribution(idx, vector_name)
+        self.deleted[idx] = 1
 
-        if self.storage is not None:
+    def _delete_ids(self, ids: list[types.PointId]) -> None:
+        if self.storage is None:
             for point_id in ids:
                 if point_id in self.ids:
-                    self.storage.delete(point_id)
+                    self._mark_deleted(self.ids[point_id])
+            return
+
+        # Delete from disk before hiding the point in memory. If a storage delete fails,
+        # every point not yet removed from disk stays visible, so a later filter retry can
+        # still reach it. Marking the whole batch deleted up front would hide persisted
+        # records whose deletion never completed until the collection is reopened.
+        for point_id in ids:
+            if point_id in self.ids:
+                self.storage.delete(point_id)
+                self._mark_deleted(self.ids[point_id])
 
     def _filter_to_ids(self, delete_filter: types.Filter) -> list[models.ExtendedPointId]:
         mask = self._payload_and_non_deleted_mask(delete_filter)

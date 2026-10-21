@@ -1,4 +1,5 @@
 import random
+import sqlite3
 import tempfile
 
 import numpy as np
@@ -257,4 +258,69 @@ def test_idf_persistence_after_deletion(operation: str):
         # deleting the vectors leaves the points themselves in place
         surviving = [0] if operation == "points" else [0, 1, 2, 3]
         assert [point.id for point in client.scroll(collection_name, limit=10)[0]] == surviving
+        client.close()
+
+
+def test_failed_persistent_delete_keeps_remaining_points_visible():
+    """A failed disk deletion must not hide still-persisted points from a retry.
+
+    Deleting by filter used to mark the whole batch deleted in memory before touching
+    disk. If one storage delete failed, the points after it were hidden although their
+    records were never removed, so retrying the same filter silently skipped them until
+    the collection was reopened.
+    """
+    collection_name = "failed_delete_retry"
+    with tempfile.TemporaryDirectory() as tmpdir:
+        client = QdrantClient(path=tmpdir)
+        client.create_collection(
+            collection_name,
+            vectors_config=rest.VectorParams(size=2, distance=rest.Distance.COSINE),
+        )
+        client.upsert(
+            collection_name,
+            [
+                rest.PointStruct(id=i, vector=[1.0, 0.0], payload={"group": "target"})
+                for i in (1, 2, 3)
+            ]
+            + [rest.PointStruct(id=9, vector=[0.0, 1.0], payload={"group": "other"})],
+        )
+
+        collection = client._client.collections[collection_name]
+        storage = collection.storage
+        assert storage is not None
+
+        real_delete = storage.delete
+        failing_id = 2
+        state = {"raised": False}
+
+        def flaky_delete(point_id):
+            real_delete(point_id)
+            if point_id == failing_id and not state["raised"]:
+                state["raised"] = True
+                raise sqlite3.OperationalError("injected after commit")
+
+        storage.delete = flaky_delete
+        target_filter = rest.Filter(
+            must=[rest.FieldCondition(key="group", match=rest.MatchValue(value="target"))]
+        )
+
+        with pytest.raises(sqlite3.OperationalError):
+            client.delete(collection_name, points_selector=target_filter)
+
+        # Point 2 was committed to disk and may be hidden; point 3 was never deleted and
+        # must still be reachable so a retry can remove it.
+        visible_after_error = {point.id for point in client.scroll(collection_name, limit=10)[0]}
+        assert 3 in visible_after_error
+        assert 9 in visible_after_error
+
+        storage.delete = real_delete
+        client.delete(collection_name, points_selector=target_filter)
+
+        remaining = {point.id for point in client.scroll(collection_name, limit=10)[0]}
+        assert remaining == {9}
+
+        client.close()
+
+        client = QdrantClient(path=tmpdir)
+        assert {point.id for point in client.scroll(collection_name, limit=10)[0]} == {9}
         client.close()
