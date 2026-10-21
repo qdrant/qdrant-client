@@ -15,7 +15,7 @@ from httpx import Timeout
 from grpc import Compression, RpcError
 
 import qdrant_client.http.exceptions
-from qdrant_client import QdrantClient, models
+from qdrant_client import QdrantClient, grpc, models
 from qdrant_client._pydantic_compat import to_dict
 from qdrant_client.conversions.common_types import PointVectors, StrictModeConfig
 from qdrant_client.common.client_exceptions import ResourceExhaustedResponse
@@ -2736,6 +2736,38 @@ def test_create_payload_index_enable_hnsw(prefer_grpc: bool):
         "datetime_field",
     ]:
         assert info.payload_schema[field_name].params.enable_hnsw is False, field_name
+
+
+@pytest.mark.parametrize("prefer_grpc", [False, True])
+def test_create_text_payload_index_without_tokenizer(prefer_grpc: bool):
+    client = QdrantClient(prefer_grpc=prefer_grpc)
+    if client.collection_exists(COLLECTION_NAME):
+        client.delete_collection(COLLECTION_NAME, timeout=TIMEOUT)
+    client.create_collection(
+        collection_name=COLLECTION_NAME,
+        vectors_config=models.VectorParams(size=DIM, distance=models.Distance.DOT),
+        timeout=TIMEOUT,
+    )
+
+    # the server rejects an unset tokenizer over grpc, REST defaults it to word
+    client.create_payload_index(
+        COLLECTION_NAME,
+        field_name="text_field",
+        field_schema=models.TextIndexParams(type=models.TextIndexType.TEXT),
+        wait=True,
+    )
+
+    grpc_params = grpc.PayloadIndexParams(text_index_params=grpc.TextIndexParams(lowercase=True))
+    client.create_payload_index(
+        COLLECTION_NAME, field_name="grpc_text_field", field_schema=grpc_params, wait=True
+    )
+    # the params passed by the user are not modified
+    assert grpc_params.text_index_params.tokenizer == grpc.TokenizerType.Unknown
+
+    payload_schema = client.get_collection(COLLECTION_NAME).payload_schema
+    assert payload_schema["text_field"].params.tokenizer == models.TokenizerType.WORD
+    assert payload_schema["grpc_text_field"].params.tokenizer == models.TokenizerType.WORD
+    assert payload_schema["grpc_text_field"].params.lowercase is True
 
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])
