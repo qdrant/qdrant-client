@@ -112,6 +112,8 @@ def _recreate_collection(
         quantization_config=src_config.quantization_config,
         strict_mode_config=strict_mode_config,
         metadata=src_config.metadata,
+        payload=src_config.params.payload,
+        id_tracker=src_config.params.id_tracker,
     )
 
     _recreate_payload_schema(dest_client, collection_name, src_payload_schema)
