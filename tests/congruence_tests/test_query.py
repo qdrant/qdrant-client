@@ -24,6 +24,7 @@ from tests.congruence_tests.test_common import (
     sparse_vectors_config,
     generate_multivector_fixtures,
     multi_vector_config,
+    has_near_tie_at_limit,
 )
 from tests.fixtures.expressions import one_random_expression_please
 from tests.fixtures.filters import one_random_filter_please
@@ -1483,6 +1484,17 @@ def test_dense_query_filtered_prefetch():
                 query_filter=query_filter,
             )
         except AssertionError as e:
+            # a near-tie at a prefetch's default limit of 10 can keep a different candidate on
+            # each side, and rescoring by the image vector can rank it anywhere. Neither side is
+            # wrong there, so skip the attempt; 100 of them make it a matter of time
+            if any(
+                has_near_tie_at_limit(local_client, query, using, 10, query_filter)
+                for using, query in (
+                    ("text", searcher.dense_vector_query_text),
+                    ("code", searcher.dense_vector_query_code),
+                )
+            ):
+                continue
             print(f"\nAttempt {i} failed with filter {query_filter}")
             raise e
 

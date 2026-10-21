@@ -413,6 +413,30 @@ def compare_client_results(
         assert res1 == res2
 
 
+def has_near_tie_at_limit(
+    client: QdrantBase,
+    query: Any,
+    using: str,
+    limit: int,
+    query_filter: models.Filter | None = None,
+    rel_tol: float = 1e-5,
+) -> bool:
+    """Whether the last point kept by `limit` and the first one cut off score almost the same.
+
+    Local mode and core don't compute scores bit for bit alike (numpy against core's float32
+    SIMD), the same point's score differs by about 1e-7 relative. Two candidates closer than
+    that around a limit can be kept on one side and cut on the other. That is invisible in a
+    plain top-k, but a later stage, like rescoring prefetched candidates by another vector,
+    turns it into a large difference.
+    """
+    points = client.query_points(
+        COLLECTION_NAME, query=query, using=using, query_filter=query_filter, limit=limit + 1
+    ).points
+    return len(points) > limit and math.isclose(
+        points[limit - 1].score, points[limit].score, rel_tol=rel_tol
+    )
+
+
 def init_client(
     client: QdrantBase,
     points: list[models.PointStruct],
