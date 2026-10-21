@@ -1639,6 +1639,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         strict_mode_config: types.StrictModeConfig | None = None,
         metadata: types.Payload | None = None,
         payload: types.PayloadStorageParams | None = None,
+        id_tracker: types.IdTrackerParams | None = None,
         **kwargs: Any,
     ) -> bool:
         """Create empty collection with given parameters
@@ -1688,6 +1689,9 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             payload:
                 Configuration of the payload storage, e.g. the memory placement of the payload.
                 Overrides the deprecated `on_disk_payload` flag if both are set.
+            id_tracker:
+                Configuration of the point id tracker, e.g. the memory placement of the mapping
+                of point ids in indexed segments.
 
         Returns:
             Operation result
@@ -1710,6 +1714,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             strict_mode_config=strict_mode_config,
             metadata=metadata,
             payload=payload,
+            id_tracker=id_tracker,
             **kwargs,
         )
 
@@ -1731,6 +1736,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         strict_mode_config: types.StrictModeConfig | None = None,
         metadata: types.Payload | None = None,
         payload: types.PayloadStorageParams | None = None,
+        id_tracker: types.IdTrackerParams | None = None,
         **kwargs: Any,
     ) -> bool:
         """Delete and create empty collection with given parameters
@@ -1780,6 +1786,9 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             payload:
                 Configuration of the payload storage, e.g. the memory placement of the payload.
                 Overrides the deprecated `on_disk_payload` flag if both are set.
+            id_tracker:
+                Configuration of the point id tracker, e.g. the memory placement of the mapping
+                of point ids in indexed segments.
 
         Returns:
             Operation result
@@ -1807,6 +1816,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             strict_mode_config=strict_mode_config,
             metadata=metadata,
             payload=payload,
+            id_tracker=id_tracker,
             **kwargs,
         )
 

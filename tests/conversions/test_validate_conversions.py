@@ -875,6 +875,27 @@ def test_convert_keyword_index_params_prefix():
     assert recovered.prefix is None
 
 
+def test_convert_text_index_params_scoring():
+    from qdrant_client import models
+    from qdrant_client.conversions.conversion import GrpcToRest, RestToGrpc
+
+    def round_trip(scoring):
+        rest_params = models.TextIndexParams(type=models.TextIndexType.TEXT, scoring=scoring)
+        grpc_params = RestToGrpc.convert_text_index_params(rest_params)
+        return grpc_params, GrpcToRest.convert_text_index_params(grpc_params)
+
+    # `True` is a shortcut for BM25 with the default params, it is recovered in the full form,
+    # the same way the server returns it
+    grpc_params, recovered = round_trip(True)
+    assert grpc_params.HasField("scoring")
+    assert recovered.scoring == models.TextScoringParams(type=models.TextScoringType.BM25)
+
+    # `False` disables scoring, which is the same as leaving it unset
+    grpc_params, recovered = round_trip(False)
+    assert not grpc_params.HasField("scoring")
+    assert recovered.scoring is None
+
+
 def test_convert_update_result_operation_id_presence():
     from qdrant_client import grpc
     from qdrant_client.conversions.conversion import GrpcToRest, RestToGrpc

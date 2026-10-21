@@ -832,6 +832,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         sparse_vectors_config: Mapping[str, types.SparseVectorParams] | None = None,
         metadata: types.Payload | None = None,
         payload: types.PayloadStorageParams | None = None,
+        id_tracker: types.IdTrackerParams | None = None,
         **kwargs: Any,
     ) -> bool:
         if self.closed:
@@ -866,6 +867,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         sparse_vectors_config: Mapping[str, types.SparseVectorParams] | None = None,
         metadata: types.Payload | None = None,
         payload: types.PayloadStorageParams | None = None,
+        id_tracker: types.IdTrackerParams | None = None,
         **kwargs: Any,
     ) -> bool:
         self._validate_new_collection_name(collection_name)
@@ -876,6 +878,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
             sparse_vectors_config,
             metadata=metadata,
             payload=payload,
+            id_tracker=id_tracker,
         )
 
     def upload_points(

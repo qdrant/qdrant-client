@@ -924,6 +924,7 @@ class QdrantLocal(QdrantBase):
         # accepted for signature parity with the remote client and ignored: memory placement
         # is meaningless in local mode
         payload: types.PayloadStorageParams | None = None,
+        id_tracker: types.IdTrackerParams | None = None,
         **kwargs: Any,
     ) -> bool:
         if self.closed:
@@ -963,6 +964,7 @@ class QdrantLocal(QdrantBase):
         sparse_vectors_config: Mapping[str, types.SparseVectorParams] | None = None,
         metadata: types.Payload | None = None,
         payload: types.PayloadStorageParams | None = None,
+        id_tracker: types.IdTrackerParams | None = None,
         **kwargs: Any,
     ) -> bool:
         self._validate_new_collection_name(collection_name)
@@ -973,6 +975,7 @@ class QdrantLocal(QdrantBase):
             sparse_vectors_config,
             metadata=metadata,
             payload=payload,
+            id_tracker=id_tracker,
         )
 
     def upload_points(
