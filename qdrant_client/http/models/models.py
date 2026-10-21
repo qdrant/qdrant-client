@@ -577,7 +577,7 @@ class CreateCollection(BaseModel, extra="forbid"):
     )
     shard_number: Optional[int] = Field(
         default=None,
-        description="For auto sharding: Number of shards in collection. - Default is 1 for standalone, otherwise equal to the number of nodes - Minimum is 1  For custom sharding: Number of shards in collection per shard group. - Default is 1, meaning that each shard key will be mapped to a single shard - Minimum is 1",
+        description="For auto sharding: Number of shards in collection. - If not specified, selected automatically - Minimum is 1  For custom sharding: Number of shards in collection per shard group. - Default is 1, meaning that each shard key will be mapped to a single shard - Minimum is 1",
     )
     sharding_method: Optional["ShardingMethod"] = Field(
         default=None,

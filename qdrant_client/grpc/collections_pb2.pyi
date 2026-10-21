@@ -1786,8 +1786,8 @@ class CreateCollection(google.protobuf.message.Message):
     def optimizers_config(self) -> global___OptimizersConfigDiff:
         """Configuration of the optimizers"""
     shard_number: builtins.int
-    """Number of shards in the collection, default is 1 for standalone, otherwise
-    equal to the number of nodes. Minimum is 1
+    """Number of shards in the collection. If not specified, selected
+    automatically. Minimum is 1
     """
     on_disk_payload: builtins.bool
     """Deprecated: use `payload.memory` instead.
