@@ -1905,6 +1905,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         strict_mode_config: types.StrictModeConfig | None = None,
         metadata: types.Payload | None = None,
         payload: types.PayloadStorageParams | None = None,
+        id_tracker: types.IdTrackerParams | None = None,
         **kwargs: Any,
     ) -> bool:
         if self._prefer_grpc:
@@ -1930,6 +1931,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 metadata = RestToGrpc.convert_payload(metadata)
             if isinstance(payload, models.PayloadStorageParams):
                 payload = RestToGrpc.convert_payload_storage_params(payload)
+            if isinstance(id_tracker, models.IdTrackerParams):
+                id_tracker = RestToGrpc.convert_id_tracker_params(id_tracker)
             create_collection = grpc.CreateCollection(
                 collection_name=collection_name,
                 hnsw_config=hnsw_config,
@@ -1947,6 +1950,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 strict_mode_config=strict_mode_config,
                 metadata=metadata,
                 payload=payload,
+                id_tracker=id_tracker,
             )
             return (
                 await self.grpc_collections.Create(create_collection, timeout=self._timeout)
@@ -1974,6 +1978,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             strict_mode_config=strict_mode_config,
             metadata=metadata,
             payload=payload,
+            id_tracker=id_tracker,
         )
         result: bool | None = (
             await self.http.collections_api.create_collection(
@@ -2003,6 +2008,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         strict_mode_config: types.StrictModeConfig | None = None,
         metadata: types.Payload | None = None,
         payload: types.PayloadStorageParams | None = None,
+        id_tracker: types.IdTrackerParams | None = None,
         **kwargs: Any,
     ) -> bool:
         await self.delete_collection(collection_name, timeout=timeout)
@@ -2023,6 +2029,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             strict_mode_config=strict_mode_config,
             metadata=metadata,
             payload=payload,
+            id_tracker=id_tracker,
         )
 
     @property

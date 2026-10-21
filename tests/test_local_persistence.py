@@ -206,6 +206,39 @@ def test_update_persistence():
         client.close()
 
 
+def test_payload_index_persistence():
+    collection_name = "payload_index_persistence"
+    query = rest.TextQuery(text="wolf")
+    with tempfile.TemporaryDirectory() as tmpdir:
+        client = QdrantClient(path=tmpdir)
+        client.create_collection(collection_name, vectors_config={})
+        client.upsert(
+            collection_name,
+            [
+                rest.PointStruct(id=idx, vector={}, payload={"text": text})
+                for idx, text in enumerate(["wolf ape", "wolf wolf bear", "cat"])
+            ],
+        )
+        client.create_payload_index(
+            collection_name,
+            "text",
+            rest.TextIndexParams(type=rest.TextIndexType.TEXT, scoring=True),
+        )
+        points = client.query_points(collection_name, query=query, using="text").points
+        assert len(points) == 2
+        client.close()
+
+        client = QdrantClient(path=tmpdir)
+        assert client.query_points(collection_name, query=query, using="text").points == points
+        client.delete_payload_index(collection_name, "text")
+        client.close()
+
+        client = QdrantClient(path=tmpdir)
+        with pytest.raises(ValueError, match="needs a text index with `scoring`"):
+            client.query_points(collection_name, query=query, using="text")
+        client.close()
+
+
 @pytest.mark.parametrize("operation", ["points", "vectors"])
 def test_idf_persistence_after_deletion(operation: str):
     """Reopening a collection must not move the scores a deletion left behind.
