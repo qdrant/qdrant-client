@@ -598,6 +598,51 @@ def test_text_match_on_unindexed_field(match: models.Match):
     )
 
 
+def test_substring_match():
+    major, minor, patch, dev = read_version()
+    if not dev and None not in (major, minor, patch) and (major, minor, patch) < (1, 19, 2):
+        pytest.skip("Substring match is available as of qdrant 1.19.2")
+
+    values = ["https://qdrant.tech", 1]
+    # no index, a keyword index, a keyword index with `prefix`
+    keys = ["url", "url_keyword", "url_prefix"]
+
+    fixture_points = generate_fixtures(num=len(values))
+    for point, value in zip(fixture_points, values):
+        point.payload = {key: value for key in keys}
+
+    local_client = init_local()
+    init_client(local_client, fixture_points)
+
+    remote_client = init_remote()
+    init_client(remote_client, fixture_points)
+    remote_client.create_payload_index(
+        COLLECTION_NAME, "url_keyword", field_schema=models.PayloadSchemaType.KEYWORD
+    )
+    remote_client.create_payload_index(
+        COLLECTION_NAME,
+        "url_prefix",
+        field_schema=models.KeywordIndexParams(type=models.KeywordIndexType.KEYWORD, prefix=True),
+    )
+
+    grpc_client = init_remote(prefer_grpc=True)
+
+    # in the middle of a value, case-sensitive, never in a number, empty
+    for substring in ("qdrant", "QDRANT", "1", ""):
+        for key in keys:
+            scroll_filter = models.Filter(
+                must=[
+                    models.FieldCondition(
+                        key=key, match=models.MatchSubstring(substring=substring)
+                    )
+                ]
+            )
+            for client in (remote_client, grpc_client):
+                compare_client_results(
+                    local_client, client, scroll_with_filter, scroll_filter=scroll_filter
+                )
+
+
 @pytest.mark.parametrize("key", ["a", "nested[].empty"])
 def test_is_null_matches_null_inside_arrays(key: str):
     """A value counts as null when it is null itself or is an array holding a null element,

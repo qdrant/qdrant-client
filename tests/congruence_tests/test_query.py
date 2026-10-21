@@ -2738,6 +2738,79 @@ def test_formula_query():
                 raise e
 
 
+def test_formula_query_rejected_before_scoring():
+    fixture_points = generate_fixtures(10)
+
+    local_client, http_client, grpc_client = init_clients(fixture_points)
+
+    invalid_expressions = [
+        models.MaxExpression(max=[]),
+        models.MinExpression(min=[]),
+        models.LinDecayExpression(lin_decay=models.DecayParamsExpression(x=1.0, midpoint=2.0)),
+        models.ExpDecayExpression(exp_decay=models.DecayParamsExpression(x=1.0, midpoint=1.0)),
+        models.GaussDecayExpression(gauss_decay=models.DecayParamsExpression(x=1.0, scale=0.0)),
+        "$score[abc]",
+        "rand_digit[",
+        models.DatetimeExpression(datetime="not a datetime"),
+        models.DatetimeKeyExpression(datetime_key="rand_datetime["),
+        models.GeoDistance(
+            geo_distance=models.GeoDistanceParams(
+                origin=models.GeoPoint(lon=0.0, lat=0.0), to="rand_geo["
+            )
+        ),
+    ]
+    # a zero factor skips the rest of `mult`
+    formulas = [
+        models.FormulaQuery(formula=models.MultExpression(mult=[0.0, expression]))
+        for expression in invalid_expressions
+    ]
+    formulas.append(models.FormulaQuery(formula="$score", defaults={"$score[abc]": 1.0}))
+
+    missing_point_id = len(fixture_points)  # nothing to score
+    for formula in formulas:
+        for point_id in (0, missing_point_id):
+            prefetch = models.Prefetch(
+                filter=models.Filter(must=[models.HasIdCondition(has_id=[point_id])]),
+                using="text",
+            )
+            for client in (local_client, http_client, grpc_client):
+                with pytest.raises((ValueError, UnexpectedResponse, RpcError)):
+                    client.query_points(COLLECTION_NAME, prefetch=prefetch, query=formula)
+
+
+def test_formula_query_score_defaults():
+    fixture_points = generate_fixtures(10)
+
+    searcher = TestSimpleSearcher()
+
+    local_client, http_client, grpc_client = init_clients(fixture_points)
+
+    # points missing from the first prefetch fall back to the default of `$score`
+    prefetch = [
+        models.Prefetch(
+            query=searcher.dense_vector_query_text,
+            filter=models.Filter(must=[models.HasIdCondition(has_id=list(range(5)))]),
+            using="text",
+        ),
+        models.Prefetch(query=searcher.dense_vector_query_text, using="text"),
+    ]
+
+    def query_formula(client: QdrantBase, formula: models.FormulaQuery) -> models.QueryResponse:
+        return client.query_points(
+            COLLECTION_NAME, prefetch=prefetch, query=formula, limit=len(fixture_points)
+        )
+
+    formulas = [
+        models.FormulaQuery(formula="$score", defaults={"$score[0]": 7.0}),
+        models.FormulaQuery(formula="$score[0]", defaults={"$score": 7.0}),
+    ]
+
+    for formula in formulas:
+        compare_clients_results(
+            local_client, http_client, grpc_client, query_formula, formula=formula
+        )
+
+
 def test_empty_collection_bm25_search():
     local_client, http_client, grpc_client = init_clients(
         [],
