@@ -12,7 +12,7 @@ from typing import Any, Callable, TypeVar
 
 from pydantic import create_model
 
-from qdrant_client._json_backend import loads as _loads
+from qdrant_client._json_backend import DecodeError, loads as _loads
 from qdrant_client._pydantic_compat import PYDANTIC_V2
 
 if PYDANTIC_V2:
@@ -33,7 +33,7 @@ def parse_response(content: bytes, type_: type[T]) -> T:
     if PYDANTIC_V2:
         try:
             return _validator(type_)(_loads(content))  # type: ignore[arg-type]
-        except ValueError:
+        except (ValueError, DecodeError):
             # a validation or JSON error: the old path below raises the same error as before
             pass
     return parse_as_type(json.loads(content), type_)

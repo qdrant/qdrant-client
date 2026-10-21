@@ -5,12 +5,15 @@ try:
     import msgspec
 
     BACKEND = "msgspec"
+    DecodeError: type[Exception] = msgspec.DecodeError
     _decoder = msgspec.json.Decoder()
 
     def loads(data: bytes | str) -> Any:
         return _decoder.decode(data)
 
 except ImportError:
+    DecodeError = ValueError
+
     try:
         import orjson
 
