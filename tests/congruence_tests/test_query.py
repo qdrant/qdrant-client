@@ -1285,8 +1285,21 @@ def compare_clients_results(
     foo: Callable[[QdrantBase, Any], Any],
     **kwargs: Any,
 ):
-    compare_client_results(local_client, http_client, foo, **kwargs)
-    compare_client_results(http_client, grpc_client, foo, **kwargs)
+    # Compare each transport against the local client: local mode is exact and always returns the
+    # best answers, while server group-by is best-effort and its fill varies between identical
+    # requests, so one remote result can't bound the other
+    local_result = []
+
+    def foo_local_once(client: QdrantBase, **kw: Any) -> Any:
+        # local mode is the slow side, query it once for both comparisons
+        if client is local_client:
+            if not local_result:
+                local_result.append(foo(client, **kw))
+            return local_result[0]
+        return foo(client, **kw)
+
+    compare_client_results(local_client, http_client, foo_local_once, **kwargs)
+    compare_client_results(local_client, grpc_client, foo_local_once, **kwargs)
 
 
 # ---- TESTS  ---- #
