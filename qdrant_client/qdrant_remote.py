@@ -2422,6 +2422,9 @@ class QdrantRemote(QdrantBase):
                 if isinstance(index_params, grpc.UuidIndexParams):
                     field_schema = grpc.FieldType.FieldTypeUuid
 
+            if isinstance(ordering, models.WriteOrdering):
+                ordering = RestToGrpc.convert_write_ordering(ordering)
+
             request = grpc.CreateFieldIndexCollection(
                 collection_name=collection_name,
                 field_name=field_name,
@@ -2463,6 +2466,9 @@ class QdrantRemote(QdrantBase):
         **kwargs: Any,
     ) -> types.UpdateResult:
         if self._prefer_grpc:
+            if isinstance(ordering, models.WriteOrdering):
+                ordering = RestToGrpc.convert_write_ordering(ordering)
+
             request = grpc.DeleteFieldIndexCollection(
                 collection_name=collection_name,
                 field_name=field_name,

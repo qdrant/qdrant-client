@@ -2201,7 +2201,11 @@ def test_create_payload_index(prefer_grpc):
     initialize_fixture_collection(client, COLLECTION_NAME, vectors_config={})
 
     client.create_payload_index(
-        COLLECTION_NAME, "keyword", models.PayloadSchemaType.KEYWORD, wait=True
+        COLLECTION_NAME,
+        "keyword",
+        models.PayloadSchemaType.KEYWORD,
+        wait=True,
+        ordering=models.WriteOrdering.STRONG,
     )
     client.create_payload_index(
         COLLECTION_NAME, "integer", models.PayloadSchemaType.INTEGER, wait=True
@@ -2300,6 +2304,8 @@ def test_create_payload_index(prefer_grpc):
         models.BoolIndexParams(type=models.BoolIndexType.BOOL),
         wait=True,
     )
+
+    client.delete_payload_index(COLLECTION_NAME, "keyword", ordering=models.WriteOrdering.STRONG)
 
 
 @pytest.mark.parametrize("prefer_grpc", (False, True))
