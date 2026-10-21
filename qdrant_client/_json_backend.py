@@ -20,9 +20,18 @@ except ImportError:
             return orjson.loads(data)
 
     except ImportError:
-        import json
+        try:
+            from pydantic_core import from_json  # pydantic >= 2.5
 
-        BACKEND = "json"
+            BACKEND = "pydantic_core"
 
-        def loads(data: bytes | str) -> Any:
-            return json.loads(data)
+            def loads(data: bytes | str) -> Any:
+                return from_json(data)
+
+        except ImportError:
+            import json
+
+            BACKEND = "json"
+
+            def loads(data: bytes | str) -> Any:
+                return json.loads(data)

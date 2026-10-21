@@ -378,15 +378,19 @@ def test_json_to_value_subclasses(value, plain):
 
 
 def test_json_to_value_struct_fields_as_messages(monkeypatch):
+    from qdrant_client import grpc
     from qdrant_client.conversions import conversion
     from tests.fixtures.payload import one_random_payload_please
 
+    if conversion.payload_to_grpc is conversion._payload_to_values:
+        pytest.skip("dicts as values of a map need protobuf >= 6.30")
+
     payloads = [one_random_payload_please(i) for i in range(20)]
-    expected = [conversion.payload_to_grpc(payload) for payload in payloads]
+    expected = [grpc.PointStruct(payload=conversion.payload_to_grpc(p)) for p in payloads]
 
     # the path taken with protobuf < 6.30, which does not accept dicts as values of a map
-    monkeypatch.setattr(conversion, "_json_to_struct_field", conversion.json_to_value)
-    assert [conversion.payload_to_grpc(payload) for payload in payloads] == expected
+    monkeypatch.setattr(conversion, "payload_to_grpc", conversion._payload_to_values)
+    assert [grpc.PointStruct(payload=conversion.payload_to_grpc(p)) for p in payloads] == expected
 
 
 @pytest.mark.parametrize(
@@ -800,6 +804,48 @@ def test_convert_points_update_operation_falsy_shard_key():
                 "shard_key_selector"
             ), f"{type(operation).__name__} dropped shard_key={shard_key!r}"
             assert GrpcToRest.convert_shard_key_selector(inner.shard_key_selector) == shard_key
+
+
+def test_convert_points_update_operation_empty_points():
+    """An empty `points` list must stay an empty id list, as the server treats it over REST.
+
+    It used to be dropped as falsy, so a filter sent alongside it touched every matching point.
+    """
+    from qdrant_client import models
+    from qdrant_client.conversions.conversion import RestToGrpc
+
+    filter_ = models.Filter(must=[models.HasIdCondition(has_id=[1, 2, 3])])
+
+    def make_operations(**selector):
+        return [
+            models.SetPayloadOperation(
+                set_payload=models.SetPayload(payload={"my_payload": 1}, **selector)
+            ),
+            models.OverwritePayloadOperation(
+                overwrite_payload=models.SetPayload(payload={"my_payload": 1}, **selector)
+            ),
+            models.DeletePayloadOperation(
+                delete_payload=models.DeletePayload(keys=["my_payload"], **selector)
+            ),
+            models.DeleteVectorsOperation(
+                delete_vectors=models.DeleteVectors(vector=["image"], **selector)
+            ),
+        ]
+
+    for selector in ({"points": []}, {"points": [], "filter": filter_}):
+        for operation in make_operations(**selector):
+            grpc_operation = RestToGrpc.convert_update_operation(operation)
+            points_selector = getattr(
+                grpc_operation, grpc_operation.WhichOneof("operation")
+            ).points_selector
+            name = points_selector.WhichOneof("points_selector_one_of")
+
+            assert name == "points", f"{type(operation).__name__} with {selector} sent {name}"
+            assert list(points_selector.points.ids) == []
+
+    for operation in make_operations():
+        with pytest.raises(ValueError, match=f"invalid {type(operation).__name__} model"):
+            RestToGrpc.convert_update_operation(operation)
 
 
 def test_convert_keyword_index_params_prefix():

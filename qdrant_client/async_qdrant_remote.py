@@ -13,6 +13,7 @@ import importlib.metadata
 import inspect
 import math
 import platform
+import sys
 from multiprocessing import get_all_start_methods
 from threading import Thread
 from typing import Any, Awaitable, Callable, Iterable, Mapping, Sequence, Type, get_args
@@ -2058,6 +2059,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 raise ValueError(
                     f"Start methods {method} is not available, available methods: {get_all_start_methods()}"
                 )
+        elif sys.platform == "darwin":
+            start_method = "spawn"
         else:
             start_method = "forkserver" if "forkserver" in get_all_start_methods() else "spawn"
         if self._prefer_grpc:
@@ -2208,6 +2211,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                     field_schema = grpc.FieldType.FieldTypeDatetime
                 if isinstance(index_params, grpc.UuidIndexParams):
                     field_schema = grpc.FieldType.FieldTypeUuid
+            if isinstance(ordering, models.WriteOrdering):
+                ordering = RestToGrpc.convert_write_ordering(ordering)
             request = grpc.CreateFieldIndexCollection(
                 collection_name=collection_name,
                 field_name=field_name,
@@ -2248,6 +2253,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         **kwargs: Any,
     ) -> types.UpdateResult:
         if self._prefer_grpc:
+            if isinstance(ordering, models.WriteOrdering):
+                ordering = RestToGrpc.convert_write_ordering(ordering)
             request = grpc.DeleteFieldIndexCollection(
                 collection_name=collection_name,
                 field_name=field_name,

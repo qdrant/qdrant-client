@@ -208,7 +208,25 @@ class QdrantLocal(QdrantBase):
         raise ValueError(f"Collection {collection_name} not found")
 
     @classmethod
-    def _validate_query(cls, query: types.Query | None) -> None:
+    def _validate_query(
+        cls,
+        query: types.Query | None,
+        using: str | None,
+        prefetch: types.Prefetch | list[types.Prefetch] | None,
+        score_threshold: float | None,
+    ) -> None:
+        if prefetch and query is None:
+            raise ValueError("A query is needed to merge the prefetches.")
+
+        if score_threshold is not None:
+            if query is None:
+                raise ValueError("A query is needed to use the score_threshold.")
+            if isinstance(query, rest_models.OrderByQuery):
+                raise ValueError("Can't use score_threshold with an order_by query.")
+
+        if isinstance(query, (rest_models.FusionQuery, rest_models.RrfQuery)) and using:
+            raise ValueError("Fusion queries cannot be combined with the 'using' field.")
+
         if isinstance(query, rest_models.RrfQuery):
             if query.rrf.k is not None and query.rrf.k < 1:
                 raise ValueError(f"rrf k value {query.rrf.k} is invalid. Must be 1 or larger.")
@@ -245,7 +263,7 @@ class QdrantLocal(QdrantBase):
                 raise ValueError(
                     f"prefetch limit value {item.limit} is invalid. Must be 1 or larger."
                 )
-            cls._validate_query(item.query)
+            cls._validate_query(item.query, item.using, item.prefetch, item.score_threshold)
             cls._validate_prefetch(item.prefetch)
 
     def search_matrix_offsets(
@@ -438,7 +456,7 @@ class QdrantLocal(QdrantBase):
             raise ValueError(f"limit value {limit} is invalid. Must be 1 or larger.")
         if offset is not None and offset < 0:
             raise ValueError(f"offset value {offset} is invalid. Must be 0 or larger.")
-        self._validate_query(query)
+        self._validate_query(query, using, prefetch, score_threshold)
         self._validate_prefetch(prefetch)
 
         collection = self._get_collection(collection_name)
@@ -528,7 +546,7 @@ class QdrantLocal(QdrantBase):
             raise ValueError(f"limit value {limit} is invalid. Must be 1 or larger.")
         if group_size < 1:
             raise ValueError(f"group_size value {group_size} is invalid. Must be 1 or larger.")
-        self._validate_query(query)
+        self._validate_query(query, using, prefetch, score_threshold)
         self._validate_prefetch(prefetch)
 
         collection = self._get_collection(collection_name)
@@ -570,6 +588,7 @@ class QdrantLocal(QdrantBase):
             score_threshold=score_threshold,
             with_lookup=with_lookup,
             with_lookup_collection=with_lookup_collection,
+            search_params=search_params,
         )
 
     def scroll(
@@ -753,6 +772,9 @@ class QdrantLocal(QdrantBase):
             elif isinstance(operation, rest_models.RenameAliasOperation):
                 new_name = operation.rename_alias.new_alias_name
                 old_name = operation.rename_alias.old_alias_name
+                # the new name must not take the name of an existing collection either
+                if new_name in self.collections:
+                    raise ValueError(f"Collection {new_name} already exists")
                 if old_name not in aliases:
                     raise ValueError(f"Alias {old_name} does not exist")
                 aliases[new_name] = aliases.pop(old_name)
@@ -974,18 +996,17 @@ class QdrantLocal(QdrantBase):
         update_mode: types.UpdateMode | None = None,
     ) -> None:
         collection = self._get_collection(collection_name)
-        collection.upsert(
-            [
-                rest_models.PointStruct(
-                    id=point.id,
-                    vector=point.vector or {},
-                    payload=point.payload or {},
-                )
-                for point in points
-            ],
-            update_filter=update_filter,
-            update_mode=update_mode,
-        )
+        point_structs = [
+            rest_models.PointStruct(
+                id=point.id,
+                vector=point.vector or {},
+                payload=point.payload or {},
+            )
+            for point in points
+        ]
+        # remote mode sends no request for an empty upload, while an empty upsert is an error
+        if len(point_structs) > 0:
+            collection.upsert(point_structs, update_filter=update_filter, update_mode=update_mode)
 
     def upload_collection(
         self,
@@ -1014,22 +1035,21 @@ class QdrantLocal(QdrantBase):
                 for i in range(num_vectors)
             ]
 
-        collection.upsert(
-            [
-                rest_models.PointStruct(
-                    id=str(point_id) if isinstance(point_id, uuid.UUID) else point_id,
-                    vector=(vector.tolist() if isinstance(vector, np.ndarray) else vector) or {},
-                    payload=payload or {},
-                )
-                for (point_id, vector, payload) in zip(
-                    ids or uuid_generator(),
-                    iter(vectors),
-                    payload or itertools.cycle([{}]),
-                )
-            ],
-            update_filter=update_filter,
-            update_mode=update_mode,
-        )
+        point_structs = [
+            rest_models.PointStruct(
+                id=str(point_id) if isinstance(point_id, uuid.UUID) else point_id,
+                vector=(vector.tolist() if isinstance(vector, np.ndarray) else vector) or {},
+                payload=payload or {},
+            )
+            for (point_id, vector, payload) in zip(
+                uuid_generator() if ids is None else ids,
+                iter(vectors),
+                itertools.cycle([{}]) if payload is None else payload,
+            )
+        ]
+        # remote mode sends no request for an empty upload, while an empty upsert is an error
+        if len(point_structs) > 0:
+            collection.upsert(point_structs, update_filter=update_filter, update_mode=update_mode)
 
     def create_payload_index(
         self,

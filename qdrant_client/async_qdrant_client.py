@@ -15,6 +15,7 @@ import numpy as np
 from qdrant_client import grpc as grpc
 from qdrant_client.async_client_base import AsyncQdrantBase
 from qdrant_client.common.client_warnings import show_warning_once
+from qdrant_client.common.validation import require_length, vectors_length
 from qdrant_client.conversions import common_types as types
 from qdrant_client.embed.type_inspector import Inspector
 from qdrant_client.http import AsyncApiClient, AsyncApis
@@ -53,6 +54,8 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         url: either host or str of "Optional[scheme], host, Optional[port], Optional[prefix]".
             Default: `None`
         port: Port of the REST API interface. Default: 6333
+            Also used when `url` has no port. Set to `None` to use the scheme's default port
+            (80 for http, 443 for https), for example behind a reverse proxy.
         grpc_port: Port of the gRPC interface. Default: 6334
         prefer_grpc: If `true` - use gPRC interface whenever possible in custom methods.
         https: If `true` - use HTTPS(SSL) protocol. Default: `None`
@@ -1830,7 +1833,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             points: Iterator over points to upload
             batch_size: How many vectors upload per-request, Default: 64
             parallel: Number of parallel processes of upload, 0 means all available cores
-            method: Start method for parallel processes, Default: forkserver
+            method: Start method for parallel processes, Default: forkserver, spawn on macOS
             max_retries: maximum number of retries in case of a failure
                 during the upload of a batch, 0 means a single attempt without retries
             wait:
@@ -1906,7 +1909,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             ids: Iterable of custom vectors ids, Optional, Default: None
             batch_size: How many vectors upload per-request, Default: 64
             parallel: Number of parallel processes of upload, 0 means all available cores
-            method: Start method for parallel processes, Default: forkserver
+            method: Start method for parallel processes, Default: forkserver, spawn on macOS
             max_retries: maximum number of retries in case of a failure
                 during the upload of a batch, 0 means a single attempt without retries
             wait:
@@ -1926,6 +1929,10 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
                 yield from iterable
 
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+        num_vectors = vectors_length(vectors)
+        if num_vectors is not None:
+            ids = require_length(ids, num_vectors, "ids")
+            payload = require_length(payload, num_vectors, "payload")
         if not self.cloud_inference:
             if not isinstance(vectors, dict) and (not isinstance(vectors, np.ndarray)):
                 requires_inference = False

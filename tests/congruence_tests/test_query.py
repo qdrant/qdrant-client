@@ -24,6 +24,7 @@ from tests.congruence_tests.test_common import (
     sparse_vectors_config,
     generate_multivector_fixtures,
     multi_vector_config,
+    has_near_tie_at_limit,
 )
 from tests.fixtures.expressions import one_random_expression_please
 from tests.fixtures.filters import one_random_filter_please
@@ -1252,18 +1253,19 @@ class TestSimpleSearcher:
 
 
 def group_by_keys():
-    return [
+    keys = [
         "maybe",
         "rand_digit",
         "two_words",
         "city.name",
         "maybe_null",
         "id",
-        "two_words[0]",
-        "nested.array[0].word",
-        "nested_array[0]",
         "nested_array[]",
     ]
+    major, minor, patch, dev = read_version()
+    if not dev and None not in (major, minor, patch) and (major, minor, patch) < (1, 19, 2):
+        return keys  # group_by on a path with an array index finds no groups before 1.19.2
+    return keys + ["two_words[0]", "nested.array[0].word", "nested_array[0]"]
 
 
 def init_clients(fixture_points, **kwargs) -> tuple[QdrantClient, QdrantClient, QdrantClient]:
@@ -1284,8 +1286,21 @@ def compare_clients_results(
     foo: Callable[[QdrantBase, Any], Any],
     **kwargs: Any,
 ):
-    compare_client_results(local_client, http_client, foo, **kwargs)
-    compare_client_results(http_client, grpc_client, foo, **kwargs)
+    # Compare each transport against the local client: local mode is exact and always returns the
+    # best answers, while server group-by is best-effort and its fill varies between identical
+    # requests, so one remote result can't bound the other
+    local_result = []
+
+    def foo_local_once(client: QdrantBase, **kw: Any) -> Any:
+        # local mode is the slow side, query it once for both comparisons
+        if client is local_client:
+            if not local_result:
+                local_result.append(foo(client, **kw))
+            return local_result[0]
+        return foo(client, **kw)
+
+    compare_client_results(local_client, http_client, foo_local_once, **kwargs)
+    compare_client_results(local_client, grpc_client, foo_local_once, **kwargs)
 
 
 # ---- TESTS  ---- #
@@ -1469,6 +1484,17 @@ def test_dense_query_filtered_prefetch():
                 query_filter=query_filter,
             )
         except AssertionError as e:
+            # a near-tie at a prefetch's default limit of 10 can keep a different candidate on
+            # each side, and rescoring by the image vector can rank it anywhere. Neither side is
+            # wrong there, so skip the attempt; 100 of them make it a matter of time
+            if any(
+                has_near_tie_at_limit(local_client, query, using, 10, query_filter)
+                for using, query in (
+                    ("text", searcher.dense_vector_query_text),
+                    ("code", searcher.dense_vector_query_code),
+                )
+            ):
+                continue
             print(f"\nAttempt {i} failed with filter {query_filter}")
             raise e
 
@@ -2262,6 +2288,113 @@ def test_query_invalid_feedback_strategy():
 
     with pytest.raises(RpcError, match="must be 0.0 or larger"):
         grpc_client.query_points(collection_name=COLLECTION_NAME, query=query, using="text")
+
+
+def test_query_invalid_score_threshold():
+    fixture_points = generate_fixtures(5)
+
+    local_client, http_client, grpc_client = init_clients(fixture_points)
+
+    http_client.create_payload_index(
+        COLLECTION_NAME, "rand_digit", models.PayloadSchemaType.INTEGER, wait=True
+    )
+
+    order_by = models.OrderByQuery(order_by="rand_digit")
+    fusion = models.FusionQuery(fusion=models.Fusion.RRF)
+
+    valid_prefetch = models.Prefetch(query=order_by, limit=10)
+    invalid_prefetch = models.Prefetch(query=order_by, score_threshold=0.5, limit=10)
+
+    prefetches = [
+        invalid_prefetch,
+        # the invalid prefetch is not the first element, every element has to be checked
+        [valid_prefetch, invalid_prefetch],
+        models.Prefetch(query=fusion, prefetch=[valid_prefetch, invalid_prefetch]),
+        models.Prefetch(score_threshold=0.5, limit=10),
+    ]
+
+    for client, error_type in (
+        (local_client, ValueError),
+        (http_client, UnexpectedResponse),
+        (grpc_client, RpcError),
+    ):
+        for query in (order_by, None):
+            with pytest.raises(error_type):
+                client.query_points(COLLECTION_NAME, query=query, score_threshold=0.5)
+
+            with pytest.raises(error_type):
+                client.query_points_groups(
+                    COLLECTION_NAME, group_by="rand_digit", query=query, score_threshold=0.5
+                )
+
+        for prefetch in prefetches:
+            with pytest.raises(error_type):
+                client.query_points(COLLECTION_NAME, query=fusion, prefetch=prefetch)
+
+
+def test_query_invalid_prefetch_without_query():
+    fixture_points = generate_fixtures(5)
+
+    local_client, http_client, grpc_client = init_clients(fixture_points)
+
+    query_vector = np.random.random(text_vector_size).tolist()
+
+    prefetch = models.Prefetch(query=query_vector, using="text", limit=10)
+    fusion = models.FusionQuery(fusion=models.Fusion.RRF)
+
+    for client, error_type in (
+        (local_client, ValueError),
+        (http_client, UnexpectedResponse),
+        (grpc_client, RpcError),
+    ):
+        with pytest.raises(error_type):
+            client.query_points(COLLECTION_NAME, prefetch=[prefetch, prefetch])
+
+        with pytest.raises(error_type):
+            client.query_points(
+                COLLECTION_NAME, query=fusion, prefetch=models.Prefetch(prefetch=prefetch)
+            )
+
+        with pytest.raises(error_type):
+            client.query_points_groups(COLLECTION_NAME, group_by="rand_digit", prefetch=prefetch)
+
+
+def test_query_invalid_fusion_using():
+    fixture_points = generate_fixtures(5)
+
+    local_client, http_client, grpc_client = init_clients(fixture_points)
+
+    query_vector = np.random.random(text_vector_size).tolist()
+
+    prefetch = models.Prefetch(query=query_vector, using="text", limit=10)
+    fusions = [models.FusionQuery(fusion=models.Fusion.RRF), models.RrfQuery(rrf=models.Rrf())]
+
+    for client, error_type in (
+        (local_client, ValueError),
+        (http_client, UnexpectedResponse),
+        (grpc_client, RpcError),
+    ):
+        for fusion in fusions:
+            with pytest.raises(error_type):
+                client.query_points(
+                    COLLECTION_NAME, query=fusion, using="text", prefetch=[prefetch, prefetch]
+                )
+
+            with pytest.raises(error_type):
+                client.query_points(
+                    COLLECTION_NAME,
+                    query=fusion,
+                    prefetch=models.Prefetch(query=fusion, using="text", prefetch=prefetch),
+                )
+
+            with pytest.raises(error_type):
+                client.query_points_groups(
+                    COLLECTION_NAME,
+                    group_by="rand_digit",
+                    query=fusion,
+                    using="text",
+                    prefetch=prefetch,
+                )
 
 
 def test_query_with_nan():

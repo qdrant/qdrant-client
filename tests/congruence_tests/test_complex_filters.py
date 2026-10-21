@@ -500,6 +500,38 @@ def test_nested_filter_skips_non_object_elements():
         )
 
 
+def test_array_selected_by_index_is_flattened():
+    """An array selected by `[]` or `[i]` is unwrapped one level, like one selected by a key."""
+    payloads = [
+        {"a": [[1, 2], [3]]},
+        {"a": [1, [4]]},
+        {"a": [[[1]]]},  # one level too deep for `a[]` and `a[0]`
+        {"a": [[], [5]]},
+    ]
+
+    fixture_points = generate_fixtures(num=len(payloads))
+    for point, payload in zip(fixture_points, payloads):
+        point.payload = payload
+
+    local_client = init_local()
+    init_client(local_client, fixture_points)
+
+    remote_client = init_remote()
+    init_client(remote_client, fixture_points)
+
+    for key in ["a[]", "a[0]", "a[1]", "a[][]"]:
+        for condition in (
+            models.FieldCondition(key=key, match=models.MatchValue(value=1)),
+            models.FieldCondition(key=key, range=models.Range(gte=2)),
+        ):
+            compare_client_results(
+                local_client,
+                remote_client,
+                scroll_with_filter,
+                scroll_filter=models.Filter(must=[condition]),
+            )
+
+
 @pytest.mark.parametrize(
     "match",
     [

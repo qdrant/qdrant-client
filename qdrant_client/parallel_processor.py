@@ -13,7 +13,9 @@ from typing import Any, Iterable, Type
 # Single item should be processed in less than:
 processing_timeout = 10 * 60  # seconds
 
-MAX_INTERNAL_BATCH_SIZE = 200
+# items in flight per worker, a batch of points each for uploads: those not sent yet wait in the
+# main process, so lazy inputs are read that far ahead. Workers need only a few waiting
+MAX_INTERNAL_BATCH_SIZE = 64
 
 
 class QueueSignals(str, Enum):

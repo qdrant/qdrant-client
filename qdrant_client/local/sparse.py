@@ -29,6 +29,9 @@ def validate_sparse_vector(vector: SparseVector) -> None:
         raise ValueError("Values must not contain NaN")
     if len(vector.indices) != len(set(vector.indices)):
         raise ValueError("Indices must be unique")
+    # the server stores indices as u32
+    if vector.indices and (min(vector.indices) < 0 or max(vector.indices) > 2**32 - 1):
+        raise ValueError("Indices must be between 0 and 4294967295")
 
 
 def is_sorted(vector: SparseVector) -> bool:

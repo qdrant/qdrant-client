@@ -6,6 +6,9 @@ from pathlib import Path
 from typing import Iterable
 
 from qdrant_client.http import models
+from qdrant_client._pydantic_compat import construct
+from qdrant_client.common.client_warnings import show_warning
+from qdrant_client.local.utils import normalize_point_id
 
 STORAGE_FILE_NAME_OLD = "storage.dbm"
 STORAGE_FILE_NAME = "storage.sqlite"
@@ -25,10 +28,14 @@ def check_legacy_storage(location: str) -> None:
 
 class CollectionPersistence:
     CHECK_SAME_THREAD: bool | None = None
+    # pinned, since the default protocol changed from 4 to 5 in Python 3.14, and keys with it
+    KEY_PICKLE_PROTOCOL = 4
 
     @classmethod
     def encode_key(cls, key: models.ExtendedPointId) -> str:
-        return base64.b64encode(pickle.dumps(key)).decode("utf-8")
+        return base64.b64encode(pickle.dumps(key, protocol=cls.KEY_PICKLE_PROTOCOL)).decode(
+            "utf-8"
+        )
 
     def __init__(self, location: str, force_disable_check_same_thread: bool = False):
         """
@@ -63,6 +70,8 @@ class CollectionPersistence:
         )
 
         self._ensure_table()
+        # stored keys which differ from `encode_key(point_id)`
+        self._legacy_keys: dict[models.ExtendedPointId, str] = {}
 
     def close(self) -> None:
         self.storage.close()
@@ -78,20 +87,24 @@ class CollectionPersistence:
         Args:
             point: point to persist
         """
-        key = self.encode_key(point.id)
+        point_id = normalize_point_id(point.id)
+        point = construct(
+            models.PointStruct, id=point_id, vector=point.vector, payload=point.payload
+        )
+        key = self.encode_key(point_id)
         value = pickle.dumps(point)
 
-        cursor = self.storage.cursor()
-        # Insert or update by key
-        cursor.execute(
-            "INSERT OR REPLACE INTO points VALUES (?, ?)",
-            (
-                key,
-                sqlite3.Binary(value),
-            ),
-        )
-
-        self.storage.commit()
+        # The connection commits on leaving the block, and rolls back if the commit fails,
+        # so a failed write can't be committed later along with another one.
+        with self.storage:
+            legacy_key = self._legacy_keys.get(point_id)
+            if legacy_key is not None:
+                self.storage.execute("DELETE FROM points WHERE id = ?", (legacy_key,))
+            # Insert or update by key
+            self.storage.execute(
+                "INSERT OR REPLACE INTO points VALUES (?, ?)", (key, sqlite3.Binary(value))
+            )
+        self._legacy_keys.pop(point_id, None)
 
     def delete(self, point_id: models.ExtendedPointId) -> None:
         """
@@ -99,24 +112,60 @@ class CollectionPersistence:
         Args:
             point_id: id of the point to delete
         """
-        key = self.encode_key(point_id)
-        cursor = self.storage.cursor()
-        cursor.execute(
-            "DELETE FROM points WHERE id = ?",
-            (key,),
-        )
-        self.storage.commit()
+        point_id = normalize_point_id(point_id)
+        key = self._legacy_keys.get(point_id, self.encode_key(point_id))
+        with self.storage:
+            self.storage.execute(
+                "DELETE FROM points WHERE id = ?",
+                (key,),
+            )
+        self._legacy_keys.pop(point_id, None)
 
     def load(self) -> Iterable[models.PointStruct]:
         """
         Load a point from the local storage.
+
+        Older versions could store a point in several rows (per UUID spelling or key pickle
+        protocol). The highest rowid is the latest write, the other rows are removed.
+
         Returns:
             point: loaded point
         """
         cursor = self.storage.cursor()
-        cursor.execute("SELECT point FROM points")
-        for row in cursor.fetchall():
-            yield pickle.loads(row[0])
+        cursor.execute("SELECT rowid, id, point FROM points ORDER BY rowid DESC")
+        self._legacy_keys = {}
+        loaded = set()
+        outdated = []
+        for rowid, key, value in cursor.fetchall():
+            point = pickle.loads(value)
+            point_id = normalize_point_id(point.id)
+            if point_id in loaded:
+                outdated.append(rowid)
+                continue
+            loaded.add(point_id)
+            if key != self.encode_key(point_id):
+                self._legacy_keys[point_id] = key
+            if point_id != point.id:
+                point = construct(
+                    models.PointStruct, id=point_id, vector=point.vector, payload=point.payload
+                )
+            yield point
+
+        if outdated:
+            self._remove_outdated(outdated)
+
+    def _remove_outdated(self, rowids: list[int]) -> None:
+        with self.storage:
+            self.storage.executemany(
+                "DELETE FROM points WHERE rowid = ?", [(rowid,) for rowid in rowids]
+            )
+        show_warning(
+            f"Removed {len(rowids)} outdated copies of points from {self.location}, keeping "
+            "the latest copy of each point. They were written by a qdrant-client version "
+            "which stored each spelling of a UUID as a separate point, or which ran under "
+            "another Python version and failed to replace the existing copy.",
+            category=UserWarning,
+        )
 
 
 def test_persistence() -> None:

@@ -115,21 +115,21 @@ def touch_payload() -> models.SetPayloadOperation:
     )
 
 
-def test_rejected_batch_operation_applies_nothing() -> None:
-    """An unknown vector name in a later operation must not keep an earlier one applied.
+def test_rejected_batch_operation_keeps_earlier_operations() -> None:
+    """An unknown vector name stops its operation, the ones ahead of it stay applied.
 
-    The server errors too, but whether it deletes the name it recognized varies run to
-    run, so this is asserted here rather than in the congruence tests.
+    The server keeps them too, but whether it deletes the name it recognized varies run
+    to run, so this is asserted here rather than in the congruence tests.
     """
     collection = batch_collection()
     bad_operation = models.DeleteVectorsOperation(
         delete_vectors=models.DeleteVectors(points=[1], vector=["a", "nope"])
     )
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Not existing vector name error: nope"):
         collection.batch_update_points([touch_payload(), bad_operation])
 
-    assert collection.payload[0] == {"p": "orig"}
+    assert collection.payload[0] == {"p": "changed"}
     assert sorted(collection._get_vectors(idx=0, with_vectors=True)) == ["a", "b"]
 
 
