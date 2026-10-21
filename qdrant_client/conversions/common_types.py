@@ -92,6 +92,7 @@ SparseVectorParams: TypeAlias = rest.SparseVectorParams
 VectorNameConfig: TypeAlias = rest.VectorNameConfig
 SnapshotPriority: TypeAlias = rest.SnapshotPriority
 PayloadStorageParams: TypeAlias = rest.PayloadStorageParams
+IdTrackerParams: TypeAlias = rest.IdTrackerParams
 CollectionsAliasesResponse: TypeAlias = rest.CollectionsAliasesResponse
 UpdateOperation: TypeAlias = rest.UpdateOperation
 Query: TypeAlias = rest.Query

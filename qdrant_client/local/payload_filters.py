@@ -254,6 +254,9 @@ def check_match(condition: models.Match, value: Any) -> bool:
         # byte-wise and case-sensitive, like exact keyword matching. Non-string values never
         # match, not even against an empty prefix.
         return isinstance(value, str) and value.startswith(condition.prefix)
+    if isinstance(condition, models.MatchSubstring):
+        # like `MatchPrefix`, but anywhere in the value
+        return isinstance(value, str) and condition.substring in value
     if isinstance(condition, models.MatchAny):
         return any(values_match(value, v) for v in condition.any)
     if isinstance(condition, models.MatchExcept):

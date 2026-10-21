@@ -2796,6 +2796,36 @@ def test_memory_placement(prefer_grpc):
 
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])
+def test_id_tracker_memory_placement(prefer_grpc):
+    major, minor, patch, dev = read_version()
+    if not (major is None or dev):
+        if (major, minor, patch) < (1, 19, 2):
+            pytest.skip("Id tracker params are supported as of qdrant 1.19.2")
+
+    client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
+    if client.collection_exists(COLLECTION_NAME):
+        client.delete_collection(COLLECTION_NAME)
+
+    client.create_collection(
+        COLLECTION_NAME,
+        vectors_config=models.VectorParams(size=DIM, distance=models.Distance.DOT),
+        id_tracker=models.IdTrackerParams(memory=models.Memory.COLD),
+    )
+    config = client.get_collection(COLLECTION_NAME).config
+    assert config.params.id_tracker.memory == models.Memory.COLD
+
+    # id tracker placement can also be updated through the collection params diff
+    client.update_collection(
+        COLLECTION_NAME,
+        collection_params=models.CollectionParamsDiff(
+            id_tracker=models.IdTrackerParams(memory=models.Memory.CACHED)
+        ),
+    )
+    config = client.get_collection(COLLECTION_NAME).config
+    assert config.params.id_tracker.memory == models.Memory.CACHED
+
+
+@pytest.mark.parametrize("prefer_grpc", [False, True])
 def test_keyword_index_prefix(prefer_grpc):
     major, minor, patch, dev = read_version()
     if not (major is None or dev):

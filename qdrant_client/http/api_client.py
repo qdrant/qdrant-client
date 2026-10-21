@@ -87,12 +87,14 @@ class ApiClient:
         self._client = Client(**kwargs)
 
     @overload
-    def request(self, *, type_: Type[T], method: str, url: str, path_params: Dict[str, Any] = None, **kwargs: Any) -> T:
-        ...
+    def request(
+        self, *, type_: Type[T], method: str, url: str, path_params: Dict[str, Any] = None, **kwargs: Any
+    ) -> T: ...
 
     @overload  # noqa F811
-    def request(self, *, type_: None, method: str, url: str, path_params: Dict[str, Any] = None, **kwargs: Any) -> None:
-        ...
+    def request(
+        self, *, type_: None, method: str, url: str, path_params: Dict[str, Any] = None, **kwargs: Any
+    ) -> None: ...
 
     def request(  # noqa F811
         self, *, type_: Any, method: str, url: str, path_params: Dict[str, Any] = None, **kwargs: Any
@@ -162,14 +164,12 @@ class AsyncApiClient:
     @overload
     async def request(
         self, *, type_: Type[T], method: str, url: str, path_params: Dict[str, Any] = None, **kwargs: Any
-    ) -> T:
-        ...
+    ) -> T: ...
 
     @overload  # noqa F811
     async def request(
         self, *, type_: None, method: str, url: str, path_params: Dict[str, Any] = None, **kwargs: Any
-    ) -> None:
-        ...
+    ) -> None: ...
 
     async def request(  # noqa F811
         self, *, type_: Any, method: str, url: str, path_params: Dict[str, Any] = None, **kwargs: Any

@@ -49,6 +49,10 @@ class AcornSearchParams(BaseModel, extra="forbid"):
     )
 
 
+class AcoshExpression(BaseModel, extra="forbid"):
+    acosh: "Expression" = Field(..., description="")
+
+
 class AliasDescription(BaseModel):
     alias_name: str = Field(..., description="")
     collection_name: str = Field(..., description="")
@@ -83,6 +87,7 @@ class AuditTelemetry(BaseModel):
     max_log_files: int = Field(..., description="")
     trust_forwarded_headers: bool = Field(..., description="")
     log_api: bool = Field(..., description="")
+    output: str = Field(..., description="")
     dir_size_bytes: Optional[int] = Field(default=None, description="")
 
 
@@ -168,6 +173,17 @@ class Bm25Config(BaseModel, extra="forbid"):
     )
 
 
+class Bm25Params(BaseModel, extra="forbid"):
+    k: Optional[float] = Field(default=None, description="Term frequency saturation. Default is 1.2.")
+    b: Optional[float] = Field(
+        default=None, description="Document length normalization, from 0 (none) to 1 (full). Default is 0.75."
+    )
+
+
+class Bm25Scoring(BaseModel, extra="forbid"):
+    bm25: "Bm25Params" = Field(..., description="")
+
+
 class BoolIndexParams(BaseModel, extra="forbid"):
     type: "BoolIndexType" = Field(..., description="")
     on_disk: Optional[bool] = Field(
@@ -180,6 +196,10 @@ class BoolIndexParams(BaseModel, extra="forbid"):
     enable_hnsw: Optional[bool] = Field(
         default=None,
         description="Enable HNSW graph building for this payload field. If true, builds additional HNSW links (Need payload_m &gt; 0). Default: true.",
+    )
+    nested: Optional[str] = Field(
+        default=None,
+        description="Index every object of this array as a separate entry, e.g. `offers` for the field `offers[].price`. The field must be inside the array&#x27;s elements. `is_empty` on the field matches a point when one of its elements lacks the field, and never a point without elements. Default: disabled.",
     )
 
 
@@ -209,9 +229,7 @@ class ClusterConfigTelemetry(BaseModel):
 
 
 class ClusterStatusOneOf(BaseModel):
-    status: Literal[
-        "disabled",
-    ] = Field(..., description="")
+    status: Literal["disabled",] = Field(..., description="")
 
 
 class ClusterStatusOneOf1(BaseModel):
@@ -219,9 +237,7 @@ class ClusterStatusOneOf1(BaseModel):
     Description of enabled cluster
     """
 
-    status: Literal[
-        "enabled",
-    ] = Field(..., description="Description of enabled cluster")
+    status: Literal["enabled",] = Field(..., description="Description of enabled cluster")
     peer_id: int = Field(..., description="ID of this peer")
     peers: Dict[str, "PeerInfo"] = Field(..., description="Peers composition of the cluster with main information")
     raft_info: "RaftInfo" = Field(..., description="Description of enabled cluster")
@@ -338,6 +354,10 @@ class CollectionInfo(BaseModel):
     config: "CollectionConfig" = Field(..., description="Current statistics and configuration of the collection")
     payload_schema: Dict[str, "PayloadIndexInfo"] = Field(..., description="Types of stored payload")
     update_queue: Optional["UpdateQueueInfo"] = Field(default=None, description="Update queue info")
+    created_at: Optional[Union[datetime, date]] = Field(
+        default=None,
+        description="Time of the collection creation. Absent for collections created before Qdrant started recording it.",
+    )
 
 
 class CollectionParams(BaseModel):
@@ -365,6 +385,7 @@ class CollectionParams(BaseModel):
         description="Deprecated: use `payload.memory` instead. If true - point&#x27;s payload will not be stored in memory. It will be read from the disk every time it is requested. This setting saves RAM by (slightly) increasing the response time. Note: those payload values that are involved in filtering and are indexed - remain in RAM.  Default: true",
     )
     payload: Optional["PayloadStorageParams"] = Field(default=None, description="Configuration of the payload storage")
+    id_tracker: Optional["IdTrackerParams"] = Field(default=None, description="Configuration of the point id tracker")
     sparse_vectors: Optional[Dict[str, "SparseVectorParams"]] = Field(
         default=None, description="Configuration of the sparse vector storage"
     )
@@ -388,6 +409,9 @@ class CollectionParamsDiff(BaseModel, extra="forbid"):
     )
     payload: Optional["PayloadStorageParams"] = Field(
         default=None, description="Update params of the payload storage. If none - it is left unchanged."
+    )
+    id_tracker: Optional["IdTrackerParams"] = Field(
+        default=None, description="Update params of the point id tracker. If none - it is left unchanged."
     )
 
 
@@ -418,7 +442,7 @@ class CollectionTelemetry(BaseModel):
     config: Optional["CollectionConfigTelemetry"] = Field(default=None, description="")
     shards: Optional[List["ReplicaSetTelemetry"]] = Field(default=None, description="")
     transfers: Optional[List["ShardTransferInfo"]] = Field(default=None, description="")
-    resharding: Optional[List["ReshardingInfo"]] = Field(default=None, description="")
+    resharding: Optional[List["ReshardingTelemetry"]] = Field(default=None, description="")
     shard_clean_tasks: Optional[Dict[str, "ShardCleanStatusTelemetry"]] = Field(default=None, description="")
 
 
@@ -462,23 +486,31 @@ class ConsensusConfigTelemetry(BaseModel):
 
 
 class ConsensusThreadStatusOneOf(BaseModel):
-    consensus_thread_status: Literal[
-        "working",
-    ] = Field(..., description="")
+    consensus_thread_status: Literal["working",] = Field(..., description="")
     last_update: Union[datetime, date] = Field(..., description="")
 
 
 class ConsensusThreadStatusOneOf1(BaseModel):
-    consensus_thread_status: Literal[
-        "stopped",
-    ] = Field(..., description="")
+    consensus_thread_status: Literal["stopped",] = Field(..., description="")
 
 
 class ConsensusThreadStatusOneOf2(BaseModel):
-    consensus_thread_status: Literal[
-        "stopped_with_err",
-    ] = Field(..., description="")
+    consensus_thread_status: Literal["stopped_with_err",] = Field(..., description="")
     err: str = Field(..., description="")
+
+
+class ContainerRuntime(str, Enum):
+    """
+    Container runtime Qdrant is running under (`none` if bare metal).
+    """
+
+    def __str__(self) -> str:
+        return str(self.value)
+
+    NONE = "none"
+    DOCKER = "docker"
+    KUBERNETES = "kubernetes"
+    OTHER = "other"
 
 
 class ContextPair(BaseModel, extra="forbid"):
@@ -545,7 +577,7 @@ class CreateCollection(BaseModel, extra="forbid"):
     )
     shard_number: Optional[int] = Field(
         default=None,
-        description="For auto sharding: Number of shards in collection. - Default is 1 for standalone, otherwise equal to the number of nodes - Minimum is 1  For custom sharding: Number of shards in collection per shard group. - Default is 1, meaning that each shard key will be mapped to a single shard - Minimum is 1",
+        description="For auto sharding: Number of shards in collection. - If not specified, selected automatically - Minimum is 1  For custom sharding: Number of shards in collection per shard group. - Default is 1, meaning that each shard key will be mapped to a single shard - Minimum is 1",
     )
     sharding_method: Optional["ShardingMethod"] = Field(
         default=None,
@@ -563,6 +595,7 @@ class CreateCollection(BaseModel, extra="forbid"):
         description="Deprecated: use `payload.memory` instead. If true - point&#x27;s payload will not be stored in memory. It will be read from the disk every time it is requested. This setting saves RAM by (slightly) increasing the response time. Note: those payload values that are involved in filtering and are indexed - remain in RAM.  Default: true",
     )
     payload: Optional["PayloadStorageParams"] = Field(default=None, description="Configuration of the payload storage")
+    id_tracker: Optional["IdTrackerParams"] = Field(default=None, description="Configuration of the point id tracker")
     hnsw_config: Optional["HnswConfigDiff"] = Field(
         default=None,
         description="Custom params for HNSW index. If none - values from service configuration file are used.",
@@ -621,6 +654,8 @@ class Datatype(str, Enum):
     UINT8 = "uint8"
     FLOAT16 = "float16"
     TURBO4 = "turbo4"
+    TURBO8 = "turbo8"
+    TURBO16 = "turbo16"
 
 
 class DatetimeExpression(BaseModel, extra="forbid"):
@@ -643,6 +678,10 @@ class DatetimeIndexParams(BaseModel, extra="forbid"):
     enable_hnsw: Optional[bool] = Field(
         default=None,
         description="Enable HNSW graph building for this payload field. If true, builds additional HNSW links (Need payload_m &gt; 0). Default: true.",
+    )
+    nested: Optional[str] = Field(
+        default=None,
+        description="Index every object of this array as a separate entry, e.g. `offers` for the field `offers[].price`. The field must be inside the array&#x27;s elements. `is_empty` on the field matches a point when one of its elements lacks the field, and never a point without elements. Default: disabled.",
     )
 
 
@@ -750,7 +789,7 @@ class DenseVectorConfig(BaseModel, extra="forbid"):
         default=None, description="Configuration for multi-vector points (e.g., ColBERT)"
     )
     datatype: Optional["VectorStorageDatatype"] = Field(
-        default=None, description="Element storage type (Float32, Float16, Uint8, Turbo4)"
+        default=None, description="Element storage type (Float32, Float16, Uint8, Turbo4, Turbo8, Turbo16)"
     )
 
 
@@ -963,6 +1002,10 @@ class FeatureFlags(BaseModel):
         default=True,
         description="Allow the io_uring-based payload storage implementation. When disabled, io_uring payload storage is *never* used. When enabled, payload storage backend is decided based on `storage.performance.io_uring` option and payload storage type.",
     )
+    async_hnsw_graph: Optional[bool] = Field(
+        default=False,
+        description="Allow the batched io_uring-based HNSW graph search. When disabled, the HNSW graph is *never* opened on io_uring. When enabled, the graph backend is decided based on `storage.performance.io_uring` option and links placement.",
+    )
     write_segment_manifest: Optional[bool] = Field(
         default=False,
         description="Write a segment manifest (`segments_manifest.json`, next to the `segments/` directory) listing the shard&#x27;s segments and their state, so out-of-process readers can discover segments without scanning the filesystem.",
@@ -975,9 +1018,33 @@ class FeatureFlags(BaseModel):
         default=False,
         description="Persist write-once bitmasks in the compact `StoredBitmask` format instead of raw dense bitslices. Only gates writing: both formats are always readable.",
     )
+    append_only_storages: Optional[bool] = Field(
+        default=False,
+        description="Create Blobstore-backed storages (payload storage, appendable field indexes, sparse vectors) in the append-only Logstore mode. Gates creation only: an existing storage keeps its persisted mode, and both modes are always readable.  Implies [`Self::append_only_mutations`], enforced by [`init_feature_flags`].",
+    )
+    compact_logstore_tracker: Optional[bool] = Field(
+        default=False,
+        description="In non-appendable segments built by the optimizer, store the tracker of an append-only payload storage in the compacted format: read into RAM whole on open instead of one lookup per value. Only has an effect together with [`Self::append_only_storages`]. Gates creation only: both formats are always readable.",
+    )
+    transfer_raw_points: Optional[bool] = Field(
+        default=True,
+        description="Transfer points as storage-native bytes (raw points), for every collection rather than only those whose vector storage would lose precision in a decode-encode round-trip (TurboQuant).  Read on the sending side only, where the transfer batch is prepared: nodes accept raw points regardless.",
+    )
+    transfer_raw_payloads: Optional[bool] = Field(
+        default=True,
+        description="Send the payload of a raw point as the byte blob it is stored as, so the sending node does not parse it and neither node builds a protobuf value tree for it. The receiving node still parses the blob, once, when the operation is applied. Only has an effect on points transferred raw, see [`Self::transfer_raw_points`].  Read on the sending side only: nodes accept raw payloads regardless.",
+    )
+    persist_proxy_segments: Optional[bool] = Field(
+        default=False,
+        description="Persist proxy segment changes on disk. Prevents pinning the WAL while proxy segments are open. Replays the persisted changes on startup to guarantee data consistency. Required for serverless deployments where storage and compute is separated.",
+    )
+    combined_vector_storage: Optional[bool] = Field(
+        default=True,
+        description="When `hnsw_config.inline_storage` enabled, use the `GraphInline` vector storage (aka inline-storage without standalone vector storage) for new segments.  Existing `GraphInline` segments are always readable, regardless of this flag.",
+    )
     serverless_compatible: Optional[bool] = Field(
         default=False,
-        description="Serverless-compatible deployment mode. Automatically enables [`Self::write_segment_manifest`], [`Self::append_only_mutations`] and [`Self::compact_bitmask`].  Note that this will only be applied when passed into [`init_feature_flags`].",
+        description="Serverless-compatible deployment mode. Implies [`Self::write_segment_manifest`], [`Self::append_only_mutations`], [`Self::compact_bitmask`], [`Self::append_only_storages`], [`Self::compact_logstore_tracker`] and [`Self::persist_proxy_segments`].  Note that this will only be applied when passed into [`init_feature_flags`].",
     )
 
 
@@ -1044,6 +1111,10 @@ class FloatIndexParams(BaseModel, extra="forbid"):
     enable_hnsw: Optional[bool] = Field(
         default=None,
         description="Enable HNSW graph building for this payload field. If true, builds additional HNSW links (Need payload_m &gt; 0). Default: true.",
+    )
+    nested: Optional[str] = Field(
+        default=None,
+        description="Index every object of this array as a separate entry, e.g. `offers` for the field `offers[].price`. The field must be inside the array&#x27;s elements. `is_empty` on the field matches a point when one of its elements lacks the field, and never a point without elements. Default: disabled.",
     )
 
 
@@ -1112,6 +1183,10 @@ class GeoIndexParams(BaseModel, extra="forbid"):
     enable_hnsw: Optional[bool] = Field(
         default=None,
         description="Enable HNSW graph building for this payload field. If true, builds additional HNSW links (Need payload_m &gt; 0). Default: true.",
+    )
+    nested: Optional[str] = Field(
+        default=None,
+        description="Index every object of this array as a separate entry, e.g. `offers` for the field `offers[].price`. The field must be inside the array&#x27;s elements. `is_empty` on the field matches a point when one of its elements lacks the field, and never a point without elements. Default: disabled.",
     )
 
 
@@ -1221,7 +1296,7 @@ class HnswConfig(BaseModel):
 
     m: int = Field(
         ...,
-        description="Number of edges per node in the index graph. Larger the value - more accurate the search, more space required.",
+        description="Number of edges per node in the index graph. Larger the value - more accurate the search, more space required. Set to 0 to disable the main HNSW graph. Additional payload-aware links may still be built when the effective payload M is positive (see payload_m). This setting alone does not guarantee exact search.",
     )
     ef_construct: int = Field(
         ...,
@@ -1245,7 +1320,7 @@ class HnswConfig(BaseModel):
     )
     payload_m: Optional[int] = Field(
         default=None,
-        description="Custom M param for hnsw graph built for payload index. If not set, default M will be used.",
+        description="Number of additional payload-aware links per node. If unset, the value of m is used. An effective value of 0 disables these additional links. A positive value allows them for indexed payload fields with HNSW enabled, even when m is 0.",
     )
     inline_storage: Optional[bool] = Field(
         default=None,
@@ -1256,7 +1331,7 @@ class HnswConfig(BaseModel):
 class HnswConfigDiff(BaseModel, extra="forbid"):
     m: Optional[int] = Field(
         default=None,
-        description="Number of edges per node in the index graph. Larger the value - more accurate the search, more space required.",
+        description="Number of edges per node in the index graph. Larger the value - more accurate the search, more space required. Set to 0 to disable the main HNSW graph. Additional payload-aware links may still be built when the effective payload M is positive (see payload_m). This setting alone does not guarantee exact search.",
     )
     ef_construct: Optional[int] = Field(
         default=None,
@@ -1280,7 +1355,7 @@ class HnswConfigDiff(BaseModel, extra="forbid"):
     )
     payload_m: Optional[int] = Field(
         default=None,
-        description="Custom M param for additional payload-aware HNSW links. If not set, default M will be used.",
+        description="Number of additional payload-aware links per node. If unset, the value of m is used. An effective value of 0 disables these additional links. A positive value allows them for indexed payload fields with HNSW enabled, even when m is 0.",
     )
     inline_storage: Optional[bool] = Field(
         default=None,
@@ -1292,6 +1367,17 @@ class HnswGlobalConfig(BaseModel):
     healing_threshold: Optional[float] = Field(
         default=0.3,
         description="Enable HNSW healing if the ratio of missing points is no more than this value. To disable healing completely, set this value to `0.0`.",
+    )
+
+
+class IdTrackerParams(BaseModel, extra="forbid"):
+    """
+    Params of the point id tracker
+    """
+
+    memory: Optional["Memory"] = Field(
+        default=None,
+        description="Memory placement of the point id mapping in indexed segments: `cold` keeps it on disk and reads it on demand, `cached` keeps it on disk but primes the page cache with it on load, `pinned` keeps it in RAM. Default: `pinned`.",
     )
 
 
@@ -1592,6 +1678,10 @@ class IntegerIndexParams(BaseModel, extra="forbid"):
         default=None,
         description="Enable HNSW graph building for this payload field. If true, builds additional HNSW links (Need payload_m &gt; 0). Default: true.",
     )
+    nested: Optional[str] = Field(
+        default=None,
+        description="Index every object of this array as a separate entry, e.g. `offers` for the field `offers[].price`. The field must be inside the array&#x27;s elements. `is_empty` on the field matches a point when one of its elements lacks the field, and never a point without elements. Default: disabled.",
+    )
 
 
 class IntegerIndexType(str, Enum):
@@ -1645,6 +1735,10 @@ class KeywordIndexParams(BaseModel, extra="forbid"):
     prefix: Optional[bool] = Field(
         default=None,
         description="If true, enable prefix matching (`match: { 'prefix': ... }`) on this field. Default: false.",
+    )
+    nested: Optional[str] = Field(
+        default=None,
+        description="Index every object of this array as a separate entry, e.g. `offers` for the field `offers[].price`. The field must be inside the array&#x27;s elements. `is_empty` on the field matches a point when one of its elements lacks the field, and never a point without elements. Default: disabled.",
     )
 
 
@@ -1821,6 +1915,17 @@ class MatchPrefix(BaseModel, extra="forbid"):
     )
 
 
+class MatchSubstring(BaseModel, extra="forbid"):
+    """
+    Match keyword values that contain the given string.  Byte-wise (hence, for valid UTF-8, character-wise) and case-sensitive, consistent with exact keyword and prefix matching. Served by a keyword index with the `prefix` option, through a scan of its key dictionary; without one, falls back to reading the payload.
+    """
+
+    substring: str = Field(
+        ...,
+        description="Match keyword values that contain the given string.  Byte-wise (hence, for valid UTF-8, character-wise) and case-sensitive, consistent with exact keyword and prefix matching. Served by a keyword index with the `prefix` option, through a scan of its key dictionary; without one, falls back to reading the payload.",
+    )
+
+
 class MatchText(BaseModel, extra="forbid"):
     """
     Full-text match of the strings.
@@ -1843,6 +1948,14 @@ class MatchValue(BaseModel, extra="forbid"):
     """
 
     value: "ValueVariants" = Field(..., description="Exact match of the given value")
+
+
+class MaxExpression(BaseModel, extra="forbid"):
+    """
+    Largest of the given expressions. Requires at least one operand.
+    """
+
+    max: List["Expression"] = Field(..., description="Largest of the given expressions. Requires at least one operand.")
 
 
 class MaxOptimizationThreadsSetting(str, Enum):
@@ -1879,6 +1992,16 @@ class MessageSendErrors(BaseModel):
     latest_error: Optional[str] = Field(default=None, description="Message send failures for a particular peer")
     latest_error_timestamp: Optional[Union[datetime, date]] = Field(
         default=None, description="Timestamp of the latest error"
+    )
+
+
+class MinExpression(BaseModel, extra="forbid"):
+    """
+    Smallest of the given expressions. Requires at least one operand.
+    """
+
+    min: List["Expression"] = Field(
+        ..., description="Smallest of the given expressions. Requires at least one operand."
     )
 
 
@@ -2075,7 +2198,7 @@ class OptimizersConfig(BaseModel):
     )
     max_segment_size: Optional[int] = Field(
         default=None,
-        description="Do not create segments larger this size (in kilobytes). Large segments might require disproportionately long indexation times, therefore it makes sense to limit the size of segments.  If indexing speed is more important - make this parameter lower. If search speed is more important - make this parameter higher. Note: 1Kb = 1 vector of size 256 If not set, will be automatically selected considering the number of available CPUs.",
+        description="Do not create segments larger than this size (in kilobytes). Large segments might require disproportionately long indexation times, therefore it makes sense to limit the size of segments.  If indexing speed is more important - make this parameter lower. If search speed is more important - make this parameter higher. Note: 1Kb = 1 vector of size 256 If not set, will be automatically selected considering the number of available CPUs.",
     )
     memmap_threshold: Optional[int] = Field(
         default=None,
@@ -2110,7 +2233,7 @@ class OptimizersConfigDiff(BaseModel, extra="forbid"):
     )
     max_segment_size: Optional[int] = Field(
         default=None,
-        description="Do not create segments larger this size (in kilobytes). Large segments might require disproportionately long indexation times, therefore it makes sense to limit the size of segments.  If indexation speed have more priority for your - make this parameter lower. If search speed is more important - make this parameter higher. Note: 1Kb = 1 vector of size 256",
+        description="Do not create segments larger than this size (in kilobytes). Large segments might require disproportionately long indexation times, therefore it makes sense to limit the size of segments.  If indexation speed have more priority for your - make this parameter lower. If search speed is more important - make this parameter higher. Note: 1Kb = 1 vector of size 256",
     )
     memmap_threshold: Optional[int] = Field(
         default=None,
@@ -2245,15 +2368,11 @@ class PayloadStorageParams(BaseModel, extra="forbid"):
 
 
 class PayloadStorageTypeOneOf(BaseModel):
-    type: Literal[
-        "mmap",
-    ] = Field(..., description="")
+    type: Literal["mmap",] = Field(..., description="")
 
 
 class PayloadStorageTypeOneOf1(BaseModel):
-    type: Literal[
-        "in_ram_mmap",
-    ] = Field(..., description="")
+    type: Literal["in_ram_mmap",] = Field(..., description="")
 
 
 class PeerInfo(BaseModel):
@@ -2373,7 +2492,7 @@ class Prefetch(BaseModel, extra="forbid"):
     )
     using: Optional[str] = Field(
         default=None,
-        description="Define which vector name to use for querying. If missing, the default vector is used.",
+        description="Define which vector name to use for querying. If missing, the default vector is used. For a `text` query, the payload field whose text index to search.",
     )
     filter: Optional["Filter"] = Field(
         default=None, description="Filter conditions - return only those points that satisfy the specified conditions."
@@ -2444,7 +2563,7 @@ class QueryGroupsRequest(BaseModel, extra="forbid"):
     )
     using: Optional[str] = Field(
         default=None,
-        description="Define which vector name to use for querying. If missing, the default vector is used.",
+        description="Define which vector name to use for querying. If missing, the default vector is used. For a `text` query, the payload field whose text index to search.",
     )
     filter: Optional["Filter"] = Field(
         default=None, description="Filter conditions - return only those points that satisfy the specified conditions."
@@ -2488,7 +2607,7 @@ class QueryRequest(BaseModel, extra="forbid"):
     )
     using: Optional[str] = Field(
         default=None,
-        description="Define which vector name to use for querying. If missing, the default vector is used.",
+        description="Define which vector name to use for querying. If missing, the default vector is used. For a `text` query, the payload field whose text index to search.",
     )
     filter: Optional["Filter"] = Field(
         default=None, description="Filter conditions - return only those points that satisfy the specified conditions."
@@ -2810,6 +2929,28 @@ class ReshardingInfo(BaseModel):
     shard_key: Optional["ShardKey"] = Field(default=None, description="")
 
 
+class ReshardingStage(str, Enum):
+    """
+    Resharding stages
+    """
+
+    def __str__(self) -> str:
+        return str(self.value)
+
+    MIGRATING_POINTS = "migrating_points"
+    READ_HASH_RING_COMMITTED = "read_hash_ring_committed"
+    WRITE_HASH_RING_COMMITTED = "write_hash_ring_committed"
+
+
+class ReshardingTelemetry(BaseModel):
+    stage: "ReshardingStage" = Field(..., description="")
+    direction: "ReshardingDirection" = Field(..., description="")
+    shard_id: int = Field(..., description="")
+    peer_id: int = Field(..., description="")
+    shard_key: Optional["ShardKey"] = Field(default=None, description="")
+    uuid: UUID = Field(..., description="")
+
+
 class RestartTransfer(BaseModel, extra="forbid"):
     shard_id: int = Field(..., description="")
     from_peer_id: int = Field(..., description="")
@@ -2841,6 +2982,7 @@ class RunningEnvironmentTelemetry(BaseModel):
     distribution: Optional[str] = Field(default=None, description="")
     distribution_version: Optional[str] = Field(default=None, description="")
     is_docker: bool = Field(..., description="")
+    container_runtime: "ContainerRuntime" = Field(..., description="")
     cores: Optional[int] = Field(default=None, description="")
     cpu_cores_used: Optional[float] = Field(
         default=None,
@@ -2996,7 +3138,7 @@ class SearchParams(BaseModel, extra="forbid"):
     acorn: Optional["AcornSearchParams"] = Field(default=None, description="ACORN search params")
     idf: Optional["IdfParams"] = Field(
         default=None,
-        description="Which population sparse vector IDF statistics are computed over. By default (or with explicit `&quot;global&quot;`) statistics are collection-wide. Only applicable to sparse vectors with the IDF modifier enabled.",
+        description="Which population IDF statistics are computed over. By default (or with explicit `&quot;global&quot;`) statistics are collection-wide. Only applicable to sparse vectors with the IDF modifier enabled, and to BM25 over a text index.",
     )
 
 
@@ -3014,6 +3156,10 @@ class SegmentConfig(BaseModel):
     vector_data: Optional[Dict[str, "VectorDataConfig"]] = Field(default={}, description="")
     sparse_vector_data: Optional[Dict[str, "SparseVectorDataConfig"]] = Field(default=None, description="")
     payload_storage_type: "PayloadStorageType" = Field(..., description="")
+    id_tracker_memory: Optional["Memory"] = Field(
+        default=None,
+        description="Memory placement of the id tracker in non-appendable segments. Unset means the deployment default: `cold` in serverless-compatible mode, `pinned` otherwise.",
+    )
 
 
 class SegmentInfo(BaseModel):
@@ -3173,7 +3319,8 @@ class ShardTransferInfo(BaseModel):
     )
     method: Optional["ShardTransferMethod"] = Field(default=None, description="")
     comment: Optional[str] = Field(
-        default=None, description="A human-readable report of the transfer progress. Available only on the source peer."
+        default=None,
+        description="A human-readable report of the transfer progress. Available only on the source peer, and on the target peer during snapshot recovery.",
     )
 
 
@@ -3252,7 +3399,7 @@ class SnapshotRecover(BaseModel, extra="forbid"):
     )
     priority: Optional["SnapshotPriority"] = Field(
         default=None,
-        description="Defines which data should be used as a source of truth if there are other replicas in the cluster. If set to `Snapshot`, the snapshot will be used as a source of truth, and the current state will be overwritten. If set to `Replica`, the current state will be used as a source of truth, and after recovery if will be synchronized with the snapshot.",
+        description="Defines which data should be used as a source of truth if there are other replicas in the cluster. If set to `Snapshot`, the snapshot will be used as a source of truth, and the current state will be overwritten. If set to `Replica`, the current state will be used as a source of truth, and after recovery it will be synchronized from other replicas.",
     )
     checksum: Optional[str] = Field(
         default=None, description="Optional SHA256 checksum to verify snapshot integrity before recovery."
@@ -3439,17 +3586,6 @@ class SparseVectorStorageTypeOneOf(str, Enum):
         return str(self.value)
 
     MMAP = "mmap"
-
-
-class SparseVectorStorageTypeOneOf1(str, Enum):
-    """
-    Placeholder storage: contains no data, all vectors reported as deleted. Used for newly created sparse named vectors on immutable segments.
-    """
-
-    def __str__(self) -> str:
-        return str(self.value)
-
-    EMPTY = "empty"
 
 
 class SqrtExpression(BaseModel, extra="forbid"):
@@ -3666,10 +3802,59 @@ class TextIndexParams(BaseModel, extra="forbid"):
         default=None,
         description="Enable HNSW graph building for this payload field. If true, builds additional HNSW links (Need payload_m &gt; 0). Default: true.",
     )
+    scoring: Optional["TextScoringInterface"] = Field(
+        default=None,
+        description="Enable ranking points by BM25 over this field; `true` for the defaults. Changing it rebuilds the index. Default: disabled.",
+    )
+    nested: Optional[str] = Field(
+        default=None,
+        description="Index every object of this array as a separate entry, e.g. `offers` for the field `offers[].title`. The field must be inside the array&#x27;s elements. Every query on the field, not only nested filters, treats each element as its own document: a condition matches a point when a single element matches it, and BM25 scores elements separately. `is_empty` on the field matches a point when one of its elements lacks the field, and never a point without elements. Default: disabled.",
+    )
 
 
 class TextIndexType(str, Enum):
     TEXT = "text"
+
+
+class TextQuery(BaseModel, extra="forbid"):
+    """
+    Rank by BM25 over the text index of the payload field named by `using`, which must have `scoring` set. A point scores when it holds any of the query&#x27;s terms: required or excluded terms belong in the request&#x27;s `filter`.
+    """
+
+    text: "TextInterface" = Field(
+        ...,
+        description="Rank by BM25 over the text index of the payload field named by `using`, which must have `scoring` set. A point scores when it holds any of the query&#x27;s terms: required or excluded terms belong in the request&#x27;s `filter`.",
+    )
+
+
+class TextQueryInput(BaseModel, extra="forbid"):
+    query: str = Field(..., description="Text to search for, tokenized by the field&#x27;s text index.")
+    scoring: Optional["TextQueryScoring"] = Field(
+        default=None,
+        description="Parameters of the scorer, keyed by its name. They must match the `scoring` type of the field&#x27;s text index. If absent, the scorer runs with its defaults.",
+    )
+
+
+class TextScoringParams(BaseModel, extra="forbid"):
+    """
+    Parameters of ranking over a text index. The index records the length of each document, which BM25 normalizes by. `k1` and `b` are set per query.
+    """
+
+    type: "TextScoringType" = Field(
+        ...,
+        description="Parameters of ranking over a text index. The index records the length of each document, which BM25 normalizes by. `k1` and `b` are set per query.",
+    )
+
+
+class TextScoringType(str, Enum):
+    """
+    How a text index ranks documents.
+    """
+
+    def __str__(self) -> str:
+        return str(self.value)
+
+    BM25 = "bm25"
 
 
 class TokenizerType(str, Enum):
@@ -3677,6 +3862,7 @@ class TokenizerType(str, Enum):
     WHITESPACE = "whitespace"
     WORD = "word"
     MULTILINGUAL = "multilingual"
+    CODE = "code"
 
 
 class TrackerStatusOneOf(str, Enum):
@@ -3717,6 +3903,7 @@ class TurboQuantBitSize(str, Enum):
     BITS1_5 = "bits1_5"
     BITS2 = "bits2"
     BITS4 = "bits4"
+    BITS8 = "bits8"
 
 
 class TurboQuantQuantizationConfig(BaseModel, extra="forbid"):
@@ -3850,6 +4037,10 @@ class UuidIndexParams(BaseModel, extra="forbid"):
         default=None,
         description="Enable HNSW graph building for this payload field. If true, builds additional HNSW links (Need payload_m &gt; 0). Default: true.",
     )
+    nested: Optional[str] = Field(
+        default=None,
+        description="Index every object of this array as a separate entry, e.g. `offers` for the field `offers[].price`. The field must be inside the array&#x27;s elements. `is_empty` on the field matches a point when one of its elements lacks the field, and never a point without elements. Default: disabled.",
+    )
 
 
 class UuidIndexType(str, Enum):
@@ -3905,6 +4096,7 @@ class VectorIndexSearchesTelemetry(BaseModel):
     filtered_plain: "OperationDurationStatistics" = Field(..., description="")
     filtered_small_cardinality: "OperationDurationStatistics" = Field(..., description="")
     filtered_large_cardinality: "OperationDurationStatistics" = Field(..., description="")
+    filtered_acorn: Optional["OperationDurationStatistics"] = Field(default=None, description="")
     filtered_exact: "OperationDurationStatistics" = Field(..., description="")
     filtered_sparse: "OperationDurationStatistics" = Field(..., description="")
     unfiltered_exact: "OperationDurationStatistics" = Field(..., description="")
@@ -3935,7 +4127,7 @@ class VectorParams(BaseModel, extra="forbid"):
     )
     datatype: Optional["Datatype"] = Field(
         default=None,
-        description="Defines which datatype should be used to represent vectors in the storage. Choosing different datatypes allows to optimize memory usage and performance vs accuracy.  - For `float32` datatype - vectors are stored as single-precision floating point numbers, 4 bytes. - For `float16` datatype - vectors are stored as half-precision floating point numbers, 2 bytes. - For `uint8` datatype - vectors are stored as unsigned 8-bit integers, 1 byte. It expects vector elements to be in range `[0, 255]`. - For `turbo4` datatype - vectors are quantized to 4 bits per element using the TurboQuant algorithm.",
+        description="Defines which datatype should be used to represent vectors in the storage. Choosing different datatypes allows to optimize memory usage and performance vs accuracy.  - For `float32` datatype - vectors are stored as single-precision floating point numbers, 4 bytes. - For `float16` datatype - vectors are stored as half-precision floating point numbers, 2 bytes. - For `uint8` datatype - vectors are stored as unsigned 8-bit integers, 1 byte. It expects vector elements to be in range `[0, 255]`. - For `turbo4` datatype - vectors are quantized to 4 bits per element using the TurboQuant algorithm. - For `turbo8` datatype - vectors are quantized to 8 bits per element using the TurboQuant algorithm. - For `turbo16` datatype - vectors are quantized to 16 bits per element using the TurboQuant algorithm.",
     )
     multivector_config: Optional["MultiVectorConfig"] = Field(
         default=None, description="Params of single vector data storage"
@@ -3971,6 +4163,8 @@ class VectorStorageDatatype(str, Enum):
     FLOAT16 = "float16"
     UINT8 = "uint8"
     TURBO4 = "turbo4"
+    TURBO8 = "turbo8"
+    TURBO16 = "turbo16"
 
 
 class VectorStorageTypeOneOf(str, Enum):
@@ -4008,7 +4202,7 @@ class VectorStorageTypeOneOf2(str, Enum):
 
 class VectorStorageTypeOneOf3(str, Enum):
     """
-    Same as `ChunkedMmap`, but vectors are forced to be locked in RAM In this way we avoid cold requests to disk, but risk to run out of memory  Designed as a replacement for `Memory`, which doesn&#x27;t depend on RocksDB
+    Same as `ChunkedMmap`, but vectors are forced to be locked in RAM In this way we avoid cold requests to disk, but risk to run out of memory
     """
 
     def __str__(self) -> str:
@@ -4030,13 +4224,13 @@ class VectorStorageTypeOneOf4(str, Enum):
 
 class VectorStorageTypeOneOf5(str, Enum):
     """
-    Placeholder storage: contains no data, all vectors reported as deleted. Used for newly created named vectors on immutable segments. No files on disk, reconstructed from config on load.
+    Vectors are inlined in the HNSW links file, not in a dedicated storage. Not appendable.
     """
 
     def __str__(self) -> str:
         return str(self.value)
 
-    EMPTY = "Empty"
+    GRAPHINLINE = "GraphInline"
 
 
 class VersionInfo(BaseModel):
@@ -4150,9 +4344,7 @@ FacetValue = Union[
     StrictInt,
     StrictStr,
 ]
-FeedbackStrategy = Union[
-    NaiveFeedbackStrategy,
-]
+FeedbackStrategy = Union[NaiveFeedbackStrategy,]
 GroupId = Union[
     StrictInt,
     StrictStr,
@@ -4176,6 +4368,7 @@ Match = Union[
     MatchTextAny,
     MatchPhrase,
     MatchPrefix,
+    MatchSubstring,
     MatchAny,
     MatchExcept,
 ]
@@ -4245,6 +4438,7 @@ Query = Union[
     FormulaQuery,
     SampleQuery,
     RelevanceFeedbackQuery,
+    TextQuery,
 ]
 RangeInterface = Union[
     Range,
@@ -4263,18 +4457,13 @@ ShardKey = Union[
     StrictInt,
     StrictStr,
 ]
-ShardSnapshotLocation = Union[
-    StrictStr,
-]
+ShardSnapshotLocation = Union[StrictStr,]
 SparseIndexType = Union[
     SparseIndexTypeOneOf,
     SparseIndexTypeOneOf1,
     SparseIndexTypeOneOf2,
 ]
-SparseVectorStorageType = Union[
-    SparseVectorStorageTypeOneOf,
-    SparseVectorStorageTypeOneOf1,
-]
+SparseVectorStorageType = Union[SparseVectorStorageTypeOneOf,]
 StartFrom = Union[
     StrictInt,
     StrictFloat,
@@ -4288,6 +4477,15 @@ StemmingAlgorithm = Union[
 StopwordsInterface = Union[
     Language,
     StopwordsSet,
+]
+TextInterface = Union[
+    StrictStr,
+    TextQueryInput,
+]
+TextQueryScoring = Union[Bm25Scoring,]
+TextScoringInterface = Union[
+    StrictBool,
+    TextScoringParams,
 ]
 TrackerStatus = Union[
     TrackerStatusOneOf,
@@ -4363,6 +4561,8 @@ Expression = Union[
     DatetimeKeyExpression,
     MultExpression,
     SumExpression,
+    MaxExpression,
+    MinExpression,
     NegExpression,
     AbsExpression,
     DivExpression,
@@ -4371,6 +4571,7 @@ Expression = Union[
     ExpExpression,
     Log10Expression,
     LnExpression,
+    AcoshExpression,
     LinDecayExpression,
     ExpDecayExpression,
     GaussDecayExpression,

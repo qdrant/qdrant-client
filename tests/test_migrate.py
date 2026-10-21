@@ -46,6 +46,14 @@ def delete_collections(client: QdrantClient) -> None:
         client.delete_collection(collection_name)
 
 
+def assert_recreated_unchanged(
+    before: models.CollectionInfo, after: models.CollectionInfo
+) -> None:
+    # a recreated collection gets a new creation time
+    before.created_at = after.created_at = None
+    assert before == after
+
+
 @pytest.mark.parametrize(
     "source_client,dest_client",
     [
@@ -434,6 +442,29 @@ def test_collection_metadata(source_client, dest_client, request) -> None:
     assert dest_client.get_collection(collection_name).config.metadata == metadata
 
 
+def test_migrate_storage_params(remote_client: QdrantClient) -> None:
+    major, minor, patch, dev = read_version()
+    if not dev and None not in (major, minor, patch) and (major, minor, patch) < (1, 19, 2):
+        pytest.skip("Id tracker params are supported as of v1.19.2")
+
+    collection_name = "storage_params_collection"
+    payload = models.PayloadStorageParams(memory=models.Memory.COLD)
+    id_tracker = models.IdTrackerParams(memory=models.Memory.CACHED)
+    remote_client.create_collection(
+        collection_name,
+        vectors_config=models.VectorParams(size=10, distance=models.Distance.COSINE),
+        payload=payload,
+        id_tracker=id_tracker,
+    )
+
+    grpc_client = QdrantClient(prefer_grpc=True)
+    for client in (remote_client, grpc_client):
+        client.migrate(client, recreate_on_collision=True)
+        params = remote_client.get_collection(collection_name).config.params
+        assert params.payload == payload
+        assert params.id_tracker == id_tracker
+
+
 def test_migrate_missing_collections(
     local_client: QdrantClient, second_local_client: QdrantClient
 ):
@@ -447,7 +478,9 @@ def test_recreate_collection(remote_client: QdrantClient):
     initialize_fixture_collection(remote_client, collection_name=collection_name)
     collection_before_migrate = remote_client.get_collection(collection_name)
     remote_client.migrate(remote_client, recreate_on_collision=True)
-    assert collection_before_migrate == remote_client.get_collection(collection_name)
+    assert_recreated_unchanged(
+        collection_before_migrate, remote_client.get_collection(collection_name)
+    )
 
     remote_client.delete_collection(collection_name)
 
@@ -539,4 +572,6 @@ def test_recreate_collection(remote_client: QdrantClient):
 
     collection_before_migrate = remote_client.get_collection(collection_name)
     remote_client.migrate(remote_client, recreate_on_collision=True)
-    assert collection_before_migrate == remote_client.get_collection(collection_name)
+    assert_recreated_unchanged(
+        collection_before_migrate, remote_client.get_collection(collection_name)
+    )

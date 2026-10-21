@@ -1639,6 +1639,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         strict_mode_config: types.StrictModeConfig | None = None,
         metadata: types.Payload | None = None,
         payload: types.PayloadStorageParams | None = None,
+        id_tracker: types.IdTrackerParams | None = None,
         **kwargs: Any,
     ) -> bool:
         """Create empty collection with given parameters
@@ -1652,7 +1653,8 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             sparse_vectors_config:
                 Configuration of the sparse vector storage.
                 The service will create a sparse vector storage for each key in the dict.
-            shard_number: Number of shards in collection. Default is 1, minimum is 1.
+            shard_number: Number of shards in collection. If not specified, selected automatically.
+                Minimum is 1.
             sharding_method:
                 Defines strategy for shard creation.
                 Option `auto` (default) creates defined number of shards automatically.
@@ -1688,6 +1690,9 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             payload:
                 Configuration of the payload storage, e.g. the memory placement of the payload.
                 Overrides the deprecated `on_disk_payload` flag if both are set.
+            id_tracker:
+                Configuration of the point id tracker, e.g. the memory placement of the mapping
+                of point ids in indexed segments.
 
         Returns:
             Operation result
@@ -1710,6 +1715,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             strict_mode_config=strict_mode_config,
             metadata=metadata,
             payload=payload,
+            id_tracker=id_tracker,
             **kwargs,
         )
 
@@ -1731,6 +1737,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         strict_mode_config: types.StrictModeConfig | None = None,
         metadata: types.Payload | None = None,
         payload: types.PayloadStorageParams | None = None,
+        id_tracker: types.IdTrackerParams | None = None,
         **kwargs: Any,
     ) -> bool:
         """Delete and create empty collection with given parameters
@@ -1744,7 +1751,8 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             sparse_vectors_config:
                 Configuration of the sparse vector storage.
                 The service will create a sparse vector storage for each key in the dict.
-            shard_number: Number of shards in collection. Default is 1, minimum is 1.
+            shard_number: Number of shards in collection. If not specified, selected automatically.
+                Minimum is 1.
             sharding_method:
                 Defines strategy for shard creation.
                 Option `auto` (default) creates defined number of shards automatically.
@@ -1780,6 +1788,9 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             payload:
                 Configuration of the payload storage, e.g. the memory placement of the payload.
                 Overrides the deprecated `on_disk_payload` flag if both are set.
+            id_tracker:
+                Configuration of the point id tracker, e.g. the memory placement of the mapping
+                of point ids in indexed segments.
 
         Returns:
             Operation result
@@ -1807,6 +1818,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             strict_mode_config=strict_mode_config,
             metadata=metadata,
             payload=payload,
+            id_tracker=id_tracker,
             **kwargs,
         )
 

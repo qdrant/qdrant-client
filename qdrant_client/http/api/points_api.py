@@ -310,6 +310,7 @@ class _PointsApi:
         collection_name: str,
         id: m.ExtendedPointId,
         consistency: m.ReadConsistency = None,
+        timeout: int = None,
     ):
         """
         Retrieve full information of single point by id
@@ -322,6 +323,8 @@ class _PointsApi:
         query_params = {}
         if consistency is not None:
             query_params["consistency"] = str(consistency)
+        if timeout is not None:
+            query_params["timeout"] = str(timeout)
 
         headers = {}
         return self.api_client.request(
@@ -685,6 +688,7 @@ class AsyncPointsApi(_PointsApi):
         collection_name: str,
         id: m.ExtendedPointId,
         consistency: m.ReadConsistency = None,
+        timeout: int = None,
     ) -> m.InlineResponse20016:
         """
         Retrieve full information of single point by id
@@ -693,6 +697,7 @@ class AsyncPointsApi(_PointsApi):
             collection_name=collection_name,
             id=id,
             consistency=consistency,
+            timeout=timeout,
         )
 
     async def get_points(
@@ -941,6 +946,7 @@ class SyncPointsApi(_PointsApi):
         collection_name: str,
         id: m.ExtendedPointId,
         consistency: m.ReadConsistency = None,
+        timeout: int = None,
     ) -> m.InlineResponse20016:
         """
         Retrieve full information of single point by id
@@ -949,6 +955,7 @@ class SyncPointsApi(_PointsApi):
             collection_name=collection_name,
             id=id,
             consistency=consistency,
+            timeout=timeout,
         )
 
     def get_points(
