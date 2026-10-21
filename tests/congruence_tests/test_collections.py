@@ -204,6 +204,121 @@ def test_create_collection_empty_sparse_vector_name():
         assert not http_client.collection_exists(collection_name)
 
 
+def test_create_collection_invalid_vectors():
+    collection_name = "test_invalid_vectors"
+
+    local_client = init_local()
+    http_client = init_remote()
+    grpc_client = init_remote(prefer_grpc=True)
+
+    if http_client.collection_exists(collection_name):
+        http_client.delete_collection(collection_name)
+
+    def dense(size: int = 2) -> models.VectorParams:
+        return models.VectorParams(size=size, distance=models.Distance.COSINE)
+
+    sparse = models.SparseVectorParams()
+    configs = [
+        ({"..": dense()}, None),
+        ({"a/b": dense()}, None),
+        ({"é" * 101: dense()}, None),  # 101 chars, but 202 bytes
+        (None, {"a/b": sparse}),
+        (dense(0), None),
+        ({"text": dense(65537)}, None),
+    ]
+    for vectors_config, sparse_vectors_config in configs:
+        for client in (local_client, http_client, grpc_client):
+            with pytest.raises((ValueError, UnexpectedResponse, grpc.RpcError)):
+                client.create_collection(
+                    collection_name,
+                    vectors_config=vectors_config,
+                    sparse_vectors_config=sparse_vectors_config,
+                )
+        assert not local_client.collection_exists(collection_name)
+        assert not http_client.collection_exists(collection_name)
+
+    # servers before qdrant#11290 accept `.`, so it is only checked against local mode
+    for vectors_config, sparse_vectors_config in (({".": dense()}, None), (None, {".": sparse})):
+        with pytest.raises(ValueError):
+            local_client.create_collection(
+                collection_name,
+                vectors_config=vectors_config,
+                sparse_vectors_config=sparse_vectors_config,
+            )
+
+    # names and sizes at the bounds are fine
+    for vectors_config in ({"v" * 200: dense(65536)}, {"...": dense(1), ".hidden": dense()}):
+        for client in (local_client, http_client):
+            client.create_collection(collection_name, vectors_config=vectors_config)
+            client.delete_collection(collection_name)
+
+
+def test_create_vector_name_invalid():
+    collection_name = "test_invalid_vector_name"
+
+    local_client = init_local()
+    http_client = init_remote()
+    grpc_client = init_remote(prefer_grpc=True)
+
+    for client in (local_client, http_client):
+        if client.collection_exists(collection_name):
+            client.delete_collection(collection_name)
+        client.create_collection(collection_name, vectors_config={})
+
+    def dense(size: int = 2) -> models.DenseVectorNameConfig:
+        return models.DenseVectorNameConfig(
+            dense=models.DenseVectorConfig(size=size, distance=models.Distance.COSINE)
+        )
+
+    sparse = models.SparseVectorNameConfig(sparse=models.SparseVectorConfig())
+    requests = [("a/b", dense()), ("a/b", sparse), ("zero", dense(0))]
+    for vector_name, config in requests:
+        for client in (local_client, http_client, grpc_client):
+            with pytest.raises((ValueError, UnexpectedResponse, grpc.RpcError)):
+                client.create_vector_name(collection_name, vector_name, config)
+
+    # servers before qdrant#11290 accept `.`, and reject `..` but keep it in the collection
+    # config, which breaks snapshots of the whole storage, so these only go to local mode
+    for vector_name in (".", ".."):
+        with pytest.raises(ValueError):
+            local_client.create_vector_name(collection_name, vector_name, dense())
+
+    http_client.delete_collection(collection_name)
+
+
+def test_update_collection_rejected_without_changes():
+    collection_name = "test_rejected_update"
+
+    local_client = init_local()
+    http_client = init_remote()
+    grpc_client = init_remote(prefer_grpc=True)
+
+    for client in (local_client, http_client):
+        if client.collection_exists(collection_name):
+            client.delete_collection(collection_name)
+        client.create_collection(
+            collection_name,
+            vectors_config={"dense": models.VectorParams(size=2, distance=models.Distance.DOT)},
+            sparse_vectors_config={"sparse": models.SparseVectorParams()},
+        )
+
+    idf = models.SparseVectorParams(modifier=models.Modifier.IDF)
+    updates = [
+        dict(vectors_config={"missing": models.VectorParamsDiff(on_disk=True)}),
+        # a diff naming a missing vector rejects the diffs before it too
+        dict(sparse_vectors_config={"sparse": idf, "missing": models.SparseVectorParams()}),
+    ]
+    for update in updates:
+        for client in (local_client, http_client, grpc_client):
+            with pytest.raises((ValueError, UnexpectedResponse, grpc.RpcError)):
+                client.update_collection(collection_name, **update)
+
+        for client in (local_client, http_client):
+            config = client.get_collection(collection_name).config
+            assert config.params.sparse_vectors["sparse"].modifier is None
+            assert config.metadata is None
+
+
 @pytest.mark.parametrize("prefer_grpc", [False, True])
 def test_update_collection_metadata_null_removes_key(prefer_grpc):
     local_client = init_local()

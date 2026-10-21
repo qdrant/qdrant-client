@@ -1719,7 +1719,8 @@ class QdrantClient(QdrantFastembedMixin):
             sparse_vectors_config:
                 Configuration of the sparse vector storage.
                 The service will create a sparse vector storage for each key in the dict.
-            shard_number: Number of shards in collection. Default is 1, minimum is 1.
+            shard_number: Number of shards in collection. If not specified, selected automatically.
+                Minimum is 1.
             sharding_method:
                 Defines strategy for shard creation.
                 Option `auto` (default) creates defined number of shards automatically.
@@ -1819,7 +1820,8 @@ class QdrantClient(QdrantFastembedMixin):
             sparse_vectors_config:
                 Configuration of the sparse vector storage.
                 The service will create a sparse vector storage for each key in the dict.
-            shard_number: Number of shards in collection. Default is 1, minimum is 1.
+            shard_number: Number of shards in collection. If not specified, selected automatically.
+                Minimum is 1.
             sharding_method:
                 Defines strategy for shard creation.
                 Option `auto` (default) creates defined number of shards automatically.

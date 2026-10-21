@@ -28,6 +28,7 @@ from tests.congruence_tests.test_common import (
 )
 from tests.fixtures.expressions import one_random_expression_please
 from tests.fixtures.filters import one_random_filter_please
+from tests.fixtures.payload import random_real_word
 from tests.fixtures.points import (
     generate_random_sparse_vector,
     generate_random_multivector,
@@ -2809,6 +2810,208 @@ def test_formula_query_score_defaults():
         compare_clients_results(
             local_client, http_client, grpc_client, query_formula, formula=formula
         )
+
+
+def init_text_query_clients() -> tuple[QdrantClient, QdrantClient, QdrantClient]:
+    points = generate_fixtures(200)
+    # documents of distinct lengths don't tie on scores, which the server orders arbitrarily
+    for idx, point in enumerate(points):
+        point.payload["document"] = " ".join(random_real_word() for _ in range(idx + 1))
+    # documents without words are left out of the BM25 statistics
+    points[0].payload["document"] = "!!! ???"
+    points[1].payload["document"] = 42
+    del points[2].payload["document"]
+    # the strings of a list make one document
+    points[3].payload["document"] = ["Wolf", 7, "BEAR!"]
+    # the server stores lengths above 8191 tokens rounded down, 16387 as 16384
+    points[4].payload["document"] = " ".join(["firefly"] + ["moth"] * 16386)
+
+    local_client, http_client, grpc_client = init_clients(points)
+    for client in (local_client, http_client):
+        client.create_payload_index(
+            COLLECTION_NAME,
+            "document",
+            models.TextIndexParams(type=models.TextIndexType.TEXT, scoring=True),
+        )
+    return local_client, http_client, grpc_client
+
+
+def bm25_text_query(query: str, **params: float) -> models.TextQuery:
+    return models.TextQuery(
+        text=models.TextQueryInput(
+            query=query, scoring=models.Bm25Scoring(bm25=models.Bm25Params(**params))
+        )
+    )
+
+
+def test_text_query():
+    major, minor, patch, dev = read_version()
+    if not dev and None not in (major, minor, patch) and (major, minor, patch) < (1, 20, 0):
+        pytest.skip("Text queries are supported as of qdrant 1.20.0")
+
+    local_client, http_client, grpc_client = init_text_query_clients()
+
+    def query_text(
+        client: QdrantBase, query: models.TextQuery, **kwargs: Any
+    ) -> models.QueryResponse:
+        return client.query_points(COLLECTION_NAME, query=query, using="document", **kwargs)
+
+    queries = [
+        models.TextQuery(text="wolf"),
+        models.TextQuery(text="Wolf, ape and BEAR!"),
+        models.TextQuery(text="cat cat dog"),  # a repeated term counts once
+        models.TextQuery(text=""),
+        bm25_text_query("wolf ape", k=2.0, b=0.0),
+        bm25_text_query("wolf ape", k=0.0, b=1.0),
+    ]
+    for query in queries:
+        compare_clients_results(local_client, http_client, grpc_client, query_text, query=query)
+
+    query = models.TextQuery(text="wolf bear")  # its scores range from about 0.3 to 1.2
+    digit_filter = models.Filter(
+        must=[models.FieldCondition(key="rand_digit", match=models.MatchValue(value=1))]
+    )
+    requests = [
+        dict(query_filter=digit_filter),
+        dict(score_threshold=0.9, limit=200),
+        dict(offset=5),
+    ]
+    for kwargs in requests:
+        compare_clients_results(
+            local_client, http_client, grpc_client, query_text, query=query, **kwargs
+        )
+
+    # rounding moves the long document's score by less than the usual tolerance
+    local_score, http_score = (
+        query_text(client, models.TextQuery(text="firefly")).points[0].score
+        for client in (local_client, http_client)
+    )
+    assert local_score == pytest.approx(http_score, rel=1e-5)
+
+
+def test_text_query_hybrid():
+    major, minor, patch, dev = read_version()
+    if not dev and None not in (major, minor, patch) and (major, minor, patch) < (1, 20, 0):
+        pytest.skip("Text queries are supported as of qdrant 1.20.0")
+
+    local_client, http_client, grpc_client = init_text_query_clients()
+    dense_query = TestSimpleSearcher().dense_vector_query_text
+    text_query = models.TextQuery(text="wolf ape")
+
+    def query_points(client: QdrantBase, **kwargs: Any) -> models.QueryResponse:
+        return client.query_points(COLLECTION_NAME, **kwargs)
+
+    def query_groups(client: QdrantBase) -> models.GroupsResult:
+        return client.query_points_groups(
+            COLLECTION_NAME, query=text_query, using="document", group_by="rand_digit"
+        )
+
+    fusion = dict(
+        prefetch=[
+            models.Prefetch(query=text_query, using="document"),
+            models.Prefetch(query=dense_query, using="text"),
+        ],
+        query=models.FusionQuery(fusion=models.Fusion.RRF),
+    )
+    # the statistics come from the whole collection, not from the prefetched points
+    rescoring = dict(
+        prefetch=models.Prefetch(query=dense_query, using="text", limit=50),
+        query=text_query,
+        using="document",
+    )
+    compare_clients_results(local_client, http_client, grpc_client, query_points, **fusion)
+    compare_clients_results(local_client, http_client, grpc_client, query_points, **rescoring)
+    compare_clients_results(local_client, http_client, grpc_client, query_groups)
+
+
+def test_text_query_errors():
+    major, minor, patch, dev = read_version()
+    if not dev and None not in (major, minor, patch) and (major, minor, patch) < (1, 20, 0):
+        pytest.skip("Text queries are supported as of qdrant 1.20.0")
+
+    local_client, http_client, grpc_client = init_text_query_clients()
+    for client in (local_client, http_client):
+        # an integer index replaces the text index of the field
+        client.create_payload_index(
+            COLLECTION_NAME,
+            "rand_digit",
+            models.TextIndexParams(type=models.TextIndexType.TEXT, scoring=True),
+        )
+        client.create_payload_index(
+            COLLECTION_NAME, "rand_digit", models.PayloadSchemaType.INTEGER
+        )
+        client.create_payload_index(COLLECTION_NAME, "words", models.PayloadSchemaType.TEXT)
+
+    query = models.TextQuery(text="wolf")
+    no_points = models.Filter(must=[models.HasIdCondition(has_id=[100_000])])
+    requests = [
+        dict(query=query),  # no field to search
+        dict(query=query, using="missing"),  # no index
+        dict(query=query, using="rand_digit"),  # not a text index
+        dict(query=query, using="words"),  # a text index without scoring
+        dict(query=bm25_text_query("wolf", k=-1.0), using="document"),
+        dict(query=bm25_text_query("wolf", b=1.5), using="document"),
+        # rejected even when there are no prefetched points to score
+        dict(
+            prefetch=models.Prefetch(
+                query=TestSimpleSearcher().dense_vector_query_text, using="text", filter=no_points
+            ),
+            query=query,
+            using="missing",
+        ),
+    ]
+    for request in requests:
+        for client in (local_client, http_client, grpc_client):
+            with pytest.raises((ValueError, UnexpectedResponse, RpcError)):
+                client.query_points(COLLECTION_NAME, **request)
+
+
+def test_text_query_unsupported_in_local_mode():
+    # the server supports these, local mode only supports the default tokenization
+    local_client = init_local()
+    init_client(local_client, generate_fixtures(10))
+    query = models.TextQuery(text="wolf")
+
+    def index_words(**params: Any) -> None:
+        local_client.create_payload_index(
+            COLLECTION_NAME,
+            "words",
+            models.TextIndexParams(type=models.TextIndexType.TEXT, scoring=True, **params),
+        )
+
+    # the defaults given explicitly are still the default tokenization
+    no_stemmer = models.DisabledStemmerParams(type=models.NoStemmer.NONE)
+    index_words(
+        tokenizer=models.TokenizerType.WORD,
+        lowercase=True,
+        ascii_folding=False,
+        stemmer=no_stemmer,
+    )
+    local_client.query_points(COLLECTION_NAME, query=query, using="words")
+
+    corpus = models.SearchParams(idf=models.IdfCorpusParams(corpus=models.Filter()))
+    with pytest.raises(NotImplementedError):
+        local_client.query_points(
+            COLLECTION_NAME, query=query, using="words", search_params=corpus
+        )
+
+    stemmer = models.SnowballParams(
+        type=models.Snowball.SNOWBALL, language=models.SnowballLanguage.ENGLISH
+    )
+    unsupported = [
+        dict(tokenizer=models.TokenizerType.MULTILINGUAL),
+        dict(lowercase=False),
+        dict(ascii_folding=True),
+        dict(stopwords=models.Language.ENGLISH),
+        dict(stemmer=stemmer),
+        dict(min_token_len=2),
+        dict(max_token_len=10),
+        dict(nested="offers"),
+    ]
+    for params in unsupported:
+        index_words(**params)
+        with pytest.raises(NotImplementedError):
+            local_client.query_points(COLLECTION_NAME, query=query, using="words")
 
 
 def test_empty_collection_bm25_search():

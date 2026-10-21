@@ -66,6 +66,13 @@ from qdrant_client.local.multi_distances import (
     calculate_multi_recommend_sum_scores,
     calculate_multi_distance_core,
 )
+from qdrant_client.local.bm25 import (
+    DEFAULT_B,
+    DEFAULT_K1,
+    bm25_scores,
+    document_tokens,
+    has_default_tokenization,
+)
 from qdrant_client.local.json_path_parser import JsonPathItem, parse_json_path
 from qdrant_client.local.order_by import to_order_value
 from qdrant_client.local.payload_filters import (
@@ -227,6 +234,8 @@ class LocalCollection:
             name: [] for name in self.multivectors_config
         }
         self.payload: list[models.Payload] = []
+        # field name: params of its text index with scoring, the only index local mode uses
+        self.text_indexes: dict[str, models.TextIndexParams] = {}
         self.deleted: types.NumpyArray = np.zeros(0, dtype=bool)
         self._all_vectors_keys = (
             list(self.vectors.keys())
@@ -880,6 +889,7 @@ class LocalCollection:
         Assumes all vectors have been homogenized so that there are no ids in the inputs
         """
         self._validate_with_payload(with_payload)
+        self._validate_text_queries(query, using, prefetch, search_params)
 
         prefetches = []
         if prefetch is not None:
@@ -1070,6 +1080,20 @@ class LocalCollection:
         Performs the query on the collection, assuming it didn't have any prefetches.
         """
 
+        if isinstance(query, models.TextQuery):
+            # `using` names the payload field of a text query, not a vector
+            return self._query_text(
+                query=query,
+                field=using,
+                query_filter=query_filter,
+                limit=limit or 10,
+                offset=offset or 0,
+                with_payload=with_payload,
+                with_vectors=with_vectors,
+                score_threshold=score_threshold,
+                idf_corpus=idf_corpus,
+            )
+
         using = using or DEFAULT_VECTOR_NAME
         limit = limit or 10
         offset = offset or 0
@@ -1195,6 +1219,103 @@ class LocalCollection:
                 score_threshold=score_threshold,
                 idf_corpus=idf_corpus,
             )
+
+    def _validate_text_queries(
+        self,
+        query: types.Query | None,
+        using: str | None,
+        prefetch: types.Prefetch | list[types.Prefetch] | None,
+        search_params: types.SearchParams | None,
+    ) -> None:
+        """Reject an invalid text query anywhere in the request before running any of it"""
+        if isinstance(query, models.TextQuery):
+            self._text_query_params(query, using, self._idf_corpus_of(search_params))
+
+        prefetches = prefetch if isinstance(prefetch, list) else [prefetch] if prefetch else []
+        for item in prefetches:
+            self._validate_text_queries(item.query, item.using, item.prefetch, item.params)
+
+    def _text_query_params(
+        self, query: models.TextQuery, field: str | None, idf_corpus: types.Filter | None
+    ) -> tuple[str, float, float]:
+        """Text, k1 and b of a valid text query"""
+        if field is None:
+            raise ValueError("A text query needs `using` to name the payload field to search")
+        params = self.text_indexes.get(field)
+        if params is None:
+            raise ValueError(f"A text query needs a text index with `scoring` on `{field}`")
+        if not has_default_tokenization(params):
+            raise NotImplementedError(
+                "Text queries in the local Qdrant only support text indexes with the default"
+                " tokenization. Please use server Qdrant if you need other text index params."
+            )
+        if idf_corpus is not None:
+            raise NotImplementedError(
+                "IDF corpus is not supported for text queries in the local Qdrant."
+                " Please use server Qdrant if you need it."
+            )
+
+        if isinstance(query.text, str):
+            return query.text, DEFAULT_K1, DEFAULT_B
+
+        bm25 = query.text.scoring.bm25 if query.text.scoring is not None else models.Bm25Params()
+        k1 = bm25.k if bm25.k is not None else DEFAULT_K1
+        b = bm25.b if bm25.b is not None else DEFAULT_B
+        if k1 < 0:
+            raise ValueError(f"BM25 k value {k1} is invalid. Must be 0.0 or larger.")
+        if not 0 <= b <= 1:
+            raise ValueError(f"BM25 b value {b} is invalid. Must be from 0.0 to 1.0.")
+        return query.text.query, k1, b
+
+    def _query_text(
+        self,
+        query: models.TextQuery,
+        field: str | None,
+        query_filter: types.Filter | None,
+        limit: int,
+        offset: int,
+        with_payload: types.WithPayloadInterface,
+        with_vectors: types.WithVector,
+        score_threshold: float | None,
+        idf_corpus: types.Filter | None,
+    ) -> list[models.ScoredPoint]:
+        text, k1, b = self._text_query_params(query, field, idf_corpus)
+        assert field is not None
+
+        # the corpus: points holding at least one token in the field, whatever the filter is
+        documents = {}
+        for idx, payload in enumerate(self.payload):
+            if not self.deleted[idx]:
+                tokens = document_tokens(value_by_key(payload, field))
+                if tokens:
+                    documents[idx] = tokens
+
+        scores = bm25_scores(documents, text, k1, b)
+        mask = self._payload_and_non_deleted_mask(query_filter)
+
+        result: list[models.ScoredPoint] = []
+        for idx in sorted(scores, key=lambda idx: (-scores[idx], idx)):
+            if len(result) >= limit + offset:
+                break
+            if not mask[idx]:
+                continue
+
+            score = float(np.float32(scores[idx]))  # core scores in f32
+            if score_threshold is not None and score <= score_threshold:
+                break
+
+            result.append(
+                construct(
+                    models.ScoredPoint,
+                    id=self.ids_inv[idx],
+                    score=score,
+                    version=0,
+                    payload=self._get_payload(idx, with_payload),
+                    vector=self._get_vectors(idx, with_vectors),
+                )
+            )
+
+        return result[offset:]
 
     def _group_ids(self, payload: dict[str, Any], group_by: str) -> list[models.GroupId] | None:
         """Unique group ids a point belongs to, or None if it cannot be grouped at all.
@@ -3318,6 +3439,16 @@ class LocalCollection:
                 self.delete_vectors(update_op.delete_vectors.vector, points_selector)
             else:
                 raise ValueError(f"Unsupported update operation: {type(update_op)}")
+
+    def create_payload_index(self, field_name: str, field_schema: types.PayloadSchemaType) -> None:
+        # like on the server, a new index of a field replaces its previous one
+        if isinstance(field_schema, models.TextIndexParams) and field_schema.scoring:
+            self.text_indexes[field_name] = deepcopy(field_schema)
+        else:
+            self.text_indexes.pop(field_name, None)
+
+    def delete_payload_index(self, field_name: str) -> None:
+        self.text_indexes.pop(field_name, None)
 
     def update_sparse_vectors_config(
         self, vector_name: str, new_config: models.SparseVectorParams
