@@ -646,3 +646,25 @@ async def test_custom_sharding(prefer_grpc):
 
     assert collection_info.config.params.shard_number == 1
     assert collection_info.config.params.sharding_method == models.ShardingMethod.CUSTOM
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("prefer_grpc", [False, True])
+async def test_create_text_payload_index_without_tokenizer(prefer_grpc):
+    client = AsyncQdrantClient(prefer_grpc=prefer_grpc)
+    if await client.collection_exists(COLLECTION_NAME):
+        await client.delete_collection(collection_name=COLLECTION_NAME)
+    await client.create_collection(
+        collection_name=COLLECTION_NAME,
+        vectors_config=models.VectorParams(size=DIM, distance=models.Distance.DOT),
+    )
+
+    await client.create_payload_index(
+        COLLECTION_NAME,
+        field_name="text_field",
+        field_schema=models.TextIndexParams(type=models.TextIndexType.TEXT),
+        wait=True,
+    )
+
+    payload_schema = (await client.get_collection(COLLECTION_NAME)).payload_schema
+    assert payload_schema["text_field"].params.tokenizer == models.TokenizerType.WORD
