@@ -29,6 +29,7 @@ from qdrant_client.local.local_collection import (
     LocalCollection,
     DEFAULT_VECTOR_NAME,
     ignore_mentioned_ids_filter,
+    to_jsonable_python,
 )
 from qdrant_client.local.payload_value_setter import merge_payload
 
@@ -173,27 +174,26 @@ class AsyncQdrantLocal(AsyncQdrantBase):
             return
         if self.closed:
             raise RuntimeError("QdrantLocal instance is closed. Please create a new instance.")
+        meta = json.dumps(
+            {
+                "collections": {
+                    collection_name: to_dict(collection.config)
+                    for (collection_name, collection) in self.collections.items()
+                },
+                "aliases": self.aliases if aliases is None else aliases,
+                "text_indexes": {
+                    collection_name: {
+                        field_name: to_dict(params, exclude_none=True)
+                        for (field_name, params) in collection.text_indexes.items()
+                    }
+                    for (collection_name, collection) in self.collections.items()
+                    if collection.text_indexes
+                },
+            }
+        )
         meta_path = os.path.join(self.location, META_INFO_FILENAME)
         with open(meta_path, "w") as f:
-            f.write(
-                json.dumps(
-                    {
-                        "collections": {
-                            collection_name: to_dict(collection.config)
-                            for (collection_name, collection) in self.collections.items()
-                        },
-                        "aliases": self.aliases if aliases is None else aliases,
-                        "text_indexes": {
-                            collection_name: {
-                                field_name: to_dict(params, exclude_none=True)
-                                for (field_name, params) in collection.text_indexes.items()
-                            }
-                            for (collection_name, collection) in self.collections.items()
-                            if collection.text_indexes
-                        },
-                    }
-                )
-            )
+            f.write(meta)
 
     def _get_collection(self, collection_name: str) -> LocalCollection:
         if self.closed:
@@ -780,6 +780,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         **kwargs: Any,
     ) -> bool:
         _collection = self._get_collection(collection_name)
+        metadata = to_jsonable_python(metadata)
         if isinstance(vectors_config, Mapping):
             for vector_name in vectors_config:
                 if (
@@ -797,9 +798,9 @@ class AsyncQdrantLocal(AsyncQdrantBase):
             updated = True
         if metadata is not None:
             if _collection.config.metadata is not None:
-                merge_payload(_collection.config.metadata, deepcopy(metadata))
+                merge_payload(_collection.config.metadata, metadata)
             else:
-                _collection.config.metadata = deepcopy(metadata)
+                _collection.config.metadata = metadata
             updated = True
         self._save()
         return updated
@@ -895,6 +896,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
             raise ValueError(f"Collection {collection_name} already exists")
         if collection_name in self.aliases:
             raise ValueError(f"Alias {collection_name} already exists")
+        metadata = to_jsonable_python(metadata)
         collection_path = self._collection_path(collection_name)
         if collection_path is not None:
             os.makedirs(collection_path, exist_ok=True)
@@ -902,7 +904,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
             rest_models.CreateCollection(
                 vectors=vectors_config or {},
                 sparse_vectors=sparse_vectors_config,
-                metadata=deepcopy(metadata),
+                metadata=metadata,
             ),
             location=collection_path,
             force_disable_check_same_thread=self.force_disable_check_same_thread,
