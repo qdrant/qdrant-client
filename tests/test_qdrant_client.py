@@ -2101,7 +2101,7 @@ def test_async_auth_token_provider():
 
     with pytest.raises(
         qdrant_client.http.exceptions.ResponseHandlingException,
-        match="Synchronous token provider is not set.",
+        match="returned an awaitable",
     ):
         client.get_collections()
     with pytest.raises(ValueError, match="require a synchronous auth_token_provider"):

@@ -2239,7 +2239,9 @@ class QdrantRemote(QdrantBase):
             self._auth_token_provider
         ):
             raise ValueError(
-                "upload_points and upload_collection require a synchronous auth_token_provider"
+                "upload_points and upload_collection send batches synchronously and require a "
+                "synchronous auth_token_provider. To upload with an async provider, use "
+                "AsyncQdrantClient.upsert."
             )
 
         if method is not None:
