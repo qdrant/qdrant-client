@@ -2700,9 +2700,8 @@ class LocalCollection:
         if isinstance(point.id, uuid.UUID):
             point.id = str(point.id)
         idx = self.ids[point.id]
-        self.payload[idx] = deepcopy(
-            to_jsonable_python(point.payload) if point.payload is not None else {}
-        )
+        # `_validate_point` already made a JSON copy of the payload
+        self.payload[idx] = point.payload if point.payload is not None else {}
 
         if isinstance(point.vector, list):
             vectors = {DEFAULT_VECTOR_NAME: point.vector}
@@ -2762,9 +2761,8 @@ class LocalCollection:
         self.ids[point.id] = idx
         self.ids_inv.append(point.id)
 
-        self.payload.append(
-            deepcopy(to_jsonable_python(point.payload) if point.payload is not None else {})
-        )
+        # `_validate_point` already made a JSON copy of the payload
+        self.payload.append(point.payload if point.payload is not None else {})
         assert len(self.payload) == len(self.ids_inv), "Payload and ids_inv must be the same size"
         self.deleted = np.append(self.deleted, 0)
 
@@ -2862,8 +2860,9 @@ class LocalCollection:
         Every write path runs this over all of its points before applying any of them, so a
         rejected point leaves the collection untouched, the way the server does.
 
-        Normalization (sorting sparse vectors, canonicalizing UUID ids) goes into the returned
-        copy: remote mode does not rewrite the caller's point either.
+        Normalization (sorting sparse vectors, canonicalizing UUID ids, converting the payload to
+        JSON values) goes into the returned copy: remote mode does not rewrite the caller's point
+        either.
         """
         point_id = normalize_point_id(point.id, validate=True)
 
@@ -2901,7 +2900,9 @@ class LocalCollection:
             models.PointStruct,
             id=point_id,
             vector=normalized_vector,
-            payload=point.payload,
+            # the point is stored before it is applied, so a payload that can't be converted
+            # must fail here, or it would be stored and break loading the collection
+            payload=to_jsonable_python(point.payload),
         )
 
     def _upsert_point(

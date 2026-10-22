@@ -523,3 +523,39 @@ def test_failed_point_write_can_be_retried(monkeypatch: pytest.MonkeyPatch, tmp_
     client = QdrantClient(path=str(tmp_path))
     assert client.scroll(failed_write_collection, with_vectors=True)[0] == points
     client.close()
+
+
+def test_rejected_upsert_is_not_stored(tmp_path):
+    """A point that upsert rejects must not reach the storage.
+
+    Regression: points were stored before they were applied, so a point that failed to apply
+    stayed on disk, and the next client could not open the storage folder.
+    """
+    collection_name = "rejected_upsert"
+    client = QdrantClient(path=str(tmp_path))
+    client.create_collection(
+        collection_name, vectors_config=rest.VectorParams(size=2, distance=rest.Distance.DOT)
+    )
+    client.upsert(collection_name, [rest.PointStruct(id=1, vector=[1.0, 2.0], payload={"v": 1})])
+
+    for point_id in (1, 2):  # an existing point and a new one
+        # numpy scalars can't be converted to JSON, pydantic v1 raises a TypeError
+        with pytest.raises((ValueError, TypeError)):
+            client.upsert(
+                collection_name,
+                [rest.PointStruct(id=point_id, vector=[1.0, 2.0], payload={"v": np.float32(0.5)})],
+            )
+        with pytest.raises(ValueError, match="Wrong input"):
+            client.upsert(
+                collection_name, [rest.PointStruct(id=point_id, vector=[[1.0, 2.0], [3.0, 4.0]])]
+            )
+
+    points = client.scroll(collection_name, with_vectors=True)[0]
+    assert [(point.id, point.payload, point.vector) for point in points] == [
+        (1, {"v": 1}, [1.0, 2.0])
+    ]
+    client.close()
+
+    client = QdrantClient(path=str(tmp_path))
+    assert client.scroll(collection_name, with_vectors=True)[0] == points
+    client.close()
