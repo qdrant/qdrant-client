@@ -1584,6 +1584,66 @@ delete_vectors_operation_2 = grpc.PointsUpdateOperation(
     ),
 )
 
+upsert_operation_with_shard_key = grpc.PointsUpdateOperation(
+    upsert=grpc.PointsUpdateOperation.PointStructList(
+        points=[point_struct],
+        shard_key_selector=shard_key_selector_3,
+    ),
+)
+
+delete_operation_with_shard_key = grpc.PointsUpdateOperation(
+    delete_points=grpc.PointsUpdateOperation.DeletePoints(
+        points=points_selector_list,
+        shard_key_selector=shard_key_selector,
+    ),
+)
+
+set_payload_operation_with_shard_key = grpc.PointsUpdateOperation(
+    set_payload=grpc.PointsUpdateOperation.SetPayload(
+        payload=payload_to_grpc({"my_payload": payload_value}),
+        points_selector=points_selector_filter,
+        shard_key_selector=shard_key_selector_2,
+    ),
+)
+
+overwrite_payload_operation_with_shard_key = grpc.PointsUpdateOperation(
+    overwrite_payload=grpc.PointsUpdateOperation.OverwritePayload(
+        payload=payload_to_grpc({"my_payload": payload_value}),
+        points_selector=points_selector_list,
+        shard_key_selector=shard_key_selector_3,
+    ),
+)
+
+delete_payload_operation_with_shard_key = grpc.PointsUpdateOperation(
+    delete_payload=grpc.PointsUpdateOperation.DeletePayload(
+        keys=["my_payload", "my_payload2"],
+        points_selector=points_selector_list,
+        shard_key_selector=shard_key_selector,
+    ),
+)
+
+clear_payload_operation_with_shard_key = grpc.PointsUpdateOperation(
+    clear_payload=grpc.PointsUpdateOperation.ClearPayload(
+        points=points_selector_filter,
+        shard_key_selector=shard_key_selector_2,
+    ),
+)
+
+update_vectors_operation_with_shard_key = grpc.PointsUpdateOperation(
+    update_vectors=grpc.PointsUpdateOperation.UpdateVectors(
+        points=[point_vector_1, point_vector_2],
+        shard_key_selector=shard_key_selector_3,
+    ),
+)
+
+delete_vectors_operation_with_shard_key = grpc.PointsUpdateOperation(
+    delete_vectors=grpc.PointsUpdateOperation.DeleteVectors(
+        points_selector=points_selector_filter,
+        vectors=grpc.VectorsSelector(names=["image", "text"]),
+        shard_key_selector=shard_key_selector,
+    ),
+)
+
 sharding_method_1 = grpc.Auto
 sharding_method_2 = grpc.Custom
 
@@ -2224,6 +2284,14 @@ fixtures = {
         update_vectors_operation,
         delete_vectors_operation,
         delete_vectors_operation_2,
+        upsert_operation_with_shard_key,
+        delete_operation_with_shard_key,
+        set_payload_operation_with_shard_key,
+        overwrite_payload_operation_with_shard_key,
+        delete_payload_operation_with_shard_key,
+        clear_payload_operation_with_shard_key,
+        update_vectors_operation_with_shard_key,
+        delete_vectors_operation_with_shard_key,
     ],
     "SparseVectorParams": [
         sparse_vector_params,

@@ -804,6 +804,7 @@ def test_convert_points_update_operation_falsy_shard_key():
                 f"{type(operation).__name__} dropped shard_key={shard_key!r}"
             )
             assert GrpcToRest.convert_shard_key_selector(inner.shard_key_selector) == shard_key
+            assert GrpcToRest.convert_points_update_operation(grpc_operation) == operation
 
 
 def test_convert_points_update_operation_empty_points():

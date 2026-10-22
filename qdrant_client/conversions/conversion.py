@@ -980,16 +980,21 @@ class GrpcToRest:
         if name is None:
             raise ValueError(f"invalid PointsSelector model: {model}")  # pragma: no cover
         val = getattr(model, name)
+        shard_key = (
+            cls.convert_shard_key_selector(shard_key_selector)
+            if shard_key_selector is not None
+            else None
+        )
 
         if name == "points":
             return rest.PointIdsList(
                 points=[cls.convert_point_id(point) for point in val.ids],
-                shard_key=shard_key_selector,
+                shard_key=shard_key,
             )
         if name == "filter":
             return rest.FilterSelector(
                 filter=cls.convert_filter(val),
-                shard_key=shard_key_selector,
+                shard_key=shard_key,
             )
         raise ValueError(f"invalid PointsSelector model: {model}")  # pragma: no cover
 
@@ -2205,7 +2210,7 @@ class GrpcToRest:
 
         if name == "upsert":
             shard_key_selector = (
-                cls.convert_shard_key(val.shard_key_selector)
+                cls.convert_shard_key_selector(val.shard_key_selector)
                 if val.HasField("shard_key_selector")
                 else None
             )
@@ -2254,6 +2259,7 @@ class GrpcToRest:
                     payload=cls.convert_payload(val.payload),
                     points=points,
                     filter=filter_,
+                    shard_key=points_selector.shard_key,
                     key=val.key if val.HasField("key") else None,
                 )
             )
@@ -2280,6 +2286,7 @@ class GrpcToRest:
                     payload=cls.convert_payload(val.payload),
                     points=points,
                     filter=filter_,
+                    shard_key=points_selector.shard_key,
                     key=val.key if val.HasField("key") else None,
                 )
             )
@@ -2306,6 +2313,7 @@ class GrpcToRest:
                     keys=[key for key in val.keys],
                     points=points,
                     filter=filter_,
+                    shard_key=points_selector.shard_key,
                 )
             )
         elif name == "clear_payload":
@@ -2318,7 +2326,7 @@ class GrpcToRest:
             return rest.ClearPayloadOperation(clear_payload=points_selector)
         elif name == "update_vectors":
             shard_key_selector = (
-                cls.convert_shard_key(val.shard_key_selector)
+                cls.convert_shard_key_selector(val.shard_key_selector)
                 if val.HasField("shard_key_selector")
                 else None
             )
@@ -2355,6 +2363,7 @@ class GrpcToRest:
                     vector=[name for name in val.vectors.names],
                     points=points,
                     filter=filter_,
+                    shard_key=points_selector.shard_key,
                 )
             )
         else:
