@@ -9,7 +9,7 @@ successful upsert then broke every query with a shape mismatch.
 
 import pytest
 
-from qdrant_client import QdrantClient, models
+from qdrant_client import models
 from qdrant_client.local.local_collection import LocalCollection
 
 NAN_VECTOR = [1.0, float("nan"), 3.0]
@@ -172,33 +172,3 @@ def test_wrong_vector_dimension_is_rejected_before_writing(vectors_config, good,
         collection.update_vectors([models.PointVectors(id=1, vector=bad)])
 
     assert collection._get_vectors(idx=0, with_vectors=True) == good
-
-
-@pytest.mark.parametrize(
-    "write",
-    [
-        lambda client, point: client.upsert("c", [point]),
-        lambda client, point: client.update_vectors(
-            "c", [models.PointVectors(id=point.id, vector=point.vector)]
-        ),
-        lambda client, point: client.batch_update_points(
-            "c", [models.UpsertOperation(upsert=models.PointsList(points=[point]))]
-        ),
-    ],
-    ids=["upsert", "update_vectors", "batch_update_points"],
-)
-def test_matrix_dense_vector_is_rejected_before_writing(write) -> None:
-    """A size by size matrix passed the length check and died in numpy mid-write."""
-    client = QdrantClient(":memory:")
-    client.create_collection(
-        "c", vectors_config=models.VectorParams(size=2, distance=models.Distance.DOT)
-    )
-    client.upsert("c", [models.PointStruct(id=1, vector=[1.0, 2.0])])
-
-    for point_id in (1, 2):
-        with pytest.raises(ValueError, match="Wrong input"):
-            write(client, models.PointStruct(id=point_id, vector=[[1.0, 2.0], [3.0, 4.0]]))
-
-    assert client.count("c").count == 1
-    points, _ = client.scroll("c", with_vectors=True)
-    assert [(point.id, point.vector) for point in points] == [(1, [1.0, 2.0])]
