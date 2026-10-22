@@ -10,51 +10,6 @@ def qdrant() -> QdrantClient:
     return QdrantClient(":memory:")
 
 
-@pytest.mark.parametrize(
-    "weights, expected_ids", [([3.0, 1.0], [1, 2, 4, 3]), ([1.0, 3.0], [4, 3, 1, 2])]
-)
-def test_weighted_rrf_dense_sparse_query(
-    qdrant: QdrantClient, weights: list[float], expected_ids: list[int]
-) -> None:
-    qdrant.create_collection(
-        "weighted_rrf",
-        vectors_config={"dense": models.VectorParams(size=1, distance=models.Distance.DOT)},
-        sparse_vectors_config={"sparse": models.SparseVectorParams()},
-    )
-    qdrant.upsert(
-        "weighted_rrf",
-        points=[
-            models.PointStruct(
-                id=i,
-                vector={
-                    "dense": [float(5 - i)],
-                    "sparse": models.SparseVector(indices=[0], values=[float(i)]),
-                },
-                payload={"document": str(i)},
-            )
-            for i in range(1, 5)
-        ],
-    )
-    prefetch = [
-        models.Prefetch(query=[1.0], using="dense", limit=2),
-        models.Prefetch(
-            query=models.SparseVector(indices=[0], values=[1.0]), using="sparse", limit=2
-        ),
-    ]
-    # Sparse ranks are [4, 3], while dense ranks are [1, 2].
-    result = qdrant.query_points(
-        "weighted_rrf",
-        prefetch=prefetch,
-        query=models.RrfQuery(rrf=models.Rrf(weights=weights)),
-        limit=4,
-        with_payload=True,
-    ).points
-
-    assert [point.id for point in result] == expected_ids
-    assert [point.score for point in result] == pytest.approx([3 / 4, 3 / 5, 1 / 2, 1 / 3])
-    assert [point.payload for point in result] == [{"document": str(i)} for i in expected_ids]
-
-
 def test_dense_in_memory_key_filter_returns_results(qdrant: QdrantClient):
     qdrant.create_collection(
         collection_name="test_collection",

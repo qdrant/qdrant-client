@@ -435,6 +435,19 @@ class TestSimpleSearcher:
             limit=10,
         )
 
+    def dense_query_weighted_rrf(self, client: QdrantBase) -> models.QueryResponse:
+        # with 3:1 weights, text rank 3 ties with code rank 1; limit=2 keeps all scores distinct
+        return client.query_points(
+            collection_name=COLLECTION_NAME,
+            prefetch=[
+                models.Prefetch(query=self.dense_vector_query_text, using="text", limit=2),
+                models.Prefetch(query=self.dense_vector_query_code, using="code", limit=2),
+            ],
+            query=models.RrfQuery(rrf=models.Rrf(weights=[3.0, 1.0])),
+            with_payload=True,
+            limit=4,
+        )
+
     def dense_query_rrf_plain_prefetch(self, client: QdrantBase) -> models.QueryResponse:
         # dense_query_rrf has a list of prefetches, here we have just a prefetch
         return client.query_points(
@@ -1823,6 +1836,14 @@ def test_dense_query_fusion():
     compare_clients_results(
         local_client, http_client, grpc_client, searcher.dense_query_parametrized_rrf
     )
+    compare_clients_results(
+        local_client, http_client, grpc_client, searcher.dense_query_weighted_rrf
+    )
+    # rrf scores depend only on ranks, compare_clients_results doesn't check which ids got them
+    local_points = searcher.dense_query_weighted_rrf(local_client).points
+    for client in (http_client, grpc_client):
+        remote_points = searcher.dense_query_weighted_rrf(client).points
+        assert [p.id for p in remote_points] == [p.id for p in local_points]
     compare_clients_results(
         local_client, http_client, grpc_client, searcher.dense_query_rrf_score_threshold
     )
