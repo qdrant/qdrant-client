@@ -192,8 +192,10 @@ class AsyncQdrantLocal(AsyncQdrantBase):
             }
         )
         meta_path = os.path.join(self.location, META_INFO_FILENAME)
-        with open(meta_path, "w") as f:
+        tmp_path = f"{meta_path}.tmp"
+        with open(tmp_path, "w") as f:
             f.write(meta)
+        os.replace(tmp_path, meta_path)
 
     def _get_collection(self, collection_name: str) -> LocalCollection:
         if self.closed:

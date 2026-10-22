@@ -192,7 +192,6 @@ class QdrantLocal(QdrantBase):
         if self.closed:
             raise RuntimeError("QdrantLocal instance is closed. Please create a new instance.")
 
-        # serialized before opening the file: opening it for writing empties it
         meta = json.dumps(
             {
                 "collections": {
@@ -211,8 +210,11 @@ class QdrantLocal(QdrantBase):
             }
         )
         meta_path = os.path.join(self.location, META_INFO_FILENAME)
-        with open(meta_path, "w") as f:
+        # opening a file for writing empties it, so meta.json is only replaced by a complete copy
+        tmp_path = f"{meta_path}.tmp"
+        with open(tmp_path, "w") as f:
             f.write(meta)
+        os.replace(tmp_path, meta_path)
 
     def _get_collection(self, collection_name: str) -> LocalCollection:
         if self.closed:
