@@ -9,7 +9,7 @@ from typing import Any, Sequence
 from qdrant_client.local import datetime_utils
 from qdrant_client.local.geo import geo_distance
 from qdrant_client.local.json_path_parser import parse_json_path
-from qdrant_client.local.payload_filters import check_condition
+from qdrant_client.local.payload_filters import check_condition, validate_filter
 from qdrant_client.local.payload_value_extractor import value_by_key
 
 DEFAULT_SCORE = 0.0
@@ -251,6 +251,10 @@ def validate_expression(expression: models.Expression) -> None:
         variable = parse_variable(expression)
         if isinstance(variable, str):
             parse_json_path(variable)
+        nested = []
+    elif isinstance(expression, get_args_subscribed(models.Condition)):
+        # core validates a condition in a formula the same way as one in a filter
+        validate_filter(models.Filter(must=[expression]))  # type: ignore
         nested = []
     elif isinstance(expression, models.DatetimeExpression):
         parse_datetime_constant(expression.datetime)
