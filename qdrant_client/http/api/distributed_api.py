@@ -1,4 +1,3 @@
-# flake8: noqa E501
 from typing import TYPE_CHECKING, Any, Dict, Set, TypeVar, Union
 
 from pydantic import BaseModel

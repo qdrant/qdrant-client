@@ -50,16 +50,11 @@ class CollectionPersistence:
         self.location.parent.mkdir(exist_ok=True, parents=True)
 
         if self.CHECK_SAME_THREAD is None and force_disable_check_same_thread is False:
-            with sqlite3.connect(":memory:") as tmp_conn:
-                # it is unsafe to use `sqlite3.threadsafety` until python3.11 since it was hardcoded to 1, thus we
-                # need to fetch threadsafe with a query
-                # THREADSAFE = 0: Threads may not share the module
-                # THREADSAFE = 1: Threads may share the module, connections and cursors. Default for Linux.
-                # THREADSAFE = 2: Threads may share the module, but not connections. Default for macOS.
-                threadsafe = tmp_conn.execute(
-                    "select * from pragma_compile_options where compile_options like 'THREADSAFE=%'"
-                ).fetchone()[0]
-                self.__class__.CHECK_SAME_THREAD = threadsafe != "THREADSAFE=1"
+            # `sqlite3.threadsafety` maps SQLite's THREADSAFE compile option to a DB-API level:
+            # THREADSAFE = 0 -> 0: Threads may not share the module
+            # THREADSAFE = 1 -> 3: Threads may share the module, connections and cursors. Linux default.
+            # THREADSAFE = 2 -> 1: Threads may share the module, but not connections. macOS default.
+            self.__class__.CHECK_SAME_THREAD = sqlite3.threadsafety != 3
 
         if force_disable_check_same_thread:
             self.__class__.CHECK_SAME_THREAD = False

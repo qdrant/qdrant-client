@@ -149,7 +149,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
                 for collection_name, indexes in meta.get("text_indexes", {}).items():
                     self.collections[collection_name].text_indexes = {
                         field_name: rest_models.TextIndexParams(**params)
-                        for (field_name, params) in indexes.items()
+                        for field_name, params in indexes.items()
                     }
         lock_file_path = os.path.join(self.location, ".lock")
         if not os.path.exists(lock_file_path):
@@ -178,15 +178,15 @@ class AsyncQdrantLocal(AsyncQdrantBase):
             {
                 "collections": {
                     collection_name: to_dict(collection.config)
-                    for (collection_name, collection) in self.collections.items()
+                    for collection_name, collection in self.collections.items()
                 },
                 "aliases": self.aliases if aliases is None else aliases,
                 "text_indexes": {
                     collection_name: {
                         field_name: to_dict(params, exclude_none=True)
-                        for (field_name, params) in collection.text_indexes.items()
+                        for field_name, params in collection.text_indexes.items()
                     }
-                    for (collection_name, collection) in self.collections.items()
+                    for collection_name, collection in self.collections.items()
                     if collection.text_indexes
                 },
             }
@@ -395,7 +395,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         if prefetch.query is None:
             return prefetch
         prefetch = deepcopy(prefetch)
-        (query, mentioned_ids) = self._resolve_query_input(
+        query, mentioned_ids = self._resolve_query_input(
             collection_name, prefetch.query, prefetch.using, prefetch.lookup_from
         )
         prefetch.query = query
@@ -434,7 +434,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
                 stacklevel=5,
             )
         if query is not None:
-            (query, mentioned_ids) = self._resolve_query_input(
+            query, mentioned_ids = self._resolve_query_input(
                 collection_name, query, using, lookup_from
             )
             query_filter = ignore_mentioned_ids_filter(query_filter, list(mentioned_ids))
@@ -515,7 +515,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
                 stacklevel=5,
             )
         if query is not None:
-            (query, mentioned_ids) = self._resolve_query_input(
+            query, mentioned_ids = self._resolve_query_input(
                 collection_name, query, using, lookup_from
             )
             query_filter = ignore_mentioned_ids_filter(query_filter, list(mentioned_ids))
@@ -737,7 +737,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         return types.CollectionsAliasesResponse(
             aliases=[
                 rest_models.AliasDescription(alias_name=alias_name, collection_name=name)
-                for (alias_name, name) in self.aliases.items()
+                for alias_name, name in self.aliases.items()
                 if name == collection_name
             ]
         )
@@ -748,7 +748,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         return types.CollectionsAliasesResponse(
             aliases=[
                 rest_models.AliasDescription(alias_name=alias_name, collection_name=name)
-                for (alias_name, name) in self.aliases.items()
+                for alias_name, name in self.aliases.items()
             ]
         )
 
@@ -758,7 +758,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         return types.CollectionsResponse(
             collections=[
                 rest_models.CollectionDescription(name=name)
-                for (name, _) in self.collections.items()
+                for name, _ in self.collections.items()
             ]
         )
 
@@ -862,7 +862,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         del _collection
         self.aliases = {
             alias_name: name
-            for (alias_name, name) in self.aliases.items()
+            for alias_name, name in self.aliases.items()
             if name != collection_name
         }
         collection_path = self._collection_path(collection_name)
@@ -975,6 +975,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         update_mode: types.UpdateMode | None = None,
         **kwargs: Any,
     ) -> None:
+
         def uuid_generator() -> Generator[str, None, None]:
             while True:
                 yield str(uuid4())
@@ -996,7 +997,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
                 vector=(vector.tolist() if isinstance(vector, np.ndarray) else vector) or {},
                 payload=payload or {},
             )
-            for (point_id, vector, payload) in zip(
+            for point_id, vector, payload in zip(
                 uuid_generator() if ids is None else ids,
                 iter(vectors),
                 itertools.cycle([{}]) if payload is None else payload,

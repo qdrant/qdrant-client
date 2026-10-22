@@ -57,9 +57,7 @@ def test_upsert():
         COLLECTION_NAME,
         scroll_filter=id_filter,
         limit=1,
-    )[
-        0
-    ][0]
+    )[0][0]
     remote_old_point = remote_client.scroll(COLLECTION_NAME, scroll_filter=id_filter, limit=1)[0][
         0
     ]

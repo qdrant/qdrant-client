@@ -25,11 +25,13 @@ def main() -> None:
 
     # serverless-specific collection management: no quantization, wal,
     # segment number etc. - the serverless manager decides those
-    print(client.create_collection(
-        "my-collection",
-        dense_vectors=DenseVectorConfig(size=4, distance=Distance.COSINE),
-        payload_indexes={"color": KeywordIndex()},
-    ))
+    print(
+        client.create_collection(
+            "my-collection",
+            dense_vectors=DenseVectorConfig(size=4, distance=Distance.COSINE),
+            payload_indexes={"color": KeywordIndex()},
+        )
+    )
 
     print(client.get_collections())
     print(client.get_collection("my-collection"))

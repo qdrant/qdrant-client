@@ -73,11 +73,13 @@ def test_delete_sparse_points():
     compare_client_results(
         local_client,
         remote_client,
-        lambda c: c.query_points(
-            COLLECTION_NAME,
-            query=vector,
-            using="sparse-image",
-        ).points,
+        lambda c: (
+            c.query_points(
+                COLLECTION_NAME,
+                query=vector,
+                using="sparse-image",
+            ).points
+        ),
     )
 
     found_ids = [
