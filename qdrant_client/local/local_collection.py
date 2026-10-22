@@ -1574,8 +1574,9 @@ class LocalCollection:
         self._validate_with_payload(with_payload)
 
         result = []
-        ids = [normalize_point_id(id_) for id_ in ids]
-        for point_id in ids:
+        # the server returns each point once, in the order of its first occurrence in `ids`
+        unique_ids = dict.fromkeys(normalize_point_id(id_) for id_ in ids)
+        for point_id in unique_ids:
             if point_id not in self.ids:
                 continue
 

@@ -89,6 +89,24 @@ def test_retrieve(local_client, remote_client) -> None:
             client.retrieve(COLLECTION_NAME, [id_], with_vectors="image")
 
 
+def test_retrieve_duplicate_ids(local_client, remote_client) -> None:
+    uuid_id = "a5a5a5a5-0000-4000-8000-00000000000a"
+    points = [
+        PointStruct(id=1, vector={}, payload={"n": 1}),
+        PointStruct(id=2, vector={}, payload={"n": 2}),
+        PointStruct(id=uuid_id, vector={}, payload={"n": 3}),
+    ]
+    local_client.upsert(COLLECTION_NAME, points)
+    remote_client.upsert(COLLECTION_NAME, points, wait=True)
+
+    # each point comes back once, in the order it was first requested, also when one id
+    # is spelled two ways
+    ids = [2, 1, 2, 99, uuid_id, 1, uuid_id.upper()]
+    compare_client_results(local_client, remote_client, lambda c: c.retrieve(COLLECTION_NAME, ids))
+    records = local_client.retrieve(COLLECTION_NAME, ids)
+    assert [record.id for record in records] == [2, 1, uuid_id]
+
+
 def test_retrieve_quoted_payload_keys(local_client, remote_client) -> None:
     payload = {
         "a.b": {"x": 1, "y": 2},
