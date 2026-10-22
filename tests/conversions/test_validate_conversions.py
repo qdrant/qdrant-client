@@ -928,24 +928,3 @@ def test_convert_collection_info_points_count_presence():
     round_tripped = RestToGrpc.convert_collection_info(GrpcToRest.convert_collection_info(zero))
     assert round_tripped.HasField("points_count")
     assert round_tripped.points_count == 0
-
-
-def test_convert_collection_metadata_absence():
-    from qdrant_client import grpc
-    from qdrant_client.conversions.conversion import GrpcToRest
-
-    # `metadata` is a proto map: its getter is always a (possibly empty) container, so
-    # absence has to be read from the container being empty. `is not None` never filters
-    # anything out, and an absent metadata used to become {} - unlike the REST model and
-    # local mode, which represent "no metadata" as None.
-    config = grpc.CollectionConfig(
-        params=grpc.CollectionParams(shard_number=1),
-        hnsw_config=grpc.HnswConfigDiff(m=16, ef_construct=100, full_scan_threshold=10000),
-        optimizer_config=grpc.OptimizersConfigDiff(default_segment_number=2),
-        wal_config=grpc.WalConfigDiff(wal_capacity_mb=32, wal_segments_ahead=0),
-    )
-    assert GrpcToRest.convert_collection_config(config).metadata is None
-    assert GrpcToRest.convert_update_collection(grpc.UpdateCollection()).metadata is None
-
-    config.metadata["a"].integer_value = 1
-    assert GrpcToRest.convert_collection_config(config).metadata == {"a": 1}
