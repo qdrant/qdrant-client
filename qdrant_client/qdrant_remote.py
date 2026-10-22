@@ -1,5 +1,6 @@
 import importlib.metadata
 import inspect
+import ipaddress
 import math
 import platform
 import sys
@@ -121,9 +122,12 @@ class QdrantRemote(QdrantBase):
                 raise ValueError(f"Unknown scheme: {self._scheme}")
         else:
             self._host = host or "localhost"
-            if ":" in self._host and not self._host.startswith("["):
-                # an IPv6 address has to be enclosed in brackets to be followed by a port
-                self._host = f"[{self._host}]"
+            try:
+                if ipaddress.ip_address(self._host).version == 6:
+                    # an IPv6 address has to be enclosed in brackets to be followed by a port
+                    self._host = f"[{self._host}]"
+            except ValueError:  # a host name or an already bracketed address
+                pass
             self._port = port
 
         _timeout = (

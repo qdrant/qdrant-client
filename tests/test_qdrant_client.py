@@ -212,10 +212,13 @@ def test_client_init():
     assert isinstance(client._client, QdrantRemote)
     assert client._client.rest_uri == "http://localhost:6333"
 
-    for host in ("::1", "[::1]"):
-        client = QdrantClient(host=host, check_compatibility=False)
-        assert isinstance(client._client, QdrantRemote)
-        assert client._client.rest_uri == "http://[::1]:6333"
+    client = QdrantClient(host="::1", check_compatibility=False)
+    assert isinstance(client._client, QdrantRemote)
+    assert client._client._host == "[::1]"  # the grpc target is built from it
+    assert client._client.rest_uri == "http://[::1]:6333"
+
+    client = QdrantClient(host="[::1]", check_compatibility=False)
+    assert client._client.rest_uri == "http://[::1]:6333"
 
     client = QdrantClient(host="::1", port=None, check_compatibility=False)
     assert client._client.rest_uri == "http://[::1]"
