@@ -4,6 +4,7 @@ from typing import Any
 
 import pytest
 
+from qdrant_client import QdrantClient
 from qdrant_client.http import models
 from qdrant_client.hybrid.formula import (
     evaluate_expression,
@@ -103,3 +104,35 @@ def test_try_extract_payload_value() -> None:
         defaults = {"key": payload_value}
         empty_payload: dict[str, Any] = {}
         assert try_extract_payload_value("key", empty_payload, defaults) == expected
+
+
+@pytest.mark.parametrize(
+    "total,index,reported", [(0, 0, "total"), (2, 5, "index")], ids=["zero_total", "big_index"]
+)
+@pytest.mark.parametrize("nested", [False, True], ids=["condition", "filter"])
+def test_formula_rejects_invalid_slice(
+    total: int, index: int, reported: str, nested: bool
+) -> None:
+    """A slice condition inside a formula is validated the same way as one in a filter."""
+    client = QdrantClient(":memory:")
+    client.create_collection(
+        "test_collection",
+        vectors_config=models.VectorParams(size=2, distance=models.Distance.DOT),
+    )
+    client.upsert(
+        "test_collection",
+        points=[models.PointStruct(id=i, vector=[0.1 * i, 0.2]) for i in range(1, 6)],
+    )
+
+    condition: models.Expression = models.SliceCondition(
+        slice=models.Slice(total=total, index=index)
+    )
+    if nested:
+        condition = models.NegExpression(neg=models.Filter(must=[condition]))
+
+    with pytest.raises(ValueError, match=reported):
+        client.query_points(
+            "test_collection",
+            prefetch=models.Prefetch(query=[1.0, 1.0]),
+            query=models.FormulaQuery(formula=models.SumExpression(sum=["$score", condition])),
+        )
