@@ -20,7 +20,11 @@ class BearerAuth(httpx.Auth):
         if inspect.isawaitable(token):
             if inspect.iscoroutine(token):
                 token.close()  # never awaited, close it to avoid a RuntimeWarning
-            raise ValueError("Synchronous token provider is not set.")
+            raise ValueError(
+                "auth_token_provider returned an awaitable, but this request is sent "
+                "synchronously. QdrantClient, upload_points and upload_collection require a "
+                "synchronous auth_token_provider."
+            )
         return token
 
     def sync_auth_flow(self, request: httpx.Request) -> httpx.Request:
