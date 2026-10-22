@@ -2,6 +2,7 @@ import os
 import random
 import sqlite3
 import tempfile
+from datetime import datetime
 
 import numpy as np
 import pytest
@@ -558,4 +559,23 @@ def test_rejected_upsert_is_not_stored(tmp_path):
 
     client = QdrantClient(path=str(tmp_path))
     assert client.scroll(collection_name, with_vectors=True)[0] == points
+    client.close()
+
+
+def test_collection_metadata_is_stored_as_json(tmp_path):
+    """Datetimes in metadata used to break saving `meta.json`, the server stores them as strings."""
+    client = QdrantClient(path=str(tmp_path))
+    client.create_collection(
+        "c",
+        vectors_config=rest.VectorParams(size=2, distance=rest.Distance.DOT),
+        metadata={"created": datetime(2020, 1, 1)},
+    )
+    client.update_collection("c", metadata={"updated": datetime(2021, 1, 1)})
+    client.close()
+
+    client = QdrantClient(path=str(tmp_path))
+    assert client.get_collection("c").config.metadata == {
+        "created": "2020-01-01T00:00:00",
+        "updated": "2021-01-01T00:00:00",
+    }
     client.close()
