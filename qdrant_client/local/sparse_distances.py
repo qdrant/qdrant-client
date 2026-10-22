@@ -152,12 +152,6 @@ def calculate_sparse_discovery_ranks(
     context: list[SparseContextPair],
     vectors: list[SparseVector],
 ) -> types.NumpyArray:
-    """Return summed context-pair ranks for sparse candidate vectors.
-
-    Each pair contributes 1, 0, or -1 when the positive example scores higher,
-    equally, or lower than the negative example. The result is an int32 array,
-    including when there are no candidates.
-    """
     overall_ranks: types.NumpyArray = np.zeros(len(vectors), dtype=np.int32)
     for pair in context:
         # Get distances to positive and negative vectors

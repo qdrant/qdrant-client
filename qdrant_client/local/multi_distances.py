@@ -173,12 +173,6 @@ def calculate_multi_discovery_ranks(
     matrices: list[types.NumpyArray],
     distance_type: models.Distance,
 ) -> types.NumpyArray:
-    """Return summed context-pair ranks for multivector candidate matrices.
-
-    Each pair contributes 1, 0, or -1 when the positive example scores higher,
-    equally, or lower than the negative example. The result is an int32 array,
-    including when there are no candidates.
-    """
     overall_ranks: types.NumpyArray = np.zeros(len(matrices), dtype=np.int32)
     for pair in context:
         # Get distances to positive and negative vectors

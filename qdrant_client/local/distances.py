@@ -303,12 +303,6 @@ def calculate_discovery_ranks(
     vectors: types.NumpyArray,
     distance_type: models.Distance,
 ) -> types.NumpyArray:
-    """Return summed context-pair ranks for dense candidate vectors.
-
-    Each pair contributes 1, 0, or -1 when the positive example scores higher,
-    equally, or lower than the negative example. The result is an int32 array,
-    including when there are no candidates.
-    """
     overall_ranks = np.zeros(vectors.shape[0], dtype=np.int32)
     for pair in context:
         # Get distances to positive and negative vectors
