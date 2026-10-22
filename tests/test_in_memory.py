@@ -355,3 +355,29 @@ def test_idf_statistics_after_deletion(qdrant: QdrantClient, operation: str):
             [models.PointStruct(id=i, vector={"text": vector}) for i in (1, 2)],
         )
     assert_scores(3)
+
+
+def test_reupserting_identical_cosine_vector_stores_identical_vectors(qdrant: QdrantClient):
+    """Re-upserting a point must store the same normalized cosine vectors as inserting it."""
+    qdrant.create_collection(
+        collection_name="test_collection",
+        vectors_config={
+            "dense": models.VectorParams(size=4, distance=models.Distance.COSINE),
+            "multi": models.VectorParams(
+                size=4,
+                distance=models.Distance.COSINE,
+                multivector_config=models.MultiVectorConfig(
+                    comparator=models.MultiVectorComparator.MAX_SIM
+                ),
+            ),
+        },
+    )
+    vector = [1.0, 2.0, 3.0, 4.0]
+    point = models.PointStruct(id=1, vector={"dense": vector, "multi": [vector]})
+
+    qdrant.upsert("test_collection", [point])  # inserts the point
+    inserted = qdrant.retrieve("test_collection", [1], with_vectors=True)[0].vector
+    qdrant.upsert("test_collection", [point])  # updates the existing point
+    updated = qdrant.retrieve("test_collection", [1], with_vectors=True)[0].vector
+
+    assert updated == inserted

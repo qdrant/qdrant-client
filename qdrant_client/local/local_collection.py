@@ -2713,12 +2713,7 @@ class LocalCollection:
         for vector_name, _named_vectors in self.vectors.items():
             vector = vectors.get(vector_name)
             if vector is not None:
-                vector_np = np.array(vector, dtype=np.float32)
-                params = self.get_vector_params(vector_name)
-                if params.distance == models.Distance.COSINE:
-                    norm = np.linalg.norm(vector_np)
-                    vector_np = vector_np / norm if norm > EPSILON else vector_np
-                self.vectors[vector_name][idx] = vector_np
+                self.vectors[vector_name][idx] = self._to_stored_vector(vector, vector_name)
                 self.deleted_per_vector[vector_name][idx] = 0
             else:
                 self.deleted_per_vector[vector_name][idx] = 1
@@ -2744,12 +2739,7 @@ class LocalCollection:
         for vector_name, _named_vector in self.multivectors.items():
             vector = vectors.get(vector_name)
             if vector is not None:
-                vector_np = np.array(vector, dtype=np.float32)
-                params = self.get_vector_params(vector_name)
-                if params.distance == models.Distance.COSINE:
-                    vector_norm = np.linalg.norm(vector_np, axis=-1)[:, np.newaxis]
-                    vector_np /= np.where(vector_norm != 0.0, vector_norm, EPSILON)
-                self.multivectors[vector_name][idx] = vector_np
+                self.multivectors[vector_name][idx] = self._to_stored_vector(vector, vector_name)
                 self.deleted_per_vector[vector_name][idx] = 0
             else:
                 self.deleted_per_vector[vector_name][idx] = 1
@@ -2789,12 +2779,7 @@ class LocalCollection:
                     self.deleted_per_vector[vector_name], 1
                 )
             else:
-                vector_np = np.array(vector, dtype=np.float32)
-                params = self.get_vector_params(vector_name)
-                if params.distance == models.Distance.COSINE:
-                    norm = np.linalg.norm(vector_np)
-                    vector_np = vector_np / norm if norm > EPSILON else vector_np
-                named_vectors[idx] = vector_np
+                named_vectors[idx] = self._to_stored_vector(vector, vector_name)
                 self.deleted_per_vector[vector_name] = np.append(
                     self.deleted_per_vector[vector_name], 0
                 )
@@ -2845,12 +2830,7 @@ class LocalCollection:
                     self.deleted_per_vector[vector_name], 1
                 )
             else:
-                vector_np = np.array(vector, dtype=np.float32)
-                params = self.get_vector_params(vector_name)
-                if params.distance == models.Distance.COSINE:
-                    vector_norm = np.linalg.norm(vector_np, axis=-1)[:, np.newaxis]
-                    vector_np /= np.where(vector_norm != 0.0, vector_norm, EPSILON)
-                named_vectors[idx] = vector_np
+                named_vectors[idx] = self._to_stored_vector(vector, vector_name)
                 self.deleted_per_vector[vector_name] = np.append(
                     self.deleted_per_vector[vector_name], 0
                 )
@@ -3015,17 +2995,22 @@ class LocalCollection:
                 continue
 
             self._validate_dense_or_multivector(vector, vector_name)
-            vector_np = np.array(vector, dtype=np.float32)
-            if self.get_vector_params(vector_name).distance == models.Distance.COSINE:
-                if vector_name in self.vectors:
-                    norm = np.linalg.norm(vector_np)
-                    vector_np = vector_np / norm if norm > EPSILON else vector_np
-                else:
-                    vector_norm = np.linalg.norm(vector_np, axis=-1)[:, np.newaxis]
-                    vector_np /= np.where(vector_norm != 0.0, vector_norm, EPSILON)
-            validated.append((vector_name, vector_np))
+            validated.append((vector_name, self._to_stored_vector(vector, vector_name)))
 
         return validated
+
+    def _to_stored_vector(self, vector: Any, vector_name: str) -> types.NumpyArray:
+        """A dense vector or multivector the way the collection holds it: float32, normalized
+        for cosine distance."""
+        vector_np = np.array(vector, dtype=np.float32)
+        if self.get_vector_params(vector_name).distance == models.Distance.COSINE:
+            if vector_name in self.vectors:
+                norm = np.linalg.norm(vector_np)
+                vector_np = vector_np / norm if norm > EPSILON else vector_np
+            else:
+                vector_norm = np.linalg.norm(vector_np, axis=-1)[:, np.newaxis]
+                vector_np /= np.where(vector_norm != 0.0, vector_norm, EPSILON)
+        return vector_np
 
     def _apply_named_vectors(self, idx: int, validated: list[tuple[str, Any]]) -> None:
         """Apply already validated named vectors. Call `_validate_named_vectors` first."""
