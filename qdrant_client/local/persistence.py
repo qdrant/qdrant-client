@@ -141,6 +141,15 @@ class CollectionPersistence:
         )
         self.storage.commit()
 
+    def contains(self, point_id: models.ExtendedPointId) -> bool:
+        """Return whether a point is still stored on disk."""
+        key = self.encode_key(point_id)
+        cursor = self.storage.cursor()
+        return (
+            cursor.execute("SELECT 1 FROM points WHERE id = ? LIMIT 1", (key,)).fetchone()
+            is not None
+        )
+
     def load(self) -> Iterable[models.PointStruct]:
         """
         Load a point from the local storage.

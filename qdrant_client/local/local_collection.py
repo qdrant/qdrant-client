@@ -2984,9 +2984,21 @@ class LocalCollection:
         # still reach it. Marking the whole batch deleted up front would hide persisted
         # records whose deletion never completed until the collection is reopened.
         for point_id in ids:
-            if point_id in self.ids:
+            if point_id not in self.ids:
+                continue
+            try:
                 self.storage.delete(point_id)
-                self._mark_deleted(self.ids[point_id])
+            except Exception:
+                # storage.delete may have committed before raising. Hide the point
+                # only if the row is gone, so a later write cannot persist it again.
+                try:
+                    committed = not self.storage.contains(point_id)
+                except Exception:
+                    committed = False
+                if committed:
+                    self._mark_deleted(self.ids[point_id])
+                raise
+            self._mark_deleted(self.ids[point_id])
 
     def _filter_to_ids(self, delete_filter: types.Filter) -> list[models.ExtendedPointId]:
         mask = self._payload_and_non_deleted_mask(delete_filter)

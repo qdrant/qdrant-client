@@ -307,11 +307,24 @@ def test_failed_persistent_delete_keeps_remaining_points_visible():
         with pytest.raises(sqlite3.OperationalError):
             client.delete(collection_name, points_selector=target_filter)
 
-        # Point 2 was committed to disk and may be hidden; point 3 was never deleted and
-        # must still be reachable so a retry can remove it.
+        # Point 2's deletion committed before the error, so memory must hide it now.
+        # Point 3 was never deleted and must still be reachable so a retry can remove it.
         visible_after_error = {point.id for point in client.scroll(collection_name, limit=10)[0]}
+        assert 2 not in visible_after_error
         assert 3 in visible_after_error
         assert 9 in visible_after_error
+        assert not storage.contains(2)
+
+        # Cover the committed-then-raised state before the filter retry: a later
+        # write must not treat point 2 as live and persist it again.
+        with pytest.raises(KeyError):
+            client.set_payload(collection_name, payload={"group": "revived"}, points=[2])
+
+        visible_after_write = {point.id for point in client.scroll(collection_name, limit=10)[0]}
+        assert 2 not in visible_after_write
+        assert 3 in visible_after_write
+        assert 9 in visible_after_write
+        assert not storage.contains(2)
 
         storage.delete = real_delete
         client.delete(collection_name, points_selector=target_filter)
