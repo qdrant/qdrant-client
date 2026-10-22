@@ -980,24 +980,21 @@ class GrpcToRest:
         if name is None:
             raise ValueError(f"invalid PointsSelector model: {model}")  # pragma: no cover
         val = getattr(model, name)
+        shard_key = (
+            cls.convert_shard_key_selector(shard_key_selector)
+            if shard_key_selector is not None
+            else None
+        )
 
         if name == "points":
             return rest.PointIdsList(
                 points=[cls.convert_point_id(point) for point in val.ids],
-                shard_key=(
-                    cls.convert_shard_key_selector(shard_key_selector)
-                    if shard_key_selector is not None
-                    else None
-                ),
+                shard_key=shard_key,
             )
         if name == "filter":
             return rest.FilterSelector(
                 filter=cls.convert_filter(val),
-                shard_key=(
-                    cls.convert_shard_key_selector(shard_key_selector)
-                    if shard_key_selector is not None
-                    else None
-                ),
+                shard_key=shard_key,
             )
         raise ValueError(f"invalid PointsSelector model: {model}")  # pragma: no cover
 
