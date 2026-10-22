@@ -15,7 +15,7 @@ from httpx import Timeout
 from grpc import Compression, RpcError
 
 import qdrant_client.http.exceptions
-from qdrant_client import QdrantClient, grpc, models
+from qdrant_client import QdrantClient, grpc as q_grpc, models
 from qdrant_client._pydantic_compat import to_dict
 from qdrant_client.conversions.common_types import PointVectors, StrictModeConfig
 from qdrant_client.common.client_exceptions import ResourceExhaustedResponse
@@ -2757,12 +2757,14 @@ def test_create_text_payload_index_without_tokenizer(prefer_grpc: bool):
         wait=True,
     )
 
-    grpc_params = grpc.PayloadIndexParams(text_index_params=grpc.TextIndexParams(lowercase=True))
+    grpc_params = q_grpc.PayloadIndexParams(
+        text_index_params=q_grpc.TextIndexParams(lowercase=True)
+    )
     client.create_payload_index(
         COLLECTION_NAME, field_name="grpc_text_field", field_schema=grpc_params, wait=True
     )
     # the params passed by the user are not modified
-    assert grpc_params.text_index_params.tokenizer == grpc.TokenizerType.Unknown
+    assert grpc_params.text_index_params.tokenizer == q_grpc.TokenizerType.Unknown
 
     payload_schema = client.get_collection(COLLECTION_NAME).payload_schema
     assert payload_schema["text_field"].params.tokenizer == models.TokenizerType.WORD
