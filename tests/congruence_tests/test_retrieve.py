@@ -29,6 +29,10 @@ def test_retrieve(local_client, remote_client) -> None:
     compare_client_results(
         local_client, remote_client, lambda c: c.retrieve(COLLECTION_NAME, [id_])
     )
+    # the server returns each point once, in the order it was first requested
+    compare_client_results(
+        local_client, remote_client, lambda c: c.retrieve(COLLECTION_NAME, [2, 1, 2])
+    )
     compare_client_results(
         local_client,
         remote_client,
