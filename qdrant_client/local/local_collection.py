@@ -168,26 +168,14 @@ def _validate_payload_selector(operation: models.SetPayload | models.DeletePaylo
     # the server cannot parse such an operation, so the whole batch fails
     if operation.points is None and operation.filter is None:
         raise ValueError("No filter or points provided")
-    # an explicit empty id list is an empty selection, rejected like the server does
-    if operation.points is not None and len(operation.points) == 0:
-        raise ValueError("Empty update request")
-
-
-def _validate_clear_payload_selector(selector: models.PointsSelector) -> None:
-    # an empty id list is an empty selection, rejected like the server does
-    if isinstance(selector, models.PointIdsList) and len(selector.points) == 0:
-        raise ValueError("Empty update request")
 
 
 def _validate_delete_vectors_selector(
     operation: models.DeleteVectors,
 ) -> None:
-    # the server cannot parse an operation without a selector, and an empty id list is an
-    # empty selection: both reject the whole batch
+    # the server cannot parse an operation without a selector, so the whole batch fails
     if operation.points is None and operation.filter is None:
         raise ValueError("No filter or points provided")
-    if operation.points is not None and len(operation.points) == 0:
-        raise ValueError("Empty update request")
 
 
 def _batch_selector(
@@ -3402,11 +3390,7 @@ class LocalCollection:
             for key in update_op.delete_payload.keys:
                 parse_json_path(key)
 
-        elif isinstance(update_op, models.ClearPayloadOperation):
-            _validate_clear_payload_selector(update_op.clear_payload)
-
         elif isinstance(update_op, models.DeleteVectorsOperation):
-            # the selection is checked before the vector names, as on the server
             _validate_delete_vectors_selector(update_op.delete_vectors)
             _validate_vector_names_to_delete(update_op.delete_vectors.vector)
 

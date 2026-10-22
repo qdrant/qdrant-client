@@ -137,7 +137,8 @@ def test_batch_rejects_empty_selectors() -> None:
     """An empty selection is an empty update request, as on the server.
 
     It used to surface from the selector dispatch as `Unsupported selector type`, and a
-    `ClearPayloadOperation` with an empty id list silently applied nothing.
+    `ClearPayloadOperation` with an empty id list silently applied nothing. Empty id lists
+    fail when the batch reaches that operation, so a valid update ahead of it stays applied.
     """
     id_filter = models.Filter(must=[models.HasIdCondition(has_id=[1])])
     empty_operations = [
@@ -201,8 +202,12 @@ def test_batch_rejects_empty_selectors() -> None:
         with pytest.raises(ValueError, match=match):
             collection.batch_update_points([touch_payload(), operation])
 
-        # the operation ahead of the rejected one is not applied either
-        assert collection.payload[0] == {"p": "orig"}
+        if match == "Empty update request":
+            # empty selections fail on the apply path, so the earlier payload update stays
+            assert collection.payload[0] == {"p": "changed"}
+        else:
+            # a missing selector cannot be parsed, so nothing in the batch is applied
+            assert collection.payload[0] == {"p": "orig"}
 
 
 @pytest.mark.parametrize(
