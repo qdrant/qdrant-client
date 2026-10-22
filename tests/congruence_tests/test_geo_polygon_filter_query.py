@@ -14,10 +14,12 @@ from tests.congruence_tests.test_common import (
 
 
 def test_geo_polygon_filter_query():
-    # fix random seed
+    # fix random seed for the fixtures, then restore the state, so that the tests after this one
+    # still get random fixtures
+    random_state = random.getstate()
     random.seed(42)
-
     fixture_points = generate_fixtures(num=100)
+    random.setstate(random_state)
 
     local_client = init_local()
     init_client(local_client, fixture_points)
