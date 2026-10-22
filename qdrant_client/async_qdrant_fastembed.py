@@ -108,7 +108,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         Raises:
             ValueError: If sparse model name is passed or model is not found in the supported models.
         """
-        (embeddings_size, _) = self._get_model_params(model_name=model_name)
+        embeddings_size, _ = self._get_model_params(model_name=model_name)
         return embeddings_size
 
     @classmethod

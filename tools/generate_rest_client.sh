@@ -9,16 +9,16 @@ VENV_DIR="$TEMP_ENV/rest_generator_venv"
 
 PYTHON_BIN=""
 
-if [[ "$(python --version 2>&1 | awk '{print $2}')" == "3.10.10" ]]; then
+if [[ "$(python --version 2>&1 | awk '{print $2}')" == "3.11.4" ]]; then
     PYTHON_BIN="python"
-elif [[ "$(python3 --version 2>&1 | awk '{print $2}')" == "3.10.10" ]]; then
+elif [[ "$(python3 --version 2>&1 | awk '{print $2}')" == "3.11.4" ]]; then
     PYTHON_BIN="python3"
-elif [[ "$(python3.10 --version 2>&1 | awk '{print $2}')" == "3.10.10" ]]; then
-    PYTHON_BIN="python3.10"
+elif [[ "$(python3.11 --version 2>&1 | awk '{print $2}')" == "3.11.4" ]]; then
+    PYTHON_BIN="python3.11"
 fi
 
 if [[ -z "$PYTHON_BIN" ]]; then
-    echo "Error: No suitable Python 3.10.10 installation found among {python, python3, python3.10}" >&2
+    echo "Error: No suitable Python 3.11.4 installation found among {python, python3, python3.11}" >&2
     exit 1
 fi
 

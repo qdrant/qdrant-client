@@ -1749,9 +1749,7 @@ class GrpcToRest:
         )
 
     @classmethod
-    def convert_text_scoring_params(
-        cls, model: grpc.TextScoringParams
-    ) -> rest.TextScoringParams:
+    def convert_text_scoring_params(cls, model: grpc.TextScoringParams) -> rest.TextScoringParams:
         return rest.TextScoringParams(type=cls.convert_text_scoring_type(model.type))
 
     @classmethod
@@ -4567,9 +4565,7 @@ class RestToGrpc:
         raise ValueError(f"invalid TextScoringInterface model: {model}")  # pragma: no cover
 
     @classmethod
-    def convert_text_scoring_params(
-        cls, model: rest.TextScoringParams
-    ) -> grpc.TextScoringParams:
+    def convert_text_scoring_params(cls, model: rest.TextScoringParams) -> grpc.TextScoringParams:
         return grpc.TextScoringParams(type=cls.convert_text_scoring_type(model.type))
 
     @classmethod

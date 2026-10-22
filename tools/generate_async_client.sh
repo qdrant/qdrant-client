@@ -24,7 +24,7 @@ mv async_client.py $ABSOLUTE_PROJECT_ROOT/qdrant_client/async_serverless_client.
 
 cd $ABSOLUTE_PROJECT_ROOT/qdrant_client
 
-ls -1 async*.py | autoflake --recursive --imports qdrant_client --remove-unused-variables --in-place async*.py
+ruff check --fix-only --unsafe-fixes --select F401,F841 async*.py
 ls -1 async*.py | xargs -I {} ruff format --line-length 99 {}
 
 mv async_qdrant_local.py local/async_qdrant_local.py

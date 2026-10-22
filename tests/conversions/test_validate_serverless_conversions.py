@@ -55,9 +55,9 @@ def test_conversion_completeness() -> None:
             )
 
             grpc_fixture = to_grpc[model_name](model_fixture)
-            assert MessageToDict(grpc_fixture) == MessageToDict(
-                fixture
-            ), f"{model_name} conversion is broken for {fixture}"
+            assert MessageToDict(grpc_fixture) == MessageToDict(fixture), (
+                f"{model_name} conversion is broken for {fixture}"
+            )
 
 
 def test_every_payload_index_kind_has_a_fixture() -> None:

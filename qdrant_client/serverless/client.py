@@ -231,6 +231,7 @@ class QdrantServerless:
             point_count=response.point_count if response.HasField("point_count") else None,
             time=response.time,
         )
+
     def collection_exists(self, collection_name: str, timeout: Optional[int] = None) -> bool:
         """Checks whether a collection exists.
 

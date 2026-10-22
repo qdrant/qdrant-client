@@ -93,9 +93,7 @@ def test_values_count_multiple_values():
             payload={"nested": [{"field": [1]}, {"field": list(range(10))}]},
         ),
         # counts == [3]: inside (1, 5)
-        models.PointStruct(
-            id=2, vector=[0.2, 0.3], payload={"nested": [{"field": [1, 2, 3]}]}
-        ),
+        models.PointStruct(id=2, vector=[0.2, 0.3], payload={"nested": [{"field": [1, 2, 3]}]}),
         # counts == [1, 2]: 2 is inside (1, 5)
         models.PointStruct(
             id=3, vector=[0.3, 0.4], payload={"nested": [{"field": [1]}, {"field": [1, 2]}]}

@@ -64,7 +64,9 @@ def _select_source_collections(
     if collection_names is not None:
         assert all(
             collection_name in source_collection_names for collection_name in collection_names
-        ), f"Source client does not have collections: {set(collection_names) - set(source_collection_names)}"
+        ), (
+            f"Source client does not have collections: {set(collection_names) - set(source_collection_names)}"
+        )
     else:
         collection_names = source_collection_names
 
@@ -156,6 +158,6 @@ def _migrate_collection(
         dest_client.upload_points(collection_name, records, wait=True)  # type: ignore
     source_client_vectors_count = source_client.count(collection_name).count
     dest_client_vectors_count = dest_client.count(collection_name).count
-    assert (
-        source_client_vectors_count == dest_client_vectors_count
-    ), f"Migration failed, vectors count are not equal: source vector count {source_client_vectors_count}, dest vector count {dest_client_vectors_count}"
+    assert source_client_vectors_count == dest_client_vectors_count, (
+        f"Migration failed, vectors count are not equal: source vector count {source_client_vectors_count}, dest vector count {dest_client_vectors_count}"
+    )

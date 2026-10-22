@@ -11,16 +11,16 @@ VENV_DIR="$TEMP_ENV/grpc_generator_venv"
 trap "rm -rf \"$TEMP_ENV\"" EXIT
 
 PYTHON_BIN=""
-if [[ "$(python --version 2>&1 | awk '{print $2}')" == "3.10.10" ]]; then
+if [[ "$(python --version 2>&1 | awk '{print $2}')" == "3.11.4" ]]; then
     PYTHON_BIN="python"
-elif [[ "$(python3 --version 2>&1 | awk '{print $2}')" == "3.10.10" ]]; then
+elif [[ "$(python3 --version 2>&1 | awk '{print $2}')" == "3.11.4" ]]; then
     PYTHON_BIN="python3"
-elif [[ "$(python3.10 --version 2>&1 | awk '{print $2}')" == "3.10.10" ]]; then
-    PYTHON_BIN="python3.10"
+elif [[ "$(python3.11 --version 2>&1 | awk '{print $2}')" == "3.11.4" ]]; then
+    PYTHON_BIN="python3.11"
 fi
 
 if [[ -z "$PYTHON_BIN" ]]; then
-    echo "Error: No suitable Python 3.10.10 installation found among {python, python3, python3.10}" >&2
+    echo "Error: No suitable Python 3.11.4 installation found among {python, python3, python3.11}" >&2
     exit 1
 fi
 
@@ -52,11 +52,10 @@ import re, sys
 src_path, out_path, header = sys.argv[1], sys.argv[2], sys.argv[3]
 src = open(src_path).read()
 src = re.sub(r'\nimport "buf/validate/validate\.proto";\n', '\n', src)
-src = re.sub(
-    r' \[\(buf\.validate\.field\)\.uint32 = \{\s*gt: 0\s*lte: 100\s*\}\]',
-    '',
-    src,
-)
+# field options, e.g. ` [(buf.validate.field).string.min_len = 1]`, possibly over several lines
+src = re.sub(r' \[\(buf\.validate\.[^\]]*\]', '', src)
+# message and oneof options, e.g. `option (buf.validate.message).cel = {...};`
+src = re.sub(r'^[ \t]*option \(buf\.validate\.[^;]*;\n', '', src, flags=re.M)
 if 'buf.validate' in src:
     raise SystemExit('failed to strip buf.validate annotations from collections.proto')
 open(out_path, 'w').write(header + '\n' + src)
@@ -71,6 +70,8 @@ rm -f "$TMP_PROTO"
   --mypy_out="$OUT_DIR"
 
 # https://github.com/protocolbuffers/protobuf/issues/1491
-sed -i -re 's/^import (\w*)_pb2/from . import \1_pb2/g' "$OUT_DIR"/*.py
+# -i.bak and -E work with both GNU and BSD (macOS) sed
+sed -i.bak -E 's/^import ([[:alnum:]_]*)_pb2/from . import \1_pb2/g' "$OUT_DIR"/*.py
+rm -f "$OUT_DIR"/*.py.bak
 
 deactivate

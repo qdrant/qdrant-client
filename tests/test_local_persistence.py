@@ -261,9 +261,9 @@ def test_idf_persistence_after_deletion(operation: str):
                 search_params=rest.SearchParams(idf=idf),
             ).points
             collected.append([point.score for point in points])
-        assert collected[0] == pytest.approx(
-            collected[1]
-        ), "the global scope disagrees with a corpus of every live point"
+        assert collected[0] == pytest.approx(collected[1]), (
+            "the global scope disagrees with a corpus of every live point"
+        )
         return collected[0]
 
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -288,9 +288,9 @@ def test_idf_persistence_after_deletion(operation: str):
         client.close()
 
         client = QdrantClient(path=tmpdir)
-        assert scores(client) == pytest.approx(
-            before_reopen
-        ), "reopening the collection changed the IDF scores"
+        assert scores(client) == pytest.approx(before_reopen), (
+            "reopening the collection changed the IDF scores"
+        )
         # deleting the vectors leaves the points themselves in place
         surviving = [0] if operation == "points" else [0, 1, 2, 3]
         assert [point.id for point in client.scroll(collection_name, limit=10)[0]] == surviving
