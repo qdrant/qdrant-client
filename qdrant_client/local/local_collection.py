@@ -451,9 +451,12 @@ class LocalCollection:
                         )
                         deleted_ids.append((idx, name))
 
+            # vectors are stored already normalized (see `_to_stored_point`),
+            # normalizing them again would change their last bits
+
             # setup dense vectors by name
             for name, named_vectors in vectors.items():
-                self.vectors[name] = np.array(named_vectors)
+                self.vectors[name] = np.array(named_vectors, dtype=np.float32)
                 self.deleted_per_vector[name] = np.zeros(len(self.payload), dtype=bool)
 
             # setup sparse vectors by name
@@ -465,7 +468,9 @@ class LocalCollection:
 
             # setup multivectors by name
             for name, named_vectors in multivectors.items():
-                self.multivectors[name] = [np.array(vector) for vector in named_vectors]
+                self.multivectors[name] = [
+                    np.array(vector, dtype=np.float32) for vector in named_vectors
+                ]
                 self.deleted_per_vector[name] = np.zeros(len(self.payload), dtype=bool)
 
             # track deleted points by named vector
@@ -2918,7 +2923,7 @@ class LocalCollection:
 
         # Store the point before applying it, see `_persist_by_id`.
         if self.storage is not None:
-            self.storage.persist(point)
+            self.storage.persist(self._to_stored_point(point))
         apply_point(point)
 
     @staticmethod
@@ -3011,6 +3016,21 @@ class LocalCollection:
                 vector_norm = np.linalg.norm(vector_np, axis=-1)[:, np.newaxis]
                 vector_np /= np.where(vector_norm != 0.0, vector_norm, EPSILON)
         return vector_np
+
+    def _to_stored_point(self, point: models.PointStruct) -> models.PointStruct:
+        """`point` with its vectors as the collection holds them, like `_persist_by_id` stores."""
+        if isinstance(point.vector, dict):
+            vector: models.VectorStruct = {
+                vector_name: (
+                    vector
+                    if isinstance(vector, SparseVector)
+                    else self._to_stored_vector(vector, vector_name).tolist()
+                )
+                for vector_name, vector in point.vector.items()
+            }
+        else:
+            vector = self._to_stored_vector(point.vector, DEFAULT_VECTOR_NAME).tolist()
+        return construct(models.PointStruct, id=point.id, vector=vector, payload=point.payload)
 
     def _apply_named_vectors(self, idx: int, validated: list[tuple[str, Any]]) -> None:
         """Apply already validated named vectors. Call `_validate_named_vectors` first."""

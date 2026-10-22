@@ -562,6 +562,38 @@ def test_rejected_upsert_is_not_stored(tmp_path):
     client.close()
 
 
+def test_reopened_collection_holds_the_same_vectors(tmp_path):
+    """Regression: a reopened collection returned upserted vectors raw and as float64."""
+    collection_name = "reopened_vectors"
+    multivector_config = rest.MultiVectorConfig(comparator=rest.MultiVectorComparator.MAX_SIM)
+    client = QdrantClient(path=str(tmp_path))
+    client.create_collection(
+        collection_name,
+        vectors_config={
+            "cosine": rest.VectorParams(size=4, distance=rest.Distance.COSINE),
+            "multi": rest.VectorParams(
+                size=4, distance=rest.Distance.COSINE, multivector_config=multivector_config
+            ),
+            "dot": rest.VectorParams(size=4, distance=rest.Distance.DOT),
+        },
+    )
+    vector = [1.0, 2.0, 3.0, 4.0]  # normalizing it twice changes its last bits
+    inexact_vector = [0.1, 0.2, 0.3, 0.4]  # not exact in float32
+    vectors = {"cosine": vector, "multi": [vector, inexact_vector], "dot": inexact_vector}
+    client.upsert(
+        collection_name,
+        [rest.PointStruct(id=1, vector=vectors), rest.PointStruct(id=2, vector=vectors)],
+    )
+    # stores point 2 again, with its vectors already normalized
+    client.set_payload(collection_name, {"a": 1}, points=[2])
+    points = client.retrieve(collection_name, [1, 2], with_vectors=True)
+    client.close()
+
+    client = QdrantClient(path=str(tmp_path))
+    assert client.retrieve(collection_name, [1, 2], with_vectors=True) == points
+    client.close()
+
+
 def test_collection_metadata_is_stored_as_json(tmp_path):
     """Datetimes in metadata used to break saving `meta.json`, the server stores them as strings."""
     client = QdrantClient(path=str(tmp_path))
