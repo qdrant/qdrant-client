@@ -133,6 +133,78 @@ def test_rejected_batch_operation_keeps_earlier_operations() -> None:
     assert sorted(collection._get_vectors(idx=0, with_vectors=True)) == ["a", "b"]
 
 
+def test_batch_rejects_empty_selectors() -> None:
+    """An empty selection is an empty update request, as on the server.
+
+    It used to surface from the selector dispatch as `Unsupported selector type`, and a
+    `ClearPayloadOperation` with an empty id list silently applied nothing.
+    """
+    id_filter = models.Filter(must=[models.HasIdCondition(has_id=[1])])
+    empty_operations = [
+        (
+            models.SetPayloadOperation(
+                set_payload=models.SetPayload(payload={"a": 1}, points=[])
+            ),
+            "Empty update request",
+        ),
+        (
+            models.SetPayloadOperation(
+                set_payload=models.SetPayload(payload={"a": 1}, points=[], filter=id_filter)
+            ),
+            "Empty update request",
+        ),
+        (
+            models.SetPayloadOperation(set_payload=models.SetPayload(payload={"a": 1})),
+            "No filter or points provided",
+        ),
+        (
+            models.OverwritePayloadOperation(
+                overwrite_payload=models.SetPayload(payload={"a": 1}, points=[])
+            ),
+            "Empty update request",
+        ),
+        (
+            models.OverwritePayloadOperation(
+                overwrite_payload=models.SetPayload(payload={"a": 1})
+            ),
+            "No filter or points provided",
+        ),
+        (
+            models.DeletePayloadOperation(
+                delete_payload=models.DeletePayload(keys=["a"], points=[])
+            ),
+            "Empty update request",
+        ),
+        (
+            models.DeletePayloadOperation(delete_payload=models.DeletePayload(keys=["a"])),
+            "No filter or points provided",
+        ),
+        (
+            models.ClearPayloadOperation(clear_payload=models.PointIdsList(points=[])),
+            "Empty update request",
+        ),
+        (
+            models.DeleteVectorsOperation(
+                delete_vectors=models.DeleteVectors(points=[], vector=["a"])
+            ),
+            "Empty update request",
+        ),
+        (
+            models.DeleteVectorsOperation(delete_vectors=models.DeleteVectors(vector=["a"])),
+            "No filter or points provided",
+        ),
+    ]
+
+    for operation, match in empty_operations:
+        collection = batch_collection()
+
+        with pytest.raises(ValueError, match=match):
+            collection.batch_update_points([touch_payload(), operation])
+
+        # the operation ahead of the rejected one is not applied either
+        assert collection.payload[0] == {"p": "orig"}
+
+
 @pytest.mark.parametrize(
     ("vectors_config", "good", "bad"),
     [
