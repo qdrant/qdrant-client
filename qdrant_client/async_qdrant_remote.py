@@ -2204,6 +2204,11 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 index_params = getattr(field_index_params, name)
                 if isinstance(index_params, grpc.TextIndexParams):
                     field_schema = grpc.FieldType.FieldTypeText
+                    if index_params.tokenizer == grpc.TokenizerType.Unknown:
+                        field_index_params = grpc.PayloadIndexParams(
+                            text_index_params=index_params
+                        )
+                        field_index_params.text_index_params.tokenizer = grpc.TokenizerType.Word
                 if isinstance(index_params, grpc.IntegerIndexParams):
                     field_schema = grpc.FieldType.FieldTypeInteger
                 if isinstance(index_params, grpc.KeywordIndexParams):

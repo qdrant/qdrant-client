@@ -2408,6 +2408,12 @@ class QdrantRemote(QdrantBase):
                 index_params = getattr(field_index_params, name)
                 if isinstance(index_params, grpc.TextIndexParams):
                     field_schema = grpc.FieldType.FieldTypeText
+                    if index_params.tokenizer == grpc.TokenizerType.Unknown:
+                        # an unset tokenizer is rejected over grpc, while REST defaults it to word
+                        field_index_params = grpc.PayloadIndexParams(
+                            text_index_params=index_params
+                        )
+                        field_index_params.text_index_params.tokenizer = grpc.TokenizerType.Word
 
                 if isinstance(index_params, grpc.IntegerIndexParams):
                     field_schema = grpc.FieldType.FieldTypeInteger
