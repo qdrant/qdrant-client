@@ -949,3 +949,30 @@ def test_convert_collection_info_points_count_presence():
     round_tripped = RestToGrpc.convert_collection_info(GrpcToRest.convert_collection_info(zero))
     assert round_tripped.HasField("points_count")
     assert round_tripped.points_count == 0
+
+
+@pytest.mark.parametrize("operation", get_grpc_fixture("PointsUpdateOperation"))
+@pytest.mark.parametrize(
+    "shard_key",
+    [None, 0, "", "tenant-a", [0, "tenant-a"], [], {"target": 0, "fallback": ""}],
+    ids=["absent", "zero", "empty-string", "keyword", "multiple", "empty-list", "fallback"],
+)
+def test_grpc_update_operation_shard_key_round_trip(operation, shard_key):
+    from qdrant_client import grpc, models
+    from qdrant_client.conversions.conversion import GrpcToRest, RestToGrpc
+
+    if isinstance(shard_key, dict):
+        shard_key = models.ShardKeyWithFallback(**shard_key)
+
+    operation_with_shard = grpc.PointsUpdateOperation()
+    operation_with_shard.CopyFrom(operation)
+    inner = getattr(operation_with_shard, operation_with_shard.WhichOneof("operation"))
+    if shard_key is not None:
+        inner.shard_key_selector.CopyFrom(RestToGrpc.convert_shard_key_selector(shard_key))
+
+    converted = GrpcToRest.convert_points_update_operation(operation_with_shard)
+    operation_name = operation_with_shard.WhichOneof("operation")
+    rest_name = "delete" if operation_name == "delete_points" else operation_name
+    converted_inner = getattr(converted, rest_name)
+    assert converted_inner.shard_key == shard_key
+    assert RestToGrpc.convert_points_update_operation(converted) == operation_with_shard
