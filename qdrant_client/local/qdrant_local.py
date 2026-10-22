@@ -413,12 +413,13 @@ class QdrantLocal(QdrantBase):
         self,
         prefetch: Sequence[types.Prefetch] | types.Prefetch | None,
         collection_name: str,
-    ) -> tuple[list[types.Prefetch], set[types.PointId]]:
+        mentioned_ids: set[types.PointId],
+    ) -> list[types.Prefetch]:
         if prefetch is None:
-            return [], set()
+            return []
 
         if isinstance(prefetch, list) and len(prefetch) == 0:
-            return [], set()
+            return []
 
         prefetches = []
         if isinstance(prefetch, types.Prefetch):
@@ -428,41 +429,38 @@ class QdrantLocal(QdrantBase):
         elif isinstance(prefetch, Sequence):
             prefetches = list(prefetch)
 
-        resolved_prefetches = []
-        mentioned_ids: set[types.PointId] = set()
-        for prefetch in prefetches:
-            if prefetch is not None:
-                resolved_prefetch, prefetch_mentioned_ids = self._resolve_prefetch_input(
-                    prefetch, collection_name
-                )
-                resolved_prefetches.append(resolved_prefetch)
-                mentioned_ids |= prefetch_mentioned_ids
-        return resolved_prefetches, mentioned_ids
+        return [
+            self._resolve_prefetch_input(prefetch, collection_name, mentioned_ids)
+            for prefetch in prefetches
+            if prefetch is not None
+        ]
 
     def _resolve_prefetch_input(
-        self, prefetch: types.Prefetch, collection_name: str
-    ) -> tuple[types.Prefetch, set[types.PointId]]:
+        self, prefetch: types.Prefetch, collection_name: str, mentioned_ids: set[types.PointId]
+    ) -> types.Prefetch:
         """
-        Resolves a prefetch tree and returns it along with the point ids mentioned anywhere in it.
-        The server excludes these ids from every prefetch, so they belong in the root filter.
+        Resolves a copy of a prefetch tree and adds the point ids mentioned anywhere in it to
+        `mentioned_ids`. The server excludes these ids from every prefetch, so they belong in the
+        root filter.
         """
         if prefetch.query is None:
-            return prefetch, set()
+            return prefetch
 
         prefetch = deepcopy(prefetch)
-        query, mentioned_ids = self._resolve_query_input(
+        query, query_mentioned_ids = self._resolve_query_input(
             collection_name,
             prefetch.query,
             prefetch.using,
             prefetch.lookup_from,
         )
         prefetch.query = query
+        mentioned_ids.update(query_mentioned_ids)
 
-        prefetch.prefetch, nested_mentioned_ids = self._resolve_prefetches_input(
-            prefetch.prefetch, collection_name
+        prefetch.prefetch = self._resolve_prefetches_input(
+            prefetch.prefetch, collection_name, mentioned_ids
         )
 
-        return prefetch, mentioned_ids | nested_mentioned_ids
+        return prefetch
 
     def query_points(
         self,
@@ -504,12 +502,8 @@ class QdrantLocal(QdrantBase):
                 collection_name, query, using, lookup_from
             )
 
-        prefetch, prefetch_mentioned_ids = self._resolve_prefetches_input(
-            prefetch, collection_name
-        )
-        query_filter = ignore_mentioned_ids_filter(
-            query_filter, list(mentioned_ids | prefetch_mentioned_ids)
-        )
+        prefetch = self._resolve_prefetches_input(prefetch, collection_name, mentioned_ids)
+        query_filter = ignore_mentioned_ids_filter(query_filter, list(mentioned_ids))
 
         return collection.query_points(
             query=query,
@@ -599,12 +593,8 @@ class QdrantLocal(QdrantBase):
                 collection_name, query, using, lookup_from
             )
 
-        prefetch, prefetch_mentioned_ids = self._resolve_prefetches_input(
-            prefetch, collection_name
-        )
-        query_filter = ignore_mentioned_ids_filter(
-            query_filter, list(mentioned_ids | prefetch_mentioned_ids)
-        )
+        prefetch = self._resolve_prefetches_input(prefetch, collection_name, mentioned_ids)
+        query_filter = ignore_mentioned_ids_filter(query_filter, list(mentioned_ids))
 
         with_lookup_collection = None
         if with_lookup is not None:
