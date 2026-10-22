@@ -328,7 +328,7 @@ def compare_client_results(
 ) -> None:
     # context search can have many points with the same 0.0 score
     is_context_search = kwargs.pop("is_context_search", False)
-    abs_tol = kwargs.pop("abs_tol", 1e-6)
+    abs_tol = kwargs.pop("abs_tol", 1e-5 if is_context_search else 1e-6)
 
     # get results from both clients
     res1 = foo(client1, **kwargs)
@@ -345,14 +345,14 @@ def compare_client_results(
         if is_context_search is True:
             sorted_1 = sorted(res1, key=lambda x: (x.id))
             sorted_2 = sorted(res2, key=lambda x: (x.id))
-            compare_records(sorted_1, sorted_2, abs_tol=1e-5)
+            compare_records(sorted_1, sorted_2, abs_tol=abs_tol)
         else:
             compare_records(res1, res2, abs_tol=abs_tol)
     elif isinstance(res1, models.QueryResponse) and isinstance(res2, models.QueryResponse):
         if is_context_search is True:
             sorted_1 = sorted(res1.points, key=lambda x: (x.id))
             sorted_2 = sorted(res2.points, key=lambda x: (x.id))
-            compare_records(sorted_1, sorted_2, abs_tol=1e-5)
+            compare_records(sorted_1, sorted_2, abs_tol=abs_tol)
         else:
             compare_records(res1.points, res2.points, abs_tol=abs_tol)
     elif isinstance(res1, models.SearchMatrixOffsetsResponse):
