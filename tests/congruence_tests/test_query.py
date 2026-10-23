@@ -1030,6 +1030,29 @@ class TestSimpleSearcher:
         )
 
     @classmethod
+    def relevance_feedback_query_lookup_from(
+        cls, client: QdrantBase, lookup_from: models.LookupLocation
+    ) -> models.QueryResponse:
+        return client.query_points(
+            collection_name=COLLECTION_NAME,
+            query=models.RelevanceFeedbackQuery(
+                relevance_feedback=models.RelevanceFeedbackInput(
+                    target=1,
+                    feedback=[
+                        models.FeedbackItem(example=2, score=0.9),
+                        models.FeedbackItem(example=3, score=0.1),
+                    ],
+                    strategy=models.NaiveFeedbackStrategy(
+                        naive=models.NaiveFeedbackStrategyParams(a=0.5, b=1.0, c=0.7)
+                    ),
+                )
+            ),
+            using="text",
+            limit=10,
+            lookup_from=lookup_from,
+        )
+
+    @classmethod
     def no_query_no_prefetch(cls, client: QdrantBase) -> models.QueryResponse:
         return client.query_points(collection_name=COLLECTION_NAME, limit=10)
 
@@ -1332,13 +1355,11 @@ def test_dense_query_lookup_from_another_collection():
     init_client(local_client, secondary_collection_points, SECONDARY_COLLECTION_NAME)
     init_client(http_client, secondary_collection_points, SECONDARY_COLLECTION_NAME)
 
-    compare_clients_results(
-        local_client,
-        http_client,
-        grpc_client,
-        searcher.dense_query_lookup_from,
-        lookup_from=models.LookupLocation(collection=SECONDARY_COLLECTION_NAME, vector="text"),
-    )
+    lookup_from = models.LookupLocation(collection=SECONDARY_COLLECTION_NAME, vector="text")
+    for query in (searcher.dense_query_lookup_from, searcher.relevance_feedback_query_lookup_from):
+        compare_clients_results(
+            local_client, http_client, grpc_client, query, lookup_from=lookup_from
+        )
 
 
 def test_dense_query_lookup_from_negative():
