@@ -361,6 +361,10 @@ class AsyncQdrantLocal(AsyncQdrantBase):
                 )
                 for pair in pairs
             ]
+        elif isinstance(query, rest_models.RelevanceFeedbackQuery):
+            query.relevance_feedback.target = input_into_vector(query.relevance_feedback.target)
+            for item in query.relevance_feedback.feedback:
+                item.example = input_into_vector(item.example)
         elif isinstance(query, rest_models.OrderByQuery):
             pass
         elif isinstance(query, rest_models.FusionQuery):
