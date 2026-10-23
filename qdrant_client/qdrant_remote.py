@@ -1138,7 +1138,7 @@ class QdrantRemote(QdrantBase):
                     )
                     for idx in range(len(points.ids))
                 ]
-            if isinstance(points, list):
+            if isinstance(points, Sequence) and not isinstance(points, (str, bytes, bytearray)):
                 points = [
                     (
                         RestToGrpc.convert_point_struct(point)
@@ -1180,7 +1180,7 @@ class QdrantRemote(QdrantBase):
             if isinstance(update_filter, grpc.Filter):
                 update_filter = GrpcToRest.convert_filter(model=update_filter)
 
-            if isinstance(points, list):
+            if isinstance(points, Sequence) and not isinstance(points, (str, bytes, bytearray)):
                 points = [
                     (
                         GrpcToRest.convert_point_struct(point)
