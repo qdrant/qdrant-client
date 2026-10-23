@@ -1,7 +1,7 @@
 from typing import Any, Awaitable, Callable, Dict, Generic, Type, TypeVar, overload
 from urllib.parse import quote, urljoin
 
-from httpx import AsyncClient, Client, Request, Response
+from httpx2 import AsyncClient, Client, Request, Response
 from pydantic import ValidationError
 from qdrant_client.common.client_exceptions import ResourceExhaustedResponse
 from qdrant_client.common.response_parsing import parse_response
