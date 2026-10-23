@@ -12,6 +12,7 @@ class ApiException(Exception):
 
 class UnexpectedResponse(ApiException):
     def __init__(self, status_code: Optional[int], reason_phrase: str, content: bytes, headers: Headers) -> None:
+        super().__init__(status_code, reason_phrase, content, headers)
         self.status_code = status_code
         self.reason_phrase = reason_phrase
         self.content = content
@@ -43,4 +44,5 @@ class UnexpectedResponse(ApiException):
 
 class ResponseHandlingException(ApiException):
     def __init__(self, source: Exception):
+        super().__init__(source)
         self.source = source
