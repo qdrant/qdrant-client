@@ -61,6 +61,8 @@ def normalize_point_id(
     if isinstance(point_id, UUID):
         return str(point_id)
     if isinstance(point_id, int):
+        if validate and not 0 <= point_id < 2**64:
+            raise ValueError(f"Point id {point_id} is not an unsigned 64-bit integer")
         return point_id
     raise TypeError(f"Incompatible point id type: {type(point_id)}")
 
