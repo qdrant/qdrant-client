@@ -4,6 +4,7 @@ class QdrantException(Exception):
 
 class ResourceExhaustedResponse(QdrantException):
     def __init__(self, message: str, retry_after_s: int) -> None:
+        super().__init__(message, retry_after_s)
         self.message = message if message else "Resource Exhausted Response"
         try:
             self.retry_after_s = int(retry_after_s)
