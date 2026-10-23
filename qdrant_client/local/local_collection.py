@@ -898,7 +898,9 @@ class LocalCollection:
                 idf_corpus=self._idf_corpus_of(search_params),
             )
         else:
-            # It is a base query
+            # Same as the server: a random sample without prefetches ignores offset, since its output is not stable
+            offset = 0 if isinstance(query, models.SampleQuery) else offset
+
             scored_points = self._query_collection(
                 query=query,
                 using=using,
@@ -1037,19 +1039,17 @@ class LocalCollection:
                 return []
             else:
                 filter_with_sources = _include_ids_in_filter(query_filter, list(sources_ids))
-                is_random_sample = isinstance(query, models.SampleQuery)
-                result = self._query_collection(
+                return self._query_collection(
                     query=query,
                     using=using,
                     query_filter=filter_with_sources,
-                    limit=limit + offset if is_random_sample else limit,
+                    limit=limit,
                     offset=offset,
                     with_payload=with_payload,
                     with_vectors=with_vectors,
                     score_threshold=score_threshold,
                     idf_corpus=idf_corpus,
                 )
-                return result[offset:] if is_random_sample else result
 
     def _query_collection(
         self,
@@ -1155,11 +1155,11 @@ class LocalCollection:
         elif isinstance(query, models.SampleQuery):
             if query.sample == models.Sample.RANDOM:
                 return self._sample_randomly(
-                    limit=limit,
+                    limit=limit + offset,
                     query_filter=query_filter,
                     with_payload=with_payload,
                     with_vectors=with_vectors,
-                )
+                )[offset:]
             else:
                 raise ValueError(f"Unknown Sample variant: {query.sample}")
         elif isinstance(query, models.FusionQuery):
