@@ -1707,9 +1707,13 @@ class LocalCollection:
         mean_positive_vector = np.mean(positive_vectors_np, axis=0)
 
         if negative_vectors_np is not None:
-            vector = (
-                mean_positive_vector + mean_positive_vector - np.mean(negative_vectors_np, axis=0)
-            )
+            mean_negative_vector = np.mean(negative_vectors_np, axis=0)
+            if len(mean_positive_vector) != len(mean_negative_vector):
+                raise ValueError(
+                    "Wrong input: Vector dimension error: "
+                    f"expected dim: {len(mean_positive_vector)}, got {len(mean_negative_vector)}"
+                )
+            vector = mean_positive_vector + mean_positive_vector - mean_negative_vector
         else:
             vector = mean_positive_vector
         return vector
