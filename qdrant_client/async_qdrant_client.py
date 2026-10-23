@@ -1843,7 +1843,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         Args:
             collection_name:  Name of the collection to upload to
             points: Iterator over points to upload
-            batch_size: How many vectors upload per-request, Default: 64
+            batch_size: How many vectors upload per-request. Must be at least 1. Default: 64
             parallel: Number of parallel processes of upload, 0 means all available cores
             method: Start method for parallel processes, Default: forkserver, spawn on macOS
             max_retries: maximum number of retries in case of a failure
@@ -1867,6 +1867,8 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
                 yield from iterable
 
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+        if batch_size <= 0:
+            raise ValueError(f"batch_size must be greater than 0, got {batch_size}")
         if not self.cloud_inference:
             iter_points = iter(points)
             requires_inference = False
@@ -1919,7 +1921,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             vectors: np.ndarray or an iterable over vectors to upload. Might be mmaped
             payload: Iterable of vectors payload, Optional, Default: None
             ids: Iterable of custom vectors ids, Optional, Default: None
-            batch_size: How many vectors upload per-request, Default: 64
+            batch_size: How many vectors upload per-request. Must be at least 1. Default: 64
             parallel: Number of parallel processes of upload, 0 means all available cores
             method: Start method for parallel processes, Default: forkserver, spawn on macOS
             max_retries: maximum number of retries in case of a failure
@@ -1941,6 +1943,8 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
                 yield from iterable
 
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+        if batch_size <= 0:
+            raise ValueError(f"batch_size must be greater than 0, got {batch_size}")
         num_vectors = vectors_length(vectors)
         if num_vectors is not None:
             ids = require_length(ids, num_vectors, "ids")
