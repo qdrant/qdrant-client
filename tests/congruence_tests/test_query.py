@@ -356,6 +356,24 @@ class TestSimpleSearcher:
             limit=self.limit,
         )
 
+    def dense_query_group_sibling_prefetch_by_id(self, client: QdrantBase) -> GroupsResult:
+        # point 1's own vector makes it the top hit of the plain prefetch, unless the id mentioned
+        # by its sibling excludes it there too
+        vector = client.retrieve(COLLECTION_NAME, [1], with_vectors=["text"])[0].vector["text"]
+        return client.query_points_groups(
+            collection_name=COLLECTION_NAME,
+            prefetch=[
+                models.Prefetch(query=1, using="text", limit=20),
+                models.Prefetch(query=vector, using="text", limit=20),
+            ],
+            query=vector,
+            using="text",
+            with_payload=models.PayloadSelectorInclude(include=[self.group_by]),
+            group_by=self.group_by,
+            group_size=self.group_size,
+            limit=self.limit,
+        )
+
     def dense_query_group_prefetch_by_id_lookup_from(
         self, client: QdrantBase, lookup_from: models.LookupLocation
     ) -> GroupsResult:
@@ -875,6 +893,21 @@ class TestSimpleSearcher:
             using="text",
             with_payload=True,
             limit=10,
+        )
+
+    def dense_query_sibling_prefetch_by_id(self, client: QdrantBase) -> models.QueryResponse:
+        # an id mentioned in one prefetch is excluded from its siblings too, here from a
+        # prefetch without a query, which scrolls in id order and would return point 1
+        return client.query_points(
+            collection_name=COLLECTION_NAME,
+            prefetch=[
+                models.Prefetch(query=1, using="text", limit=10),
+                models.Prefetch(limit=10),
+            ],
+            query=self.dense_vector_query_text,
+            using="text",
+            with_payload=True,
+            limit=20,  # all prefetched points, so point 1 would show up if it got through
         )
 
     def dense_query_prefetch_by_id_lookup_from(
@@ -1429,6 +1462,7 @@ def test_dense_query_prefetch_by_id():
     for query in (
         searcher.dense_query_prefetch_by_id,
         searcher.dense_query_nested_prefetch_by_id,
+        searcher.dense_query_sibling_prefetch_by_id,
     ):
         compare_clients_results(local_client, http_client, grpc_client, query)
 
@@ -2639,6 +2673,12 @@ def test_query_group():
             http_client,
             grpc_client,
             searcher.dense_query_group_nested_prefetch_by_id,
+        )
+        compare_clients_results(
+            local_client,
+            http_client,
+            grpc_client,
+            searcher.dense_query_group_sibling_prefetch_by_id,
         )
         compare_clients_results(
             local_client,
