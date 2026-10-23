@@ -1,3 +1,4 @@
+from itertools import permutations
 from typing import Any, TypeAlias
 
 import numpy as np
@@ -8,6 +9,9 @@ from qdrant_client.local.distances import (
     calculate_distance,
     scaled_fast_sigmoid,
     EPSILON,
+    NAIVE_FEEDBACK_CONFIDENCE_MARGIN,
+    FeedbackItem,
+    NaiveFeedbackCoefficients,
     fast_sigmoid,
 )
 
@@ -62,7 +66,24 @@ class MultiContextQuery:
         self.context_pairs = context_pairs
 
 
-MultiQueryVector: TypeAlias = MultiDiscoveryQuery | MultiContextQuery | MultiRecoQuery
+class MultiNaiveFeedbackQuery:
+    def __init__(
+        self,
+        target: list[list[float]],
+        feedback: list[FeedbackItem],
+        coefficients: NaiveFeedbackCoefficients,
+    ):
+        self.target: types.NumpyArray = np.array(target)
+        self.feedback = feedback
+        self.coefficients = coefficients
+
+        if np.isnan(self.target).any():
+            raise ValueError("Target vector must not contain NaN")
+
+
+MultiQueryVector: TypeAlias = (
+    MultiDiscoveryQuery | MultiContextQuery | MultiRecoQuery | MultiNaiveFeedbackQuery
+)
 
 
 def calculate_multi_distance(
@@ -223,3 +244,24 @@ def calculate_multi_context_scores(
         overall_scores += pair_scores
 
     return overall_scores
+
+
+def calculate_multi_naive_feedback_scores(
+    query: MultiNaiveFeedbackQuery,
+    matrices: list[types.NumpyArray],
+    distance_type: models.Distance,
+) -> types.NumpyArray:
+    coefficients = query.coefficients
+    scores = coefficients.a * calculate_multi_distance_core(query.target, matrices, distance_type)
+
+    for positive, negative in permutations(query.feedback, 2):
+        confidence = positive.score - negative.score
+        if confidence <= NAIVE_FEEDBACK_CONFIDENCE_MARGIN:
+            continue
+
+        partial_computation = (confidence**coefficients.b) * coefficients.c
+        sim_pos = calculate_multi_distance_core(positive.vector, matrices, distance_type)
+        sim_neg = calculate_multi_distance_core(negative.vector, matrices, distance_type)
+        scores += partial_computation * (sim_pos - sim_neg)
+
+    return scores
