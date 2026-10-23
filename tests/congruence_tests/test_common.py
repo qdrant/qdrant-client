@@ -200,9 +200,9 @@ def compare_vectors(vec1: VectorStruct | None, vec2: VectorStruct | None, i: int
         return
 
     if isinstance(vec1, dict):
-        assert (
-            vec1.keys() == vec2.keys()
-        ), f"res1[{i}].vectors.keys() = {list(vec1.keys())}, res2[{i}].vectors.keys() = {list(vec2.keys())}"
+        assert vec1.keys() == vec2.keys(), (
+            f"res1[{i}].vectors.keys() = {list(vec1.keys())}, res2[{i}].vectors.keys() = {list(vec2.keys())}"
+        )
         for key, value in vec1.items():
             if isinstance(value, SparseVector):
                 assert vec1[key].indices == vec2[key].indices, (
@@ -215,13 +215,12 @@ def compare_vectors(vec1: VectorStruct | None, vec2: VectorStruct | None, i: int
                 )
             else:
                 assert np.allclose(vec1[key], vec2[key], atol=1.0e-3), (
-                    f"res1[{i}].vectors[{key}] = {value}, "
-                    f"res2[{i}].vectors[{key}] = {vec2[key]}"
+                    f"res1[{i}].vectors[{key}] = {value}, res2[{i}].vectors[{key}] = {vec2[key]}"
                 )
     else:
-        assert np.allclose(
-            vec1, vec2, atol=1.0e-3
-        ), f"res1[{i}].vectors = {vec1}, res2[{i}].vectors = {vec2}"
+        assert np.allclose(vec1, vec2, atol=1.0e-3), (
+            f"res1[{i}].vectors = {vec1}, res2[{i}].vectors = {vec2}"
+        )
 
 
 def compare_scored_record(
@@ -237,24 +236,56 @@ def compare_scored_record(
 
     assert math.isclose(
         np.float32(point1.score), np.float32(point2.score), rel_tol=rel_tol, abs_tol=abs_tol
-    ), f"point1[{idx}].score = {point1.score}, point2[{idx}].score = {point2.score}, rel_tol={rel_tol}"
+    ), (
+        f"point1[{idx}].score = {point1.score}, point2[{idx}].score = {point2.score}, rel_tol={rel_tol}"
+    )
 
-    assert (
-        point1.order_value == point2.order_value
-    ), f"point1[{idx}].order_value = {point1.order_value}, point2[{idx}].order_value = {point2.order_value}"
+    assert point1.order_value == point2.order_value, (
+        f"point1[{idx}].order_value = {point1.order_value}, point2[{idx}].order_value = {point2.order_value}"
+    )
 
     if is_score_zero:
-        assert (
-            point1.id == point2.id
-        ), f"point1[{idx}].id = {point1.id}, point2[{idx}].id = {point2.id}"
+        assert point1.id == point2.id, (
+            f"point1[{idx}].id = {point1.id}, point2[{idx}].id = {point2.id}"
+        )
 
     if point1.id == point2.id:
         # same id means same payload
-        assert (
-            point1.payload == point2.payload
-        ), f"id:{point1.id} point1[{idx}].payload = {point1.payload}, point2[{idx}].payload = {point2.payload}"
+        assert point1.payload == point2.payload, (
+            f"id:{point1.id} point1[{idx}].payload = {point1.payload}, point2[{idx}].payload = {point2.payload}"
+        )
 
         compare_vectors(point1.vector, point2.vector, idx)
+
+
+def compare_group_hits(hits_1: list, hits_2: list, rel_tol: float = 1e-4) -> None:
+    """Compare the hits of the same group between the exact (local) client and a
+    remote one.
+
+    Server-side grouping is best-effort within a request budget (see qdrant's
+    lib/shard/src/grouping/driver.rs): once the budget is spent, a group may be
+    filled with worse points than its true best, or stay below group_size. The
+    exact local hits therefore bound the remote ones: at any rank the remote hit
+    may be worse, but never better, and the remote group may not be larger.
+    """
+    compare_scored_record(hits_1[0], hits_2[0], 0)
+    assert len(hits_2) <= len(hits_1), f"len(hits_1) = {len(hits_1)}, len(hits_2) = {len(hits_2)}"
+
+    # infer score ordering from the exact side
+    larger_is_better = hits_1[0].score >= hits_1[-1].score
+
+    for i in range(1, len(hits_2)):
+        margin = max(abs(hits_1[i].score) * rel_tol, 1e-6)
+        if larger_is_better:
+            assert hits_2[i].score <= hits_1[i].score + margin, (
+                f"hits_2[{i}].score = {hits_2[i].score} is better than exact "
+                f"hits_1[{i}].score = {hits_1[i].score}"
+            )
+        else:
+            assert hits_2[i].score >= hits_1[i].score - margin, (
+                f"hits_2[{i}].score = {hits_2[i].score} is better than exact "
+                f"hits_1[{i}].score = {hits_1[i].score}"
+            )
 
 
 def compare_records(res1: list, res2: list, rel_tol: float = 1e-4, abs_tol: float = 1e-6) -> None:
@@ -277,13 +308,13 @@ def compare_records(res1: list, res2: list, rel_tol: float = 1e-4, abs_tol: floa
             compare_scored_record(res1_item, res2_item, i, rel_tol=rel_tol, abs_tol=abs_tol)
 
         elif isinstance(res1_item, models.Record) and isinstance(res2_item, models.Record):
-            assert (
-                res1_item.id == res2_item.id
-            ), f"res1[{i}].id = {res1_item.id}, res2[{i}].id = {res2_item.id}"
+            assert res1_item.id == res2_item.id, (
+                f"res1[{i}].id = {res1_item.id}, res2[{i}].id = {res2_item.id}"
+            )
             # same id means same payload
-            assert (
-                res1_item.payload == res2_item.payload
-            ), f"id:{res1_item.id} res1[{i}].payload = {res1_item.payload}, res2[{i}].payload = {res2_item.payload}"
+            assert res1_item.payload == res2_item.payload, (
+                f"id:{res1_item.id} res1[{i}].payload = {res1_item.payload}, res2[{i}].payload = {res2_item.payload}"
+            )
 
             compare_vectors(res1_item.vector, res2_item.vector, i)
         else:
@@ -298,6 +329,7 @@ def compare_client_results(
 ) -> None:
     # context search can have many points with the same 0.0 score
     is_context_search = kwargs.pop("is_context_search", False)
+    abs_tol = kwargs.pop("abs_tol", 1e-5 if is_context_search else 1e-6)
 
     # get results from both clients
     res1 = foo(client1, **kwargs)
@@ -312,56 +344,56 @@ def compare_client_results(
 
     if isinstance(res1, list):
         if is_context_search is True:
-            sorted_1 = sorted(res1, key=lambda x: (x.id))
-            sorted_2 = sorted(res2, key=lambda x: (x.id))
-            compare_records(sorted_1, sorted_2, abs_tol=1e-5)
+            sorted_1 = sorted(res1, key=lambda x: x.id)
+            sorted_2 = sorted(res2, key=lambda x: x.id)
+            compare_records(sorted_1, sorted_2, abs_tol=abs_tol)
         else:
-            compare_records(res1, res2)
+            compare_records(res1, res2, abs_tol=abs_tol)
     elif isinstance(res1, models.QueryResponse) and isinstance(res2, models.QueryResponse):
         if is_context_search is True:
-            sorted_1 = sorted(res1.points, key=lambda x: (x.id))
-            sorted_2 = sorted(res2.points, key=lambda x: (x.id))
-            compare_records(sorted_1, sorted_2, abs_tol=1e-5)
+            sorted_1 = sorted(res1.points, key=lambda x: x.id)
+            sorted_2 = sorted(res2.points, key=lambda x: x.id)
+            compare_records(sorted_1, sorted_2, abs_tol=abs_tol)
         else:
-            compare_records(res1.points, res2.points)
+            compare_records(res1.points, res2.points, abs_tol=abs_tol)
     elif isinstance(res1, models.SearchMatrixOffsetsResponse):
         assert res1.ids == res2.ids, f"res1.ids = {res1.ids}, res2.ids = {res2.ids}"
         # compare scores with margin
-        assert np.allclose(
-            res1.scores, res2.scores, atol=1e-4
-        ), f"res1.scores = {res1.scores}, res2.scores = {res2.scores}"
+        assert np.allclose(res1.scores, res2.scores, atol=1e-4), (
+            f"res1.scores = {res1.scores}, res2.scores = {res2.scores}"
+        )
         # we don't compare offsets_col, because due to slight differences in score computation in
         # local and remote modes, ordering can be different
-        assert (
-            res1.offsets_row == res2.offsets_row
-        ), f"res1.offsets_row = {res1.offsets_row}, res2.offsets_row = {res2.offsets_row}"
+        assert res1.offsets_row == res2.offsets_row, (
+            f"res1.offsets_row = {res1.offsets_row}, res2.offsets_row = {res2.offsets_row}"
+        )
     elif isinstance(res1, models.SearchMatrixPairsResponse):
-        assert len(res1.pairs) == len(
-            res2.pairs
-        ), f"len(res1.pairs) = {len(res1.pairs)}, len(res2.pairs) = {len(res2.pairs)}"
+        assert len(res1.pairs) == len(res2.pairs), (
+            f"len(res1.pairs) = {len(res1.pairs)}, len(res2.pairs) = {len(res2.pairs)}"
+        )
         for pair_1, pair_2 in zip(res1.pairs, res2.pairs):
             # we don't compare pair_1.b to pair_2.b, because due to slight differences in score computation in
             # local and remote modes, ordering can be different
             assert pair_1.a == pair_2.a, f"pair_1.a = {pair_1.a}, pair_2.a = {pair_2.a}"
             # compare scores with margin
-            assert math.isclose(
-                pair_1.score, pair_2.score, rel_tol=1e-4
-            ), f"pair_1.score = {pair_1.score}, pair_2.score = {pair_2.score}"
+            assert math.isclose(pair_1.score, pair_2.score, rel_tol=1e-4), (
+                f"pair_1.score = {pair_1.score}, pair_2.score = {pair_2.score}"
+            )
     elif isinstance(res1, models.GroupsResult):
         groups_1 = sorted(res1.groups, key=lambda x: (x.hits[0].score, x.id))
         groups_2 = sorted(res2.groups, key=lambda x: (x.hits[0].score, x.id))
 
-        assert len(groups_1) == len(
-            groups_2
-        ), f"len(groups_1) = {len(groups_1)}, len(groups_2) = {len(groups_2)}"
+        assert len(groups_1) == len(groups_2), (
+            f"len(groups_1) = {len(groups_1)}, len(groups_2) = {len(groups_2)}"
+        )
 
         for i in range(len(groups_1)):
             group_1 = groups_1[i]
             group_2 = groups_2[i]
 
-            assert (
-                group_1.hits[0].score - group_2.hits[0].score < 1e-4
-            ), f"groups_1[{i}].hits[0].score = {group_1.hits[0].score}, groups_2[{i}].hits[0].score = {group_2.hits[0].score}"
+            assert abs(group_1.hits[0].score - group_2.hits[0].score) < 1e-4, (
+                f"groups_1[{i}].hits[0].score = {group_1.hits[0].score}, groups_2[{i}].hits[0].score = {group_2.hits[0].score}"
+            )
 
             # We can't assert ids because they are not stable, order of groups with same score is guaranteed
             # assert (
@@ -369,12 +401,42 @@ def compare_client_results(
             # ), f"groups_1[{i}].id = {group_1.id}, groups_2[{i}].id = {group_2.id}"
 
             if group_1.id == group_2.id:
-                compare_records(group_1.hits, group_2.hits)
+                compare_group_hits(group_1.hits, group_2.hits)
+                if group_1.lookup is None or group_2.lookup is None:
+                    assert group_1.lookup == group_2.lookup, (
+                        f"groups_1[{i}].lookup = {group_1.lookup}, groups_2[{i}].lookup = {group_2.lookup}"
+                    )
+                else:
+                    compare_records([group_1.lookup], [group_2.lookup])
             else:
                 # If group ids are different, but scores are the same, we assume that the top hits are the same
                 compare_scored_record(group_1.hits[0], group_2.hits[0], 0)
     else:
         assert res1 == res2
+
+
+def has_near_tie_at_limit(
+    client: QdrantBase,
+    query: Any,
+    using: str,
+    limit: int,
+    query_filter: models.Filter | None = None,
+    rel_tol: float = 1e-5,
+) -> bool:
+    """Whether the last point kept by `limit` and the first one cut off score almost the same.
+
+    Local mode and core don't compute scores bit for bit alike (numpy against core's float32
+    SIMD), the same point's score differs by about 1e-7 relative. Two candidates closer than
+    that around a limit can be kept on one side and cut on the other. That is invisible in a
+    plain top-k, but a later stage, like rescoring prefetched candidates by another vector,
+    turns it into a large difference.
+    """
+    points = client.query_points(
+        COLLECTION_NAME, query=query, using=using, query_filter=query_filter, limit=limit + 1
+    ).points
+    return len(points) > limit and math.isclose(
+        points[limit - 1].score, points[limit].score, rel_tol=rel_tol
+    )
 
 
 def init_client(

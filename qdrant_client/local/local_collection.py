@@ -4,7 +4,6 @@ import uuid
 from collections import OrderedDict, defaultdict
 from typing import (
     Any,
-    Callable,
     Mapping,
     Sequence,
     get_args,
@@ -16,14 +15,24 @@ import numpy as np
 
 from qdrant_client import grpc as grpc
 from qdrant_client.common.client_warnings import show_warning_once
-from qdrant_client._pydantic_compat import construct, to_jsonable_python as _to_jsonable_python
+from qdrant_client.common.validation import validate_batch_lengths
+from qdrant_client._pydantic_compat import (
+    construct,
+    to_dict,
+    to_jsonable_python as _to_jsonable_python,
+)
 from qdrant_client.conversions import common_types as types
 from qdrant_client.conversions.common_types import get_args_subscribed
 from qdrant_client.conversions.conversion import GrpcToRest
 from qdrant_client.http import models
 from qdrant_client.http.models import ScoredPoint
 from qdrant_client.http.models.models import Distance, ExtendedPointId, SparseVector, OrderValue
-from qdrant_client.hybrid.formula import evaluate_expression, raise_non_finite_error
+from qdrant_client.hybrid.formula import (
+    evaluate_expression,
+    parse_defaults,
+    raise_non_finite_error,
+    validate_expression,
+)
 from qdrant_client.hybrid.fusion import reciprocal_rank_fusion, distribution_based_score_fusion
 from qdrant_client.local.distances import (
     ContextPair,
@@ -57,13 +66,35 @@ from qdrant_client.local.multi_distances import (
     calculate_multi_recommend_sum_scores,
     calculate_multi_distance_core,
 )
+from qdrant_client.local.bm25 import (
+    DEFAULT_B,
+    DEFAULT_K1,
+    bm25_scores,
+    document_tokens,
+    has_default_tokenization,
+)
 from qdrant_client.local.json_path_parser import JsonPathItem, parse_json_path
 from qdrant_client.local.order_by import to_order_value
-from qdrant_client.local.payload_filters import calculate_payload_mask, check_filter
-from qdrant_client.local.payload_value_extractor import value_by_key, parse_uuid
-from qdrant_client.local.payload_value_setter import set_value_by_key
+from qdrant_client.local.payload_filters import (
+    calculate_payload_mask,
+    check_filter,
+    validate_filter,
+)
+from qdrant_client.local.payload_value_extractor import (
+    exclude_payload,
+    include_payload,
+    parse_uuid,
+    value_by_key,
+)
+from qdrant_client.local.payload_value_setter import (
+    delete_value_by_key,
+    merge_payload,
+    set_value_by_key,
+)
 from qdrant_client.local.persistence import CollectionPersistence
+from qdrant_client.local.utils import last_argmax, normalize_point_id, swap_remove
 from qdrant_client.local.sparse import (
+    copy_sparse_vector,
     empty_sparse_vector,
     sort_sparse_vector,
     validate_sparse_vector,
@@ -95,6 +126,82 @@ def to_jsonable_python(x: Any) -> Any:
         return json.loads(json.dumps(x, allow_nan=True, default=_to_jsonable_python))
 
 
+def validate_dense_vector(vector: Any, vector_name: str) -> None:
+    """Reject empty, nested and NaN dense vectors, as the server does at write time."""
+    if len(vector) == 0:
+        raise ValueError(f"Wrong input: Dense vector must not be empty for vector '{vector_name}'")
+
+    try:
+        vector_np = np.asarray(vector, dtype=np.float32)
+    except ValueError:  # ragged nested lists
+        vector_np = None
+    if vector_np is None or vector_np.ndim != 1:
+        raise ValueError(
+            f"Wrong input: Dense vector must be one-dimensional for vector '{vector_name}'"
+        )
+
+    if np.isnan(vector_np).any():
+        raise ValueError("Vector contains NaN values")
+
+
+def validate_vector_dimension(got: int, expected: int, vector_name: str) -> None:
+    """Reject a vector whose size does not match the collection's, as the server does.
+
+    Without this a wrong-size dense vector reached numpy and died with a raw broadcast
+    error part-way through the write, and a wrong-size multivector was stored silently.
+    """
+    if got != expected:
+        raise ValueError(
+            f"Wrong input: Vector dimension error: expected dim: {expected}, "
+            f"got {got} for vector '{vector_name}'"
+        )
+
+
+def validate_multivector(vector: Any, vector_name: str) -> None:
+    """Reject empty multivectors, empty sub-vectors and NaN values, as the server does."""
+    if len(vector) == 0:
+        raise ValueError(f"Wrong input: Multivector must not be empty for vector '{vector_name}'")
+
+    for sub_vector in vector:
+        if hasattr(sub_vector, "__len__") and len(sub_vector) == 0:
+            raise ValueError(
+                "Wrong input: All vectors of a multivector must be non-empty "
+                f"for vector '{vector_name}'"
+            )
+
+    if np.isnan(np.asarray(vector, dtype=np.float32)).any():
+        raise ValueError("Vector contains NaN values")
+
+
+def _validate_payload_selector(operation: models.SetPayload | models.DeletePayload) -> None:
+    # the server cannot parse such an operation, so the whole batch fails
+    if operation.points is None and operation.filter is None:
+        raise ValueError("No filter or points provided")
+
+
+def _batch_selector(
+    operation: models.SetPayload | models.DeletePayload | models.DeleteVectors,
+) -> list[models.ExtendedPointId] | models.Filter:
+    # an id list wins over the filter even when it is empty, `_selector_to_ids` rejects it then
+    if operation.points is not None:
+        return operation.points
+    if operation.filter is None:
+        raise ValueError("No filter or points provided")
+    return operation.filter
+
+
+def _validate_points_to_update(points: Sequence[models.PointVectors]) -> None:
+    # the server rejects this while parsing the request
+    if len(points) == 0:
+        raise ValueError("must specify points to update")
+
+
+def _validate_vector_names_to_delete(vector_names: Sequence[str]) -> None:
+    # the server rejects this while parsing the request
+    if len(vector_names) == 0:
+        raise ValueError("must specify vector names to delete")
+
+
 class LocalCollection:
     """
     LocalCollection is a class that represents a collection of vectors in the local storage.
@@ -114,6 +221,8 @@ class LocalCollection:
             location: path to the collection directory. If None, the collection will be created in memory.
             force_disable_check_same_thread: force disable check_same_thread for sqlite3 connection. default: False
         """
+        # copy before deriving `vectors_config`, so the collection shares nothing with the caller
+        config = deepcopy(config)
         self.vectors_config, self.multivectors_config = self._resolve_vectors_config(
             config.vectors
         )
@@ -134,6 +243,8 @@ class LocalCollection:
             name: [] for name in self.multivectors_config
         }
         self.payload: list[models.Payload] = []
+        # field name: params of its text index with scoring, the only index local mode uses
+        self.text_indexes: dict[str, models.TextIndexParams] = {}
         self.deleted: types.NumpyArray = np.zeros(0, dtype=bool)
         self._all_vectors_keys = (
             list(self.vectors.keys())
@@ -150,7 +261,11 @@ class LocalCollection:
         self.config = config
         if location is not None:
             self.storage = CollectionPersistence(location, force_disable_check_same_thread)
-        self.load_vectors()
+        try:
+            self.load_vectors()
+        except Exception:
+            self.close()
+            raise
 
     @staticmethod
     def _resolve_vectors_config(
@@ -186,6 +301,28 @@ class LocalCollection:
     def _update_idf_remove(self, vector: SparseVector, vector_name: str) -> None:
         for idx in vector.indices:
             self.sparse_vectors_idf[vector_name][idx] -= 1
+
+    def _drop_idf_contribution(self, idx: int, vector_name: str) -> None:
+        """Take point `idx` out of the IDF counters of `vector_name`.
+
+        `sparse_vectors_idf` must stay in sync with the corpus `_rescore_idf` measures, which
+        is every point that is alive and actually has the vector. A point that is already
+        deleted, point-wise or vector-wise, never counted, so dropping it again is a no-op.
+        """
+        if self.deleted[idx] or self.deleted_per_vector[vector_name][idx]:
+            return
+        self._update_idf_remove(self.sparse_vectors[vector_name][idx], vector_name)
+
+    def _existing_idx(self, point_id: types.PointId) -> int | None:
+        """Internal id of a point the collection still holds, `None` if it holds none.
+
+        Deleted points keep their slot so that internal ids stay stable, but the server
+        answers 404 for them exactly as it does for ids it has never seen.
+        """
+        idx = self.ids.get(normalize_point_id(point_id))
+        if idx is None or self.deleted[idx]:
+            return None
+        return idx
 
     @staticmethod
     def _idf_corpus_of(search_params: types.SearchParams | None) -> types.Filter | None:
@@ -234,6 +371,12 @@ class LocalCollection:
 
         # IDF statistics only take into account points which actually have this sparse vector,
         # points missing it are not part of the corpus. `idf_corpus` narrows it down further.
+        #
+        # Deleted points leave the corpus right away. `IdfScope.GLOBAL` on the server reads
+        # the sparse index rather than the live points, so it goes on counting deleted ones
+        # for as long as they sit in that index; local mode has no index to go stale and
+        # answers from live statistics immediately. The two agree on `IdfCorpusParams`, which
+        # is measured over live points either way - that is what the congruence tests pin.
         mask = self._payload_and_non_deleted_mask(idf_corpus, vector_name=vector_name)
         num_docs = int(np.count_nonzero(mask))
 
@@ -303,12 +446,17 @@ class LocalCollection:
                     if v is not None:
                         multivectors[name].append(v)
                     else:
-                        multivectors[name].append(np.array([]))
+                        multivectors[name].append(
+                            np.ones((1, self.multivectors_config[name].size), dtype=np.float32)
+                        )
                         deleted_ids.append((idx, name))
+
+            # vectors are stored already normalized (see `_to_stored_point`),
+            # normalizing them again would change their last bits
 
             # setup dense vectors by name
             for name, named_vectors in vectors.items():
-                self.vectors[name] = np.array(named_vectors)
+                self.vectors[name] = np.array(named_vectors, dtype=np.float32)
                 self.deleted_per_vector[name] = np.zeros(len(self.payload), dtype=bool)
 
             # setup sparse vectors by name
@@ -320,7 +468,9 @@ class LocalCollection:
 
             # setup multivectors by name
             for name, named_vectors in multivectors.items():
-                self.multivectors[name] = [np.array(vector) for vector in named_vectors]
+                self.multivectors[name] = [
+                    np.array(vector, dtype=np.float32) for vector in named_vectors
+                ]
                 self.deleted_per_vector[name] = np.zeros(len(self.payload), dtype=bool)
 
             # track deleted points by named vector
@@ -386,115 +536,87 @@ class LocalCollection:
 
         raise ValueError(f"Malformed config.vectors: {self.config.vectors}")
 
-    @classmethod
-    def _check_include_pattern(cls, pattern: str, key: str) -> bool:
+    def _validate_vector_kind(self, vector: Any, vector_name: str) -> None:
+        """Reject a sparse vector for a dense or multivector name, and the other way around.
+
+        The mismatch used to pass validation and fail part-way through the write, leaving the
+        point ids and the vector storage out of sync.
         """
-        >>> LocalCollection._check_include_pattern('a', 'a')
-        True
-        >>> LocalCollection._check_include_pattern('a.b', 'b')
-        False
-        >>> LocalCollection._check_include_pattern('a.b', 'a.b')
-        True
-        >>> LocalCollection._check_include_pattern('a.b', 'a.b.c')
-        True
-        >>> LocalCollection._check_include_pattern('a.b[]', 'a.b[].c')
-        True
-        >>> LocalCollection._check_include_pattern('a.b[]', 'a.b.c')
-        False
-        >>> LocalCollection._check_include_pattern('a', 'a.b')
-        True
-        >>> LocalCollection._check_include_pattern('a.b', 'a')
-        True
-        >>> LocalCollection._check_include_pattern('a', 'aa.b.c')
-        False
-        >>> LocalCollection._check_include_pattern('a_b', 'a')
-        False
+        if isinstance(vector, SparseVector) != (vector_name in self.sparse_vectors):
+            raise ValueError(
+                "Wrong input: Conversion between sparse and regular vectors failed "
+                f"for vector '{vector_name}'"
+            )
+
+    def _validate_dense_or_multivector(self, vector: Any, vector_name: str) -> None:
+        """Reject vectors the server would refuse on the write path: empty, NaN, wrong size.
+
+        Sparse vectors are validated by `validate_sparse_vector`; an empty sparse vector is
+        legitimate, so it is not routed here.
         """
-        pattern_parts = pattern.replace(".", "[.").split("[")
-        key_parts = key.replace(".", "[.").split("[")
-        return all(p == v for p, v in zip(pattern_parts, key_parts))
+        if vector is None:
+            return
 
-    @classmethod
-    def _check_exclude_pattern(cls, pattern: str, key: str) -> bool:
-        if len(pattern) > len(key):
-            return False
-        pattern_parts = pattern.replace(".", "[.").split("[")
-        key_parts = key.replace(".", "[.").split("[")
-        return all(p == v for p, v in zip(pattern_parts, key_parts))
-
-    @classmethod
-    def _filter_payload(
-        cls, payload: Any, predicate: Callable[[str], bool], path: str = ""
-    ) -> Any:
-        if isinstance(payload, dict):
-            res = {}
-            if path != "":
-                new_path = path + "."
-            else:
-                new_path = path
-
-            for key, value in payload.items():
-                if predicate(new_path + key):
-                    res[key] = cls._filter_payload(value, predicate, new_path + key)
-            return res
-        elif isinstance(payload, list):
-            res_array = []
-            path = path + "[]"
-            for idx, value in enumerate(payload):
-                if predicate(path):
-                    res_array.append(cls._filter_payload(value, predicate, path))
-            return res_array
-        else:
-            return payload
+        if vector_name in self.multivectors:
+            validate_multivector(vector, vector_name)
+            expected_dim = self.get_vector_params(vector_name).size
+            for sub_vector in vector:
+                validate_vector_dimension(len(sub_vector), expected_dim, vector_name)
+        elif vector_name in self.vectors:
+            validate_dense_vector(vector, vector_name)
+            validate_vector_dimension(
+                len(vector), self.get_vector_params(vector_name).size, vector_name
+            )
 
     @classmethod
     def _process_payload(
         cls,
         payload: dict,
-        with_payload: bool | Sequence[str] | types.PayloadSelector = True,
+        with_payload: types.WithPayloadInterface = True,
     ) -> dict | None:
-        if not with_payload:
+        """
+        >>> payload = {"a": {"b": 1, "c": 2}, "aa": {"b": 3}, "a.b": 4, "l": [{"b": 5, "c": 6}]}
+        >>> LocalCollection._process_payload(payload, ["a.b"])
+        {'a': {'b': 1}}
+        >>> LocalCollection._process_payload(payload, ['"a.b"', "l[].c"])
+        {'a.b': 4, 'l': [{'c': 6}]}
+        >>> selector = models.PayloadSelectorExclude(exclude=["a", "l[].b"])
+        >>> LocalCollection._process_payload(payload, selector)
+        {'aa': {'b': 3}, 'a.b': 4, 'l': [{'c': 6}]}
+        """
+        # an empty list selects no fields, it doesn't disable the payload
+        if with_payload is False or with_payload is None:
             return None
 
         if isinstance(with_payload, bool):
             return payload
 
-        if isinstance(with_payload, list):
-            return cls._filter_payload(
-                payload,
-                lambda key: any(
-                    map(lambda pattern: cls._check_include_pattern(pattern, key), with_payload)  # type: ignore
-                ),
-            )
-
-        if isinstance(with_payload, models.PayloadSelectorInclude):
-            return cls._filter_payload(
-                payload,
-                lambda key: any(
-                    map(
-                        lambda pattern: cls._check_include_pattern(pattern, key),
-                        with_payload.include,  # type: ignore
-                    )
-                ),
+        if isinstance(with_payload, str):
+            raise ValueError(
+                "with_payload must be a bool, a list of payload keys or a PayloadSelector, "
+                f"got a str: {with_payload!r}"
             )
 
         if isinstance(with_payload, models.PayloadSelectorExclude):
-            return cls._filter_payload(
-                payload,
-                lambda key: all(
-                    map(
-                        lambda pattern: not cls._check_exclude_pattern(pattern, key),
-                        with_payload.exclude,  # type: ignore
-                    )
-                ),
-            )
+            return exclude_payload(payload, with_payload.exclude)
 
-        return payload
+        include = (
+            with_payload.include
+            if isinstance(with_payload, models.PayloadSelectorInclude)
+            else list(with_payload)  # type: ignore
+        )
+
+        return include_payload(payload, include)
+
+    @classmethod
+    def _validate_with_payload(cls, with_payload: types.WithPayloadInterface) -> None:
+        # the server rejects an invalid selector even when no points match
+        cls._process_payload({}, with_payload)
 
     def _get_payload(
         self,
         idx: int,
-        with_payload: bool | Sequence[str] | types.PayloadSelector = True,
+        with_payload: types.WithPayloadInterface = True,
         return_copy: bool = True,
     ) -> models.Payload:
         payload = self.payload[idx]
@@ -502,33 +624,44 @@ class LocalCollection:
         return deepcopy(processed_payload) if return_copy else processed_payload
 
     def _get_vectors(
-        self, idx: int, with_vectors: bool | Sequence[str] | None = False
+        self, idx: int, with_vectors: types.WithVector | None = False
     ) -> models.VectorStruct | None:
         if with_vectors is False or with_vectors is None:
             return None
 
+        if isinstance(with_vectors, str):
+            raise ValueError(
+                "with_vectors must be a bool or a list of vector names, "
+                f"got a str: {with_vectors!r}"
+            )
+
+        requested_names = None if with_vectors is True else set(with_vectors)
+
+        def included(name: str) -> bool:
+            if requested_names is not None and name not in requested_names:
+                return False
+            return not self.deleted_per_vector[name][idx]
+
         dense_vectors = {
-            name: self.vectors[name][idx].tolist()
-            for name in self.vectors
-            if not self.deleted_per_vector[name][idx]
+            name: self.vectors[name][idx].tolist() for name in self.vectors if included(name)
         }
 
         sparse_vectors = {
-            name: self.sparse_vectors[name][idx]
+            name: copy_sparse_vector(self.sparse_vectors[name][idx])
             for name in self.sparse_vectors
-            if not self.deleted_per_vector[name][idx]
+            if included(name)
         }
 
         multivectors = {
             name: self.multivectors[name][idx].tolist()
             for name in self.multivectors
-            if not self.deleted_per_vector[name][idx]
+            if included(name)
         }
 
         # merge vectors
         all_vectors = {**dense_vectors, **sparse_vectors, **multivectors}
 
-        if isinstance(with_vectors, list):
+        if not isinstance(with_vectors, bool):
             all_vectors = {name: all_vectors[name] for name in with_vectors if name in all_vectors}
 
         if len(all_vectors) == 1 and DEFAULT_VECTOR_NAME in all_vectors:
@@ -544,6 +677,8 @@ class LocalCollection:
         """
         Calculate mask for filtered payload and non-deleted points. True - accepted, False - rejected
         """
+        validate_filter(payload_filter)
+
         payload_mask = calculate_payload_mask(
             payloads=self.payload,
             payload_filter=payload_filter,
@@ -588,8 +723,8 @@ class LocalCollection:
         query_filter: types.Filter | None = None,
         limit: int = 10,
         offset: int | None = None,
-        with_payload: bool | Sequence[str] | types.PayloadSelector = True,
-        with_vectors: bool | Sequence[str] = False,
+        with_payload: types.WithPayloadInterface = True,
+        with_vectors: types.WithVector = False,
         score_threshold: float | None = None,
         idf_corpus: types.Filter | None = None,
     ) -> list[models.ScoredPoint]:
@@ -706,6 +841,7 @@ class LocalCollection:
                 MultiDiscoveryQuery,
                 MultiContextQuery,
                 MultiRecoQuery,
+                NaiveFeedbackQuery,
             ),  # sparse structures are not required, sparse always uses DOT
         ):
             order = np.argsort(scores)[::-1]
@@ -728,10 +864,10 @@ class LocalCollection:
 
             if score_threshold is not None:
                 if required_order == DistanceOrder.BIGGER_IS_BETTER:
-                    if score < score_threshold:
+                    if score <= score_threshold:
                         break
                 else:
-                    if score > score_threshold:
+                    if score >= score_threshold:
                         break
 
             scored_point = construct(
@@ -754,8 +890,8 @@ class LocalCollection:
         query_filter: types.Filter | None = None,
         limit: int = 10,
         offset: int = 0,
-        with_payload: bool | Sequence[str] | types.PayloadSelector = True,
-        with_vectors: bool | Sequence[str] = False,
+        with_payload: types.WithPayloadInterface = True,
+        with_vectors: types.WithVector = False,
         score_threshold: float | None = None,
         using: str | None = None,
         search_params: types.SearchParams | None = None,
@@ -766,6 +902,8 @@ class LocalCollection:
 
         Assumes all vectors have been homogenized so that there are no ids in the inputs
         """
+        self._validate_with_payload(with_payload)
+        self._validate_text_queries(query, using, prefetch, search_params)
 
         prefetches = []
         if prefetch is not None:
@@ -773,10 +911,7 @@ class LocalCollection:
 
         if len(prefetches) > 0:
             # It is a hybrid/re-scoring query
-            sources = [self._prefetch(prefetch) for prefetch in prefetches]
-
-            if query is None:
-                raise ValueError("Query is required for merging prefetches")
+            sources = [self._prefetch(prefetch, query_filter) for prefetch in prefetches]
 
             # Merge sources
             scored_points = self._merge_sources(
@@ -807,7 +942,13 @@ class LocalCollection:
 
         return types.QueryResponse(points=scored_points)
 
-    def _prefetch(self, prefetch: types.Prefetch) -> list[types.ScoredPoint]:
+    def _prefetch(
+        self, prefetch: types.Prefetch, propagated_filter: types.Filter | None = None
+    ) -> list[types.ScoredPoint]:
+        # The server propagates the filter of each level down into the leaves of the prefetch
+        # tree, so prefetch limits are applied to already filtered candidates.
+        prefetch_filter = _merge_filters(propagated_filter, prefetch.filter)
+
         inner_prefetches = []
         if prefetch.prefetch is not None:
             inner_prefetches = (
@@ -815,10 +956,10 @@ class LocalCollection:
             )
 
         if len(inner_prefetches) > 0:
-            sources = [self._prefetch(inner_prefetch) for inner_prefetch in inner_prefetches]
-
-            if prefetch.query is None:
-                raise ValueError("Query is required for merging prefetches")
+            sources = [
+                self._prefetch(inner_prefetch, prefetch_filter)
+                for inner_prefetch in inner_prefetches
+            ]
 
             # Merge sources
             return self._merge_sources(
@@ -827,7 +968,7 @@ class LocalCollection:
                 limit=prefetch.limit if prefetch.limit is not None else 10,
                 offset=0,
                 using=prefetch.using,
-                query_filter=prefetch.filter,
+                query_filter=prefetch_filter,
                 with_payload=False,
                 with_vectors=False,
                 score_threshold=prefetch.score_threshold,
@@ -838,7 +979,7 @@ class LocalCollection:
             return self._query_collection(
                 query=prefetch.query,
                 using=prefetch.using,
-                query_filter=prefetch.filter,
+                query_filter=prefetch_filter,
                 limit=prefetch.limit,
                 offset=0,
                 with_payload=False,
@@ -856,8 +997,8 @@ class LocalCollection:
         using: str | None = None,
         query_filter: types.Filter | None = None,
         score_threshold: float | None = None,
-        with_payload: bool | Sequence[str] | types.PayloadSelector = True,
-        with_vectors: bool | Sequence[str] = False,
+        with_payload: types.WithPayloadInterface = True,
+        with_vectors: types.WithVector = False,
         idf_corpus: types.Filter | None = None,
     ) -> list[types.ScoredPoint]:
         if isinstance(query, (models.FusionQuery, models.RrfQuery)):
@@ -944,14 +1085,28 @@ class LocalCollection:
         query_filter: types.Filter | None = None,
         limit: int | None = None,
         offset: int | None = None,
-        with_payload: bool | Sequence[str] | types.PayloadSelector = False,
-        with_vectors: bool | Sequence[str] = False,
+        with_payload: types.WithPayloadInterface = False,
+        with_vectors: types.WithVector = False,
         score_threshold: float | None = None,
         idf_corpus: types.Filter | None = None,
     ) -> list[types.ScoredPoint]:
         """
         Performs the query on the collection, assuming it didn't have any prefetches.
         """
+
+        if isinstance(query, models.TextQuery):
+            # `using` names the payload field of a text query, not a vector
+            return self._query_text(
+                query=query,
+                field=using,
+                query_filter=query_filter,
+                limit=limit or 10,
+                offset=offset or 0,
+                with_payload=with_payload,
+                with_vectors=with_vectors,
+                score_threshold=score_threshold,
+                idf_corpus=idf_corpus,
+            )
 
         using = using or DEFAULT_VECTOR_NAME
         limit = limit or 10
@@ -1079,6 +1234,125 @@ class LocalCollection:
                 idf_corpus=idf_corpus,
             )
 
+    def _validate_text_queries(
+        self,
+        query: types.Query | None,
+        using: str | None,
+        prefetch: types.Prefetch | list[types.Prefetch] | None,
+        search_params: types.SearchParams | None,
+    ) -> None:
+        """Reject an invalid text query anywhere in the request before running any of it"""
+        if isinstance(query, models.TextQuery):
+            self._text_query_params(query, using, self._idf_corpus_of(search_params))
+
+        prefetches = prefetch if isinstance(prefetch, list) else [prefetch] if prefetch else []
+        for item in prefetches:
+            self._validate_text_queries(item.query, item.using, item.prefetch, item.params)
+
+    def _text_query_params(
+        self, query: models.TextQuery, field: str | None, idf_corpus: types.Filter | None
+    ) -> tuple[str, float, float]:
+        """Text, k1 and b of a valid text query"""
+        if field is None:
+            raise ValueError("A text query needs `using` to name the payload field to search")
+        params = self.text_indexes.get(field)
+        if params is None:
+            raise ValueError(f"A text query needs a text index with `scoring` on `{field}`")
+        if not has_default_tokenization(params):
+            raise NotImplementedError(
+                "Text queries in the local Qdrant only support text indexes with the default"
+                " tokenization. Please use server Qdrant if you need other text index params."
+            )
+        if idf_corpus is not None:
+            raise NotImplementedError(
+                "IDF corpus is not supported for text queries in the local Qdrant."
+                " Please use server Qdrant if you need it."
+            )
+
+        if isinstance(query.text, str):
+            return query.text, DEFAULT_K1, DEFAULT_B
+
+        bm25 = query.text.scoring.bm25 if query.text.scoring is not None else models.Bm25Params()
+        k1 = bm25.k if bm25.k is not None else DEFAULT_K1
+        b = bm25.b if bm25.b is not None else DEFAULT_B
+        if k1 < 0:
+            raise ValueError(f"BM25 k value {k1} is invalid. Must be 0.0 or larger.")
+        if not 0 <= b <= 1:
+            raise ValueError(f"BM25 b value {b} is invalid. Must be from 0.0 to 1.0.")
+        return query.text.query, k1, b
+
+    def _query_text(
+        self,
+        query: models.TextQuery,
+        field: str | None,
+        query_filter: types.Filter | None,
+        limit: int,
+        offset: int,
+        with_payload: types.WithPayloadInterface,
+        with_vectors: types.WithVector,
+        score_threshold: float | None,
+        idf_corpus: types.Filter | None,
+    ) -> list[models.ScoredPoint]:
+        text, k1, b = self._text_query_params(query, field, idf_corpus)
+        assert field is not None
+
+        # the corpus: points holding at least one token in the field, whatever the filter is
+        documents = {}
+        for idx, payload in enumerate(self.payload):
+            if not self.deleted[idx]:
+                tokens = document_tokens(value_by_key(payload, field))
+                if tokens:
+                    documents[idx] = tokens
+
+        scores = bm25_scores(documents, text, k1, b)
+        mask = self._payload_and_non_deleted_mask(query_filter)
+
+        result: list[models.ScoredPoint] = []
+        for idx in sorted(scores, key=lambda idx: (-scores[idx], idx)):
+            if len(result) >= limit + offset:
+                break
+            if not mask[idx]:
+                continue
+
+            score = float(np.float32(scores[idx]))  # core scores in f32
+            if score_threshold is not None and score <= score_threshold:
+                break
+
+            result.append(
+                construct(
+                    models.ScoredPoint,
+                    id=self.ids_inv[idx],
+                    score=score,
+                    version=0,
+                    payload=self._get_payload(idx, with_payload),
+                    vector=self._get_vectors(idx, with_vectors),
+                )
+            )
+
+        return result[offset:]
+
+    def _group_ids(self, payload: dict[str, Any], group_by: str) -> list[models.GroupId] | None:
+        """Unique group ids a point belongs to, or None if it cannot be grouped at all.
+
+        `type(...) in` rather than `isinstance`, because `bool` subclasses `int`, so `True`/`1`
+        (equal and same-hash in python) would end up in a single group.
+
+        A value which cannot become a group id is not merely skipped: the server drops the
+        whole point as soon as one of the `group_by` values has an unsupported type
+        (`GroupId::try_from` fails and the aggregator ignores the point), so a point with
+        `{"a": [1, true]}` joins no group at all.
+        """
+        values = value_by_key(payload, group_by)
+        if values is None:
+            return None
+
+        group_id_types = get_args_subscribed(models.GroupId)
+        if any(type(value) not in group_id_types for value in values):
+            return None
+
+        # dedup keeping the payload order: set() orders str values by the hash seed
+        return list(dict.fromkeys(values))
+
     def query_groups(
         self,
         group_by: str,
@@ -1099,12 +1373,17 @@ class LocalCollection:
         query_filter: types.Filter | None = None,
         limit: int = 10,
         group_size: int = 3,
-        with_payload: bool | Sequence[str] | types.PayloadSelector = True,
-        with_vectors: bool | Sequence[str] = False,
+        with_payload: types.WithPayloadInterface = True,
+        with_vectors: types.WithVector = False,
         score_threshold: float | None = None,
         with_lookup: types.WithLookupInterface | None = None,
         with_lookup_collection: "LocalCollection | None" = None,
+        search_params: types.SearchParams | None = None,
     ) -> models.GroupsResult:
+        self._validate_with_payload(with_payload)
+        if isinstance(with_lookup, models.WithLookup) and with_lookup.with_payload is not None:
+            self._validate_with_payload(with_lookup.with_payload)
+
         max_limit = len(self.ids_inv)
         # rewrite prefetch with larger limit
         if prefetch is not None:
@@ -1123,6 +1402,7 @@ class LocalCollection:
             with_payload=True,
             with_vectors=with_vectors,
             score_threshold=score_threshold,
+            search_params=search_params,
         )
 
         groups = OrderedDict()
@@ -1131,11 +1411,9 @@ class LocalCollection:
             if not isinstance(point.payload, dict):
                 continue
 
-            group_values = value_by_key(point.payload, group_by)
+            group_values = self._group_ids(point.payload, group_by)
             if group_values is None:
                 continue
-
-            group_values = list(set(v for v in group_values if isinstance(v, (str, int))))
 
             point.payload = self._process_payload(point.payload, with_payload)
 
@@ -1161,7 +1439,9 @@ class LocalCollection:
             for group in groups_result:
                 lookup = with_lookup_collection.retrieve(
                     ids=[group.id],
-                    with_payload=with_lookup.with_payload,
+                    with_payload=(
+                        True if with_lookup.with_payload is None else with_lookup.with_payload
+                    ),
                     with_vectors=with_lookup.with_vectors,
                 )
                 group.lookup = next(iter(lookup), None)
@@ -1183,8 +1463,8 @@ class LocalCollection:
         query_filter: models.Filter | None = None,
         limit: int = 10,
         group_size: int = 1,
-        with_payload: bool | Sequence[str] | models.PayloadSelector = True,
-        with_vectors: bool | Sequence[str] = False,
+        with_payload: models.WithPayloadInterface = True,
+        with_vectors: types.WithVector = False,
         score_threshold: float | None = None,
         with_lookup: types.WithLookupInterface | None = None,
         with_lookup_collection: "LocalCollection | None" = None,
@@ -1204,11 +1484,9 @@ class LocalCollection:
             if not isinstance(point.payload, dict):
                 continue
 
-            group_values = value_by_key(point.payload, group_by)
+            group_values = self._group_ids(point.payload, group_by)
             if group_values is None:
                 continue
-
-            group_values = list(set(v for v in group_values if isinstance(v, (str, int))))
 
             point.payload = self._process_payload(point.payload, with_payload)
 
@@ -1234,7 +1512,9 @@ class LocalCollection:
             for group in groups_result:
                 lookup = with_lookup_collection.retrieve(
                     ids=[group.id],
-                    with_payload=with_lookup.with_payload,
+                    with_payload=(
+                        True if with_lookup.with_payload is None else with_lookup.with_payload
+                    ),
                     with_vectors=with_lookup.with_vectors,
                 )
                 group.lookup = next(iter(lookup), None)
@@ -1247,7 +1527,14 @@ class LocalCollection:
         facet_filter: types.Filter | None = None,
         limit: int = 10,
     ) -> types.FacetResponse:
-        facet_hits: dict[types.FacetValue, int] = defaultdict(int)
+        # (bool, int, str). A value's position in this tuple is used as a type tag, so
+        # that `False`/`0` and `True`/`1` (equal and same-hash in python) don't collapse
+        # into a single bucket, and so that values of different types stay totally
+        # ordered when their counts tie. The server never mixes types in one facet (it
+        # reads a single payload index), so this cross-type order is local-mode only.
+        value_types = get_args_subscribed(types.FacetValue)
+
+        facet_hits: dict[tuple[int, types.FacetValue], int] = defaultdict(int)
 
         mask = self._payload_and_non_deleted_mask(facet_filter)
 
@@ -1264,11 +1551,11 @@ class LocalCollection:
                 continue
 
             # Only count the same value for each point once
-            values_set: set[types.FacetValue] = set()
+            values_set: set[tuple[int, types.FacetValue]] = set()
 
             # Sanitize to use only valid values
             for v in values:
-                if type(v) not in get_args_subscribed(types.FacetValue):
+                if type(v) not in value_types:
                     continue
 
                 # If values are UUIDs, format with hyphens
@@ -1276,14 +1563,14 @@ class LocalCollection:
                 if as_uuid:
                     v = str(as_uuid)
 
-                values_set.add(v)
+                values_set.add((value_types.index(type(v)), v))
 
             for v in values_set:
                 facet_hits[v] += 1
 
         hits = [
             models.FacetValueHit(value=value, count=count)
-            for value, count in sorted(
+            for (_, value), count in sorted(
                 facet_hits.items(),
                 # order by count descending, then by value ascending
                 key=lambda x: (-x[1], x[0]),
@@ -1295,12 +1582,15 @@ class LocalCollection:
     def retrieve(
         self,
         ids: Sequence[types.PointId],
-        with_payload: bool | Sequence[str] | types.PayloadSelector = True,
-        with_vectors: bool | Sequence[str] = False,
+        with_payload: types.WithPayloadInterface = True,
+        with_vectors: types.WithVector = False,
     ) -> list[models.Record]:
+        self._validate_with_payload(with_payload)
+
         result = []
-        ids = [str(id_) if isinstance(id_, uuid.UUID) else id_ for id_ in ids]
-        for point_id in ids:
+        # the server returns each point once, in the order of its first occurrence in `ids`
+        unique_ids = dict.fromkeys(normalize_point_id(id_) for id_ in ids)
+        for point_id in unique_ids:
             if point_id not in self.ids:
                 continue
 
@@ -1342,14 +1632,7 @@ class LocalCollection:
         ) -> None:
             for example in examples:
                 if isinstance(example, get_args(types.PointId)):
-                    if example not in collection.ids:
-                        raise ValueError(f"Point {example} is not found in the collection")
-
-                    idx = collection.ids[example]
-                    vec = collection_vectors[vector_name][idx]
-
-                    if isinstance(vec, np.ndarray):
-                        vec = vec.tolist()
+                    vec: Any = collection._vector_by_point_id(vector_name, example)
                     acc.append(vec)
                     if collection == self:
                         mentioned_ids.append(example)
@@ -1390,15 +1673,12 @@ class LocalCollection:
         sparse = vector_name in collection.sparse_vectors
         multi = vector_name in collection.multivectors
         if sparse:
-            collection_vectors = collection.sparse_vectors
             examples_into_vectors(positive, sparse_positive_vectors)
             examples_into_vectors(negative, sparse_negative_vectors)
         elif multi:
-            collection_vectors = collection.multivectors
             examples_into_vectors(positive, positive_multivectors)
             examples_into_vectors(negative, negative_multivectors)
         else:
-            collection_vectors = collection.vectors
             examples_into_vectors(positive, positive_vectors)
             examples_into_vectors(negative, negative_vectors)
 
@@ -1557,8 +1837,8 @@ class LocalCollection:
         query_filter: types.Filter | None = None,
         limit: int = 10,
         offset: int = 0,
-        with_payload: bool | Sequence[str] | types.PayloadSelector = True,
-        with_vectors: bool | Sequence[str] = False,
+        with_payload: types.WithPayloadInterface = True,
+        with_vectors: types.WithVector = False,
         score_threshold: float | None = None,
         using: str | None = None,
         lookup_from_collection: "LocalCollection | None" = None,
@@ -1597,8 +1877,8 @@ class LocalCollection:
         limit: int = 10,
         group_size: int = 1,
         score_threshold: float | None = None,
-        with_payload: bool | Sequence[str] | models.PayloadSelector = True,
-        with_vectors: bool | Sequence[str] = False,
+        with_payload: models.WithPayloadInterface = True,
+        with_vectors: types.WithVector = False,
         using: str | None = None,
         lookup_from_collection: "LocalCollection | None" = None,
         lookup_from_vector_name: str | None = None,
@@ -1709,14 +1989,15 @@ class LocalCollection:
                 search_filter.must.append(has_vector)
             else:
                 search_filter.must = [search_filter.must, has_vector]
-        samples = self._sample_randomly(sample, search_filter, False, search_in_vector_name)
+        samples = self._sample_randomly(sample, search_filter, False, [search_in_vector_name])
 
         # can't build a matrix with less than 2 results
         if len(samples) < 2:
             return [], []
 
-        # sort samples by id
-        samples = sorted(samples, key=lambda x: x.id)
+        # sort samples by id; use a type-safe key since a collection may mix
+        # integer and UUID (str) point ids, which cannot be compared directly
+        samples = sorted(samples, key=lambda x: self._universal_id(x.id))
         # extract the ids
         ids = [sample.id for sample in samples]
         scores: list[list[ScoredPoint]] = []
@@ -1742,22 +2023,35 @@ class LocalCollection:
 
         return ids, scores
 
+    def _vector_by_point_id(
+        self, vector_name: str, point_id: types.PointId
+    ) -> list[float] | SparseVector | list[list[float]]:
+        idx = self._existing_idx(point_id)
+        if idx is None:
+            raise ValueError(f"Point {point_id} is not found in the collection")
+
+        if vector_name in self.vectors:
+            vector = self.vectors[vector_name][idx].tolist()
+        elif vector_name in self.sparse_vectors:
+            vector = copy_sparse_vector(self.sparse_vectors[vector_name][idx])
+        elif vector_name in self.multivectors:
+            vector = self.multivectors[vector_name][idx].tolist()
+        else:
+            raise ValueError(f"Vector {vector_name} not found")
+
+        # Absent vectors are kept as placeholders to keep the storage dense, they are
+        # filtered out of search results by the mask and must not be used as query vectors
+        if self.deleted_per_vector[vector_name][idx]:
+            raise ValueError(f"Vector with name {vector_name} for point {point_id} not found")
+
+        return vector
+
     @staticmethod
     def _preprocess_vector_input(
         target: models.VectorInput | None, collection: "LocalCollection", vector_name: str
     ) -> tuple[models.Vector, types.PointId | None]:
         if isinstance(target, get_args(types.PointId)):
-            if target not in collection.ids:
-                raise ValueError(f"Point {target} is not found in the collection")
-
-            idx = collection.ids[target]
-            if vector_name in collection.vectors:
-                target_vector = collection.vectors[vector_name][idx].tolist()
-            elif vector_name in collection.sparse_vectors:
-                target_vector = collection.sparse_vectors[vector_name][idx]
-            else:
-                target_vector = collection.multivectors[vector_name][idx].tolist()
-
+            target_vector = collection._vector_by_point_id(vector_name, target)
             return target_vector, target
 
         return target, None
@@ -1773,19 +2067,11 @@ class LocalCollection:
         multi_context_vectors = []
 
         for pair in context:
-            pair_vectors = []
+            # holds a dense, sparse or multi vector, dispatched on by type below
+            pair_vectors: list[Any] = []
             for example in [pair.positive, pair.negative]:
                 if isinstance(example, get_args(types.PointId)):
-                    if example not in collection.ids:
-                        raise ValueError(f"Point {example} is not found in the collection")
-
-                    idx = collection.ids[example]
-                    if vector_name in collection.vectors:
-                        vector = collection.vectors[vector_name][idx].tolist()
-                    elif vector_name in collection.sparse_vectors:
-                        vector = collection.sparse_vectors[vector_name][idx]
-                    else:
-                        vector = collection.multivectors[vector_name][idx].tolist()
+                    vector = collection._vector_by_point_id(vector_name, example)
 
                     pair_vectors.append(vector)
                     if collection == self:
@@ -1886,8 +2172,8 @@ class LocalCollection:
         query_filter: types.Filter | None = None,
         limit: int = 10,
         offset: int = 0,
-        with_payload: bool | Sequence[str] | types.PayloadSelector = True,
-        with_vectors: bool | Sequence[str] = False,
+        with_payload: types.WithPayloadInterface = True,
+        with_vectors: types.WithVector = False,
         using: str | None = None,
         lookup_from_collection: "LocalCollection | None" = None,
         lookup_from_vector_name: str | None = None,
@@ -1959,10 +2245,15 @@ class LocalCollection:
         limit: int = 10,
         order_by: types.OrderBy | None = None,
         offset: types.PointId | None = None,
-        with_payload: bool | Sequence[str] | types.PayloadSelector = True,
-        with_vectors: bool | Sequence[str] = False,
+        with_payload: types.WithPayloadInterface = True,
+        with_vectors: types.WithVector = False,
     ) -> tuple[list[types.Record], types.PointId | None]:
+        self._validate_with_payload(with_payload)
+
         if len(self.ids) == 0:
+            validate_filter(
+                scroll_filter
+            )  # check the filter to have the same behaviour as the server
             return [], None
 
         if order_by is None:
@@ -1999,8 +2290,8 @@ class LocalCollection:
         scroll_filter: types.Filter | None = None,
         limit: int = 10,
         offset: types.PointId | None = None,
-        with_payload: bool | Sequence[str] | types.PayloadSelector = True,
-        with_vectors: bool | Sequence[str] = False,
+        with_payload: types.WithPayloadInterface = True,
+        with_vectors: types.WithVector = False,
     ) -> tuple[list[types.Record], types.PointId | None]:
         sorted_ids = sorted(self.ids.items(), key=lambda x: self._universal_id(x[0]))
 
@@ -2008,8 +2299,10 @@ class LocalCollection:
 
         mask = self._payload_and_non_deleted_mask(scroll_filter)
 
+        offset_id = None if offset is None else self._universal_id(normalize_point_id(offset))
+
         for point_id, idx in sorted_ids:
-            if offset is not None and self._universal_id(point_id) < self._universal_id(offset):
+            if offset_id is not None and self._universal_id(point_id) < offset_id:
                 continue
 
             if len(result) >= limit + 1:
@@ -2036,8 +2329,8 @@ class LocalCollection:
         order_by: types.OrderBy,
         scroll_filter: types.Filter | None = None,
         limit: int = 10,
-        with_payload: bool | Sequence[str] | types.PayloadSelector = True,
-        with_vectors: bool | Sequence[str] = False,
+        with_payload: types.WithPayloadInterface = True,
+        with_vectors: types.WithVector = False,
     ) -> tuple[list[types.Record], types.PointId | None]:
         if isinstance(order_by, grpc.OrderBy):
             order_by = GrpcToRest.convert_order_by(order_by)
@@ -2109,8 +2402,8 @@ class LocalCollection:
         self,
         limit: int,
         query_filter: types.Filter | None,
-        with_payload: bool | Sequence[str] | types.PayloadSelector = True,
-        with_vectors: bool | Sequence[str] = False,
+        with_payload: types.WithPayloadInterface = True,
+        with_vectors: types.WithVector = False,
     ) -> list[types.ScoredPoint]:
         mask = self._payload_and_non_deleted_mask(query_filter)
 
@@ -2148,18 +2441,23 @@ class LocalCollection:
         query_filter: types.Filter | None = None,
         limit: int = 10,
         offset: int | None = None,
-        with_payload: bool | Sequence[str] | types.PayloadSelector = True,
-        with_vectors: bool | Sequence[str] = False,
+        with_payload: types.WithPayloadInterface = True,
+        with_vectors: types.WithVector = False,
         score_threshold: float | None = None,
         idf_corpus: types.Filter | None = None,
     ) -> list[models.ScoredPoint]:
         search_limit = mmr.candidates_limit if mmr.candidates_limit is not None else limit
         using = using or DEFAULT_VECTOR_NAME
+        # MMR reorders the candidates, so `offset` has to be applied to its output, not to the
+        # candidate search: fetch candidates from 0, re-rank `limit + offset` points, then drop
+        # the offset. Same order as core. Offsetting the candidate search instead would hide the
+        # top `offset` nearest points from MMR, which are exactly the ones it should pick from.
+        offset = offset or 0
         search_results = self.search(
             query_vector=(using, query_vector),
             query_filter=query_filter,
             limit=search_limit,
-            offset=offset,
+            offset=0,
             with_payload=with_payload,
             with_vectors=with_vectors,
             score_threshold=score_threshold,
@@ -2169,7 +2467,7 @@ class LocalCollection:
         diversity = mmr.diversity if mmr.diversity is not None else 0.5
         lambda_ = 1.0 - diversity
 
-        return self._mmr(search_results, query_vector, using, lambda_, limit)
+        return self._mmr(search_results, query_vector, using, lambda_, limit + offset)[offset:]
 
     def _mmr(
         self,
@@ -2255,17 +2553,30 @@ class LocalCollection:
             for i in range(len(candidate_ids)):
                 candidate_distance_matrix[(candidate_id, candidate_ids[i])] = nearest_candidates[i]
 
-        selected = [candidate_ids[0]]
-        pending = candidate_ids[1:]
+        # Core keeps the pending candidates in an insertion-ordered set and removes the chosen
+        # one with `swap_remove`, which moves the last element into the freed slot. It then picks
+        # the best candidate with `max_by_key`, which returns the *last* maximum on ties (unlike
+        # `np.argmax`, which returns the first). Both details are reproduced here, otherwise
+        # exact ties in relevance or in MMR score are resolved differently than in core.
+        pending = list(range(len(candidate_ids)))
+
+        # first point is the most relevant one
+        seed_position = last_argmax(
+            [query_raw_similarities[candidate_ids[index]] for index in pending]
+        )
+        selected = [swap_remove(pending, seed_position)]
+
         while len(selected) < limit and len(pending) > 0:
             mmr_scores = []
 
-            for pending_id in pending:
-                relevance_score = query_raw_similarities[pending_id]
+            for pending_index in pending:
+                relevance_score = query_raw_similarities[candidate_ids[pending_index]]
                 similarities_to_selected = []
-                for selected_id in selected:
+                for selected_index in selected:
                     similarities_to_selected.append(
-                        candidate_distance_matrix[(pending_id, selected_id)]
+                        candidate_distance_matrix[
+                            (candidate_ids[pending_index], candidate_ids[selected_index])
+                        ]
                     )
                 max_similarity_to_selected = max(similarities_to_selected)
                 mmr_score = (
@@ -2277,30 +2588,30 @@ class LocalCollection:
                 [np.isneginf(sim) for sim in mmr_scores]
             ):  # no points left passing score threshold
                 break
-            best_candidate_index = np.argmax(mmr_scores).item()
-            selected.append(pending.pop(best_candidate_index))
+            selected.append(swap_remove(pending, last_argmax(mmr_scores)))
 
-        return [id_to_point[candidate_id] for candidate_id in selected]
+        return [id_to_point[candidate_ids[index]] for index in selected]
 
     def _rescore_with_formula(
         self,
         query: models.FormulaQuery,
         prefetches_results: list[list[models.ScoredPoint]],
         limit: int,
-        with_payload: bool | Sequence[str] | types.PayloadSelector,
-        with_vectors: bool | Sequence[str],
+        with_payload: types.WithPayloadInterface,
+        with_vectors: types.WithVector,
     ) -> list[models.ScoredPoint]:
+        validate_expression(query.formula)
+        defaults = parse_defaults(query.defaults or {})
+
         # collect prefetches in vec of dicts for faster lookup
         prefetches_scores = [
             dict((point.id, point.score) for point in prefetch) for prefetch in prefetches_results
         ]
 
-        defaults = query.defaults or {}
-
-        points_to_rescore: set[models.ExtendedPointId] = set()
-        for prefetch in prefetches_results:
-            for point in prefetch:
-                points_to_rescore.add(point.id)
+        # dedup keeping the prefetch order: set() orders str ids by the hash seed
+        points_to_rescore = dict.fromkeys(
+            point.id for prefetch in prefetches_results for point in prefetch
+        )
 
         # Evaluate formula for each point
         rescored: list[models.ScoredPoint] = []
@@ -2343,8 +2654,8 @@ class LocalCollection:
         query_filter: types.Filter | None = None,
         limit: int = 10,
         offset: int | None = None,
-        with_payload: bool | Sequence[str] | types.PayloadSelector = True,
-        with_vectors: bool | Sequence[str] = False,
+        with_payload: types.WithPayloadInterface = True,
+        with_vectors: types.WithVector = False,
         score_threshold: float | None = None,
         idf_corpus: types.Filter | None = None,
     ) -> list[models.ScoredPoint]:
@@ -2395,9 +2706,8 @@ class LocalCollection:
         if isinstance(point.id, uuid.UUID):
             point.id = str(point.id)
         idx = self.ids[point.id]
-        self.payload[idx] = deepcopy(
-            to_jsonable_python(point.payload) if point.payload is not None else {}
-        )
+        # `_validate_point` already made a JSON copy of the payload
+        self.payload[idx] = point.payload if point.payload is not None else {}
 
         if isinstance(point.vector, list):
             vectors = {DEFAULT_VECTOR_NAME: point.vector}
@@ -2408,12 +2718,7 @@ class LocalCollection:
         for vector_name, _named_vectors in self.vectors.items():
             vector = vectors.get(vector_name)
             if vector is not None:
-                params = self.get_vector_params(vector_name)
-                assert not np.isnan(vector).any(), "Vector contains NaN values"
-                if params.distance == models.Distance.COSINE:
-                    norm = np.linalg.norm(vector)
-                    vector = np.array(vector) / norm if norm > EPSILON else vector
-                self.vectors[vector_name][idx] = vector
+                self.vectors[vector_name][idx] = self._to_stored_vector(vector, vector_name)
                 self.deleted_per_vector[vector_name][idx] = 0
             else:
                 self.deleted_per_vector[vector_name][idx] = 1
@@ -2421,15 +2726,17 @@ class LocalCollection:
         # sparse vectors
         for vector_name, _named_vectors in self.sparse_vectors.items():
             vector = vectors.get(vector_name)
-            was_deleted = self.deleted_per_vector[vector_name][idx]
-            if not was_deleted:
-                previous_vector = self.sparse_vectors[vector_name][idx]
-                self._update_idf_remove(previous_vector, vector_name)
+            # we need to drop it even if the vector exists, because idf is computed over each vector value
+            # and if the vector has changed - the idf should be recalculated
+            self._drop_idf_contribution(idx, vector_name)
 
             if vector is not None:
-                self.sparse_vectors[vector_name][idx] = vector
+                stored_vector = copy_sparse_vector(vector)
+                self.sparse_vectors[vector_name][idx] = stored_vector
                 self.deleted_per_vector[vector_name][idx] = 0
-                self._update_idf_append(vector, vector_name)
+                # An upsert revives a deleted point, so this counts even when `deleted[idx]`
+                # is still set - it is cleared at the end of this method.
+                self._update_idf_append(stored_vector, vector_name)
             else:
                 self.deleted_per_vector[vector_name][idx] = 1
 
@@ -2437,13 +2744,7 @@ class LocalCollection:
         for vector_name, _named_vector in self.multivectors.items():
             vector = vectors.get(vector_name)
             if vector is not None:
-                params = self.get_vector_params(vector_name)
-                assert not np.isnan(vector).any(), "Vector contains NaN values"
-
-                if params.distance == models.Distance.COSINE:
-                    vector_norm = np.linalg.norm(vector, axis=-1)[:, np.newaxis]
-                    vector /= np.where(vector_norm != 0.0, vector_norm, EPSILON)
-                self.multivectors[vector_name][idx] = np.array(vector)
+                self.multivectors[vector_name][idx] = self._to_stored_vector(vector, vector_name)
                 self.deleted_per_vector[vector_name][idx] = 0
             else:
                 self.deleted_per_vector[vector_name][idx] = 1
@@ -2458,9 +2759,8 @@ class LocalCollection:
         self.ids[point.id] = idx
         self.ids_inv.append(point.id)
 
-        self.payload.append(
-            deepcopy(to_jsonable_python(point.payload) if point.payload is not None else {})
-        )
+        # `_validate_point` already made a JSON copy of the payload
+        self.payload.append(point.payload if point.payload is not None else {})
         assert len(self.payload) == len(self.ids_inv), "Payload and ids_inv must be the same size"
         self.deleted = np.append(self.deleted, 0)
 
@@ -2484,13 +2784,7 @@ class LocalCollection:
                     self.deleted_per_vector[vector_name], 1
                 )
             else:
-                vector_np = np.array(vector, dtype=np.float32)
-                assert not np.isnan(vector_np).any(), "Vector contains NaN values"
-                params = self.get_vector_params(vector_name)
-                if params.distance == models.Distance.COSINE:
-                    norm = np.linalg.norm(vector_np)
-                    vector_np = vector_np / norm if norm > EPSILON else vector_np
-                named_vectors[idx] = vector_np
+                named_vectors[idx] = self._to_stored_vector(vector, vector_name)
                 self.deleted_per_vector[vector_name] = np.append(
                     self.deleted_per_vector[vector_name], 0
                 )
@@ -2513,8 +2807,9 @@ class LocalCollection:
                     self.deleted_per_vector[vector_name], 1
                 )
             else:
-                named_vectors[idx] = vector
-                self._update_idf_append(vector, vector_name)
+                stored_vector = copy_sparse_vector(vector)
+                named_vectors[idx] = stored_vector
+                self._update_idf_append(stored_vector, vector_name)
                 self.deleted_per_vector[vector_name] = np.append(
                     self.deleted_per_vector[vector_name], 0
                 )
@@ -2527,53 +2822,54 @@ class LocalCollection:
             if len(named_vectors) <= idx:
                 diff = idx - len(named_vectors) + 1
                 for _ in range(diff):
-                    named_vectors.append(np.array([]))
+                    named_vectors.append(
+                        np.ones((1, self.get_vector_params(vector_name).size), dtype=np.float32)
+                    )
 
             if vector is None:
                 # Add fake vector and mark as removed
-                named_vectors[idx] = np.array([])
+                named_vectors[idx] = np.ones(
+                    (1, self.get_vector_params(vector_name).size), dtype=np.float32
+                )
                 self.deleted_per_vector[vector_name] = np.append(
                     self.deleted_per_vector[vector_name], 1
                 )
             else:
-                vector_np = np.array(vector, dtype=np.float32)
-                assert not np.isnan(vector_np).any(), "Vector contains NaN values"
-                params = self.get_vector_params(vector_name)
-                if params.distance == models.Distance.COSINE:
-                    vector_norm = np.linalg.norm(vector_np, axis=-1)[:, np.newaxis]
-                    vector_np /= np.where(vector_norm != 0.0, vector_norm, EPSILON)
-                named_vectors[idx] = vector_np
+                named_vectors[idx] = self._to_stored_vector(vector, vector_name)
                 self.deleted_per_vector[vector_name] = np.append(
                     self.deleted_per_vector[vector_name], 0
                 )
 
             self.multivectors[vector_name] = named_vectors
 
-    def _upsert_point(
-        self,
-        point: models.PointStruct,
-        update_filter: types.Filter | None = None,
-        update_mode: types.UpdateMode | None = None,
-    ) -> None:
-        if isinstance(point.id, str):
-            # try to parse as UUID
-            try:
-                _uuid = uuid.UUID(point.id)
-            except ValueError as e:
-                raise ValueError(f"Point id {point.id} is not a valid UUID") from e
+    def _validate_point(self, point: models.PointStruct) -> models.PointStruct:
+        """Validate a point and return a normalized copy, without touching collection state.
+
+        Every write path runs this over all of its points before applying any of them, so a
+        rejected point leaves the collection untouched, the way the server does.
+
+        Normalization (sorting sparse vectors, canonicalizing UUID ids, converting the payload to
+        JSON values) goes into the returned copy: remote mode does not rewrite the caller's point
+        either.
+        """
+        point_id = normalize_point_id(point.id, validate=True)
+
+        normalized_vector: models.VectorStruct = point.vector
 
         if isinstance(point.vector, dict):
-            updated_sparse_vectors = {}
+            normalized_vectors = dict(point.vector)
             for vector_name, vector in point.vector.items():
                 if vector_name not in self._all_vectors_keys:
                     raise ValueError(f"Wrong input: Not existing vector name error: {vector_name}")
+                self._validate_vector_kind(vector, vector_name)
                 if isinstance(vector, SparseVector):
                     # validate sparse vector
                     validate_sparse_vector(vector)
                     # sort sparse vector by indices before persistence
-                    updated_sparse_vectors[vector_name] = sort_sparse_vector(vector)
-            # update point.vector with the modified values after iteration
-            point.vector.update(updated_sparse_vectors)
+                    normalized_vectors[vector_name] = sort_sparse_vector(vector)
+                else:
+                    self._validate_dense_or_multivector(vector, vector_name)
+            normalized_vector = normalized_vectors
         else:
             vector_names = list(self.vectors.keys())
             multivector_names = list(self.multivectors.keys())
@@ -2586,31 +2882,77 @@ class LocalCollection:
                 )
             if not self.vectors and not self.multivectors:
                 raise ValueError("Wrong input: Not existing vector name error")
+            self._validate_dense_or_multivector(point.vector, DEFAULT_VECTOR_NAME)
 
-        if isinstance(point.id, uuid.UUID):
-            point.id = str(point.id)
+        return construct(
+            models.PointStruct,
+            id=point_id,
+            vector=normalized_vector,
+            # the point is stored before it is applied, so a payload that can't be converted
+            # must fail here, or it would be stored and break loading the collection
+            payload=to_jsonable_python(point.payload),
+        )
 
+    def _upsert_point(
+        self,
+        point: models.PointStruct,
+        update_filter: types.Filter | None = None,
+        update_mode: types.UpdateMode | None = None,
+    ) -> None:
+        """Apply a point returned by `_validate_point`, never a caller's own point."""
         if point.id in self.ids:
-            if update_mode == models.UpdateMode.INSERT_ONLY:
-                return None
             idx = self.ids[point.id]
+            if self.deleted[idx]:
+                if update_mode == models.UpdateMode.UPDATE_ONLY:
+                    return None
+            elif update_mode == models.UpdateMode.INSERT_ONLY:
+                return None
             if not self.deleted[idx] and update_filter is not None:
-                has_vector = {}
-                for vector_name, deleted in self.deleted_per_vector.items():
-                    if not deleted[idx]:
-                        has_vector[vector_name] = True
                 if not check_filter(
-                    update_filter, self.payload[idx], self.ids_inv[idx], has_vector
+                    update_filter,
+                    self.payload[idx],
+                    self.ids_inv[idx],
+                    self._calculate_has_vector(idx),
                 ):
                     return None
-            self._update_point(point)
+            apply_point = self._update_point
         else:
             if update_mode == models.UpdateMode.UPDATE_ONLY:
                 return None
-            self._add_point(point)
+            apply_point = self._add_point
 
+        # Store the point before applying it, see `_persist_by_id`.
         if self.storage is not None:
-            self.storage.persist(point)
+            self.storage.persist(self._to_stored_point(point))
+        apply_point(point)
+
+    @staticmethod
+    def _materialize_points(
+        points: Sequence[models.PointStruct] | models.Batch,
+    ) -> list[models.PointStruct]:
+        """Flatten either accepted upsert shape into a plain list of points."""
+        if isinstance(points, list):
+            return list(points)
+
+        if isinstance(points, models.Batch):
+            batch = points
+            # indexing the columns below would drop extra values or fail on missing ones
+            validate_batch_lengths(batch)
+            if isinstance(batch.vectors, list):
+                vectors = {DEFAULT_VECTOR_NAME: batch.vectors}
+            else:
+                vectors = batch.vectors
+
+            return [
+                models.PointStruct(
+                    id=point_id,
+                    payload=batch.payloads[idx] if batch.payloads is not None else None,
+                    vector={name: v[idx] for name, v in vectors.items()},
+                )
+                for idx, point_id in enumerate(batch.ids)
+            ]
+
+        raise ValueError(f"Unsupported type: {type(points)}")
 
     def upsert(
         self,
@@ -2618,34 +2960,18 @@ class LocalCollection:
         update_filter: types.Filter | None = None,
         update_mode: types.UpdateMode | None = None,
     ) -> None:
-        if isinstance(points, list):
-            for point in points:
-                self._upsert_point(point, update_filter=update_filter, update_mode=update_mode)
-        elif isinstance(points, models.Batch):
-            batch = points
-            if isinstance(batch.vectors, list):
-                vectors = {DEFAULT_VECTOR_NAME: batch.vectors}
-            else:
-                vectors = batch.vectors
+        validate_filter(update_filter)
 
-            for idx, point_id in enumerate(batch.ids):
-                payload = None
-                if batch.payloads is not None:
-                    payload = batch.payloads[idx]
+        point_structs = self._materialize_points(points)
+        if len(point_structs) == 0:
+            raise ValueError("Empty update request")
 
-                vector = {name: v[idx] for name, v in vectors.items()}
+        # Validate everything before writing anything: the server rejects the whole request,
+        # so a bad point in the middle of a batch must not leave the earlier ones applied.
+        validated_points = [self._validate_point(point) for point in point_structs]
 
-                self._upsert_point(
-                    models.PointStruct(
-                        id=point_id,
-                        payload=payload,
-                        vector=vector,
-                    ),
-                    update_filter=update_filter,
-                    update_mode=update_mode,
-                )
-        else:
-            raise ValueError(f"Unsupported type: {type(points)}")
+        for point in validated_points:
+            self._upsert_point(point, update_filter=update_filter, update_mode=update_mode)
 
         if len(self.ids) > self.LARGE_DATA_THRESHOLD:
             show_warning_once(
@@ -2657,61 +2983,117 @@ class LocalCollection:
                 stacklevel=6,
             )
 
-    def _update_named_vectors(
-        self, idx: int, vectors: dict[str, list[float] | SparseVector | list[list[float]]]
-    ) -> None:
+    def _validate_named_vectors(
+        self, vectors: dict[str, list[float] | SparseVector | list[list[float]]]
+    ) -> list[tuple[str, Any]]:
+        """Validate named vectors and normalize them to the form they are stored in, without
+        touching collection state."""
+        validated: list[tuple[str, Any]] = []
         for vector_name, vector in vectors.items():
             if vector_name not in self._all_vectors_keys:
                 raise ValueError(f"Wrong input: Not existing vector name error: {vector_name}")
-
-            self.deleted_per_vector[vector_name][idx] = 0
+            self._validate_vector_kind(vector, vector_name)
 
             if isinstance(vector, SparseVector):
                 validate_sparse_vector(vector)
-                old_vector = self.sparse_vectors[vector_name][idx]
-                self._update_idf_remove(old_vector, vector_name)
-                new_vector = sort_sparse_vector(vector)
-                self.sparse_vectors[vector_name][idx] = new_vector
-                self._update_idf_append(new_vector, vector_name)
+                validated.append((vector_name, sort_sparse_vector(vector)))
                 continue
 
-            vector_np = np.array(vector, dtype=np.float32)
-            assert not np.isnan(vector_np).any(), "Vector contains NaN values"
-            params = self.get_vector_params(vector_name)
+            self._validate_dense_or_multivector(vector, vector_name)
+            validated.append((vector_name, self._to_stored_vector(vector, vector_name)))
+
+        return validated
+
+    def _to_stored_vector(self, vector: Any, vector_name: str) -> types.NumpyArray:
+        """A dense vector or multivector the way the collection holds it: float32, normalized
+        for cosine distance."""
+        vector_np = np.array(vector, dtype=np.float32)
+        if self.get_vector_params(vector_name).distance == models.Distance.COSINE:
             if vector_name in self.vectors:
-                if params.distance == models.Distance.COSINE:
-                    norm = np.linalg.norm(vector_np)
-                    vector_np = vector_np / norm if norm > EPSILON else vector_np
+                norm = np.linalg.norm(vector_np)
+                vector_np = vector_np / norm if norm > EPSILON else vector_np
+            else:
+                vector_norm = np.linalg.norm(vector_np, axis=-1)[:, np.newaxis]
+                vector_np /= np.where(vector_norm != 0.0, vector_norm, EPSILON)
+        return vector_np
+
+    def _to_stored_point(self, point: models.PointStruct) -> models.PointStruct:
+        """`point` with its vectors as the collection holds them, like `_persist_by_id` stores."""
+        if isinstance(point.vector, dict):
+            vector: models.VectorStruct = {
+                vector_name: (
+                    vector
+                    if isinstance(vector, SparseVector)
+                    else self._to_stored_vector(vector, vector_name).tolist()
+                )
+                for vector_name, vector in point.vector.items()
+            }
+        else:
+            vector = self._to_stored_vector(point.vector, DEFAULT_VECTOR_NAME).tolist()
+        return construct(models.PointStruct, id=point.id, vector=vector, payload=point.payload)
+
+    def _apply_named_vectors(self, idx: int, validated: list[tuple[str, Any]]) -> None:
+        """Apply already validated named vectors. Call `_validate_named_vectors` first."""
+        for vector_name, vector_np in validated:
+            if isinstance(vector_np, SparseVector):
+                # this has to come first: the deletion flag is what tells
+                # `_drop_idf_contribution` whether this point counts at all, and the stored
+                # vector is the one it takes back out of the counters
+                self._drop_idf_contribution(idx, vector_name)
+                self.deleted_per_vector[vector_name][idx] = 0
+                stored_vector = copy_sparse_vector(vector_np)
+                self.sparse_vectors[vector_name][idx] = stored_vector
+                self._update_idf_append(stored_vector, vector_name)
+                continue
+
+            self.deleted_per_vector[vector_name][idx] = 0
+            if vector_name in self.vectors:
                 self.vectors[vector_name][idx] = vector_np
             else:
-                if params.distance == models.Distance.COSINE:
-                    vector_norm = np.linalg.norm(vector_np, axis=-1)[:, np.newaxis]
-                    vector_np /= np.where(vector_norm != 0.0, vector_norm, EPSILON)
                 self.multivectors[vector_name][idx] = vector_np
 
     def update_vectors(
         self, points: Sequence[types.PointVectors], update_filter: types.Filter | None = None
     ) -> None:
-        for point in points:
-            point_id = str(point.id) if isinstance(point.id, uuid.UUID) else point.id
-            idx = self.ids[point_id]
-            vector_struct = point.vector
-            if isinstance(vector_struct, list):
-                fixed_vectors = {DEFAULT_VECTOR_NAME: vector_struct}
-            else:
-                fixed_vectors = vector_struct
+        _validate_points_to_update(points)
+        validate_filter(update_filter)
 
-            if not self.deleted[idx] and update_filter is not None:
-                has_vector = {}
-                for vector_name, deleted in self.deleted_per_vector.items():
-                    if not deleted[idx]:
-                        has_vector[vector_name] = True
+        # Same rule as upsert: validate every point in the request before writing any of it.
+        # The point ids are looked up in the apply pass, because a request naming one the
+        # collection does not hold is not rejected outright: the server writes every other
+        # point in it, and only then answers 404 for the first id it could not find.
+        prepared = [
+            (
+                normalize_point_id(point.id),
+                self._validate_named_vectors(
+                    {DEFAULT_VECTOR_NAME: point.vector}
+                    if isinstance(point.vector, list)
+                    else point.vector
+                ),
+            )
+            for point in points
+        ]
+
+        missing: types.PointId | None = None
+        for point_id, validated in prepared:
+            idx = self._existing_idx(point_id)
+            if idx is None:
+                missing = point_id if missing is None else missing
+                continue
+
+            if update_filter is not None:
                 if not check_filter(
-                    update_filter, self.payload[idx], self.ids_inv[idx], has_vector
+                    update_filter,
+                    self.payload[idx],
+                    self.ids_inv[idx],
+                    self._calculate_has_vector(idx),
                 ):
                     continue
-            self._update_named_vectors(idx, fixed_vectors)
-            self._persist_by_id(point_id)
+            self._persist_by_id(point_id, vectors=dict(validated))
+            self._apply_named_vectors(idx, validated)
+
+        if missing is not None:
+            raise KeyError(missing)
 
     def delete_vectors(
         self,
@@ -2723,23 +3105,42 @@ class LocalCollection:
             | models.PointIdsList
         ),
     ) -> None:
+        _validate_vector_names_to_delete(vectors)
+        # the selection is checked before the vector names, as on the server
         ids = self._selector_to_ids(selector)
+
+        # Check every name up front, rather than deleting the ones we recognize and then
+        # failing. The server errors either way, but whether it deletes first varies.
+        self._validate_vector_names(vectors)
+
+        # Like `update_vectors`, a point the collection does not hold does not stop the rest
+        # of the request: everything else is deleted, and the 404 comes afterwards.
+        missing: types.PointId | None = None
         for point_id in ids:
-            idx = self.ids[point_id]
+            idx = self._existing_idx(point_id)
+            if idx is None:
+                missing = point_id if missing is None else missing
+                continue
+            self._persist_by_id(point_id, vectors=dict.fromkeys(vectors))
             for vector_name in vectors:
+                if vector_name in self.sparse_vectors:
+                    self._drop_idf_contribution(idx, vector_name)
                 self.deleted_per_vector[vector_name][idx] = 1
-            self._persist_by_id(point_id)
+
+        if missing is not None:
+            raise KeyError(missing)
 
     def _delete_ids(self, ids: list[types.PointId]) -> None:
         for point_id in ids:
             if point_id in self.ids:
-                idx = self.ids[point_id]
-                self.deleted[idx] = 1
-
-        if self.storage is not None:
-            for point_id in ids:
-                if point_id in self.ids:
+                # Remove the stored record before hiding the point: if this fails, the points
+                # not reached yet must stay visible so that a retry can select them again.
+                if self.storage is not None:
                     self.storage.delete(point_id)
+                idx = self.ids[point_id]
+                for vector_name in self.sparse_vectors:
+                    self._drop_idf_contribution(idx, vector_name)
+                self.deleted[idx] = 1
 
     def _filter_to_ids(self, delete_filter: types.Filter) -> list[models.ExtendedPointId]:
         mask = self._payload_and_non_deleted_mask(delete_filter)
@@ -2755,12 +3156,16 @@ class LocalCollection:
             | models.PointIdsList
         ),
     ) -> list[models.ExtendedPointId]:
+        if isinstance(selector, models.PointIdsList):
+            selector = selector.points
         if isinstance(selector, list):
-            return [str(id_) if isinstance(id_, uuid.UUID) else id_ for id_ in selector]
+            # A filter that matches nothing is fine, an empty id list is not: the server routes
+            # ids to shards, and an empty list reaches none of them.
+            if len(selector) == 0:
+                raise ValueError("Empty update request")
+            return [normalize_point_id(id_) for id_ in selector]
         elif isinstance(selector, models.Filter):
             return self._filter_to_ids(selector)
-        elif isinstance(selector, models.PointIdsList):
-            return [str(id_) if isinstance(id_, uuid.UUID) else id_ for id_ in selector.points]
         elif isinstance(selector, models.FilterSelector):
             return self._filter_to_ids(selector.filter)
         else:
@@ -2778,14 +3183,41 @@ class LocalCollection:
         ids = self._selector_to_ids(selector)
         self._delete_ids(ids)
 
-    def _persist_by_id(self, point_id: models.ExtendedPointId) -> None:
+    def _persist_by_id(
+        self,
+        point_id: models.ExtendedPointId,
+        payload: models.Payload | None = None,
+        vectors: dict[str, Any] | None = None,
+    ) -> None:
+        """Store a point as memory holds it, with `payload` and `vectors` in place of its own.
+
+        Writers store the new state of a point before applying it in memory. If storing fails,
+        memory still matches the storage, so a retry selects the point again. Applied first,
+        the point may no longer match the retry's filter, and its stored state comes back on
+        reopening. A vector given as `None` is stored as deleted.
+        """
         if self.storage is not None:
             idx = self.ids[point_id]
-            point = models.PointStruct(
-                id=point_id,
-                payload=self._get_payload(idx, with_payload=True, return_copy=False),
-                vector=self._get_vectors(idx, with_vectors=True),
-            )
+            if payload is None:
+                payload = self._get_payload(idx, with_payload=True, return_copy=False)
+
+            vector = self._get_vectors(idx, with_vectors=True)
+            if vectors:
+                named = vector if isinstance(vector, dict) else {DEFAULT_VECTOR_NAME: vector}
+                for vector_name, value in vectors.items():
+                    if value is None:
+                        named.pop(vector_name, None)
+                    else:
+                        named[vector_name] = (
+                            value.tolist() if isinstance(value, np.ndarray) else value
+                        )
+                vector = (
+                    named[DEFAULT_VECTOR_NAME]
+                    if len(named) == 1 and DEFAULT_VECTOR_NAME in named
+                    else named
+                )
+
+            point = models.PointStruct(id=point_id, payload=payload, vector=vector)
             self.storage.persist(point)
 
     def set_payload(
@@ -2799,24 +3231,38 @@ class LocalCollection:
         ),
         key: str | None = None,
     ) -> None:
+        # A point the collection does not hold does not stop the rest of the request: the
+        # server applies every other point in it and answers 404 afterwards, naming the first
+        # id it could not find. Deleted points count as missing - writing to one would also
+        # persist it, bringing it back the next time the collection is opened.
         ids = self._selector_to_ids(selector)
         base_payload = to_jsonable_python(payload)
 
         keys: list[JsonPathItem] | None = parse_json_path(key) if key is not None else None
 
+        missing: types.PointId | None = None
         for point_id in ids:
-            idx = self.ids[point_id]
+            idx = self._existing_idx(point_id)
+            if idx is None:
+                missing = point_id if missing is None else missing
+                continue
             # Deep-copy per point: a shared object graph here would let a later,
             # differently-scoped set_payload(key=...) call mutate other points'
-            # payloads in place via set_value_by_key's dict.update().
+            # payloads in place via set_value_by_key.
             jsonable_payload = deepcopy(base_payload)
             if keys is None:
-                self.payload[idx] = {**self.payload[idx], **jsonable_payload}
+                new_payload = merge_payload(dict(self.payload[idx]), jsonable_payload)
             else:
-                if self.payload[idx] is not None:
-                    set_value_by_key(payload=self.payload[idx], value=jsonable_payload, keys=keys)
+                # copied, so that memory keeps the old payload until the new one is stored
+                new_payload = deepcopy(self.payload[idx])
+                if new_payload is not None:
+                    set_value_by_key(payload=new_payload, value=jsonable_payload, keys=keys)
 
-            self._persist_by_id(point_id)
+            self._persist_by_id(point_id, payload=new_payload)
+            self.payload[idx] = new_payload
+
+        if missing is not None:
+            raise KeyError(missing)
 
     def overwrite_payload(
         self,
@@ -2828,11 +3274,23 @@ class LocalCollection:
             | models.PointIdsList
         ),
     ) -> None:
+        # A point the collection does not hold does not stop the rest of the request: the
+        # server applies every other point in it and answers 404 afterwards, naming the first
+        # id it could not find. Deleted points count as missing - writing to one would also
+        # persist it, bringing it back the next time the collection is opened.
         ids = self._selector_to_ids(selector)
+        missing: types.PointId | None = None
         for point_id in ids:
-            idx = self.ids[point_id]
-            self.payload[idx] = deepcopy(to_jsonable_python(payload)) or {}
-            self._persist_by_id(point_id)
+            idx = self._existing_idx(point_id)
+            if idx is None:
+                missing = point_id if missing is None else missing
+                continue
+            new_payload = deepcopy(to_jsonable_python(payload)) or {}
+            self._persist_by_id(point_id, payload=new_payload)
+            self.payload[idx] = new_payload
+
+        if missing is not None:
+            raise KeyError(missing)
 
     def delete_payload(
         self,
@@ -2844,13 +3302,27 @@ class LocalCollection:
             | models.PointIdsList
         ),
     ) -> None:
+        parsed_keys = [parse_json_path(key) for key in keys]
+        # A point the collection does not hold does not stop the rest of the request: the
+        # server applies every other point in it and answers 404 afterwards, naming the first
+        # id it could not find. Deleted points count as missing - writing to one would also
+        # persist it, bringing it back the next time the collection is opened.
         ids = self._selector_to_ids(selector)
+        missing: types.PointId | None = None
         for point_id in ids:
-            idx = self.ids[point_id]
-            for key in keys:
-                if key in self.payload[idx]:
-                    self.payload[idx].pop(key)
-            self._persist_by_id(point_id)
+            idx = self._existing_idx(point_id)
+            if idx is None:
+                missing = point_id if missing is None else missing
+                continue
+            # copied, so that memory keeps the old payload until the new one is stored
+            new_payload = deepcopy(self.payload[idx])
+            for parsed_key in parsed_keys:
+                delete_value_by_key(new_payload, parsed_key)
+            self._persist_by_id(point_id, payload=new_payload)
+            self.payload[idx] = new_payload
+
+        if missing is not None:
+            raise KeyError(missing)
 
     def clear_payload(
         self,
@@ -2861,42 +3333,117 @@ class LocalCollection:
             | models.PointIdsList
         ),
     ) -> None:
+        # A point the collection does not hold does not stop the rest of the request: the
+        # server applies every other point in it and answers 404 afterwards, naming the first
+        # id it could not find. Deleted points count as missing - writing to one would also
+        # persist it, bringing it back the next time the collection is opened.
         ids = self._selector_to_ids(selector)
+        missing: types.PointId | None = None
         for point_id in ids:
-            idx = self.ids[point_id]
+            idx = self._existing_idx(point_id)
+            if idx is None:
+                missing = point_id if missing is None else missing
+                continue
+            self._persist_by_id(point_id, payload={})
             self.payload[idx] = {}
-            self._persist_by_id(point_id)
+
+        if missing is not None:
+            raise KeyError(missing)
+
+    def _validate_vector_names(self, vector_names: Sequence[str]) -> None:
+        for vector_name in vector_names:
+            if vector_name not in self._all_vectors_keys:
+                raise ValueError(f"Wrong input: Not existing vector name error: {vector_name}")
+
+    def _validate_update_operation(self, update_op: types.UpdateOperation) -> None:
+        """Run the checks the server makes while parsing a request, without touching state.
+
+        Empty selections are left to the apply pass: the server rejects them only once it
+        reaches the operation, so the operations ahead of it stay applied.
+
+        Filters an operation carries are left to the apply pass, so a batch whose later
+        operation holds an invalid filter still applies the operations ahead of it. The
+        server rejects the whole request there, but it also disagrees with itself about
+        which filters are invalid, so local mode does not try to match it.
+        """
+        if isinstance(update_op, models.UpsertOperation):
+            upsert_struct = update_op.upsert
+            if isinstance(upsert_struct, models.PointsBatch):
+                points: Sequence[models.PointStruct] | models.Batch = upsert_struct.batch
+            elif isinstance(upsert_struct, models.PointsList):
+                points = upsert_struct.points
+            else:
+                raise ValueError(f"Unsupported upsert type: {type(update_op.upsert)}")
+
+            for point in self._materialize_points(points):
+                self._validate_point(point)
+
+        elif isinstance(update_op, models.UpdateVectorsOperation):
+            _validate_points_to_update(update_op.update_vectors.points)
+            for point in update_op.update_vectors.points:
+                self._validate_named_vectors(
+                    {DEFAULT_VECTOR_NAME: point.vector}
+                    if isinstance(point.vector, list)
+                    else point.vector
+                )
+
+        elif isinstance(update_op, models.SetPayloadOperation):
+            _validate_payload_selector(update_op.set_payload)
+            if update_op.set_payload.key is not None:
+                parse_json_path(update_op.set_payload.key)
+
+        elif isinstance(update_op, models.OverwritePayloadOperation):
+            _validate_payload_selector(update_op.overwrite_payload)
+
+        elif isinstance(update_op, models.DeletePayloadOperation):
+            _validate_payload_selector(update_op.delete_payload)
+            for key in update_op.delete_payload.keys:
+                parse_json_path(key)
+
+        elif isinstance(update_op, models.DeleteVectorsOperation):
+            _validate_vector_names_to_delete(update_op.delete_vectors.vector)
 
     def batch_update_points(
         self,
         update_operations: Sequence[types.UpdateOperation],
     ) -> None:
         for update_op in update_operations:
+            self._validate_update_operation(update_op)
+
+        for update_op in update_operations:
             if isinstance(update_op, models.UpsertOperation):
                 upsert_struct = update_op.upsert
                 if isinstance(upsert_struct, models.PointsBatch):
-                    self.upsert(upsert_struct.batch, update_filter=upsert_struct.update_filter)
+                    self.upsert(
+                        upsert_struct.batch,
+                        update_filter=upsert_struct.update_filter,
+                        update_mode=upsert_struct.update_mode,
+                    )
                 elif isinstance(upsert_struct, models.PointsList):
-                    self.upsert(upsert_struct.points, update_filter=upsert_struct.update_filter)
+                    self.upsert(
+                        upsert_struct.points,
+                        update_filter=upsert_struct.update_filter,
+                        update_mode=upsert_struct.update_mode,
+                    )
                 else:
                     raise ValueError(f"Unsupported upsert type: {type(update_op.upsert)}")
             elif isinstance(update_op, models.DeleteOperation):
                 self.delete(update_op.delete)
             elif isinstance(update_op, models.SetPayloadOperation):
-                points_selector = update_op.set_payload.points or update_op.set_payload.filter
                 self.set_payload(
-                    update_op.set_payload.payload, points_selector, update_op.set_payload.key
+                    update_op.set_payload.payload,
+                    _batch_selector(update_op.set_payload),
+                    update_op.set_payload.key,
                 )
             elif isinstance(update_op, models.OverwritePayloadOperation):
-                points_selector = (
-                    update_op.overwrite_payload.points or update_op.overwrite_payload.filter
+                self.overwrite_payload(
+                    update_op.overwrite_payload.payload,
+                    _batch_selector(update_op.overwrite_payload),
                 )
-                self.overwrite_payload(update_op.overwrite_payload.payload, points_selector)
             elif isinstance(update_op, models.DeletePayloadOperation):
-                points_selector = (
-                    update_op.delete_payload.points or update_op.delete_payload.filter
+                self.delete_payload(
+                    update_op.delete_payload.keys, _batch_selector(update_op.delete_payload)
                 )
-                self.delete_payload(update_op.delete_payload.keys, points_selector)
             elif isinstance(update_op, models.ClearPayloadOperation):
                 self.clear_payload(update_op.clear_payload)
             elif isinstance(update_op, models.UpdateVectorsOperation):
@@ -2905,12 +3452,21 @@ class LocalCollection:
                     update_vectors.points, update_filter=update_vectors.update_filter
                 )
             elif isinstance(update_op, models.DeleteVectorsOperation):
-                points_selector = (
-                    update_op.delete_vectors.points or update_op.delete_vectors.filter
-                )
+                # the selection is checked before the vector names, as on the server
+                points_selector = _batch_selector(update_op.delete_vectors)
                 self.delete_vectors(update_op.delete_vectors.vector, points_selector)
             else:
                 raise ValueError(f"Unsupported update operation: {type(update_op)}")
+
+    def create_payload_index(self, field_name: str, field_schema: types.PayloadSchemaType) -> None:
+        # like on the server, a new index of a field replaces its previous one
+        if isinstance(field_schema, models.TextIndexParams) and field_schema.scoring:
+            self.text_indexes[field_name] = deepcopy(field_schema)
+        else:
+            self.text_indexes.pop(field_name, None)
+
+    def delete_payload_index(self, field_name: str) -> None:
+        self.text_indexes.pop(field_name, None)
 
     def update_sparse_vectors_config(
         self, vector_name: str, new_config: models.SparseVectorParams
@@ -2918,23 +3474,46 @@ class LocalCollection:
         if vector_name not in self.sparse_vectors:
             raise ValueError(f"Vector {vector_name} does not exist in the collection")
 
-        self.config.sparse_vectors[vector_name] = new_config
+        # like the server, unset fields keep their values, `index` is merged field by field
+        config = to_dict(self.config.sparse_vectors[vector_name], exclude_none=True)
+        update = to_dict(new_config, exclude_none=True)
+        if "index" in update:
+            update["index"] = {**config.get("index", {}), **update["index"]}
+        self.config.sparse_vectors[vector_name] = models.SparseVectorParams(**{**config, **update})
 
     def create_dense_vector_name(self, vector_name: str, config: models.DenseVectorConfig) -> None:
-        if vector_name in self._all_vectors_keys:
-            raise ValueError(f"Vector {vector_name} already exists in the collection")
-
         params = models.VectorParams(
             size=config.size,
             distance=config.distance,
             multivector_config=config.multivector_config,
         )
 
+        if vector_name in self.sparse_vectors:
+            raise ValueError(f"Vector {vector_name} already exists as a sparse vector")
+
+        existing = self.vectors_config.get(vector_name) or self.multivectors_config.get(
+            vector_name
+        )
+        if existing is not None:
+            # like the server, re-creating a vector with the same schema is a no-op,
+            # datatype is not compared: local mode does not apply it
+            if (
+                existing.size != params.size
+                or existing.distance != params.distance
+                or existing.multivector_config != params.multivector_config
+            ):
+                raise ValueError(
+                    f"Vector {vector_name} already exists with a different configuration"
+                )
+            return
+
         num_points = len(self.ids_inv)
 
         if config.multivector_config is not None:
             self.multivectors_config[vector_name] = params
-            self.multivectors[vector_name] = [np.array([]) for _ in range(num_points)]
+            self.multivectors[vector_name] = [
+                np.ones((1, config.size), dtype=np.float32) for _ in range(num_points)
+            ]
         else:
             self.vectors_config[vector_name] = params
             self.vectors[vector_name] = np.zeros((num_points, config.size), dtype=np.float32)
@@ -2951,12 +3530,21 @@ class LocalCollection:
     def create_sparse_vector_name(
         self, vector_name: str, config: models.SparseVectorConfig
     ) -> None:
-        if vector_name in self._all_vectors_keys:
-            raise ValueError(f"Vector {vector_name} already exists in the collection")
-
         params = models.SparseVectorParams(
             modifier=config.modifier,
         )
+
+        if vector_name in self.vectors_config or vector_name in self.multivectors_config:
+            raise ValueError(f"Vector {vector_name} already exists as a dense vector")
+
+        if vector_name in self.sparse_vectors:
+            # like the server, re-creating a vector with the same schema is a no-op,
+            # datatype is not compared: local mode does not apply it
+            if self.config.sparse_vectors[vector_name].modifier != params.modifier:
+                raise ValueError(
+                    f"Sparse vector {vector_name} already exists with a different configuration"
+                )
+            return
 
         num_points = len(self.ids_inv)
 
@@ -2969,15 +3557,24 @@ class LocalCollection:
         self.config.sparse_vectors[vector_name] = params
 
     def delete_vector_name(self, vector_name: str) -> None:
+        # like the server, deleting a vector that does not exist is a no-op
         if vector_name not in self._all_vectors_keys:
-            raise ValueError(f"Vector {vector_name} does not exist in the collection")
+            return
 
-        if isinstance(self.config.vectors, models.VectorParams):
+        if vector_name == DEFAULT_VECTOR_NAME and isinstance(
+            self.config.vectors, models.VectorParams
+        ):
             raise ValueError(
                 "Cannot delete the unnamed vector when it is the only dense vector in the collection"
             )
 
         affected_mask = ~self.deleted_per_vector.get(vector_name, np.ones(0, dtype=bool))
+
+        # Store the points without the vector before dropping it, see `_persist_by_id`.
+        if self.storage is not None:
+            for idx, point_id in enumerate(self.ids_inv):
+                if affected_mask[idx] and not self.deleted[idx]:
+                    self._persist_by_id(point_id, vectors={vector_name: None})
 
         self._all_vectors_keys.remove(vector_name)
         self.deleted_per_vector.pop(vector_name, None)
@@ -2999,11 +3596,6 @@ class LocalCollection:
             if isinstance(self.config.vectors, dict):
                 self.config.vectors.pop(vector_name, None)
 
-        if self.storage is not None:
-            for idx, point_id in enumerate(self.ids_inv):
-                if affected_mask[idx] and not self.deleted[idx]:
-                    self._persist_by_id(point_id)
-
     def info(self) -> models.CollectionInfo:
         return models.CollectionInfo(
             status=models.CollectionStatus.GREEN,
@@ -3014,12 +3606,12 @@ class LocalCollection:
             payload_schema={},
             config=models.CollectionConfig(
                 params=models.CollectionParams(
-                    vectors=self.config.vectors,
+                    vectors=deepcopy(self.config.vectors),
                     shard_number=self.config.shard_number,
                     replication_factor=self.config.replication_factor,
                     write_consistency_factor=self.config.write_consistency_factor,
                     on_disk_payload=self.config.on_disk_payload,
-                    sparse_vectors=self.config.sparse_vectors,
+                    sparse_vectors=deepcopy(self.config.sparse_vectors),
                 ),
                 hnsw_config=models.HnswConfig(
                     m=16,
@@ -3039,7 +3631,7 @@ class LocalCollection:
                     max_optimization_threads=1,
                 ),
                 quantization_config=None,
-                metadata=self.config.metadata,
+                metadata=deepcopy(self.config.metadata),
             ),
         )
 
@@ -3066,6 +3658,49 @@ def ignore_mentioned_ids_filter(
             query_filter.must_not = [query_filter.must_not, ignore_mentioned_ids]
 
     return query_filter
+
+
+def _merge_filters(outer: types.Filter | None, inner: types.Filter | None) -> types.Filter | None:
+    """Combine a propagated filter with the filter of a prefetch.
+
+    Mirrors `Filter::merge_opts` on the server: clauses are concatenated field-wise, which
+    means `should` clauses of both filters become alternatives of each other rather than
+    being ANDed together.
+    """
+    if outer is None:
+        return inner
+    if inner is None:
+        return outer
+
+    def merge_clause(
+        first: list[models.Condition] | models.Condition | None,
+        second: list[models.Condition] | models.Condition | None,
+    ) -> list[models.Condition] | None:
+        if first is None:
+            return second if second is None or isinstance(second, list) else [second]
+        if second is None:
+            return first if isinstance(first, list) else [first]
+        first = first if isinstance(first, list) else [first]
+        second = second if isinstance(second, list) else [second]
+        return [*first, *second]
+
+    if outer.min_should is None:
+        min_should = inner.min_should
+    elif inner.min_should is None:
+        min_should = outer.min_should
+    else:
+        min_should = models.MinShould(
+            conditions=[*outer.min_should.conditions, *inner.min_should.conditions],
+            # the union of conditions can satisfy at least the bigger of the two counts
+            min_count=max(outer.min_should.min_count, inner.min_should.min_count),
+        )
+
+    return models.Filter(
+        must=merge_clause(outer.must, inner.must),
+        must_not=merge_clause(outer.must_not, inner.must_not),
+        should=merge_clause(outer.should, inner.should),
+        min_should=min_should,
+    )
 
 
 def _include_ids_in_filter(

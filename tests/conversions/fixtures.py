@@ -37,6 +37,7 @@ match_except_integers = grpc.Match(except_integers=grpc.RepeatedIntegers(integer
 match_phrase = grpc.Match(phrase="hello")
 match_text_any = grpc.Match(text_any="hello what's up")
 match_prefix = grpc.Match(prefix="hel")
+match_substring = grpc.Match(substring="ell")
 
 field_condition_match = grpc.FieldCondition(key="match_field", match=match_keyword)
 
@@ -52,6 +53,7 @@ field_condition_match_except_integers = grpc.FieldCondition(
 field_condition_match_phrase = grpc.FieldCondition(key="match_field", match=match_phrase)
 field_condition_match_text_any = grpc.FieldCondition(key="match_field", match=match_text_any)
 field_condition_match_prefix = grpc.FieldCondition(key="match_field", match=match_prefix)
+field_condition_match_substring = grpc.FieldCondition(key="match_field", match=match_substring)
 
 range_ = grpc.Range(
     lt=1.0,
@@ -130,6 +132,7 @@ condition_except_integers = grpc.Condition(field=field_condition_match_except_in
 condition_phrase = grpc.Condition(field=field_condition_match_phrase)
 condition_text_any = grpc.Condition(field=field_condition_match_text_any)
 condition_prefix = grpc.Condition(field=field_condition_match_prefix)
+condition_substring = grpc.Condition(field=field_condition_match_substring)
 
 nested = grpc.NestedCondition(
     key="a.b.c", filter=grpc.Filter(must=[grpc.Condition(field=field_condition_range)])
@@ -154,6 +157,7 @@ filter_ = grpc.Filter(
         condition_phrase,
         condition_text_any,
         condition_prefix,
+        condition_substring,
         condition_slice,
     ],
     should=[
@@ -221,6 +225,18 @@ vector_param_with_memory = grpc.VectorParams(
     distance=grpc.Distance.Cosine,
     memory=grpc.Memory.Cached,
     datatype=grpc.Datatype.Turbo4,
+)
+
+vector_param_turbo8 = grpc.VectorParams(
+    size=100,
+    distance=grpc.Distance.Dot,
+    datatype=grpc.Datatype.Turbo8,
+)
+
+vector_param_turbo16 = grpc.VectorParams(
+    size=100,
+    distance=grpc.Distance.Euclid,
+    datatype=grpc.Datatype.Turbo16,
 )
 
 product_quantizations = [
@@ -302,6 +318,10 @@ turbo_quantization_bits4 = grpc.TurboQuantization(
     bits=grpc.TurboQuantBitSize.Bits4,
 )
 
+turbo_quantization_bits8 = grpc.TurboQuantization(
+    bits=grpc.TurboQuantBitSize.Bits8,
+)
+
 turbo_quantization_memory = grpc.TurboQuantization(
     bits=grpc.TurboQuantBitSize.Bits2,
     memory=grpc.Memory.Pinned,
@@ -347,6 +367,16 @@ collection_params_3 = grpc.CollectionParams(
     vectors_config=single_vector_config,
     payload=payload_storage_params_cached,
     sparse_vectors_config=sparse_vector_config,
+)
+
+id_tracker_params_cold = grpc.IdTrackerParams(memory=grpc.Memory.Cold)
+id_tracker_params_cached = grpc.IdTrackerParams(memory=grpc.Memory.Cached)
+id_tracker_params_pinned = grpc.IdTrackerParams(memory=grpc.Memory.Pinned)
+
+collection_params_4 = grpc.CollectionParams(
+    vectors_config=single_vector_config,
+    payload=payload_storage_params_pinned,
+    id_tracker=id_tracker_params_cold,
 )
 
 hnsw_config = grpc.HnswConfigDiff(
@@ -683,12 +713,20 @@ text_index_params_7 = grpc.TextIndexParams(
     stemmer=grpc.StemmingAlgorithm(disabled=grpc.DisabledStemmer()),
 )
 
+text_index_params_8 = grpc.TextIndexParams(
+    tokenizer=grpc.TokenizerType.Code,
+    scoring=grpc.TextScoringParams(type=grpc.TextScoringType.Bm25),
+)
+
+text_index_params_9 = grpc.TextIndexParams(tokenizer=grpc.TokenizerType.Word, nested="offers")
+
 integer_index_params_0 = grpc.IntegerIndexParams(lookup=False, range=False)
 integer_index_params_1 = grpc.IntegerIndexParams(
     lookup=True, range=True, on_disk=True, is_principal=True, enable_hnsw=True
 )
 integer_index_params_2 = grpc.IntegerIndexParams()
 integer_index_params_3 = grpc.IntegerIndexParams(memory=grpc.Memory.Pinned, enable_hnsw=False)
+integer_index_params_4 = grpc.IntegerIndexParams(lookup=True, range=True, nested="offers")
 
 keyword_index_params_0 = grpc.KeywordIndexParams()
 keyword_index_params_1 = grpc.KeywordIndexParams(is_tenant=True, on_disk=True, enable_hnsw=True)
@@ -697,28 +735,34 @@ keyword_index_params_2 = grpc.KeywordIndexParams(
     prefix=grpc.KeywordPrefixParams(),
     memory=grpc.Memory.Cached,
 )
+keyword_index_params_3 = grpc.KeywordIndexParams(nested="offers")
 
 float_index_params_0 = grpc.FloatIndexParams()
 float_index_params_1 = grpc.FloatIndexParams(on_disk=True, is_principal=True, enable_hnsw=True)
 float_index_params_2 = grpc.FloatIndexParams(memory=grpc.Memory.Pinned)
+float_index_params_3 = grpc.FloatIndexParams(nested="offers")
 
 bool_index_params = grpc.BoolIndexParams()
 bool_index_params_1 = grpc.BoolIndexParams(on_disk=True, enable_hnsw=True)
 bool_index_params_2 = grpc.BoolIndexParams(memory=grpc.Memory.Cached)
+bool_index_params_3 = grpc.BoolIndexParams(nested="offers")
 
 geo_index_params_0 = grpc.GeoIndexParams()
 geo_index_params_1 = grpc.GeoIndexParams(on_disk=True, enable_hnsw=True)
 geo_index_params_2 = grpc.GeoIndexParams(memory=grpc.Memory.Cached)
+geo_index_params_3 = grpc.GeoIndexParams(nested="offers")
 
 datetime_index_params_0 = grpc.DatetimeIndexParams()
 datetime_index_params_1 = grpc.DatetimeIndexParams(
     on_disk=True, is_principal=True, enable_hnsw=True
 )
 datetime_index_params_2 = grpc.DatetimeIndexParams(memory=grpc.Memory.Cached)
+datetime_index_params_3 = grpc.DatetimeIndexParams(nested="offers")
 
 uuid_index_params_0 = grpc.UuidIndexParams()
 uuid_index_params_1 = grpc.UuidIndexParams(on_disk=True, is_tenant=True, enable_hnsw=True)
 uuid_index_params_2 = grpc.UuidIndexParams(memory=grpc.Memory.Cached)
+uuid_index_params_3 = grpc.UuidIndexParams(nested="offers")
 
 payload_schema_text_prefix = grpc.PayloadSchemaInfo(
     data_type=grpc.PayloadSchemaType.Text,
@@ -945,6 +989,26 @@ collection_info = grpc.CollectionInfo(
     update_queue=grpc.UpdateQueueInfo(length=42),
 )
 
+# `points_count` is `optional` in the proto: the server omits it when the count is
+# not available, which must not be reported as an empty collection.
+collection_info_no_points_count = grpc.CollectionInfo(
+    status=collection_status,
+    optimizer_status=optimizer_status_error,
+    segments_count=6,
+    config=collection_config,
+)
+
+# `created_at` is absent for collections created before the server started recording it
+collection_info_created_at = grpc.CollectionInfo(
+    status=collection_status_green,
+    optimizer_status=optimizer_status,
+    points_count=100000,
+    segments_count=6,
+    config=collection_config,
+    payload_schema={},
+    created_at=timestamp,
+)
+
 collection_info_red = grpc.CollectionInfo(
     status=collection_status_error,
     optimizer_status=optimizer_status_error,
@@ -1031,6 +1095,10 @@ turbo_quantization_config_bits4 = grpc.QuantizationConfig(
     turboquant=turbo_quantization_bits4,
 )
 
+turbo_quantization_config_bits8 = grpc.QuantizationConfig(
+    turboquant=turbo_quantization_bits8,
+)
+
 turbo_quantization_config_memory = grpc.QuantizationConfig(
     turboquant=turbo_quantization_memory,
 )
@@ -1088,6 +1156,9 @@ update_status_wait_timeout = grpc.UpdateStatus.WaitTimeout
 
 update_result_completed = grpc.UpdateResult(operation_id=201, status=update_status_completed)
 update_result_wait_timeout = grpc.UpdateResult(operation_id=201, status=update_status_wait_timeout)
+# `operation_id` is `optional` in the proto: the server omits it, e.g. when a
+# delete-by-filter matches nothing or when an update is clock-rejected.
+update_result_no_operation_id = grpc.UpdateResult(status=update_status_completed)
 
 delete_alias = grpc.DeleteAlias(alias_name="col3")
 
@@ -1179,6 +1250,10 @@ collections_params_diff = grpc.CollectionParamsDiff(
 collections_params_diff_2 = grpc.CollectionParamsDiff(
     read_fan_out_factor=3,
     payload=payload_storage_params_cold,
+)
+
+collections_params_diff_3 = grpc.CollectionParamsDiff(
+    id_tracker=id_tracker_params_cached,
 )
 
 vector_params_diff = grpc.VectorParamsDiff(
@@ -1509,6 +1584,66 @@ delete_vectors_operation_2 = grpc.PointsUpdateOperation(
     ),
 )
 
+upsert_operation_with_shard_key = grpc.PointsUpdateOperation(
+    upsert=grpc.PointsUpdateOperation.PointStructList(
+        points=[point_struct],
+        shard_key_selector=shard_key_selector_3,
+    ),
+)
+
+delete_operation_with_shard_key = grpc.PointsUpdateOperation(
+    delete_points=grpc.PointsUpdateOperation.DeletePoints(
+        points=points_selector_list,
+        shard_key_selector=shard_key_selector,
+    ),
+)
+
+set_payload_operation_with_shard_key = grpc.PointsUpdateOperation(
+    set_payload=grpc.PointsUpdateOperation.SetPayload(
+        payload=payload_to_grpc({"my_payload": payload_value}),
+        points_selector=points_selector_filter,
+        shard_key_selector=shard_key_selector_2,
+    ),
+)
+
+overwrite_payload_operation_with_shard_key = grpc.PointsUpdateOperation(
+    overwrite_payload=grpc.PointsUpdateOperation.OverwritePayload(
+        payload=payload_to_grpc({"my_payload": payload_value}),
+        points_selector=points_selector_list,
+        shard_key_selector=shard_key_selector_3,
+    ),
+)
+
+delete_payload_operation_with_shard_key = grpc.PointsUpdateOperation(
+    delete_payload=grpc.PointsUpdateOperation.DeletePayload(
+        keys=["my_payload", "my_payload2"],
+        points_selector=points_selector_list,
+        shard_key_selector=shard_key_selector,
+    ),
+)
+
+clear_payload_operation_with_shard_key = grpc.PointsUpdateOperation(
+    clear_payload=grpc.PointsUpdateOperation.ClearPayload(
+        points=points_selector_filter,
+        shard_key_selector=shard_key_selector_2,
+    ),
+)
+
+update_vectors_operation_with_shard_key = grpc.PointsUpdateOperation(
+    update_vectors=grpc.PointsUpdateOperation.UpdateVectors(
+        points=[point_vector_1, point_vector_2],
+        shard_key_selector=shard_key_selector_3,
+    ),
+)
+
+delete_vectors_operation_with_shard_key = grpc.PointsUpdateOperation(
+    delete_vectors=grpc.PointsUpdateOperation.DeleteVectors(
+        points_selector=points_selector_filter,
+        vectors=grpc.VectorsSelector(names=["image", "text"]),
+        shard_key_selector=shard_key_selector,
+    ),
+)
+
 sharding_method_1 = grpc.Auto
 sharding_method_2 = grpc.Custom
 
@@ -1624,6 +1759,17 @@ expression = grpc.Expression(
             grpc.Expression(exp=grpc.Expression(constant=1.0)),
             grpc.Expression(log10=grpc.Expression(constant=100.0)),
             grpc.Expression(ln=grpc.Expression(constant=2.718)),
+            grpc.Expression(acosh=grpc.Expression(constant=2.0)),
+            grpc.Expression(
+                max=grpc.MaxExpression(
+                    max=[grpc.Expression(variable="$score"), grpc.Expression(constant=0.5)]
+                )
+            ),
+            grpc.Expression(
+                min=grpc.MinExpression(
+                    min=[grpc.Expression(constant=1.0), grpc.Expression(variable="$score")]
+                )
+            ),
             grpc.Expression(
                 div=grpc.DivExpression(
                     left=grpc.Expression(constant=10.0),
@@ -1681,6 +1827,16 @@ relevance_feedback_input = grpc.RelevanceFeedbackInput(
     strategy=feedback_strategy,
 )
 query_relevance_feedback = grpc.Query(relevance_feedback=relevance_feedback_input)
+
+bm25_params = grpc.Bm25Params(k=1.5, b=0.5)
+bm25_params_k = grpc.Bm25Params(k=2.0)
+bm25_params_default = grpc.Bm25Params()
+text_query = grpc.TextQuery(query="hello world")
+text_query_bm25 = grpc.TextQuery(query="hello world", bm25=bm25_params)
+text_query_bm25_default = grpc.TextQuery(query="hello world", bm25=bm25_params_default)
+query_text = grpc.Query(text=text_query)
+query_text_bm25 = grpc.Query(text=text_query_bm25)
+query_text_bm25_default = grpc.Query(text=text_query_bm25_default)
 
 update_mode_upsert = grpc.Upsert
 update_mode_insert_only = grpc.InsertOnly
@@ -1882,11 +2038,13 @@ fixtures = {
     "Filter": [filter_nested, filter_],
     "CollectionInfo": [
         collection_info,
+        collection_info_no_points_count,
         collection_info_ok,
         collection_info_red,
         collection_info_grey,
         collection_info_with_warnings,
         collection_info_zero_indexed_vectors,
+        collection_info_created_at,
     ],
     "CollectionWarning": [collection_warning],
     "FieldCondition": [
@@ -1929,6 +2087,7 @@ fixtures = {
         condition_geo_bounding_box,
         condition_values_count,
         condition_prefix,
+        condition_substring,
         condition_slice,
     ],
     "SliceCondition": [slice_condition],
@@ -1951,6 +2110,7 @@ fixtures = {
         match_phrase,
         match_text_any,
         match_prefix,
+        match_substring,
     ],
     "WithPayloadSelector": [
         with_payload_bool,
@@ -1974,6 +2134,8 @@ fixtures = {
         vector_param_2,
         vector_param_with_multivector,
         vector_param_with_memory,
+        vector_param_turbo8,
+        vector_param_turbo16,
     ],
     "VectorsConfig": [single_vector_config, vector_config],
     "QueryPoints": [query_points],
@@ -1986,28 +2148,72 @@ fixtures = {
         text_index_params_5,
         text_index_params_6,
         text_index_params_7,
+        text_index_params_8,
+        text_index_params_9,
     ],
+    "TextScoringParams": [grpc.TextScoringParams(type=grpc.TextScoringType.Bm25)],
     "IntegerIndexParams": [
         integer_index_params_0,
         integer_index_params_1,
         integer_index_params_3,
+        integer_index_params_4,
     ],
-    "KeywordIndexParams": [keyword_index_params_0, keyword_index_params_1, keyword_index_params_2],
-    "FloatIndexParams": [float_index_params_0, float_index_params_1, float_index_params_2],
-    "BoolIndexParams": [bool_index_params, bool_index_params_1, bool_index_params_2],
-    "GeoIndexParams": [geo_index_params_0, geo_index_params_1, geo_index_params_2],
+    "KeywordIndexParams": [
+        keyword_index_params_0,
+        keyword_index_params_1,
+        keyword_index_params_2,
+        keyword_index_params_3,
+    ],
+    "FloatIndexParams": [
+        float_index_params_0,
+        float_index_params_1,
+        float_index_params_2,
+        float_index_params_3,
+    ],
+    "BoolIndexParams": [
+        bool_index_params,
+        bool_index_params_1,
+        bool_index_params_2,
+        bool_index_params_3,
+    ],
+    "GeoIndexParams": [
+        geo_index_params_0,
+        geo_index_params_1,
+        geo_index_params_2,
+        geo_index_params_3,
+    ],
     "DatetimeIndexParams": [
         datetime_index_params_0,
         datetime_index_params_1,
         datetime_index_params_2,
+        datetime_index_params_3,
     ],
-    "UuidIndexParams": [uuid_index_params_0, uuid_index_params_1, uuid_index_params_2],
-    "CollectionParams": [collection_params, collection_params_2, collection_params_3],
-    "CollectionParamsDiff": [collections_params_diff, collections_params_diff_2],
+    "UuidIndexParams": [
+        uuid_index_params_0,
+        uuid_index_params_1,
+        uuid_index_params_2,
+        uuid_index_params_3,
+    ],
+    "CollectionParams": [
+        collection_params,
+        collection_params_2,
+        collection_params_3,
+        collection_params_4,
+    ],
+    "CollectionParamsDiff": [
+        collections_params_diff,
+        collections_params_diff_2,
+        collections_params_diff_3,
+    ],
     "PayloadStorageParams": [
         payload_storage_params_cold,
         payload_storage_params_cached,
         payload_storage_params_pinned,
+    ],
+    "IdTrackerParams": [
+        id_tracker_params_cold,
+        id_tracker_params_cached,
+        id_tracker_params_pinned,
     ],
     "Memory": [memory_cold, memory_cached, memory_pinned],
     "IdfParams": [grpc.IdfParams(), grpc.IdfParams(corpus=filter_nested)],
@@ -2036,6 +2242,7 @@ fixtures = {
         turbo_quantization_config_bits1,
         turbo_quantization_config_bits1_5,
         turbo_quantization_config_bits4,
+        turbo_quantization_config_bits8,
         scalar_quantization_config_memory,
         product_quantization_config_memory,
         binary_quantization_config_memory,
@@ -2077,6 +2284,14 @@ fixtures = {
         update_vectors_operation,
         delete_vectors_operation,
         delete_vectors_operation_2,
+        upsert_operation_with_shard_key,
+        delete_operation_with_shard_key,
+        set_payload_operation_with_shard_key,
+        overwrite_payload_operation_with_shard_key,
+        delete_payload_operation_with_shard_key,
+        clear_payload_operation_with_shard_key,
+        update_vectors_operation_with_shard_key,
+        delete_vectors_operation_with_shard_key,
     ],
     "SparseVectorParams": [
         sparse_vector_params,
@@ -2108,7 +2323,12 @@ fixtures = {
         query_rrf_default,
         query_rrf_explicit_none,
         query_relevance_feedback,
+        query_text,
+        query_text_bm25,
+        query_text_bm25_default,
     ],
+    "TextQuery": [text_query, text_query_bm25, text_query_bm25_default],
+    "Bm25Params": [bm25_params, bm25_params_k, bm25_params_default],
     "FacetValueHit": [facet_string_hit, facet_integer_hit, facet_bool_hit],
     "PrefetchQuery": [deep_prefetch_query, prefetch_query, prefetch_full_query, prefetch_many],
     "HealthCheckReply": [health_check_reply],
@@ -2116,7 +2336,12 @@ fixtures = {
     "SearchMatrixOffsets": [search_matrix_offsets],
     "StrictModeConfig": [strict_mode_config, strict_mode_config_empty],
     "UpdateQueueInfo": [update_queue_info, update_queue_info_deferred],
-    "UpdateResult": [update_result, update_result_completed, update_result_wait_timeout],
+    "UpdateResult": [
+        update_result,
+        update_result_completed,
+        update_result_wait_timeout,
+        update_result_no_operation_id,
+    ],
     "UpdateMode": [update_mode_upsert, update_mode_insert_only, update_mode_update_only],
     "ReplicaState": [
         replica_state_active,

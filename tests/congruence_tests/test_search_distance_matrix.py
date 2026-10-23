@@ -1,9 +1,11 @@
 from typing import Callable, Any
 
+from grpc import RpcError
 import pytest
 
 from qdrant_client import QdrantClient, models
 from qdrant_client.client_base import QdrantBase
+from qdrant_client.http.exceptions import UnexpectedResponse
 from tests.congruence_tests.test_common import (
     COLLECTION_NAME,
     compare_client_results,
@@ -182,3 +184,85 @@ def test_search_pairs_filter(
         except AssertionError as e:
             print(f"\nAttempt {i} failed with filter {query_filter}")
             raise e
+
+
+def test_search_matrix_with_mixed_id_types():
+    # Integer and UUID point ids can coexist in one collection. Sampled points are
+    # ordered by id, so local mode has to order the two id types the way the server
+    # does instead of comparing them directly.
+    collection_name = "congruence_search_matrix_mixed_ids"
+    half = TEST_NUM_POINTS // 2
+    points = generate_fixtures(half) + generate_fixtures(half, random_ids=True)
+
+    local_client = init_local()
+    init_client(local_client, points, collection_name=collection_name)
+
+    http_client = init_remote()
+    init_client(http_client, points, collection_name=collection_name)
+
+    grpc_client = init_remote(prefer_grpc=True)
+
+    def search_offsets_mixed_ids(client: QdrantBase) -> models.SearchMatrixOffsetsResponse:
+        return client.search_matrix_offsets(
+            collection_name=collection_name,
+            sample=TEST_NUM_POINTS,
+            limit=3,
+            using="text",
+        )
+
+    def search_pairs_mixed_ids(client: QdrantBase) -> models.SearchMatrixPairsResponse:
+        return client.search_matrix_pairs(
+            collection_name=collection_name,
+            sample=TEST_NUM_POINTS,
+            limit=3,
+            using="text",
+        )
+
+    compare_all_clients_results(local_client, http_client, grpc_client, search_offsets_mixed_ids)
+    compare_all_clients_results(local_client, http_client, grpc_client, search_pairs_mixed_ids)
+
+
+def test_search_matrix_invalid_limit(local_client, http_client, grpc_client):
+    for local_matrix, http_matrix, grpc_matrix in (
+        (
+            local_client.search_matrix_offsets,
+            http_client.search_matrix_offsets,
+            grpc_client.search_matrix_offsets,
+        ),
+        (
+            local_client.search_matrix_pairs,
+            http_client.search_matrix_pairs,
+            grpc_client.search_matrix_pairs,
+        ),
+    ):
+        with pytest.raises(ValueError, match="limit value 0 is invalid"):
+            local_matrix(collection_name=COLLECTION_NAME, limit=0, using="text")
+
+        with pytest.raises(UnexpectedResponse, match="must be 1 or larger"):
+            http_matrix(collection_name=COLLECTION_NAME, limit=0, using="text")
+
+        with pytest.raises(RpcError, match="must be 1 or larger"):
+            grpc_matrix(collection_name=COLLECTION_NAME, limit=0, using="text")
+
+
+def test_search_matrix_invalid_sample(local_client, http_client, grpc_client):
+    for local_matrix, http_matrix, grpc_matrix in (
+        (
+            local_client.search_matrix_offsets,
+            http_client.search_matrix_offsets,
+            grpc_client.search_matrix_offsets,
+        ),
+        (
+            local_client.search_matrix_pairs,
+            http_client.search_matrix_pairs,
+            grpc_client.search_matrix_pairs,
+        ),
+    ):
+        with pytest.raises(ValueError, match="sample value 1 is invalid"):
+            local_matrix(collection_name=COLLECTION_NAME, sample=1, using="text")
+
+        with pytest.raises(UnexpectedResponse, match="must be 2 or larger"):
+            http_matrix(collection_name=COLLECTION_NAME, sample=1, using="text")
+
+        with pytest.raises(RpcError, match="must be 2 or larger"):
+            grpc_matrix(collection_name=COLLECTION_NAME, sample=1, using="text")

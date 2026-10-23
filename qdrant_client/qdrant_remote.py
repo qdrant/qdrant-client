@@ -1,6 +1,9 @@
 import importlib.metadata
+import inspect
+import ipaddress
 import math
 import platform
+import sys
 from multiprocessing import get_all_start_methods
 from threading import Thread
 
@@ -22,9 +25,10 @@ from urllib.parse import urljoin
 
 from qdrant_client.common.client_warnings import show_warning, show_warning_once
 from qdrant_client import grpc as grpc
-from qdrant_client._pydantic_compat import construct
+from qdrant_client._pydantic_compat import construct, model_copy
 from qdrant_client.auth import BearerAuth
 from qdrant_client.client_base import QdrantBase
+from qdrant_client.common.validation import validate_batch_lengths
 from qdrant_client.common.version_check import is_compatible, get_server_version
 from qdrant_client.connection import get_channel
 from qdrant_client.conversions import common_types as types
@@ -118,6 +122,12 @@ class QdrantRemote(QdrantBase):
                 raise ValueError(f"Unknown scheme: {self._scheme}")
         else:
             self._host = host or "localhost"
+            try:
+                if ipaddress.ip_address(self._host).version == 6:
+                    # an IPv6 address has to be enclosed in brackets to be followed by a port
+                    self._host = f"[{self._host}]"
+            except ValueError:  # a host name or an already bracketed address
+                pass
             self._port = port
 
         _timeout = (
@@ -178,8 +188,10 @@ class QdrantRemote(QdrantBase):
         user_agent = f"python-client/{client_version} python/{python_version}"
         if "User-Agent" in self._rest_headers:
             show_warning_once(
-                "`User-Agent` has been passed in `headers`, but "
-                f"it will be overridden with the builtin value: `{user_agent}`."
+                message="`User-Agent` has been passed in `headers`, but "
+                f"it will be overridden with the builtin value: `{user_agent}`.",
+                category=UserWarning,
+                stacklevel=4,
             )
 
         if grpc_options is not None and "grpc.primary_user_agent" in grpc_options:
@@ -331,6 +343,11 @@ class QdrantRemote(QdrantBase):
             parse_result.path,
         )
         return scheme, host, port, prefix
+
+    @staticmethod
+    def _normalize_selector(selector: Any) -> Any:
+        """Accept a tuple of names where the REST models declare a list of names"""
+        return list(selector) if isinstance(selector, tuple) else selector
 
     def _get_grpc_pool_size(self) -> int:
         """
@@ -487,8 +504,8 @@ class QdrantRemote(QdrantBase):
         search_params: types.SearchParams | None = None,
         limit: int = 10,
         offset: int | None = None,
-        with_payload: bool | Sequence[str] | types.PayloadSelector = True,
-        with_vectors: bool | Sequence[str] = False,
+        with_payload: types.WithPayloadInterface = True,
+        with_vectors: types.WithVector = False,
         score_threshold: float | None = None,
         lookup_from: types.LookupLocation | None = None,
         consistency: types.ReadConsistency | None = None,
@@ -496,6 +513,9 @@ class QdrantRemote(QdrantBase):
         timeout: int | None = None,
         **kwargs: Any,
     ) -> types.QueryResponse:
+        with_payload = self._normalize_selector(with_payload)
+        with_vectors = self._normalize_selector(with_vectors)
+
         if self._prefer_grpc:
             if query is not None:
                 query = RestToGrpc.convert_query(query)
@@ -660,8 +680,8 @@ class QdrantRemote(QdrantBase):
         search_params: types.SearchParams | None = None,
         limit: int = 10,
         group_size: int = 3,
-        with_payload: bool | Sequence[str] | types.PayloadSelector = True,
-        with_vectors: bool | Sequence[str] = False,
+        with_payload: types.WithPayloadInterface = True,
+        with_vectors: types.WithVector = False,
         score_threshold: float | None = None,
         with_lookup: types.WithLookupInterface | None = None,
         lookup_from: types.LookupLocation | None = None,
@@ -670,6 +690,9 @@ class QdrantRemote(QdrantBase):
         timeout: int | None = None,
         **kwargs: Any,
     ) -> types.GroupsResult:
+        with_payload = self._normalize_selector(with_payload)
+        with_vectors = self._normalize_selector(with_vectors)
+
         if self._prefer_grpc:
             if query is not None:
                 query = RestToGrpc.convert_query(query)
@@ -891,13 +914,16 @@ class QdrantRemote(QdrantBase):
         limit: int = 10,
         order_by: types.OrderBy | None = None,
         offset: types.PointId | None = None,
-        with_payload: bool | Sequence[str] | types.PayloadSelector = True,
-        with_vectors: bool | Sequence[str] = False,
+        with_payload: types.WithPayloadInterface = True,
+        with_vectors: types.WithVector = False,
         consistency: types.ReadConsistency | None = None,
         shard_key_selector: types.ShardKeySelector | None = None,
         timeout: int | None = None,
         **kwargs: Any,
     ) -> tuple[list[types.Record], types.PointId | None]:
+        with_payload = self._normalize_selector(with_payload)
+        with_vectors = self._normalize_selector(with_vectors)
+
         if self._prefer_grpc:
             if isinstance(offset, get_args_subscribed(models.ExtendedPointId)):
                 offset = RestToGrpc.convert_extended_point_id(offset)
@@ -1096,6 +1122,7 @@ class QdrantRemote(QdrantBase):
     ) -> types.UpdateResult:
         if self._prefer_grpc:
             if isinstance(points, models.Batch):
+                validate_batch_lengths(points)
                 vectors_batch: list[grpc.Vectors] = RestToGrpc.convert_batch_vector_struct(
                     points.vectors, len(points.ids)
                 )
@@ -1254,7 +1281,9 @@ class QdrantRemote(QdrantBase):
     ) -> types.UpdateResult:
         if self._prefer_grpc:
             points_selector, opt_shard_key_selector = self._try_argument_to_grpc_selector(points)
-            shard_key_selector = shard_key_selector or opt_shard_key_selector
+            shard_key_selector = (
+                shard_key_selector if shard_key_selector is not None else opt_shard_key_selector
+            )
 
             if isinstance(ordering, models.WriteOrdering):
                 ordering = RestToGrpc.convert_write_ordering(ordering)
@@ -1281,7 +1310,7 @@ class QdrantRemote(QdrantBase):
 
             return GrpcToRest.convert_update_result(grpc_result)
         else:
-            _points, _filter = self._try_argument_to_rest_points_and_filter(points)
+            _points, _filter, _shard_key = self._try_argument_to_rest_points_and_filter(points)
             return self.openapi_client.points_api.delete_vectors(
                 collection_name=collection_name,
                 wait=wait,
@@ -1292,7 +1321,7 @@ class QdrantRemote(QdrantBase):
                     vector=vectors,
                     points=_points,
                     filter=_filter,
-                    shard_key=shard_key_selector,
+                    shard_key=shard_key_selector if shard_key_selector is not None else _shard_key,
                 ),
             ).result
 
@@ -1300,13 +1329,16 @@ class QdrantRemote(QdrantBase):
         self,
         collection_name: str,
         ids: Sequence[types.PointId],
-        with_payload: bool | Sequence[str] | types.PayloadSelector = True,
-        with_vectors: bool | Sequence[str] = False,
+        with_payload: types.WithPayloadInterface = True,
+        with_vectors: types.WithVector = False,
         consistency: types.ReadConsistency | None = None,
         shard_key_selector: types.ShardKeySelector | None = None,
         timeout: int | None = None,
         **kwargs: Any,
     ) -> list[types.Record]:
+        with_payload = self._normalize_selector(with_payload)
+        with_vectors = self._normalize_selector(with_vectors)
+
         if self._prefer_grpc:
             if isinstance(with_payload, get_args_subscribed(models.WithPayloadInterface)):
                 with_payload = RestToGrpc.convert_with_payload_interface(with_payload)
@@ -1423,7 +1455,9 @@ class QdrantRemote(QdrantBase):
             points_selector.shard_key = shard_key_selector
         elif isinstance(points, get_args(models.PointsSelector)):
             points_selector = points
-            points_selector.shard_key = shard_key_selector
+            if shard_key_selector is not None:
+                # shallow copy: the selector belongs to the caller and might be reused
+                points_selector = model_copy(points, update={"shard_key": shard_key_selector})
         elif isinstance(points, models.Filter):
             points_selector = construct(
                 models.FilterSelector, filter=points, shard_key=shard_key_selector
@@ -1455,9 +1489,12 @@ class QdrantRemote(QdrantBase):
     @classmethod
     def _try_argument_to_rest_points_and_filter(
         cls, points: types.PointsSelector
-    ) -> tuple[list[models.ExtendedPointId] | None, models.Filter | None]:
+    ) -> tuple[
+        list[models.ExtendedPointId] | None, models.Filter | None, models.ShardKeySelector | None
+    ]:
         _points = None
         _filter = None
+        _shard_key = None
         if isinstance(points, list):
             _points = [
                 (GrpcToRest.convert_point_id(idx) if isinstance(idx, grpc.PointId) else idx)
@@ -1471,8 +1508,10 @@ class QdrantRemote(QdrantBase):
                 _filter = selector.filter
         elif isinstance(points, models.PointIdsList):
             _points = points.points
+            _shard_key = points.shard_key
         elif isinstance(points, models.FilterSelector):
             _filter = points.filter
+            _shard_key = points.shard_key
         elif isinstance(points, models.Filter):
             _filter = points
         elif isinstance(points, grpc.Filter):
@@ -1480,7 +1519,7 @@ class QdrantRemote(QdrantBase):
         else:
             raise ValueError(f"Unsupported points selector type: {type(points)}")
 
-        return _points, _filter
+        return _points, _filter, _shard_key
 
     def delete(
         self,
@@ -1496,7 +1535,9 @@ class QdrantRemote(QdrantBase):
             points_selector, opt_shard_key_selector = self._try_argument_to_grpc_selector(
                 points_selector
             )
-            shard_key_selector = shard_key_selector or opt_shard_key_selector
+            shard_key_selector = (
+                shard_key_selector if shard_key_selector is not None else opt_shard_key_selector
+            )
 
             if isinstance(ordering, models.WriteOrdering):
                 ordering = RestToGrpc.convert_write_ordering(ordering)
@@ -1545,7 +1586,9 @@ class QdrantRemote(QdrantBase):
     ) -> types.UpdateResult:
         if self._prefer_grpc:
             points_selector, opt_shard_key_selector = self._try_argument_to_grpc_selector(points)
-            shard_key_selector = shard_key_selector or opt_shard_key_selector
+            shard_key_selector = (
+                shard_key_selector if shard_key_selector is not None else opt_shard_key_selector
+            )
 
             if isinstance(ordering, models.WriteOrdering):
                 ordering = RestToGrpc.convert_write_ordering(ordering)
@@ -1569,7 +1612,7 @@ class QdrantRemote(QdrantBase):
                 ).result
             )
         else:
-            _points, _filter = self._try_argument_to_rest_points_and_filter(points)
+            _points, _filter, _shard_key = self._try_argument_to_rest_points_and_filter(points)
             result: types.UpdateResult | None = self.openapi_client.points_api.set_payload(
                 collection_name=collection_name,
                 wait=wait,
@@ -1579,7 +1622,7 @@ class QdrantRemote(QdrantBase):
                     payload=payload,
                     points=_points,
                     filter=_filter,
-                    shard_key=shard_key_selector,
+                    shard_key=shard_key_selector if shard_key_selector is not None else _shard_key,
                     key=key,
                 ),
             ).result
@@ -1599,7 +1642,9 @@ class QdrantRemote(QdrantBase):
     ) -> types.UpdateResult:
         if self._prefer_grpc:
             points_selector, opt_shard_key_selector = self._try_argument_to_grpc_selector(points)
-            shard_key_selector = shard_key_selector or opt_shard_key_selector
+            shard_key_selector = (
+                shard_key_selector if shard_key_selector is not None else opt_shard_key_selector
+            )
 
             if isinstance(ordering, models.WriteOrdering):
                 ordering = RestToGrpc.convert_write_ordering(ordering)
@@ -1622,7 +1667,7 @@ class QdrantRemote(QdrantBase):
                 ).result
             )
         else:
-            _points, _filter = self._try_argument_to_rest_points_and_filter(points)
+            _points, _filter, _shard_key = self._try_argument_to_rest_points_and_filter(points)
             result: types.UpdateResult | None = self.openapi_client.points_api.overwrite_payload(
                 collection_name=collection_name,
                 wait=wait,
@@ -1632,7 +1677,7 @@ class QdrantRemote(QdrantBase):
                     payload=payload,
                     points=_points,
                     filter=_filter,
-                    shard_key=shard_key_selector,
+                    shard_key=shard_key_selector if shard_key_selector is not None else _shard_key,
                 ),
             ).result
             assert result is not None, "Overwrite payload returned None"
@@ -1651,7 +1696,9 @@ class QdrantRemote(QdrantBase):
     ) -> types.UpdateResult:
         if self._prefer_grpc:
             points_selector, opt_shard_key_selector = self._try_argument_to_grpc_selector(points)
-            shard_key_selector = shard_key_selector or opt_shard_key_selector
+            shard_key_selector = (
+                shard_key_selector if shard_key_selector is not None else opt_shard_key_selector
+            )
             if isinstance(ordering, models.WriteOrdering):
                 ordering = RestToGrpc.convert_write_ordering(ordering)
 
@@ -1673,7 +1720,7 @@ class QdrantRemote(QdrantBase):
                 ).result
             )
         else:
-            _points, _filter = self._try_argument_to_rest_points_and_filter(points)
+            _points, _filter, _shard_key = self._try_argument_to_rest_points_and_filter(points)
             result: types.UpdateResult | None = self.openapi_client.points_api.delete_payload(
                 collection_name=collection_name,
                 wait=wait,
@@ -1683,7 +1730,7 @@ class QdrantRemote(QdrantBase):
                     keys=keys,
                     points=_points,
                     filter=_filter,
-                    shard_key=shard_key_selector,
+                    shard_key=shard_key_selector if shard_key_selector is not None else _shard_key,
                 ),
             ).result
             assert result is not None, "Delete payload returned None"
@@ -1703,7 +1750,9 @@ class QdrantRemote(QdrantBase):
             points_selector, opt_shard_key_selector = self._try_argument_to_grpc_selector(
                 points_selector
             )
-            shard_key_selector = shard_key_selector or opt_shard_key_selector
+            shard_key_selector = (
+                shard_key_selector if shard_key_selector is not None else opt_shard_key_selector
+            )
 
             if isinstance(ordering, models.WriteOrdering):
                 ordering = RestToGrpc.convert_write_ordering(ordering)
@@ -2024,6 +2073,7 @@ class QdrantRemote(QdrantBase):
         strict_mode_config: types.StrictModeConfig | None = None,
         metadata: types.Payload | None = None,
         payload: types.PayloadStorageParams | None = None,
+        id_tracker: types.IdTrackerParams | None = None,
         **kwargs: Any,
     ) -> bool:
         if self._prefer_grpc:
@@ -2062,6 +2112,9 @@ class QdrantRemote(QdrantBase):
             if isinstance(payload, models.PayloadStorageParams):
                 payload = RestToGrpc.convert_payload_storage_params(payload)
 
+            if isinstance(id_tracker, models.IdTrackerParams):
+                id_tracker = RestToGrpc.convert_id_tracker_params(id_tracker)
+
             create_collection = grpc.CreateCollection(
                 collection_name=collection_name,
                 hnsw_config=hnsw_config,
@@ -2079,6 +2132,7 @@ class QdrantRemote(QdrantBase):
                 strict_mode_config=strict_mode_config,
                 metadata=metadata,
                 payload=payload,
+                id_tracker=id_tracker,
             )
             return self.grpc_collections.Create(create_collection, timeout=self._timeout).result
 
@@ -2109,6 +2163,7 @@ class QdrantRemote(QdrantBase):
             strict_mode_config=strict_mode_config,
             metadata=metadata,
             payload=payload,
+            id_tracker=id_tracker,
         )
 
         result: bool | None = self.http.collections_api.create_collection(
@@ -2138,6 +2193,7 @@ class QdrantRemote(QdrantBase):
         strict_mode_config: types.StrictModeConfig | None = None,
         metadata: types.Payload | None = None,
         payload: types.PayloadStorageParams | None = None,
+        id_tracker: types.IdTrackerParams | None = None,
         **kwargs: Any,
     ) -> bool:
         self.delete_collection(collection_name, timeout=timeout)
@@ -2159,6 +2215,7 @@ class QdrantRemote(QdrantBase):
             strict_mode_config=strict_mode_config,
             metadata=metadata,
             payload=payload,
+            id_tracker=id_tracker,
         )
 
     @property
@@ -2180,6 +2237,20 @@ class QdrantRemote(QdrantBase):
         update_filter: types.Filter | None = None,
         update_mode: types.UpdateMode | None = None,
     ) -> None:
+        if max_retries < 0:
+            raise ValueError(f"max_retries value {max_retries} is invalid. Must be 0 or larger.")
+
+        # Catches `async def` providers. Others, like a lambda returning a coroutine or an object
+        # with `async def __call__`, are rejected by the uploader once a batch is sent
+        if self._auth_token_provider is not None and inspect.iscoroutinefunction(
+            self._auth_token_provider
+        ):
+            raise ValueError(
+                "upload_points and upload_collection send batches synchronously and require a "
+                "synchronous auth_token_provider. To upload with an async provider, use "
+                "AsyncQdrantClient.upsert."
+            )
+
         if method is not None:
             if method in get_all_start_methods():
                 start_method = method
@@ -2187,6 +2258,13 @@ class QdrantRemote(QdrantBase):
                 raise ValueError(
                     f"Start methods {method} is not available, available methods: {get_all_start_methods()}"
                 )
+        elif sys.platform == "darwin":
+            # On macOS, a worker forked from a process that has ever run a thread aborts when it
+            # initializes an Objective-C class, as httpx's system proxy lookup does. Since
+            # Python 3.15 the forkserver imports the main script, so one thread started by its
+            # imports (`import grpc` starts one) crashes every worker. spawn is also CPython's
+            # default start method on macOS.
+            start_method = "spawn"
         else:
             start_method = "forkserver" if "forkserver" in get_all_start_methods() else "spawn"
 
@@ -2201,6 +2279,8 @@ class QdrantRemote(QdrantBase):
                 "wait": wait,
                 "shard_key_selector": shard_key_selector,
                 "options": self._grpc_options,
+                "compression": self._grpc_compression,
+                "auth_token_provider": self._auth_token_provider,
                 "timeout": self._timeout,
                 "update_filter": update_filter,
                 "update_mode": update_mode,
@@ -2337,6 +2417,12 @@ class QdrantRemote(QdrantBase):
                 index_params = getattr(field_index_params, name)
                 if isinstance(index_params, grpc.TextIndexParams):
                     field_schema = grpc.FieldType.FieldTypeText
+                    if index_params.tokenizer == grpc.TokenizerType.Unknown:
+                        # an unset tokenizer is rejected over grpc, while REST defaults it to word
+                        field_index_params = grpc.PayloadIndexParams(
+                            text_index_params=index_params
+                        )
+                        field_index_params.text_index_params.tokenizer = grpc.TokenizerType.Word
 
                 if isinstance(index_params, grpc.IntegerIndexParams):
                     field_schema = grpc.FieldType.FieldTypeInteger
@@ -2358,6 +2444,9 @@ class QdrantRemote(QdrantBase):
 
                 if isinstance(index_params, grpc.UuidIndexParams):
                     field_schema = grpc.FieldType.FieldTypeUuid
+
+            if isinstance(ordering, models.WriteOrdering):
+                ordering = RestToGrpc.convert_write_ordering(ordering)
 
             request = grpc.CreateFieldIndexCollection(
                 collection_name=collection_name,
@@ -2400,6 +2489,9 @@ class QdrantRemote(QdrantBase):
         **kwargs: Any,
     ) -> types.UpdateResult:
         if self._prefer_grpc:
+            if isinstance(ordering, models.WriteOrdering):
+                ordering = RestToGrpc.convert_write_ordering(ordering)
+
             request = grpc.DeleteFieldIndexCollection(
                 collection_name=collection_name,
                 field_name=field_name,
@@ -2864,11 +2956,18 @@ class QdrantRemote(QdrantBase):
         self,
         collection_name: str,
         completed_limit: int | None = None,
+        with_: types.OptimizationsWith | Sequence[types.OptimizationsWith] | None = None,
         **kwargs: Any,
     ) -> types.OptimizationsResponse:
+        # Server ignores `completed_limit` unless `completed` is requested in `with`
+        with_fields = [with_] if isinstance(with_, str) else list(with_ or [])
+        if completed_limit is not None and "completed" not in with_fields:
+            with_fields.append("completed")
+
         # No gRPC endpoint for optimizations
         result = self.http.collections_api.get_optimizations(
             collection_name=collection_name,
+            _with=",".join(with_fields) if with_fields else None,
             completed_limit=completed_limit,
         ).result
         assert result is not None, "Get optimizations returned None"

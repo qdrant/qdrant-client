@@ -24,6 +24,10 @@ secondary_collection_name = "congruence_secondary_collection"
 
 NUM_MULTI_VECTORS = 100
 
+# dot and euclid MaxSim scores reach hundreds, and core's float32 error at that scale survives
+# into context scores near 0, where it exceeds the default abs_tol
+NEAR_ZERO_ABS_TOL = 1e-3  # ~7x the largest error measured (1.4e-4)
+
 
 @pytest.fixture(scope="module")
 def fixture_points() -> list[models.PointStruct]:
@@ -100,7 +104,9 @@ def test_context_dot(
         ).points
 
     compare_client_results(grpc_client, http_client, f, is_context_search=True)
-    compare_client_results(local_client, http_client, f, is_context_search=True)
+    compare_client_results(
+        local_client, http_client, f, is_context_search=True, abs_tol=NEAR_ZERO_ABS_TOL
+    )
 
 
 def test_context_euclidean(
@@ -118,7 +124,9 @@ def test_context_euclidean(
         ).points
 
     compare_client_results(grpc_client, http_client, f, is_context_search=True)
-    compare_client_results(local_client, http_client, f, is_context_search=True)
+    compare_client_results(
+        local_client, http_client, f, is_context_search=True, abs_tol=NEAR_ZERO_ABS_TOL
+    )
 
 
 def test_context_many_pairs(
@@ -153,7 +161,9 @@ def test_context_many_pairs(
         ).points
 
     compare_client_results(grpc_client, http_client, f, is_context_search=True)
-    compare_client_results(local_client, http_client, f, is_context_search=True)
+    compare_client_results(
+        local_client, http_client, f, is_context_search=True, abs_tol=NEAR_ZERO_ABS_TOL
+    )
 
 
 def test_discover_cosine(
@@ -268,7 +278,9 @@ def test_context_raw_positive(
         ).points
 
     compare_client_results(grpc_client, http_client, f, is_context_search=True)
-    compare_client_results(local_client, http_client, f, is_context_search=True)
+    compare_client_results(
+        local_client, http_client, f, is_context_search=True, abs_tol=NEAR_ZERO_ABS_TOL
+    )
 
 
 def test_only_target(
@@ -426,7 +438,7 @@ def test_query_with_nan():
     init_client(local_client, fixture_points, vectors_config=multi_vector_config)
     init_client(remote_client, fixture_points, vectors_config=multi_vector_config)
 
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         local_client.query_points(
             collection_name=COLLECTION_NAME,
             query=models.DiscoverQuery(discover=models.DiscoverInput(target=vector, context=[])),
@@ -438,7 +450,7 @@ def test_query_with_nan():
             query=models.DiscoverQuery(discover=models.DiscoverInput(target=vector, context=[])),
             using=using,
         )
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         local_client.query_points(
             collection_name=COLLECTION_NAME,
             query=models.ContextQuery(context=[models.ContextPair(positive=vector, negative=1)]),
@@ -450,7 +462,7 @@ def test_query_with_nan():
             query=models.ContextQuery(context=[models.ContextPair(positive=1, negative=vector)]),
             using=using,
         )
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         local_client.query_points(
             collection_name=COLLECTION_NAME,
             query=models.ContextQuery(context=[models.ContextPair(positive=vector, negative=1)]),

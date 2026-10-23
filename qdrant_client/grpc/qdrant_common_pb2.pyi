@@ -325,6 +325,7 @@ class Match(google.protobuf.message.Message):
     PHRASE_FIELD_NUMBER: builtins.int
     TEXT_ANY_FIELD_NUMBER: builtins.int
     PREFIX_FIELD_NUMBER: builtins.int
+    SUBSTRING_FIELD_NUMBER: builtins.int
     keyword: builtins.str
     """Match string keyword"""
     integer: builtins.int
@@ -351,6 +352,8 @@ class Match(google.protobuf.message.Message):
     """Match any word in the text"""
     prefix: builtins.str
     """Match keywords starting with the given prefix"""
+    substring: builtins.str
+    """Match keywords containing the given substring"""
     def __init__(
         self,
         *,
@@ -365,10 +368,11 @@ class Match(google.protobuf.message.Message):
         phrase: builtins.str = ...,
         text_any: builtins.str = ...,
         prefix: builtins.str = ...,
+        substring: builtins.str = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["boolean", b"boolean", "except_integers", b"except_integers", "except_keywords", b"except_keywords", "integer", b"integer", "integers", b"integers", "keyword", b"keyword", "keywords", b"keywords", "match_value", b"match_value", "phrase", b"phrase", "prefix", b"prefix", "text", b"text", "text_any", b"text_any"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["boolean", b"boolean", "except_integers", b"except_integers", "except_keywords", b"except_keywords", "integer", b"integer", "integers", b"integers", "keyword", b"keyword", "keywords", b"keywords", "match_value", b"match_value", "phrase", b"phrase", "prefix", b"prefix", "text", b"text", "text_any", b"text_any"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["match_value", b"match_value"]) -> typing_extensions.Literal["keyword", "integer", "boolean", "text", "keywords", "integers", "except_integers", "except_keywords", "phrase", "text_any", "prefix"] | None: ...
+    def HasField(self, field_name: typing_extensions.Literal["boolean", b"boolean", "except_integers", b"except_integers", "except_keywords", b"except_keywords", "integer", b"integer", "integers", b"integers", "keyword", b"keyword", "keywords", b"keywords", "match_value", b"match_value", "phrase", b"phrase", "prefix", b"prefix", "substring", b"substring", "text", b"text", "text_any", b"text_any"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["boolean", b"boolean", "except_integers", b"except_integers", "except_keywords", b"except_keywords", "integer", b"integer", "integers", b"integers", "keyword", b"keyword", "keywords", b"keywords", "match_value", b"match_value", "phrase", b"phrase", "prefix", b"prefix", "substring", b"substring", "text", b"text", "text_any", b"text_any"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["match_value", b"match_value"]) -> typing_extensions.Literal["keyword", "integer", "boolean", "text", "keywords", "integers", "except_integers", "except_keywords", "phrase", "text_any", "prefix", "substring"] | None: ...
 
 global___Match = Match
 

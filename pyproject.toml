@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "qdrant-client"
-version = "1.19.1-dev"
+version = "1.20.1-dev"
 description = "Client library for the Qdrant vector search engine"
 authors = ["Andrey Vasnetsov <andrey@qdrant.tech>"]
 packages = [
@@ -17,45 +17,45 @@ repository = "https://github.com/qdrant/qdrant-client"
 keywords = ["vector", "search", "neural", "matching", "client"]
 
 [tool.poetry.dependencies]
-python = ">=3.10"
+python = ">=3.11"
 httpx = { version = ">=0.20.0", extras = ["http2"] }
 numpy = [
-    { version = ">=1.21,<2.3.0", python = ">=3.10,<3.11" },
-    { version = ">=1.21", python = ">=3.11,<3.12" },
+    { version = ">=1.23.2", python = ">=3.11,<3.12" },
     { version = ">=1.26", python = ">=3.12,<3.13" },
     { version = ">=2.1.0", python = ">=3.13,<3.14" },
     { version = ">=2.3.0", python = ">=3.14" },
 ]
 pydantic = ">=1.10.8,!=2.0.*,!=2.1.*,!=2.2.0"  # can't use poetry ">=1.10.8,<2.0 || >=2.2.1" since pip is complaining
-grpcio = { version = ">=1.41.0", allow-prereleases = true }
+grpcio = { version = ">=1.49.1", allow-prereleases = true }
 protobuf = ">=3.20.0"
 urllib3 = ">=1.26.14,<3"
-portalocker = ">=2.7.0,<4.0"
+portalocker = ">=2.7.0,<5.0"
 fastembed = [
-    { version = "^0.8", optional = true },
+    { version = "^0.9", optional = true },
 ]
 fastembed-gpu = [
-    { version = "^0.8", optional = true },
+    { version = "^0.9", optional = true },
 ]
+orjson = { version = ">=3.9.15", optional = true }
 
 [tool.poetry.group.dev.dependencies]
-pytest = "^7.1"
-coverage = "^6.3.3"
-pytest-asyncio = ">=0.21,<0.24"
+pytest = ">=7.1,<10.0"
+coverage = ">=6.3.3,<8.0.0"
+pytest-asyncio = ">=1.3.0,<2.0.0"
 pytest-timeout = "^2.1.0"
-autoflake = "^2.2.1"
-ruff = "0.4.3"
+ruff = "0.17.1"
 pytest-mock = "^3.14.0"
 pre-commit = "^4.2.0"
 
 [tool.poetry.group.types.dependencies]
 pyright = ">=1.1.293"
-mypy = "^1.0.0"
-types-protobuf = "^4.21.0.5"
+mypy = ">=1,<3"
+types-protobuf = ">=4.21.0.5,<8.0.0.0"
 
 [tool.poetry.extras]
 fastembed = ["fastembed"]
 fastembed-gpu = ["fastembed-gpu"]
+orjson = ["orjson"]
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
@@ -64,11 +64,11 @@ build-backend = "poetry.core.masonry.api"
 [tool.pyright]
 typeCheckingMode = "strict"
 
+[tool.ruff]
+target-version = "py311"
+
 [tool.pytest.ini_options]
 markers = [
     "fastembed: marks tests that require the fastembed package (deselect with '-m \"not fastembed\"')",
     "no_fastembed: marks tests that do not require the fastembed package (deselect with '-m \"not no_fastembed\"')"
 ]
-
-[tool.isort]
-known_third_party = "grpc"

@@ -1,5 +1,6 @@
 import numpy as np
 
+from qdrant_client._pydantic_compat import construct
 from qdrant_client.http.models import SparseVector
 
 
@@ -10,12 +11,27 @@ def empty_sparse_vector() -> SparseVector:
     )
 
 
+def copy_sparse_vector(vector: SparseVector) -> SparseVector:
+    """Return a sparse vector sharing no lists with `vector`.
+
+    Two flat lists, so `deepcopy` is an order of magnitude slower for the same result, and
+    this runs per sparse vector per point on every read.
+    """
+    return construct(SparseVector, indices=list(vector.indices), values=list(vector.values))
+
+
 def validate_sparse_vector(vector: SparseVector) -> None:
-    assert len(vector.indices) == len(
-        vector.values
-    ), "Indices and values must have the same length"
-    assert not np.isnan(vector.values).any(), "Values must not contain NaN"
-    assert len(vector.indices) == len(set(vector.indices)), "Indices must be unique"
+    # these validate user input, so they must not be `assert`s: python -O strips those,
+    # which would let a malformed vector into the collection
+    if len(vector.indices) != len(vector.values):
+        raise ValueError("Indices and values must have the same length")
+    if np.isnan(vector.values).any():
+        raise ValueError("Values must not contain NaN")
+    if len(vector.indices) != len(set(vector.indices)):
+        raise ValueError("Indices must be unique")
+    # the server stores indices as u32
+    if vector.indices and (min(vector.indices) < 0 or max(vector.indices) > 2**32 - 1):
+        raise ValueError("Indices must be between 0 and 4294967295")
 
 
 def is_sorted(vector: SparseVector) -> bool:

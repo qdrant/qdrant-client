@@ -9,16 +9,16 @@ QDRANT_PATH=$(mktemp -d)
 
 trap "rm -rf \"$TEMP_ENV\"; rm -rf \"$QDRANT_PATH\"" EXIT
 
-if [[ "$(python --version 2>&1 | awk '{print $2}')" == "3.10.10" ]]; then
+if [[ "$(python --version 2>&1 | awk '{print $2}')" == "3.11.4" ]]; then
     PYTHON_BIN="python"
-elif [[ "$(python3 --version 2>&1 | awk '{print $2}')" == "3.10.10" ]]; then
+elif [[ "$(python3 --version 2>&1 | awk '{print $2}')" == "3.11.4" ]]; then
     PYTHON_BIN="python3"
-elif [[ "$(python3.10 --version 2>&1 | awk '{print $2}')" == "3.10.10" ]]; then
-    PYTHON_BIN="python3.10"
+elif [[ "$(python3.11 --version 2>&1 | awk '{print $2}')" == "3.11.4" ]]; then
+    PYTHON_BIN="python3.11"
 fi
 
 if [[ -z "$PYTHON_BIN" ]]; then
-    echo "Error: No suitable Python 3.10.10 installation found among {python, python3, python3.10}" >&2
+    echo "Error: No suitable Python 3.11.4 installation found among {python, python3, python3.11}" >&2
     exit 1
 fi
 
@@ -26,8 +26,8 @@ fi
 source "$VENV_DIR/bin/activate"
 
 pip install --upgrade pip
-pip install "grpcio==1.62.0"  # as of 1.63.0 grpc complaining that our minimal supported version 1.48 is too old
-pip install "grpcio-tools==1.62.0"  # as of 1.63.0 grpc complaining that our minimal supported version 1.48 is too old
+pip install "grpcio==1.62.0"  # as of 1.63.0 grpc complaining that our minimal supported version 1.49.1 is too old
+pip install "grpcio-tools==1.62.0"  # as of 1.63.0 grpc complaining that our minimal supported version 1.49.1 is too old
 pip install "mypy-protobuf==3.3.0"  # ^3.3.0
 
 cd "$QDRANT_PATH"
@@ -73,6 +73,8 @@ mv "$CLIENT_DIR/qdrant_tmp.proto" "$CLIENT_DIR/qdrant.proto"
 
 # maybe I'll remove this crutch when google makes normal imports for issue from 2016
 # https://github.com/protocolbuffers/protobuf/issues/1491
-sed -i -re 's/^import (\w*)_pb2/from . import \1_pb2/g' ./qdrant_client/grpc/*.py
+# -i.bak and -E work with both GNU and BSD (macOS) sed
+sed -i.bak -E 's/^import ([[:alnum:]_]*)_pb2/from . import \1_pb2/g' ./qdrant_client/grpc/*.py
+rm -f ./qdrant_client/grpc/*.py.bak
 
 deactivate

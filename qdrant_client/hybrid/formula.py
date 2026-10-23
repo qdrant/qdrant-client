@@ -1,13 +1,15 @@
 import math
+from datetime import datetime
 
 
 from qdrant_client.conversions.common_types import get_args_subscribed
 from qdrant_client.http import models
-from typing import Any
+from typing import Any, Sequence
 
 from qdrant_client.local import datetime_utils
 from qdrant_client.local.geo import geo_distance
-from qdrant_client.local.payload_filters import check_condition
+from qdrant_client.local.json_path_parser import parse_json_path
+from qdrant_client.local.payload_filters import check_condition, validate_filter
 from qdrant_client.local.payload_value_extractor import value_by_key
 
 DEFAULT_SCORE = 0.0
@@ -53,6 +55,21 @@ def evaluate_expression(
             evaluate_expression(expr, point_id, scores, payload, has_vector, defaults)
             for expr in expression.sum
         )
+
+    elif isinstance(expression, models.MaxExpression):
+        # folds like core: no shortcuts, NaN operands are skipped
+        maximum = -math.inf
+        for expr in expression.max:
+            value = evaluate_expression(expr, point_id, scores, payload, has_vector, defaults)
+            maximum = max(maximum, value)
+        return maximum
+
+    elif isinstance(expression, models.MinExpression):
+        minimum = math.inf
+        for expr in expression.min:
+            value = evaluate_expression(expr, point_id, scores, payload, has_vector, defaults)
+            minimum = min(minimum, value)
+        return minimum
 
     elif isinstance(expression, models.NegExpression):
         value = evaluate_expression(
@@ -106,12 +123,15 @@ def evaluate_expression(
             expression.pow.exponent, point_id, scores, payload, has_vector, defaults
         )
 
-        # Check for valid input
-        if base >= 0 or (base != 0 and exponent.is_integer()):
-            try:
-                return math.pow(base, exponent)
-            except OverflowError:
-                pass
+        try:
+            # OverflowError: the result, or a too large integer operand, doesn't fit in a float.
+            # ValueError: undefined, e.g. a negative base with a non-integer exponent.
+            result = math.pow(base, exponent)
+        except (OverflowError, ValueError):
+            pass
+        else:
+            if math.isfinite(result):
+                return result
 
         raise_non_finite_error(f"{base}^{exponent}")
 
@@ -149,6 +169,22 @@ def evaluate_expression(
 
         raise_non_finite_error(f"ln({value})")
 
+    elif isinstance(expression, models.AcoshExpression):
+        value = evaluate_expression(
+            expression.acosh, point_id, scores, payload, has_vector, defaults
+        )
+
+        if value >= 1:
+            try:
+                result = math.acosh(value)
+            except OverflowError:
+                pass
+            else:
+                if math.isfinite(result):
+                    return result
+
+        raise_non_finite_error(f"acosh({value})")
+
     elif isinstance(expression, models.GeoDistance):
         origin = expression.geo_distance.origin
         to = expression.geo_distance.to
@@ -157,8 +193,9 @@ def evaluate_expression(
         geo_value = try_extract_payload_value(to, payload, defaults)
 
         if isinstance(geo_value, dict):
-            # let this fail if it is not a valid geo point
-            destination = models.GeoPoint(**geo_value)
+            destination = models.GeoPoint(
+                **{key: geo_value[key] for key in ("lon", "lat") if key in geo_value}
+            )
             return geo_distance(origin.lon, origin.lat, destination.lon, destination.lat)
 
         raise ValueError(
@@ -166,16 +203,11 @@ def evaluate_expression(
         )
 
     elif isinstance(expression, models.DatetimeExpression):
-        # try to parse as datetime
-        dt = datetime_utils.parse(expression.datetime)
-        if dt is None:
-            raise ValueError(f"Expected datetime in supported format for {expression.datetime}")
-
-        return dt.timestamp()
+        return parse_datetime_constant(expression.datetime).timestamp()
 
     elif isinstance(expression, models.DatetimeKeyExpression):
         dt_str = try_extract_payload_value(expression.datetime_key, payload, defaults)
-        dt = datetime_utils.parse(dt_str)
+        dt = datetime_utils.parse(dt_str) if isinstance(dt_str, str) else None
         if dt is None:
             raise ValueError(
                 f"Expected datetime for {expression.datetime_key} in the payload and/or in the formula defaults."
@@ -213,6 +245,110 @@ def evaluate_expression(
     raise ValueError(f"Unsupported expression type: {type(expression)}")
 
 
+def validate_expression(expression: models.Expression) -> None:
+    """Reject what core refuses while parsing the formula, before any point is scored"""
+    nested: Sequence[models.Expression | None]
+
+    if isinstance(expression, str):
+        variable = parse_variable(expression)
+        if isinstance(variable, str):
+            parse_json_path(variable)
+        nested = []
+    elif isinstance(expression, get_args_subscribed(models.Condition)):
+        # core validates a condition in a formula the same way as one in a filter
+        validate_filter(models.Filter(must=[expression]))  # type: ignore
+        nested = []
+    elif isinstance(expression, models.DatetimeExpression):
+        parse_datetime_constant(expression.datetime)
+        nested = []
+    elif isinstance(expression, models.DatetimeKeyExpression):
+        parse_json_path(expression.datetime_key)
+        nested = []
+    elif isinstance(expression, models.GeoDistance):
+        parse_json_path(expression.geo_distance.to)
+        nested = []
+    elif isinstance(expression, models.MaxExpression):
+        if len(expression.max) == 0:
+            raise_no_operands_error("max")
+        nested = expression.max
+    elif isinstance(expression, models.MinExpression):
+        if len(expression.min) == 0:
+            raise_no_operands_error("min")
+        nested = expression.min
+    elif isinstance(expression, models.MultExpression):
+        nested = expression.mult
+    elif isinstance(expression, models.SumExpression):
+        nested = expression.sum
+    elif isinstance(expression, models.NegExpression):
+        nested = [expression.neg]
+    elif isinstance(expression, models.AbsExpression):
+        nested = [expression.abs]
+    elif isinstance(expression, models.DivExpression):
+        nested = [expression.div.left, expression.div.right]
+    elif isinstance(expression, models.SqrtExpression):
+        nested = [expression.sqrt]
+    elif isinstance(expression, models.PowExpression):
+        nested = [expression.pow.base, expression.pow.exponent]
+    elif isinstance(expression, models.ExpExpression):
+        nested = [expression.exp]
+    elif isinstance(expression, models.Log10Expression):
+        nested = [expression.log10]
+    elif isinstance(expression, models.LnExpression):
+        nested = [expression.ln]
+    elif isinstance(expression, models.AcoshExpression):
+        nested = [expression.acosh]
+    elif isinstance(expression, models.LinDecayExpression):
+        validate_decay_params(expression.lin_decay, linear=True)
+        nested = [expression.lin_decay.x, expression.lin_decay.target]
+    elif isinstance(expression, models.ExpDecayExpression):
+        validate_decay_params(expression.exp_decay, linear=False)
+        nested = [expression.exp_decay.x, expression.exp_decay.target]
+    elif isinstance(expression, models.GaussDecayExpression):
+        validate_decay_params(expression.gauss_decay, linear=False)
+        nested = [expression.gauss_decay.x, expression.gauss_decay.target]
+    else:
+        nested = []
+
+    for nested_expression in nested:
+        if nested_expression is not None:  # decay target is optional
+            validate_expression(nested_expression)
+
+
+def validate_decay_params(params: models.DecayParamsExpression, linear: bool) -> None:
+    midpoint = params.midpoint if params.midpoint is not None else DEFAULT_DECAY_MIDPOINT
+    if linear:
+        if not 0.0 <= midpoint <= 1.0:
+            raise ValueError(
+                f"Linear decay midpoint should be in the range [0.0, 1.0], got {midpoint}"
+            )
+    elif midpoint <= 0.0 or midpoint >= 1.0:
+        raise ValueError(f"Decay midpoint should be in the range (0.0, 1.0), got {midpoint}")
+
+    scale = params.scale if params.scale is not None else DEFAULT_DECAY_SCALE
+    if scale <= 0.0:
+        raise ValueError(f"Scale must be non-zero positive, got {scale}")
+
+
+def parse_defaults(defaults: dict[str, Any]) -> dict[str, Any]:
+    # core parses the keys like variables, so `$score` and `$score[0]` share a default
+    parsed = {}
+    for key, value in defaults.items():
+        variable = parse_variable(key)
+        parsed[score_default_key(variable) if isinstance(variable, int) else key] = value
+    return parsed
+
+
+def score_default_key(index: int) -> str:
+    return f"$score[{index}]"
+
+
+def parse_datetime_constant(value: str) -> datetime:
+    dt = datetime_utils.parse(value)
+    if dt is None:
+        raise ValueError(f"Expected datetime in supported format for {value}")
+    return dt
+
+
 def evaluate_decay_params(
     params: models.DecayParamsExpression,
     point_id: models.ExtendedPointId,
@@ -231,13 +367,7 @@ def evaluate_decay_params(
         )
 
     midpoint = params.midpoint if params.midpoint is not None else DEFAULT_DECAY_MIDPOINT
-
-    if midpoint <= 0.0 or midpoint >= 1.0:
-        raise ValueError(f"Midpoint must be between 0 and 1, got {midpoint}")
-
     scale = params.scale if params.scale is not None else DEFAULT_DECAY_SCALE
-    if scale <= 0.0:
-        raise ValueError(f"Scale must be non-zero positive, got {scale}")
 
     return x, target, midpoint, scale
 
@@ -289,7 +419,7 @@ def evaluate_variable(
             if score is not None:
                 return score
 
-        defined_default = defaults.get(variable, None)
+        defined_default = defaults.get(score_default_key(var), None)
         if defined_default is not None:
             return defined_default
 
@@ -318,11 +448,14 @@ def parse_variable(var: str) -> str | int:
     if bracket_end == -1:
         raise ValueError(f"Invalid score pattern: {var}")
 
-    # try parsing the content in between brackets as integer
-    try:
-        idx = int(remaining[:bracket_end])
-    except ValueError:
+    # parse the content in between brackets as an unsigned integer. qdrant core represents
+    # the score index as a usize, while `int()` would also accept a sign, underscore
+    # separators and surrounding whitespace
+    raw_idx = remaining[:bracket_end]
+    if not (raw_idx.isascii() and raw_idx.isdigit()):
         raise ValueError(f"Invalid score pattern: {var}")
+
+    idx = int(raw_idx)
 
     # make sure the string ends after the closing bracket
     if len(remaining) > bracket_end + 1:
@@ -335,36 +468,9 @@ def raise_non_finite_error(expression: str) -> None:
     raise ValueError(f"The expression {expression} produced a non-finite number")
 
 
+def raise_no_operands_error(operator: str) -> None:
+    raise ValueError(f"`{operator}` needs at least one operand")
+
+
 def is_number(value: Any) -> bool:
     return isinstance(value, (int, float)) and not isinstance(value, bool)
-
-
-def test_parsing_variable() -> None:
-    assert parse_variable("$score") == 0
-    assert parse_variable("$score[0]") == 0
-    assert parse_variable("$score[1]") == 1
-    assert parse_variable("$score[2]") == 2
-
-    try:
-        parse_variable("$score[invalid]")
-        assert False
-    except ValueError as e:
-        assert str(e) == "Invalid score pattern: $score[invalid]"
-
-    try:
-        parse_variable("$score[10].other")
-        assert False
-    except ValueError as e:
-        assert str(e) == "Invalid score pattern: $score[10].other"
-
-
-def test_try_extract_payload_value() -> None:
-    for payload_value, expected in [(1.2, 1.2), ([1.2], 1.2), ([1.2, 2.3], [1.2, 2.3])]:
-        empty_defaults: dict[str, Any] = {}
-
-        payload = {"key": payload_value}
-        assert try_extract_payload_value("key", payload, empty_defaults) == expected
-
-        defaults = {"key": payload_value}
-        empty_payload: dict[str, Any] = {}
-        assert try_extract_payload_value("key", empty_payload, defaults) == expected

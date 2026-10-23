@@ -8,6 +8,7 @@ from tests.fixtures.payload import (
     random_signed_int,
     random_real_words,
 )
+from tests.utils import read_version
 
 """
 data structure:
@@ -199,6 +200,23 @@ def match_prefix_field_condition() -> models.FieldCondition:
     )
 
 
+def match_substring_field_condition() -> models.FieldCondition:
+    field = random.choice(["id_str", "two_words", "words", "mixed_type"])
+
+    if field == "id_str" or (field == "mixed_type" and random.random() < 0.5):
+        # a digit matches `id_str` strings, but never `mixed_type` ints
+        substring = str(random.randint(0, 9))
+    else:
+        word = random_real_word()
+        start = random.randrange(len(word))
+        substring = word[start : start + random.randint(1, 3)]
+
+    return models.FieldCondition(
+        key=field,
+        match=models.MatchSubstring(substring=substring),
+    )
+
+
 def slice_condition() -> models.SliceCondition:
     total = random.randint(2, 8)
     return models.SliceCondition(slice=models.Slice(total=total, index=random.randrange(total)))
@@ -333,31 +351,48 @@ def values_count_field_condition() -> models.FieldCondition:
     )
 
 
+def qdrant_version_gte(required: tuple[int, int, int]) -> bool:
+    """Whether the qdrant under test is at least `required`. Unset and dev count as latest."""
+    major, minor, patch, dev = read_version()
+
+    if dev or None in (major, minor, patch):
+        return True
+
+    return (major, minor, patch) >= required
+
+
 def one_random_condition_please() -> models.Condition:
-    return random.choice(
-        [
-            is_empty_condition,
-            is_null_condition,
-            has_id_condition,
-            match_value_field_condition,
+    conditions = [
+        is_empty_condition,
+        is_null_condition,
+        has_id_condition,
+        match_value_field_condition,
+        match_any_field_condition,
+        match_prefix_field_condition,
+        slice_condition,
+        match_except_field_condition,
+        range_field_condition,
+        datetime_range_field_condition,
+        range_nested_array_field_condition,
+        geo_bounding_box_field_condition,
+        geo_radius_field_condition,
+        values_count_field_condition,
+        one_random_filter_please,
+        nested_field_condition_1,
+        nested_field_condition_2,
+    ]
+
+    # `words` carries no text index, and until qdrant 1.19.2 the server matched substrings on
+    # unindexed fields instead of whole tokens, so these diverge from local mode
+    if qdrant_version_gte((1, 19, 2)):
+        conditions += [
             match_text_field_condition,
-            match_any_field_condition,
             match_text_any_field_condition,
             match_phrase_field_condition,
-            match_prefix_field_condition,
-            slice_condition,
-            match_except_field_condition,
-            range_field_condition,
-            datetime_range_field_condition,
-            range_nested_array_field_condition,
-            geo_bounding_box_field_condition,
-            geo_radius_field_condition,
-            values_count_field_condition,
-            one_random_filter_please,
-            nested_field_condition_1,
-            nested_field_condition_2,
+            match_substring_field_condition,  # new in 1.19.2
         ]
-    )()
+
+    return random.choice(conditions)()
 
 
 def one_random_filter_please() -> models.Filter:

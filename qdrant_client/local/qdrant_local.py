@@ -27,9 +27,13 @@ from qdrant_client.local.local_collection import (
     LocalCollection,
     DEFAULT_VECTOR_NAME,
     ignore_mentioned_ids_filter,
+    to_jsonable_python,
 )
+from qdrant_client.local.payload_value_setter import merge_payload
 
 META_INFO_FILENAME = "meta.json"
+# characters the server does not allow in collection and vector names
+INVALID_NAME_CHARS = ("<", ">", ":", '"', "/", "\\", "|", "?", "*", "\0", "\x1f")
 
 
 def _parse_search_params(search_params: types.SearchParams | None) -> types.SearchParams | None:
@@ -67,6 +71,7 @@ class QdrantLocal(QdrantBase):
     """
 
     LARGE_DATA_THRESHOLD = 20_000
+    MMR_CANDIDATES_LIMIT_MAX = 16384
 
     def __init__(self, location: str, force_disable_check_same_thread: bool = False) -> None:
         """
@@ -152,6 +157,12 @@ class QdrantLocal(QdrantBase):
                             stacklevel=5,
                         )
                 self.aliases = meta["aliases"]
+                # storages written before text indexes were recorded have none
+                for collection_name, indexes in meta.get("text_indexes", {}).items():
+                    self.collections[collection_name].text_indexes = {
+                        field_name: rest_models.TextIndexParams(**params)
+                        for field_name, params in indexes.items()
+                    }
 
         lock_file_path = os.path.join(self.location, ".lock")
         if not os.path.exists(lock_file_path):
@@ -174,26 +185,36 @@ class QdrantLocal(QdrantBase):
                 f" If you require concurrent access, use Qdrant server instead."
             )
 
-    def _save(self) -> None:
+    def _save(self, aliases: dict[str, str] | None = None) -> None:
         if not self.persistent:
             return
 
         if self.closed:
             raise RuntimeError("QdrantLocal instance is closed. Please create a new instance.")
 
-        meta_path = os.path.join(self.location, META_INFO_FILENAME)
-        with open(meta_path, "w") as f:
-            f.write(
-                json.dumps(
-                    {
-                        "collections": {
-                            collection_name: to_dict(collection.config)
-                            for collection_name, collection in self.collections.items()
-                        },
-                        "aliases": self.aliases,
+        meta = json.dumps(
+            {
+                "collections": {
+                    collection_name: to_dict(collection.config)
+                    for collection_name, collection in self.collections.items()
+                },
+                "aliases": self.aliases if aliases is None else aliases,
+                "text_indexes": {
+                    collection_name: {
+                        field_name: to_dict(params, exclude_none=True)
+                        for field_name, params in collection.text_indexes.items()
                     }
-                )
-            )
+                    for collection_name, collection in self.collections.items()
+                    if collection.text_indexes
+                },
+            }
+        )
+        meta_path = os.path.join(self.location, META_INFO_FILENAME)
+        # opening a file for writing empties it, so meta.json is only replaced by a complete copy
+        tmp_path = f"{meta_path}.tmp"
+        with open(tmp_path, "w") as f:
+            f.write(meta)
+        os.replace(tmp_path, meta_path)
 
     def _get_collection(self, collection_name: str) -> LocalCollection:
         if self.closed:
@@ -205,6 +226,65 @@ class QdrantLocal(QdrantBase):
             return self.collections[self.aliases[collection_name]]
         raise ValueError(f"Collection {collection_name} not found")
 
+    @classmethod
+    def _validate_query(
+        cls,
+        query: types.Query | None,
+        using: str | None,
+        prefetch: types.Prefetch | list[types.Prefetch] | None,
+        score_threshold: float | None,
+    ) -> None:
+        if prefetch and query is None:
+            raise ValueError("A query is needed to merge the prefetches.")
+
+        if score_threshold is not None:
+            if query is None:
+                raise ValueError("A query is needed to use the score_threshold.")
+            if isinstance(query, rest_models.OrderByQuery):
+                raise ValueError("Can't use score_threshold with an order_by query.")
+
+        if isinstance(query, (rest_models.FusionQuery, rest_models.RrfQuery)) and using:
+            raise ValueError("Fusion queries cannot be combined with the 'using' field.")
+
+        if isinstance(query, rest_models.RrfQuery):
+            if query.rrf.k is not None and query.rrf.k < 1:
+                raise ValueError(f"rrf k value {query.rrf.k} is invalid. Must be 1 or larger.")
+
+        elif isinstance(query, rest_models.NearestQuery):
+            mmr = query.mmr
+            if mmr is not None and mmr.candidates_limit is not None:
+                if mmr.candidates_limit < 0:
+                    raise ValueError(
+                        f"mmr candidates_limit value {mmr.candidates_limit} is invalid."
+                        f" Must be 0 or larger."
+                    )
+                if mmr.candidates_limit > cls.MMR_CANDIDATES_LIMIT_MAX:
+                    raise ValueError(
+                        f"mmr candidates_limit value {mmr.candidates_limit} is invalid."
+                        f" Must be {cls.MMR_CANDIDATES_LIMIT_MAX} or smaller."
+                    )
+
+        elif isinstance(query, rest_models.RelevanceFeedbackQuery):
+            naive = query.relevance_feedback.strategy.naive
+            if naive.b < 0:
+                raise ValueError(
+                    f"naive feedback b value {naive.b} is invalid. Must be 0 or larger."
+                )
+
+    @classmethod
+    def _validate_prefetch(cls, prefetch: types.Prefetch | list[types.Prefetch] | None) -> None:
+        if prefetch is None:
+            return
+
+        prefetches = prefetch if isinstance(prefetch, list) else [prefetch]
+        for item in prefetches:
+            if item.limit is not None and item.limit < 1:
+                raise ValueError(
+                    f"prefetch limit value {item.limit} is invalid. Must be 1 or larger."
+                )
+            cls._validate_query(item.query, item.using, item.prefetch, item.score_threshold)
+            cls._validate_prefetch(item.prefetch)
+
     def search_matrix_offsets(
         self,
         collection_name: str,
@@ -214,6 +294,10 @@ class QdrantLocal(QdrantBase):
         using: str | None = None,
         **kwargs: Any,
     ) -> types.SearchMatrixOffsetsResponse:
+        if limit < 1:
+            raise ValueError(f"limit value {limit} is invalid. Must be 1 or larger.")
+        if sample < 2:
+            raise ValueError(f"sample value {sample} is invalid. Must be 2 or larger.")
         collection = self._get_collection(collection_name)
         return collection.search_matrix_offsets(
             query_filter=query_filter, limit=limit, sample=sample, using=using
@@ -230,6 +314,8 @@ class QdrantLocal(QdrantBase):
     ) -> types.SearchMatrixPairsResponse:
         if limit < 1:
             raise ValueError(f"limit value {limit} is invalid. Must be 1 or larger.")
+        if sample < 2:
+            raise ValueError(f"sample value {sample} is invalid. Must be 2 or larger.")
         collection = self._get_collection(collection_name)
         return collection.search_matrix_pairs(
             query_filter=query_filter, limit=limit, sample=sample, using=using
@@ -257,15 +343,6 @@ class QdrantLocal(QdrantBase):
             else search_in_vector_name
         )
 
-        sparse = vector_name in collection.sparse_vectors
-        multi = vector_name in collection.multivectors
-        if sparse:
-            collection_vectors = collection.sparse_vectors
-        elif multi:
-            collection_vectors = collection.multivectors
-        else:
-            collection_vectors = collection.vectors
-
         # mentioned ids in the search collection which should be excluded from search
         mentioned_ids: set[types.PointId] = set()
 
@@ -276,16 +353,7 @@ class QdrantLocal(QdrantBase):
                 if isinstance(vector_input, uuid.UUID):
                     vector_input = str(vector_input)
                 point_id = vector_input  # rename for clarity
-                if point_id not in collection.ids:
-                    raise ValueError(f"Point {point_id} is not found in the collection")
-
-                idx = collection.ids[point_id]
-                if vector_name in collection_vectors:
-                    vec = collection_vectors[vector_name][idx]
-                else:
-                    raise ValueError(f"Vector {vector_name} not found")
-                if isinstance(vec, np.ndarray):
-                    vec = vec.tolist()
+                vec = collection._vector_by_point_id(vector_name, point_id)
                 if collection_name == lookup_collection_name:
                     mentioned_ids.add(point_id)
                 return vec
@@ -335,6 +403,9 @@ class QdrantLocal(QdrantBase):
             pass
         elif isinstance(query, rest_models.RrfQuery):
             pass
+        elif query is not None and not isinstance(query, get_args(rest_models.Query)):
+            # a bare vector input, e.g. a point id, is a shorthand for a nearest query
+            query = rest_models.NearestQuery(nearest=input_into_vector(query))
 
         return query, mentioned_ids
 
@@ -342,6 +413,7 @@ class QdrantLocal(QdrantBase):
         self,
         prefetch: Sequence[types.Prefetch] | types.Prefetch | None,
         collection_name: str,
+        mentioned_ids: set[types.PointId],
     ) -> list[types.Prefetch]:
         if prefetch is None:
             return []
@@ -351,37 +423,42 @@ class QdrantLocal(QdrantBase):
 
         prefetches = []
         if isinstance(prefetch, types.Prefetch):
+            # nested prefetches are resolved recursively in `_resolve_prefetch_input`,
+            # they must not be hoisted to this level
             prefetches = [prefetch]
-            prefetches.extend(
-                prefetch.prefetch if isinstance(prefetch.prefetch, list) else [prefetch.prefetch]
-            )
         elif isinstance(prefetch, Sequence):
             prefetches = list(prefetch)
 
         return [
-            self._resolve_prefetch_input(prefetch, collection_name)
+            self._resolve_prefetch_input(prefetch, collection_name, mentioned_ids)
             for prefetch in prefetches
             if prefetch is not None
         ]
 
     def _resolve_prefetch_input(
-        self, prefetch: types.Prefetch, collection_name: str
+        self, prefetch: types.Prefetch, collection_name: str, mentioned_ids: set[types.PointId]
     ) -> types.Prefetch:
+        """
+        Resolves a copy of a prefetch tree and adds the point ids mentioned anywhere in it to
+        `mentioned_ids`. The server excludes these ids from every prefetch, so they belong in the
+        root filter.
+        """
         if prefetch.query is None:
             return prefetch
 
         prefetch = deepcopy(prefetch)
-        query, mentioned_ids = self._resolve_query_input(
+        query, query_mentioned_ids = self._resolve_query_input(
             collection_name,
             prefetch.query,
             prefetch.using,
             prefetch.lookup_from,
         )
         prefetch.query = query
+        mentioned_ids.update(query_mentioned_ids)
 
-        prefetch.filter = ignore_mentioned_ids_filter(prefetch.filter, list(mentioned_ids))
-
-        prefetch.prefetch = self._resolve_prefetches_input(prefetch.prefetch, collection_name)
+        prefetch.prefetch = self._resolve_prefetches_input(
+            prefetch.prefetch, collection_name, mentioned_ids
+        )
 
         return prefetch
 
@@ -395,14 +472,18 @@ class QdrantLocal(QdrantBase):
         search_params: types.SearchParams | None = None,
         limit: int = 10,
         offset: int | None = None,
-        with_payload: bool | Sequence[str] | types.PayloadSelector = True,
-        with_vectors: bool | Sequence[str] = False,
+        with_payload: types.WithPayloadInterface = True,
+        with_vectors: types.WithVector = False,
         score_threshold: float | None = None,
         lookup_from: types.LookupLocation | None = None,
         **kwargs: Any,
     ) -> types.QueryResponse:
         if limit < 1:
             raise ValueError(f"limit value {limit} is invalid. Must be 1 or larger.")
+        if offset is not None and offset < 0:
+            raise ValueError(f"offset value {offset} is invalid. Must be 0 or larger.")
+        self._validate_query(query, using, prefetch, score_threshold)
+        self._validate_prefetch(prefetch)
 
         collection = self._get_collection(collection_name)
 
@@ -415,13 +496,14 @@ class QdrantLocal(QdrantBase):
                 stacklevel=5,
             )
 
+        mentioned_ids: set[types.PointId] = set()
         if query is not None:
             query, mentioned_ids = self._resolve_query_input(
                 collection_name, query, using, lookup_from
             )
-            query_filter = ignore_mentioned_ids_filter(query_filter, list(mentioned_ids))
 
-        prefetch = self._resolve_prefetches_input(prefetch, collection_name)
+        prefetch = self._resolve_prefetches_input(prefetch, collection_name, mentioned_ids)
+        query_filter = ignore_mentioned_ids_filter(query_filter, list(mentioned_ids))
 
         return collection.query_points(
             query=query,
@@ -480,8 +562,8 @@ class QdrantLocal(QdrantBase):
         search_params: types.SearchParams | None = None,
         limit: int = 10,
         group_size: int = 3,
-        with_payload: bool | Sequence[str] | types.PayloadSelector = True,
-        with_vectors: bool | Sequence[str] = False,
+        with_payload: types.WithPayloadInterface = True,
+        with_vectors: types.WithVector = False,
         score_threshold: float | None = None,
         with_lookup: types.WithLookupInterface | None = None,
         lookup_from: types.LookupLocation | None = None,
@@ -489,6 +571,10 @@ class QdrantLocal(QdrantBase):
     ) -> types.GroupsResult:
         if limit < 1:
             raise ValueError(f"limit value {limit} is invalid. Must be 1 or larger.")
+        if group_size < 1:
+            raise ValueError(f"group_size value {group_size} is invalid. Must be 1 or larger.")
+        self._validate_query(query, using, prefetch, score_threshold)
+        self._validate_prefetch(prefetch)
 
         collection = self._get_collection(collection_name)
 
@@ -501,11 +587,15 @@ class QdrantLocal(QdrantBase):
                 stacklevel=5,
             )
 
+        mentioned_ids: set[types.PointId] = set()
         if query is not None:
             query, mentioned_ids = self._resolve_query_input(
                 collection_name, query, using, lookup_from
             )
-            query_filter = ignore_mentioned_ids_filter(query_filter, list(mentioned_ids))
+
+        prefetch = self._resolve_prefetches_input(prefetch, collection_name, mentioned_ids)
+        query_filter = ignore_mentioned_ids_filter(query_filter, list(mentioned_ids))
+
         with_lookup_collection = None
         if with_lookup is not None:
             if isinstance(with_lookup, str):
@@ -526,6 +616,7 @@ class QdrantLocal(QdrantBase):
             score_threshold=score_threshold,
             with_lookup=with_lookup,
             with_lookup_collection=with_lookup_collection,
+            search_params=search_params,
         )
 
     def scroll(
@@ -535,8 +626,8 @@ class QdrantLocal(QdrantBase):
         limit: int = 10,
         order_by: types.OrderBy | None = None,
         offset: types.PointId | None = None,
-        with_payload: bool | Sequence[str] | types.PayloadSelector = True,
-        with_vectors: bool | Sequence[str] = False,
+        with_payload: types.WithPayloadInterface = True,
+        with_vectors: types.WithVector = False,
         **kwargs: Any,
     ) -> tuple[list[types.Record], types.PointId | None]:
         if limit < 1:
@@ -613,8 +704,8 @@ class QdrantLocal(QdrantBase):
         self,
         collection_name: str,
         ids: Sequence[types.PointId],
-        with_payload: bool | Sequence[str] | types.PayloadSelector = True,
-        with_vectors: bool | Sequence[str] = False,
+        with_payload: types.WithPayloadInterface = True,
+        with_vectors: types.WithVector = False,
         **kwargs: Any,
     ) -> list[types.Record]:
         collection = self._get_collection(collection_name)
@@ -688,21 +779,38 @@ class QdrantLocal(QdrantBase):
     def update_collection_aliases(
         self, change_aliases_operations: Sequence[types.AliasOperations], **kwargs: Any
     ) -> bool:
+        if self.closed:
+            raise RuntimeError("QdrantLocal instance is closed. Please create a new instance.")
+
+        # apply the operations to a copy, so a rejected one leaves the aliases untouched
+        aliases = self.aliases.copy()
         for operation in change_aliases_operations:
             if isinstance(operation, rest_models.CreateAliasOperation):
-                self._get_collection(operation.create_alias.collection_name)
-                self.aliases[operation.create_alias.alias_name] = (
-                    operation.create_alias.collection_name
-                )
+                collection_name = operation.create_alias.collection_name
+                # an alias must point at a collection, not at another alias
+                if collection_name not in self.collections:
+                    raise ValueError(f"Collection {collection_name} not found")
+                alias_name = operation.create_alias.alias_name
+                # and must not take the name of an existing collection
+                if alias_name in self.collections:
+                    raise ValueError(f"Collection {alias_name} already exists")
+                aliases[alias_name] = collection_name
             elif isinstance(operation, rest_models.DeleteAliasOperation):
-                self.aliases.pop(operation.delete_alias.alias_name, None)
+                aliases.pop(operation.delete_alias.alias_name, None)
             elif isinstance(operation, rest_models.RenameAliasOperation):
                 new_name = operation.rename_alias.new_alias_name
                 old_name = operation.rename_alias.old_alias_name
-                self.aliases[new_name] = self.aliases.pop(old_name)
+                # the new name must not take the name of an existing collection either
+                if new_name in self.collections:
+                    raise ValueError(f"Collection {new_name} already exists")
+                if old_name not in aliases:
+                    raise ValueError(f"Alias {old_name} does not exist")
+                aliases[new_name] = aliases.pop(old_name)
             else:
                 raise ValueError(f"Unknown operation: {operation}")
-        self._save()
+        # save first, so a failed write leaves the aliases in memory untouched as well
+        self._save(aliases=aliases)
+        self.aliases = aliases
         return True
 
     def get_collection_aliases(
@@ -763,9 +871,26 @@ class QdrantLocal(QdrantBase):
         collection_name: str,
         sparse_vectors_config: Mapping[str, types.SparseVectorParams] | None = None,
         metadata: types.Payload | None = None,
+        vectors_config: types.VectorsConfigDiff | None = None,
         **kwargs: Any,
     ) -> bool:
         _collection = self._get_collection(collection_name)
+        # stored as JSON, like the server does: datetimes and UUIDs become strings
+        metadata = to_jsonable_python(metadata)
+
+        # like the server, check every diff before applying any of them. Dense vector diffs
+        # have nothing to change in local mode, their names are checked all the same
+        if isinstance(vectors_config, Mapping):
+            for vector_name in vectors_config:
+                if (
+                    vector_name not in _collection.vectors_config
+                    and vector_name not in _collection.multivectors_config
+                ):
+                    raise ValueError(f"Wrong input: Not existing vector name error: {vector_name}")
+        for vector_name in sparse_vectors_config or {}:
+            if vector_name not in _collection.sparse_vectors:
+                raise ValueError(f"Vector {vector_name} does not exist in the collection")
+
         updated = False
         if sparse_vectors_config is not None:
             for vector_name, vector_params in sparse_vectors_config.items():
@@ -774,16 +899,65 @@ class QdrantLocal(QdrantBase):
 
         if metadata is not None:
             if _collection.config.metadata is not None:
-                _collection.config.metadata.update(metadata)
+                merge_payload(_collection.config.metadata, metadata)
             else:
-                _collection.config.metadata = deepcopy(metadata)
+                _collection.config.metadata = metadata
             updated = True
 
         self._save()
         return updated
 
+    @staticmethod
+    def _validate_new_collection_name(collection_name: str) -> None:
+        # same characters as the server rejects on creation, names of already existing
+        # collections are not checked to keep them accessible
+        for char in INVALID_NAME_CHARS:
+            if char in collection_name:
+                raise ValueError(f"Collection name cannot contain {char!r} char")
+        if collection_name in ("", ".", ".."):
+            raise ValueError(f"Collection name cannot be {collection_name!r}")
+        if len(collection_name) > 255:
+            raise ValueError("Collection name must be at most 255 characters long")
+
+    @staticmethod
+    def _validate_new_vector_name(vector_name: str, kind: str) -> None:
+        # same rules as the server, which keeps vectors in directories named after them,
+        # the empty name is the unnamed vector
+        if len(vector_name.encode()) > 200:
+            raise ValueError(
+                f"Invalid {kind} vector name `{vector_name}`: must be at most 200 bytes long"
+            )
+        for char in INVALID_NAME_CHARS:
+            if char in vector_name:
+                raise ValueError(
+                    f"Invalid {kind} vector name `{vector_name}`: cannot contain {char!r} char"
+                )
+        if vector_name in (".", ".."):
+            raise ValueError(f"Invalid {kind} vector name `{vector_name}`")
+
+    @staticmethod
+    def _validate_new_vector_size(size: int) -> None:
+        if not 1 <= size <= 65536:
+            raise ValueError(f"Vector size {size} is invalid. Must be from 1 to 65536.")
+
     def _collection_path(self, collection_name: str) -> str | None:
         if self.persistent:
+            # names come from users and from meta.json, the path must stay strictly inside
+            # `collection/`, otherwise absolute paths and `..` would escape the storage folder
+            # (nested legacy names like `a/b` are still allowed, new ones are rejected on creation)
+            # symlinks are resolved, so a planted link can't point the path outside either
+            base_path = os.path.realpath(os.path.join(self.location, "collection"))
+            path = os.path.realpath(os.path.join(base_path, collection_name))
+            try:
+                is_inside = (
+                    path != base_path and os.path.commonpath([base_path, path]) == base_path
+                )
+            except ValueError:
+                is_inside = False
+            if not is_inside:
+                raise ValueError(
+                    f"Collection name {collection_name!r} is not allowed, it points outside of the storage folder"
+                )
             return os.path.join(self.location, "collection", collection_name)
         else:
             return None
@@ -792,6 +966,7 @@ class QdrantLocal(QdrantBase):
         if self.closed:
             raise RuntimeError("QdrantLocal instance is closed. Please create a new instance.")
 
+        existed = collection_name in self.collections
         _collection = self.collections.pop(collection_name, None)
         del _collection
         self.aliases = {
@@ -803,7 +978,7 @@ class QdrantLocal(QdrantBase):
         if collection_path is not None:
             shutil.rmtree(collection_path, ignore_errors=True)
         self._save()
-        return True
+        return existed
 
     def create_collection(
         self,
@@ -814,13 +989,31 @@ class QdrantLocal(QdrantBase):
         # accepted for signature parity with the remote client and ignored: memory placement
         # is meaningless in local mode
         payload: types.PayloadStorageParams | None = None,
+        id_tracker: types.IdTrackerParams | None = None,
         **kwargs: Any,
     ) -> bool:
         if self.closed:
             raise RuntimeError("QdrantLocal instance is closed. Please create a new instance.")
 
+        self._validate_new_collection_name(collection_name)
+        if isinstance(vectors_config, Mapping):
+            for vector_name, vector_params in vectors_config.items():
+                self._validate_new_vector_name(vector_name, "dense")
+                self._validate_new_vector_size(vector_params.size)
+        elif vectors_config is not None:
+            self._validate_new_vector_size(vectors_config.size)
+        for vector_name in sparse_vectors_config or {}:
+            self._validate_new_vector_name(vector_name, "sparse")
+        # the server reserves the empty name for the default dense vector
+        if sparse_vectors_config is not None and "" in sparse_vectors_config:
+            raise ValueError("Sparse vector name cannot be empty")
         if collection_name in self.collections:
             raise ValueError(f"Collection {collection_name} already exists")
+        # a collection must not take the name of an existing alias either
+        if collection_name in self.aliases:
+            raise ValueError(f"Alias {collection_name} already exists")
+        # stored as JSON, like the server does: datetimes and UUIDs become strings
+        metadata = to_jsonable_python(metadata)
         collection_path = self._collection_path(collection_name)
         if collection_path is not None:
             os.makedirs(collection_path, exist_ok=True)
@@ -829,7 +1022,7 @@ class QdrantLocal(QdrantBase):
             rest_models.CreateCollection(
                 vectors=vectors_config or {},
                 sparse_vectors=sparse_vectors_config,
-                metadata=deepcopy(metadata),
+                metadata=metadata,
             ),
             location=collection_path,
             force_disable_check_same_thread=self.force_disable_check_same_thread,
@@ -846,8 +1039,10 @@ class QdrantLocal(QdrantBase):
         sparse_vectors_config: Mapping[str, types.SparseVectorParams] | None = None,
         metadata: types.Payload | None = None,
         payload: types.PayloadStorageParams | None = None,
+        id_tracker: types.IdTrackerParams | None = None,
         **kwargs: Any,
     ) -> bool:
+        self._validate_new_collection_name(collection_name)
         self.delete_collection(collection_name)
         return self.create_collection(
             collection_name,
@@ -855,6 +1050,7 @@ class QdrantLocal(QdrantBase):
             sparse_vectors_config,
             metadata=metadata,
             payload=payload,
+            id_tracker=id_tracker,
         )
 
     def upload_points(
@@ -878,18 +1074,17 @@ class QdrantLocal(QdrantBase):
         update_mode: types.UpdateMode | None = None,
     ) -> None:
         collection = self._get_collection(collection_name)
-        collection.upsert(
-            [
-                rest_models.PointStruct(
-                    id=point.id,
-                    vector=point.vector or {},
-                    payload=point.payload or {},
-                )
-                for point in points
-            ],
-            update_filter=update_filter,
-            update_mode=update_mode,
-        )
+        point_structs = [
+            rest_models.PointStruct(
+                id=point.id,
+                vector=point.vector or {},
+                payload=point.payload or {},
+            )
+            for point in points
+        ]
+        # remote mode sends no request for an empty upload, while an empty upsert is an error
+        if len(point_structs) > 0:
+            collection.upsert(point_structs, update_filter=update_filter, update_mode=update_mode)
 
     def upload_collection(
         self,
@@ -908,9 +1103,8 @@ class QdrantLocal(QdrantBase):
 
         collection = self._get_collection(collection_name)
         if isinstance(vectors, dict) and any(isinstance(v, np.ndarray) for v in vectors.values()):
-            assert (
-                len(set([arr.shape[0] for arr in vectors.values()])) == 1
-            ), "Each named vector should have the same number of vectors"
+            if len(set([arr.shape[0] for arr in vectors.values()])) != 1:
+                raise ValueError("Each named vector should have the same number of vectors")
 
             num_vectors = next(iter(vectors.values())).shape[0]
             # convert dict[str, np.ndarray] to list[dict[str, list[float]]]
@@ -919,22 +1113,21 @@ class QdrantLocal(QdrantBase):
                 for i in range(num_vectors)
             ]
 
-        collection.upsert(
-            [
-                rest_models.PointStruct(
-                    id=str(point_id) if isinstance(point_id, uuid.UUID) else point_id,
-                    vector=(vector.tolist() if isinstance(vector, np.ndarray) else vector) or {},
-                    payload=payload or {},
-                )
-                for (point_id, vector, payload) in zip(
-                    ids or uuid_generator(),
-                    iter(vectors),
-                    payload or itertools.cycle([{}]),
-                )
-            ],
-            update_filter=update_filter,
-            update_mode=update_mode,
-        )
+        point_structs = [
+            rest_models.PointStruct(
+                id=str(point_id) if isinstance(point_id, uuid.UUID) else point_id,
+                vector=(vector.tolist() if isinstance(vector, np.ndarray) else vector) or {},
+                payload=payload or {},
+            )
+            for (point_id, vector, payload) in zip(
+                uuid_generator() if ids is None else ids,
+                iter(vectors),
+                itertools.cycle([{}]) if payload is None else payload,
+            )
+        ]
+        # remote mode sends no request for an empty upload, while an empty upsert is an error
+        if len(point_structs) > 0:
+            collection.upsert(point_structs, update_filter=update_filter, update_mode=update_mode)
 
     def create_payload_index(
         self,
@@ -944,23 +1137,36 @@ class QdrantLocal(QdrantBase):
         field_type: types.PayloadSchemaType | None = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
-        show_warning_once(
-            message="Payload indexes have no effect in the local Qdrant. Please use server Qdrant if you need payload indexes.",
-            category=UserWarning,
-            idx="create-local-payload-indexes",
-            stacklevel=5,
-        )
+        collection = self._get_collection(collection_name)
+        field_schema = field_schema if field_schema is not None else field_type
+        if field_schema is not None:
+            collection.create_payload_index(field_name, field_schema)
+            self._save()
+
+        # text indexes with scoring are the only ones serving queries in local mode
+        if field_name not in collection.text_indexes:
+            show_warning_once(
+                message="Payload indexes have no effect in the local Qdrant, except text indexes with `scoring`, which enable text queries. Please use server Qdrant if you need payload indexes.",
+                category=UserWarning,
+                idx="create-local-payload-indexes",
+                stacklevel=5,
+            )
         return self._default_update_result()
 
     def delete_payload_index(
         self, collection_name: str, field_name: str, **kwargs: Any
     ) -> types.UpdateResult:
-        show_warning_once(
-            message="Payload indexes have no effect in the local Qdrant. Please use server Qdrant if you need payload indexes.",
-            category=UserWarning,
-            idx="delete-local-payload-indexes",
-            stacklevel=5,
-        )
+        collection = self._get_collection(collection_name)
+        if field_name not in collection.text_indexes:
+            show_warning_once(
+                message="Payload indexes have no effect in the local Qdrant, except text indexes with `scoring`, which enable text queries. Please use server Qdrant if you need payload indexes.",
+                category=UserWarning,
+                idx="delete-local-payload-indexes",
+                stacklevel=5,
+            )
+
+        collection.delete_payload_index(field_name)
+        self._save()
         return self._default_update_result()
 
     def create_vector_name(
@@ -972,8 +1178,11 @@ class QdrantLocal(QdrantBase):
     ) -> types.UpdateResult:
         collection = self._get_collection(collection_name)
         if isinstance(vector_name_config, rest_models.DenseVectorNameConfig):
+            self._validate_new_vector_name(vector_name, "dense")
+            self._validate_new_vector_size(vector_name_config.dense.size)
             collection.create_dense_vector_name(vector_name, vector_name_config.dense)
         elif isinstance(vector_name_config, rest_models.SparseVectorNameConfig):
+            self._validate_new_vector_name(vector_name, "sparse")
             collection.create_sparse_vector_name(vector_name, vector_name_config.sparse)
         else:
             raise ValueError(f"Unsupported vector name config type: {type(vector_name_config)}")
@@ -1126,7 +1335,7 @@ class QdrantLocal(QdrantBase):
         **kwargs: Any,
     ) -> types.OptimizationsResponse:
         raise NotImplementedError(
-            "Get optimizations is not supported in the local Qdrant. " "Please use server Qdrant."
+            "Get optimizations is not supported in the local Qdrant. Please use server Qdrant."
         )
 
     def list_shard_keys(

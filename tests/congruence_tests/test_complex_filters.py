@@ -13,6 +13,7 @@ from tests.congruence_tests.test_common import (
     init_local,
     init_remote,
 )
+from tests.utils import read_version
 
 
 def test_nested_query():
@@ -167,6 +168,7 @@ def test_slices_cover_all_points(random_ids: bool):
             assert local_ids == remote_ids, f"slice {index} of {total} differs between clients"
 
 
+@pytest.mark.parametrize("num_points", [10, 0], ids=["populated", "empty"])
 @pytest.mark.parametrize(
     "total,index,reported",
     [
@@ -178,9 +180,13 @@ def test_slices_cover_all_points(random_ids: bool):
         (2, -1, "index"),
     ],
 )
-def test_invalid_slice_is_rejected(total: int, index: int, reported: str):
-    """`index` must be within `0..total`, and `total` at least 1, on both clients."""
-    fixture_points = generate_fixtures(num=10)
+def test_invalid_slice_is_rejected(total: int, index: int, reported: str, num_points: int):
+    """`index` must be within `0..total`, and `total` at least 1, on both clients.
+
+    Empty collections included: the values are invalid on their own, so validating them
+    while scanning points means never validating them when there are none.
+    """
+    fixture_points = generate_fixtures(num=num_points) if num_points else []
 
     local_client = init_local()
     init_client(local_client, fixture_points)
@@ -227,6 +233,175 @@ def test_slice_condition_inside_nested_filter():
         lambda client: client.scroll(
             COLLECTION_NAME, scroll_filter=models.Filter(must=[nested]), limit=100
         )[0],
+    )
+
+
+def min_should_filter(min_count: int, conditions: list | None = None) -> models.Filter:
+    if conditions is None:
+        conditions = [models.FieldCondition(key="rand_digit", match=models.MatchValue(value=1))]
+    return models.Filter(min_should=models.MinShould(conditions=conditions, min_count=min_count))
+
+
+def nested_condition(inner: models.Filter) -> models.NestedCondition:
+    return models.NestedCondition(nested=models.Nested(key="nested.array", filter=inner))
+
+
+@pytest.mark.parametrize(
+    "scroll_filter",
+    [
+        min_should_filter(0),
+        min_should_filter(-1),
+        models.Filter(must=[min_should_filter(0)]),
+        models.Filter(must_not=[min_should_filter(0)]),
+        min_should_filter(1, conditions=[min_should_filter(0)]),
+        models.Filter(must=[nested_condition(min_should_filter(0))]),
+        models.Filter(should=[models.Filter(must=[min_should_filter(0)])]),
+    ],
+    ids=[
+        "zero",
+        "negative",
+        "in_must",
+        "in_must_not",
+        "in_min_should_conditions",
+        "through_nested_condition",
+        "two_levels_deep",
+    ],
+)
+def test_invalid_min_count_is_rejected(scroll_filter: models.Filter):
+    """`min_count` must be at least 1, at any depth, on both clients.
+
+    Local mode evaluates `min_should` as `matches >= min_count`, so anything at or below
+    zero is trivially true for every point and the whole collection comes back instead of
+    being rejected - the worst direction for a filter to be wrong in.
+    """
+    fixture_points = generate_fixtures(num=10)
+
+    local_client = init_local()
+    init_client(local_client, fixture_points)
+
+    remote_client = init_remote()
+    init_client(remote_client, fixture_points)
+
+    # local mode names the offending parameter, the server reports its own validation error;
+    # the point is that neither silently accepts it
+    with pytest.raises(ValueError, match="min_count"):
+        local_client.scroll(COLLECTION_NAME, scroll_filter=scroll_filter, limit=10)
+
+    with pytest.raises(UnexpectedResponse):
+        remote_client.scroll(COLLECTION_NAME, scroll_filter=scroll_filter, limit=10)
+
+
+@pytest.mark.parametrize("num_points", [10, 0], ids=["populated", "empty"])
+def test_invalid_min_count_is_rejected_on_every_filter_path(num_points: int):
+    """Reads and `update_filter` writes alike, and on an empty collection too.
+
+    The `update_filter` paths check points directly instead of building a payload mask, and
+    `scroll` returns early when the collection is empty, so each needs the filter validated
+    where it enters the collection rather than deep in the scan.
+    """
+    fixture_points = generate_fixtures(num=10)
+    point = fixture_points[0]
+
+    local_client = init_local()
+    init_client(local_client, fixture_points[:num_points])
+
+    remote_client = init_remote()
+    init_client(remote_client, fixture_points[:num_points])
+
+    flt = min_should_filter(0)
+    # `delete` and `clear_payload` are left out on purpose: the server does not validate the
+    # filter on those two requests and happily wipes everything, so local mode rejecting them
+    # is a deliberate divergence rather than a congruence failure.
+    operations = [
+        lambda client: client.scroll(COLLECTION_NAME, scroll_filter=flt, limit=10),
+        lambda client: client.count(COLLECTION_NAME, count_filter=flt),
+        lambda client: client.upsert(
+            COLLECTION_NAME, points=[point], update_filter=flt, wait=True
+        ),
+        lambda client: client.update_vectors(
+            COLLECTION_NAME,
+            points=[models.PointVectors(id=point.id, vector=point.vector)],
+            update_filter=flt,
+            wait=True,
+        ),
+    ]
+
+    for operation in operations:
+        with pytest.raises(ValueError, match="min_count"):
+            operation(local_client)
+
+        with pytest.raises(UnexpectedResponse):
+            operation(remote_client)
+
+
+@pytest.mark.parametrize(
+    "except_",
+    [[1], [], ["x"]],
+    ids=["excluded_value", "nothing_excluded", "other_type"],
+)
+def test_match_except_does_not_match_null(except_: list):
+    """A null payload value is absence, not a value which happens to differ from every entry
+    in the `except` list. The server drops nulls before matching, so a field whose only value
+    is null never satisfies an `except` condition - and neither does `[1, None]` when 1 is
+    excluded.
+    """
+    values = [
+        1,  # a value the `except` list excludes
+        5,  # a value it keeps
+        "x",  # a value of another type
+        None,  # an explicit null
+        [1, None],  # an array holding a null beside an excluded value
+        [None],  # an array holding nothing but a null
+    ]
+
+    fixture_points = generate_fixtures(num=len(values) + 1)
+    for point, value in zip(fixture_points, values):
+        point.payload = {"n": value}
+    fixture_points[-1].payload = {"other": 1}  # the key absent altogether
+
+    local_client = init_local()
+    init_client(local_client, fixture_points)
+
+    remote_client = init_remote()
+    init_client(remote_client, fixture_points)
+
+    compare_client_results(
+        local_client,
+        remote_client,
+        scroll_with_filter,
+        scroll_filter=models.Filter(
+            must=[models.FieldCondition(key="n", match=models.MatchExcept(**{"except": except_}))]
+        ),
+    )
+
+
+@pytest.mark.parametrize(
+    "filter_",
+    [
+        models.Filter(should=[]),
+        models.Filter(must=[], must_not=[], should=[]),
+    ],
+    ids=["should", "all_clauses"],
+)
+def test_empty_should_is_not_a_constraint(filter_: models.Filter):
+    """An empty `should` states no alternatives to satisfy, not an unsatisfiable one. The
+    server reads it as no constraint and returns every point, while `any([])` is False, so a
+    literal reading returns none - the exact inverse. `must` and `must_not` are `all(...)`,
+    vacuously true when empty, and already agree.
+    """
+    fixture_points = generate_fixtures(num=10)
+
+    local_client = init_local()
+    init_client(local_client, fixture_points)
+
+    remote_client = init_remote()
+    init_client(remote_client, fixture_points)
+
+    compare_client_results(
+        local_client,
+        remote_client,
+        scroll_with_filter,
+        scroll_filter=filter_,
     )
 
 
@@ -277,3 +452,296 @@ def test_nested_filter_payload_shapes(key: str):
         scroll_with_filter,
         scroll_filter=nested_filter,
     )
+
+
+def test_nested_filter_skips_non_object_elements():
+    """Only the objects in the array are checked against a nested filter. A null, string or
+    number element has no fields, so it must not satisfy a condition that holds when a field
+    is missing.
+    """
+    shapes = [
+        [{"name": "qdrant"}, None],
+        [{"name": "qdrant"}, "qdrant"],
+        [{"name": "qdrant"}, 42],
+        [{"name": "qdrant"}, {"name": None}],
+        [{"name": "qdrant"}, {"other": 1}],
+    ]
+
+    fixture_points = generate_fixtures(num=len(shapes))
+    for point, shape in zip(fixture_points, shapes):
+        point.payload = {"company": shape}
+
+    local_client = init_local()
+    init_client(local_client, fixture_points)
+
+    remote_client = init_remote()
+    init_client(remote_client, fixture_points)
+
+    for nested_filter in (
+        models.Filter(
+            must_not=[models.FieldCondition(key="name", match=models.MatchValue(value="qdrant"))]
+        ),
+        models.Filter(must=[models.IsEmptyCondition(is_empty=models.PayloadField(key="name"))]),
+        models.Filter(
+            must=[models.FieldCondition(key="name", values_count=models.ValuesCount(lt=1))]
+        ),
+    ):
+        compare_client_results(
+            local_client,
+            remote_client,
+            scroll_with_filter,
+            scroll_filter=models.Filter(
+                must=[
+                    models.NestedCondition(
+                        nested=models.Nested(key="company", filter=nested_filter)
+                    )
+                ]
+            ),
+        )
+
+
+def test_array_selected_by_index_is_flattened():
+    """An array selected by `[]` or `[i]` is unwrapped one level, like one selected by a key."""
+    payloads = [
+        {"a": [[1, 2], [3]]},
+        {"a": [1, [4]]},
+        {"a": [[[1]]]},  # one level too deep for `a[]` and `a[0]`
+        {"a": [[], [5]]},
+    ]
+
+    fixture_points = generate_fixtures(num=len(payloads))
+    for point, payload in zip(fixture_points, payloads):
+        point.payload = payload
+
+    local_client = init_local()
+    init_client(local_client, fixture_points)
+
+    remote_client = init_remote()
+    init_client(remote_client, fixture_points)
+
+    for key in ["a[]", "a[0]", "a[1]", "a[][]"]:
+        for condition in (
+            models.FieldCondition(key=key, match=models.MatchValue(value=1)),
+            models.FieldCondition(key=key, range=models.Range(gte=2)),
+        ):
+            compare_client_results(
+                local_client,
+                remote_client,
+                scroll_with_filter,
+                scroll_filter=models.Filter(must=[condition]),
+            )
+
+
+@pytest.mark.parametrize(
+    "match",
+    [
+        models.MatchText(text="fly"),
+        models.MatchText(text="FLY"),
+        models.MatchText(text="good cheap"),
+        models.MatchPhrase(phrase="alpha beta"),
+        models.MatchPhrase(phrase="Alpha, Beta!"),
+        models.MatchPhrase(phrase="good"),
+        models.MatchTextAny(text_any="good fly"),
+    ],
+    ids=[
+        "text_word",
+        "text_uppercase",
+        "text_two_words",
+        "phrase_two_words",
+        "phrase_punctuated",
+        "phrase_one_word",
+        "text_any",
+    ],
+)
+def test_text_match_on_unindexed_field(match: models.Match):
+    """On a field without a text index the server tokenizes both sides with the default word
+    tokenizer - split on non-alphanumeric, lowercased - and matches whole tokens rather than
+    substrings, so "fly" does not match "butterfly". `MatchText` accepts the query tokens in
+    any order, `MatchPhrase` only consecutively, and `MatchTextAny` needs just one of them.
+    """
+    major, minor, patch, dev = read_version()
+    if not dev and None not in (major, minor, patch) and (major, minor, patch) < (1, 19, 2):
+        pytest.skip("Unindexed text match stops matching substrings as of qdrant 1.19.2")
+
+    values = [
+        "goodness only",  # substring of the query, not a token
+        "good cheap stuff",
+        "cheap hardware good",  # query tokens present, reversed
+        "cheap hardware",  # only one of two query tokens
+        "fly agaric",
+        "come fly, with me",  # token followed by punctuation
+        "butterfly dragonfly",  # substrings only
+        "foo alpha beta bar",
+        "beta alpha",
+        "alpha x beta",  # in order but not consecutive
+        "alphabeta",  # a single token, not two
+        "goodness only good",
+        7,  # a non-string value has no tokens
+    ]
+
+    fixture_points = generate_fixtures(num=len(values) + 1)
+    for point, value in zip(fixture_points, values):
+        point.payload = {"words": value}
+    fixture_points[-1].payload = {"other": 1}  # the key absent altogether
+
+    local_client = init_local()
+    init_client(local_client, fixture_points)
+
+    remote_client = init_remote()
+    init_client(remote_client, fixture_points)
+
+    compare_client_results(
+        local_client,
+        remote_client,
+        scroll_with_filter,
+        scroll_filter=models.Filter(must=[models.FieldCondition(key="words", match=match)]),
+    )
+
+
+def test_substring_match():
+    major, minor, patch, dev = read_version()
+    if not dev and None not in (major, minor, patch) and (major, minor, patch) < (1, 19, 2):
+        pytest.skip("Substring match is available as of qdrant 1.19.2")
+
+    values = ["https://qdrant.tech", 1]
+    # no index, a keyword index, a keyword index with `prefix`
+    keys = ["url", "url_keyword", "url_prefix"]
+
+    fixture_points = generate_fixtures(num=len(values))
+    for point, value in zip(fixture_points, values):
+        point.payload = {key: value for key in keys}
+
+    local_client = init_local()
+    init_client(local_client, fixture_points)
+
+    remote_client = init_remote()
+    init_client(remote_client, fixture_points)
+    remote_client.create_payload_index(
+        COLLECTION_NAME, "url_keyword", field_schema=models.PayloadSchemaType.KEYWORD
+    )
+    remote_client.create_payload_index(
+        COLLECTION_NAME,
+        "url_prefix",
+        field_schema=models.KeywordIndexParams(type=models.KeywordIndexType.KEYWORD, prefix=True),
+    )
+
+    grpc_client = init_remote(prefer_grpc=True)
+
+    # in the middle of a value, case-sensitive, never in a number, empty
+    for substring in ("qdrant", "QDRANT", "1", ""):
+        for key in keys:
+            scroll_filter = models.Filter(
+                must=[
+                    models.FieldCondition(
+                        key=key, match=models.MatchSubstring(substring=substring)
+                    )
+                ]
+            )
+            for client in (remote_client, grpc_client):
+                compare_client_results(
+                    local_client, client, scroll_with_filter, scroll_filter=scroll_filter
+                )
+
+
+@pytest.mark.parametrize("key", ["a", "nested[].empty"])
+def test_is_null_matches_null_inside_arrays(key: str):
+    """A value counts as null when it is null itself or is an array holding a null element,
+    one level deep - so `[null, 1]` matches while `[[null]]` does not.
+    """
+    major, minor, patch, dev = read_version()
+    if not dev and None not in (major, minor, patch) and (major, minor, patch) < (1, 19, 1):
+        pytest.skip("is_null matches an array holding a null as of qdrant 1.19.1")
+
+    payloads = [
+        {"a": [None, 1]},
+        {"a": [1, None]},
+        {"a": [1, 2]},
+        {"a": None},
+        {"a": [[None]]},  # the null is one level too deep
+        {"a": []},
+        {"nested": [{"empty": [None]}, {"empty": [None]}]},
+        {"nested": [{"empty": 1}]},
+        {"other": 1},  # the key absent altogether
+    ]
+
+    fixture_points = generate_fixtures(num=len(payloads))
+    for point, payload in zip(fixture_points, payloads):
+        point.payload = payload
+
+    local_client = init_local()
+    init_client(local_client, fixture_points)
+
+    remote_client = init_remote()
+    init_client(remote_client, fixture_points)
+
+    compare_client_results(
+        local_client,
+        remote_client,
+        scroll_with_filter,
+        scroll_filter=models.Filter(
+            must=[models.IsNullCondition(is_null=models.PayloadField(key=key))]
+        ),
+    )
+
+
+def is_empty_is_null_clients() -> tuple[QdrantBase, QdrantBase]:
+    is_empty_is_null_payloads = [
+        {"field": [1, 2]},  # non-empty array: neither empty nor null
+        {"field": []},  # empty array: empty, not null
+        {"field": None},  # null: both empty and null
+        {"other": 1},  # the key absent altogether: empty, not null
+        {"field": [None, 1]},  # array holding a null: not empty, but null
+        {"field": 0},  # scalars and objects are neither
+        {"field": ""},
+        {"field": {"a": 1}},
+        # the same shapes under a nested key, and under a key resolving to several values
+        {"nested": {"field": None}},
+        {"nested": {"field": []}},
+        {"nested": {}},
+        {"nested": {"field": [1, 2]}},
+        {"array": [{"field": 1}, {"field": None}]},
+        {"array": [{"field": 1}, {"field": 2}]},
+        {"array": []},
+        {"array": [{"field": []}, {"field": 1}]},
+    ]
+
+    fixture_points = generate_fixtures(num=len(is_empty_is_null_payloads))
+    for point, payload in zip(fixture_points, is_empty_is_null_payloads):
+        point.payload = payload
+
+    local_client = init_local()
+    init_client(local_client, fixture_points)
+
+    remote_client = init_remote()
+    init_client(remote_client, fixture_points)
+
+    for client in (local_client, remote_client):
+        for key in ("field", "nested.field", "array[].field"):
+            client.create_payload_index(
+                COLLECTION_NAME, key, models.PayloadSchemaType.INTEGER, wait=True
+            )
+
+    return local_client, remote_client
+
+
+@pytest.mark.parametrize("key", ["field", "nested.field", "array[].field"])
+@pytest.mark.parametrize("flag", ["is_empty", "is_null"])
+@pytest.mark.parametrize("value", [True, False])
+def test_field_condition_is_empty_is_null(key: str, flag: str, value: bool):
+    """`FieldCondition.is_empty` / `is_null` are the shorthand syntax for `IsEmptyCondition` /
+    `IsNullCondition`, and local mode used to ignore them outright - matching nothing under
+    `must` and everything under `must_not`.
+    """
+    local_client, remote_client = is_empty_is_null_clients()
+
+    condition = models.FieldCondition(key=key, **{flag: value})
+    for scroll_filter in (
+        models.Filter(must=[condition]),
+        models.Filter(must_not=[condition]),
+    ):
+        compare_client_results(
+            local_client,
+            remote_client,
+            scroll_with_filter,
+            scroll_filter=scroll_filter,
+        )

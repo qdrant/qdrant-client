@@ -1,35 +1,6 @@
-import time
-from typing import Iterable
-
 from qdrant_client._pydantic_compat import to_dict, model_fields
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.http import models
-
-
-def upload_with_retry(
-    client: QdrantBase,
-    collection_name: str,
-    points: Iterable[models.PointStruct],
-    max_attempts: int = 3,
-    pause: float = 3.0,
-) -> None:
-    attempts = 1
-    while attempts <= max_attempts:
-        try:
-            client.upload_points(
-                collection_name=collection_name,
-                points=points,
-                wait=True,
-            )
-            return
-        except Exception as e:
-            print(f"Exception: {e}, attempt {attempts}/{max_attempts}")
-            if attempts < max_attempts:
-                print(f"Next attempt in {pause} seconds")
-                time.sleep(pause)
-            attempts += 1
-
-    raise Exception(f"Failed to upload points after {max_attempts} attempts")
 
 
 def migrate(
@@ -49,8 +20,12 @@ def migrate(
             If None - migrate all source client collections. Defaults to None.
         recreate_on_collision (bool, optional): If True - recreate collection if it exists, otherwise
             raise ValueError.
-        batch_size (int, optional): Batch size for scrolling and uploading vectors. Defaults to 100.
+        batch_size (int, optional): Scroll page size, must be positive. Points are uploaded in
+            batches of 64, the `upload_points` default. Defaults to 100.
     """
+    if batch_size <= 0:
+        raise ValueError(f"batch_size must be greater than 0, got {batch_size}")
+
     collection_names = _select_source_collections(source_client, collection_names)
     if any(
         _has_custom_shards(source_client, collection_name) for collection_name in collection_names
@@ -89,7 +64,9 @@ def _select_source_collections(
     if collection_names is not None:
         assert all(
             collection_name in source_collection_names for collection_name in collection_names
-        ), f"Source client does not have collections: {set(collection_names) - set(source_collection_names)}"
+        ), (
+            f"Source client does not have collections: {set(collection_names) - set(source_collection_names)}"
+        )
     else:
         collection_names = source_collection_names
 
@@ -136,6 +113,9 @@ def _recreate_collection(
         wal_config=models.WalConfigDiff(**to_dict(src_config.wal_config)),
         quantization_config=src_config.quantization_config,
         strict_mode_config=strict_mode_config,
+        metadata=src_config.metadata,
+        payload=src_config.params.payload,
+        id_tracker=src_config.params.id_tracker,
     )
 
     _recreate_payload_schema(dest_client, collection_name, src_payload_schema)
@@ -166,17 +146,18 @@ def _migrate_collection(
         collection_name (str): Collection name
         source_client (QdrantBase): Source client
         dest_client (QdrantBase): Destination client
-        batch_size (int, optional): Batch size for scrolling and uploading vectors. Defaults to 100.
+        batch_size (int, optional): Scroll page size. Points are uploaded in batches of 64, the
+            `upload_points` default. Defaults to 100.
     """
     records, next_offset = source_client.scroll(collection_name, limit=2, with_vectors=True)
-    upload_with_retry(client=dest_client, collection_name=collection_name, points=records)  # type: ignore
+    dest_client.upload_points(collection_name, records, wait=True)  # type: ignore
     while next_offset is not None:
         records, next_offset = source_client.scroll(
             collection_name, offset=next_offset, limit=batch_size, with_vectors=True
         )
-        upload_with_retry(client=dest_client, collection_name=collection_name, points=records)  # type: ignore
+        dest_client.upload_points(collection_name, records, wait=True)  # type: ignore
     source_client_vectors_count = source_client.count(collection_name).count
     dest_client_vectors_count = dest_client.count(collection_name).count
-    assert (
-        source_client_vectors_count == dest_client_vectors_count
-    ), f"Migration failed, vectors count are not equal: source vector count {source_client_vectors_count}, dest vector count {dest_client_vectors_count}"
+    assert source_client_vectors_count == dest_client_vectors_count, (
+        f"Migration failed, vectors count are not equal: source vector count {source_client_vectors_count}, dest vector count {dest_client_vectors_count}"
+    )

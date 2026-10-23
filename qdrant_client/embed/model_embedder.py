@@ -1,4 +1,5 @@
 import os
+import sys
 from collections import defaultdict
 from copy import deepcopy
 from multiprocessing import get_all_start_methods
@@ -120,7 +121,16 @@ class ModelEmbedder:
             if parallel == 0:
                 parallel = os.cpu_count()
 
-            start_method = "forkserver" if "forkserver" in get_all_start_methods() else "spawn"
+            if sys.platform == "darwin":
+                # On macOS, a worker forked from a process that has ever run a thread aborts
+                # when it initializes an Objective-C class, as importing onnxruntime or the
+                # system proxy lookup of a model download does. Since Python 3.15 the
+                # forkserver imports the main script, so one thread started by its imports
+                # (`import grpc` starts one) crashes every worker. spawn is also CPython's
+                # default start method on macOS.
+                start_method = "spawn"
+            else:
+                start_method = "forkserver" if "forkserver" in get_all_start_methods() else "spawn"
             assert parallel is not None  # just a mypy complaint
             pool = ParallelWorkerPool(
                 num_workers=parallel,
@@ -154,21 +164,29 @@ class ModelEmbedder:
         if not self._is_builtin_embedder_available:
             FastEmbedMisc.import_fastembed()  # fail fast if fastembed is required
 
-        for raw_model in raw_models:
-            self._process_model(raw_model, is_query=is_query, accumulating=True)
+        # an abandoned generator which is still referenced has not run its `finally` yet
+        self._batch_accumulator.clear()
+        self._embed_storage.clear()
+        try:
+            for raw_model in raw_models:
+                self._process_model(raw_model, is_query=is_query, accumulating=True)
 
-        if not self._batch_accumulator:
-            yield from raw_models
-        else:
-            yield from (
-                self._process_model(
-                    raw_model,
-                    is_query=is_query,
-                    accumulating=False,
-                    inference_batch_size=inference_batch_size,
+            if not self._batch_accumulator:
+                yield from raw_models
+            else:
+                yield from (
+                    self._process_model(
+                        raw_model,
+                        is_query=is_query,
+                        accumulating=False,
+                        inference_batch_size=inference_batch_size,
+                    )
+                    for raw_model in raw_models
                 )
-                for raw_model in raw_models
-            )
+        finally:
+            # do not leak state of a failed or abandoned batch into the next call
+            self._batch_accumulator.clear()
+            self._embed_storage.clear()
 
     def _process_model(
         self,
@@ -201,9 +219,9 @@ class ModelEmbedder:
             if accumulating:
                 self._accumulate(model)  # type: ignore
             else:
-                assert (
-                    inference_batch_size is not None
-                ), "inference_batch_size should be passed for inference"
+                assert inference_batch_size is not None, (
+                    "inference_batch_size should be passed for inference"
+                )
                 return self._drain_accumulator(
                     model,  # type: ignore
                     is_query=is_query,
@@ -252,9 +270,9 @@ class ModelEmbedder:
                     current_model = current_model if was_list else [current_model]
 
                     if not accumulating:
-                        assert (
-                            inference_batch_size is not None
-                        ), "inference_batch_size should be passed for inference"
+                        assert inference_batch_size is not None, (
+                            "inference_batch_size should be passed for inference"
+                        )
                         embeddings = [
                             self._drain_accumulator(
                                 data, is_query=is_query, inference_batch_size=inference_batch_size

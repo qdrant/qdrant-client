@@ -1,9 +1,16 @@
 import inspect
+import json
 import logging
 import re
-from datetime import date, datetime, timedelta, timezone
+import uuid
+from collections import OrderedDict, defaultdict, namedtuple
+from datetime import date, datetime, time, timedelta, timezone
+from decimal import Decimal
+from enum import Enum, IntEnum
 from inspect import getmembers
+from pathlib import Path
 
+import numpy as np
 import pytest
 from google.protobuf.json_format import MessageToDict
 
@@ -77,9 +84,9 @@ def test_conversion_completeness():
                 # Is an enum
                 assert grpc_fixture == fixture, f"{model_class_name} conversion is broken"
             elif MessageToDict(grpc_fixture) != MessageToDict(fixture):
-                assert MessageToDict(grpc_fixture) == MessageToDict(
-                    fixture
-                ), f"{model_class_name} conversion is broken"
+                assert MessageToDict(grpc_fixture) == MessageToDict(fixture), (
+                    f"{model_class_name} conversion is broken"
+                )
 
 
 def test_nested_filter():
@@ -234,6 +241,26 @@ def test_sparse_vector_batch_conversion():
     ]
 
 
+def test_point_insert_operation_rejects_mismatched_batch():
+    from qdrant_client.conversions.conversion import RestToGrpc
+    from qdrant_client.http.models import models as rest
+
+    vector = [1.0, 2.0, 3.0]
+    sparse_vector = rest.SparseVector(indices=[0], values=[1.0])
+
+    for batch in (
+        rest.Batch(ids=[1, 2], vectors=[vector] * 3),
+        rest.Batch(ids=[1, 2], vectors={"dense": [vector] * 2, "sparse": [sparse_vector]}),
+        rest.Batch(ids=[1, 2], vectors=[vector] * 2, payloads=[{}]),
+    ):
+        with pytest.raises(ValueError, match="number of ids and"):
+            RestToGrpc.convert_point_insert_operation(rest.PointsBatch(batch=batch))
+
+    # payloads are optional
+    batch = rest.Batch(ids=[1, 2], vectors={"dense": [vector] * 2}, payloads=None)
+    assert len(RestToGrpc.convert_point_insert_operation(rest.PointsBatch(batch=batch))) == 2
+
+
 def test_grpc_payload_scheme_conversion():
     from qdrant_client.conversions.conversion import (
         grpc_field_type_to_payload_schema,
@@ -276,9 +303,143 @@ def test_datetime_to_timestamp_conversions(dt: datetime | date):
     if isinstance(dt, date) and not isinstance(dt, datetime):
         dt = datetime.combine(dt, datetime.min.time())
 
-    assert (
-        dt.utctimetuple() == grpc_to_rest.utctimetuple()
-    ), f"Failed for {dt}, should be equal to {grpc_to_rest}"
+    assert dt.utctimetuple() == grpc_to_rest.utctimetuple(), (
+        f"Failed for {dt}, should be equal to {grpc_to_rest}"
+    )
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        uuid.UUID("5a6d1c3e-8f0b-4c55-9d6e-0a1b2c3d4e5f"),
+        Decimal("1.5"),
+        {1, 2},
+        frozenset({"a"}),
+        b"bytes",
+        datetime(2021, 1, 1, 12, 30, tzinfo=timezone.utc),
+        date(2021, 1, 1),
+        time(12, 30),
+        timedelta(hours=1),
+        Path("/tmp/file"),
+        {1: "non-str key"},
+        {"nested": [uuid.UUID(int=1), {"deeper": (Decimal("2"), b"x")}]},
+    ],
+    ids=lambda value: type(value).__name__,
+)
+def test_json_to_value_matches_rest_encoding(value):
+    from qdrant_client import models
+    from qdrant_client.conversions.conversion import json_to_value, value_to_json
+    from qdrant_client.http.api.points_api import jsonable_encoder
+
+    # the body the REST client sends for the same payload
+    rest_body = jsonable_encoder(models.SetPayload(payload={"value": value}, points=[1]))
+    rest_value = json.loads(rest_body)["payload"]["value"]
+
+    assert value_to_json(json_to_value(value)) == rest_value
+
+
+@pytest.mark.parametrize(
+    "value", [object(), np.float32(1.0), {object(): "key"}], ids=lambda value: type(value).__name__
+)
+def test_json_to_value_unsupported(value):
+    from qdrant_client.conversions.conversion import json_to_value
+
+    with pytest.raises(ValueError, match="Not supported json value"):
+        json_to_value(value)
+
+
+class IntColor(IntEnum):
+    RED = 1
+
+
+class StrColor(str, Enum):
+    RED = "red"
+
+
+@pytest.mark.parametrize(
+    "value, plain",
+    [
+        (IntColor.RED, 1),
+        (StrColor.RED, "red"),
+        (np.float64(1.5), 1.5),
+        ({StrColor.RED: [IntColor.RED]}, {"red": [1]}),
+        (namedtuple("Pair", "x y")(1, "a"), [1, "a"]),
+        (OrderedDict(a={"b": None}), {"a": {"b": None}}),
+        (defaultdict(list, a=True), {"a": True}),
+    ],
+    ids=lambda value: type(value).__name__,
+)
+def test_json_to_value_subclasses(value, plain):
+    from qdrant_client.conversions.conversion import json_to_value
+
+    # subclasses miss the exact type checks, but have to be encoded like the plain values
+    assert json_to_value(value) == json_to_value(plain)
+    assert json_to_value({"nested": value}) == json_to_value({"nested": plain})
+
+
+def test_json_to_value_struct_fields_as_messages(monkeypatch):
+    from qdrant_client import grpc
+    from qdrant_client.conversions import conversion
+    from tests.fixtures.payload import one_random_payload_please
+
+    if conversion.payload_to_grpc is conversion._payload_to_values:
+        pytest.skip("dicts as values of a map need protobuf >= 6.30")
+
+    payloads = [one_random_payload_please(i) for i in range(20)]
+    expected = [grpc.PointStruct(payload=conversion.payload_to_grpc(p)) for p in payloads]
+
+    # the path taken with protobuf < 6.30, which does not accept dicts as values of a map
+    monkeypatch.setattr(conversion, "payload_to_grpc", conversion._payload_to_values)
+    assert [grpc.PointStruct(payload=conversion.payload_to_grpc(p)) for p in payloads] == expected
+
+
+@pytest.mark.parametrize(
+    "field, value, expected",
+    [
+        ("integer_value", 2**63 - 1, 2**63 - 1),
+        ("integer_value", -(2**63), -(2**63)),
+        ("double_value", 1.0, 1.0),
+        ("double_value", -0.0, -0.0),
+        # non-finite doubles are returned as strings, the way MessageToDict renders them
+        ("double_value", float("nan"), "NaN"),
+        ("double_value", float("inf"), "Infinity"),
+        ("double_value", float("-inf"), "-Infinity"),
+        ("string_value", "", ""),
+        ("bool_value", False, False),
+        ("null_value", 0, None),
+    ],
+)
+def test_value_to_json_scalars(field, value, expected):
+    from qdrant_client.conversions.conversion import value_to_json
+    from qdrant_client.grpc import Value
+
+    result = value_to_json(Value(**{field: value}))
+    assert type(result) is type(expected)
+    assert repr(result) == repr(expected)  # tells -0.0 from 0.0
+
+
+def test_value_to_json_containers():
+    from qdrant_client.conversions.conversion import json_to_value, value_to_json
+    from qdrant_client.grpc import ListValue, Struct, Value
+
+    assert value_to_json(Value(struct_value=Struct())) == {}
+    assert value_to_json(Value(list_value=ListValue())) == []
+
+    payload = {"a": [1, 1.5, None, {"b": [True, "c", [], {}]}], "d": {"e": {"f": -1}}}
+    assert value_to_json(json_to_value(payload)) == payload
+
+
+def test_convert_points_empty_payload():
+    from qdrant_client import grpc
+    from qdrant_client.conversions.conversion import GrpcToRest, json_to_value
+
+    point_id = grpc.PointId(num=1)
+    assert GrpcToRest.convert_scored_point(grpc.ScoredPoint(id=point_id)).payload is None
+    assert GrpcToRest.convert_retrieved_point(grpc.RetrievedPoint(id=point_id)).payload == {}
+
+    payload = {"a": json_to_value(1)}
+    scored_point = GrpcToRest.convert_scored_point(grpc.ScoredPoint(id=point_id, payload=payload))
+    assert scored_point.payload == {"a": 1}
 
 
 def test_convert_context_input_flat_pair():
@@ -639,7 +800,153 @@ def test_convert_points_update_operation_falsy_shard_key():
             grpc_operation = RestToGrpc.convert_update_operation(operation)
             inner = getattr(grpc_operation, grpc_operation.WhichOneof("operation"))
 
-            assert inner.HasField(
-                "shard_key_selector"
-            ), f"{type(operation).__name__} dropped shard_key={shard_key!r}"
+            assert inner.HasField("shard_key_selector"), (
+                f"{type(operation).__name__} dropped shard_key={shard_key!r}"
+            )
             assert GrpcToRest.convert_shard_key_selector(inner.shard_key_selector) == shard_key
+            assert GrpcToRest.convert_points_update_operation(grpc_operation) == operation
+
+
+def test_convert_points_update_operation_empty_points():
+    """An empty `points` list must stay an empty id list, as the server treats it over REST.
+
+    It used to be dropped as falsy, so a filter sent alongside it touched every matching point.
+    """
+    from qdrant_client import models
+    from qdrant_client.conversions.conversion import RestToGrpc
+
+    filter_ = models.Filter(must=[models.HasIdCondition(has_id=[1, 2, 3])])
+
+    def make_operations(**selector):
+        return [
+            models.SetPayloadOperation(
+                set_payload=models.SetPayload(payload={"my_payload": 1}, **selector)
+            ),
+            models.OverwritePayloadOperation(
+                overwrite_payload=models.SetPayload(payload={"my_payload": 1}, **selector)
+            ),
+            models.DeletePayloadOperation(
+                delete_payload=models.DeletePayload(keys=["my_payload"], **selector)
+            ),
+            models.DeleteVectorsOperation(
+                delete_vectors=models.DeleteVectors(vector=["image"], **selector)
+            ),
+        ]
+
+    for selector in ({"points": []}, {"points": [], "filter": filter_}):
+        for operation in make_operations(**selector):
+            grpc_operation = RestToGrpc.convert_update_operation(operation)
+            points_selector = getattr(
+                grpc_operation, grpc_operation.WhichOneof("operation")
+            ).points_selector
+            name = points_selector.WhichOneof("points_selector_one_of")
+
+            assert name == "points", f"{type(operation).__name__} with {selector} sent {name}"
+            assert list(points_selector.points.ids) == []
+
+    for operation in make_operations():
+        with pytest.raises(ValueError, match=f"invalid {type(operation).__name__} model"):
+            RestToGrpc.convert_update_operation(operation)
+
+
+def test_convert_keyword_index_params_prefix():
+    from qdrant_client import models
+    from qdrant_client.conversions.conversion import GrpcToRest, RestToGrpc
+
+    def round_trip(prefix):
+        rest_params = models.KeywordIndexParams(
+            type=models.KeywordIndexType.KEYWORD, prefix=prefix
+        )
+        grpc_params = RestToGrpc.convert_keyword_index_params(rest_params)
+        return grpc_params, GrpcToRest.convert_keyword_index_params(grpc_params)
+
+    grpc_params, recovered = round_trip(True)
+    assert grpc_params.HasField("prefix")
+    assert recovered.prefix is True
+
+    grpc_params, recovered = round_trip(None)
+    assert not grpc_params.HasField("prefix")
+    assert recovered.prefix is None
+
+    # grpc.KeywordPrefixParams is an empty message whose presence enables prefix matching,
+    # so an explicit `prefix=False` cannot be represented in grpc: it is sent as absent
+    # (which the server also treats as disabled) and is recovered as `None`
+    grpc_params, recovered = round_trip(False)
+    assert not grpc_params.HasField("prefix")
+    assert recovered.prefix is None
+
+
+def test_convert_text_index_params_scoring():
+    from qdrant_client import models
+    from qdrant_client.conversions.conversion import GrpcToRest, RestToGrpc
+
+    def round_trip(scoring):
+        rest_params = models.TextIndexParams(type=models.TextIndexType.TEXT, scoring=scoring)
+        grpc_params = RestToGrpc.convert_text_index_params(rest_params)
+        return grpc_params, GrpcToRest.convert_text_index_params(grpc_params)
+
+    # `True` is a shortcut for BM25 with the default params, it is recovered in the full form,
+    # the same way the server returns it
+    grpc_params, recovered = round_trip(True)
+    assert grpc_params.HasField("scoring")
+    assert recovered.scoring == models.TextScoringParams(type=models.TextScoringType.BM25)
+
+    # `False` disables scoring, which is the same as leaving it unset
+    grpc_params, recovered = round_trip(False)
+    assert not grpc_params.HasField("scoring")
+    assert recovered.scoring is None
+
+
+def test_convert_update_result_operation_id_presence():
+    from qdrant_client import grpc
+    from qdrant_client.conversions.conversion import GrpcToRest, RestToGrpc
+
+    # `optional uint64 operation_id` carries explicit presence: the server leaves it
+    # unset for updates that were not assigned a sequence number
+    absent = grpc.UpdateResult(status=grpc.UpdateStatus.Completed)
+    assert not absent.HasField("operation_id")
+    assert GrpcToRest.convert_update_result(absent).operation_id is None
+    assert not RestToGrpc.convert_update_result(GrpcToRest.convert_update_result(absent)).HasField(
+        "operation_id"
+    )
+
+    # a real operation id of 0 must stay distinguishable from "no operation id"
+    zero = grpc.UpdateResult(operation_id=0, status=grpc.UpdateStatus.Completed)
+    assert GrpcToRest.convert_update_result(zero).operation_id == 0
+    round_tripped = RestToGrpc.convert_update_result(GrpcToRest.convert_update_result(zero))
+    assert round_tripped.HasField("operation_id")
+    assert round_tripped.operation_id == 0
+
+
+def test_convert_collection_info_points_count_presence():
+    from qdrant_client import grpc
+    from qdrant_client.conversions.conversion import GrpcToRest, RestToGrpc
+
+    config = grpc.CollectionConfig(
+        params=grpc.CollectionParams(shard_number=1),
+        hnsw_config=grpc.HnswConfigDiff(m=16, ef_construct=100, full_scan_threshold=10000),
+        optimizer_config=grpc.OptimizersConfigDiff(default_segment_number=2),
+        wal_config=grpc.WalConfigDiff(wal_capacity_mb=32, wal_segments_ahead=0),
+    )
+
+    # `optional uint64 points_count` carries explicit presence: an absent count means
+    # "not available", which is distinct from a collection that holds zero points.
+    absent = grpc.CollectionInfo(
+        status=grpc.CollectionStatus.Green,
+        optimizer_status=grpc.OptimizerStatus(ok=True),
+        segments_count=1,
+        config=config,
+    )
+    assert not absent.HasField("points_count")
+    assert GrpcToRest.convert_collection_info(absent).points_count is None
+    assert not RestToGrpc.convert_collection_info(
+        GrpcToRest.convert_collection_info(absent)
+    ).HasField("points_count")
+
+    zero = grpc.CollectionInfo()
+    zero.CopyFrom(absent)
+    zero.points_count = 0
+    assert GrpcToRest.convert_collection_info(zero).points_count == 0
+    round_tripped = RestToGrpc.convert_collection_info(GrpcToRest.convert_collection_info(zero))
+    assert round_tripped.HasField("points_count")
+    assert round_tripped.points_count == 0
