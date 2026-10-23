@@ -757,6 +757,30 @@ class LocalCollection:
 
         vectors = vectors[: len(self.payload)]
 
+        query_vectors: list[types.NumpyArray] = []  # sparse vectors have no fixed size
+        if isinstance(query_vector, np.ndarray):
+            query_vectors = [query_vector]
+        elif isinstance(query_vector, (RecoQuery, MultiRecoQuery)):
+            query_vectors = [*query_vector.positive, *query_vector.negative]
+        elif isinstance(query_vector, (DiscoveryQuery, MultiDiscoveryQuery)):
+            query_vectors = [query_vector.target]
+            for pair in query_vector.context:
+                query_vectors += [pair.positive, pair.negative]
+        elif isinstance(query_vector, (ContextQuery, MultiContextQuery)):
+            for pair in query_vector.context_pairs:
+                query_vectors += [pair.positive, pair.negative]
+        elif isinstance(query_vector, NaiveFeedbackQuery):
+            query_vectors = [item.vector for item in query_vector.feedback] + [query_vector.target]
+
+        # numpy broadcasts a one-element vector instead of failing like the server
+        for vector in query_vectors:
+            expected_dim = self.get_vector_params(name).size
+            if vector.shape[-1] != expected_dim:
+                raise ValueError(
+                    "Wrong input: Vector dimension error: "
+                    f"expected dim: {expected_dim}, got {vector.shape[-1]}"
+                )
+
         if isinstance(query_vector, np.ndarray):
             if len(query_vector.shape) == 1:
                 scores = calculate_distance(query_vector, vectors, distance)
