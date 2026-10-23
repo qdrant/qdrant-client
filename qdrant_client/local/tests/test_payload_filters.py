@@ -1,5 +1,7 @@
+import pytest
+
 from qdrant_client.http.models import models
-from qdrant_client.local.payload_filters import check_filter, check_match
+from qdrant_client.local.payload_filters import check_filter, check_match, unindexed_text_tokens
 
 
 def test_nested_payload_filters():
@@ -381,3 +383,43 @@ def test_geo_filters_ignore_nonfinite_coordinates():
         for value in (float("nan"), float("inf"), -float("inf"), 10**400):
             assert matching(geo_filter, {"lon": 0, "lat": value}) == [1, 3], f"{name} lat={value}"
             assert matching(geo_filter, {"lon": value, "lat": 0}) == [1, 3], f"{name} lon={value}"
+
+
+@pytest.mark.parametrize(
+    "value, expected",
+    [
+        ("क की", ["क", "की"]),
+        ("हिन्दी हिन्दू", ["हिन", "दी", "हिन", "दू"]),
+        ("a\u0345b", ["a\u0345b"]),  # Alphabetic combining mark
+        ("a\u0301b", ["a", "b"]),  # non-Alphabetic combining mark
+        ("café cafe\u0301", ["café", "cafe"]),  # no Unicode normalization
+        ("HELLO_world!", ["hello", "world"]),
+        ("İA", ["i\u0307a"]),  # tokenize before lowercasing
+        ("你好世界 日本語", ["你好世界", "日本語"]),
+        ("12²Ⅳ¼", ["12²ⅳ¼"]),  # Nd, No, and Nl are all numeric
+        ("", []),
+        ("_!\u0301", []),
+    ],
+)
+def test_unindexed_text_tokens_unicode_properties(value, expected):
+    assert unindexed_text_tokens(value) == expected
+
+
+@pytest.mark.parametrize(
+    "match_type, field",
+    [
+        (models.MatchText, "text"),
+        (models.MatchTextAny, "text_any"),
+        (models.MatchPhrase, "phrase"),
+    ],
+)
+def test_text_filters_preserve_alphabetic_marks(match_type, field):
+    def match(query):
+        return match_type(**{field: query})
+
+    assert check_match(match("की"), "की")
+    assert not check_match(match("क"), "की")
+    assert not check_match(match("की"), "क")
+    assert check_match(match("a\u0345b"), "a\u0345b")
+    assert not check_match(match("a b"), "a\u0345b")
+    assert check_match(match("a b"), "a\u0301b")
