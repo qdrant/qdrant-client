@@ -348,6 +348,11 @@ class AsyncQdrantBase:
     async def close(self, **kwargs: Any) -> None:
         pass
 
+    @property
+    def closed(self) -> bool:
+        """Whether close() has been called on this client."""
+        return False
+
     def migrate(
         self,
         dest_client: "AsyncQdrantBase",
