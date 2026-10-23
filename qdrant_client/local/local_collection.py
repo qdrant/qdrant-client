@@ -774,7 +774,7 @@ class LocalCollection:
         elif isinstance(query_vector, (ContextQuery, MultiContextQuery)):
             for pair in query_vector.context_pairs:
                 query_vectors += [pair.positive, pair.negative]
-        elif isinstance(query_vector, NaiveFeedbackQuery):
+        elif isinstance(query_vector, (NaiveFeedbackQuery, MultiNaiveFeedbackQuery)):
             query_vectors = [item.vector for item in query_vector.feedback] + [query_vector.target]
 
         # numpy broadcasts a one-element vector instead of failing like the server
