@@ -63,6 +63,12 @@ class TestSimpleSearcher:
         self.sparse_vector_query_image = generate_random_sparse_vector(
             sparse_image_vector_size, density=0.2
         )
+        self.sparse_vector_feedback_text = generate_random_sparse_vector(
+            sparse_text_vector_size, density=0.2
+        )
+        self.sparse_vector_feedback_image = generate_random_sparse_vector(
+            sparse_image_vector_size, density=0.2
+        )
 
         # multivector query vectors
         self.multivector_query_text = generate_random_multivector(text_vector_size, 3)
@@ -1331,6 +1337,98 @@ class TestSimpleSearcher:
                 )
             ),
             using="code",
+            with_payload=True,
+            limit=10,
+        )
+
+    def sparse_relevance_feedback_query_text(self, client: QdrantBase) -> models.QueryResponse:
+        return client.query_points(
+            collection_name=COLLECTION_NAME,
+            query=models.RelevanceFeedbackQuery(
+                relevance_feedback=models.RelevanceFeedbackInput(
+                    target=self.sparse_vector_query_text,
+                    feedback=[
+                        models.FeedbackItem(example=1, score=0.9),
+                        models.FeedbackItem(example=self.sparse_vector_feedback_text, score=0.8),
+                        models.FeedbackItem(example=3, score=0.7),
+                        models.FeedbackItem(example=4, score=0.6),
+                    ],
+                    strategy=models.NaiveFeedbackStrategy(
+                        naive=models.NaiveFeedbackStrategyParams(a=0.5, b=1.5, c=0.7)
+                    ),
+                )
+            ),
+            using="sparse-text",
+            with_payload=True,
+            limit=10,
+        )
+
+    def sparse_relevance_feedback_query_image(self, client: QdrantBase) -> models.QueryResponse:
+        return client.query_points(
+            collection_name=COLLECTION_NAME,
+            query=models.RelevanceFeedbackQuery(
+                relevance_feedback=models.RelevanceFeedbackInput(
+                    target=self.sparse_vector_query_image,
+                    feedback=[
+                        models.FeedbackItem(example=1, score=0.9),
+                        models.FeedbackItem(example=self.sparse_vector_feedback_image, score=0.8),
+                        models.FeedbackItem(example=3, score=0.7),
+                        models.FeedbackItem(example=4, score=0.6),
+                    ],
+                    strategy=models.NaiveFeedbackStrategy(
+                        naive=models.NaiveFeedbackStrategyParams(a=0.5, b=1.5, c=0.7)
+                    ),
+                )
+            ),
+            using="sparse-image",
+            with_payload=True,
+            limit=10,
+        )
+
+    def multivec_relevance_feedback_query_text(self, client: QdrantBase) -> models.QueryResponse:
+        # `multi-text` is a cosine MAX_SIM multivector, so the target and the feedback
+        # examples are scored against the points with MaxSim instead of a dense similarity
+        return client.query_points(
+            collection_name=COLLECTION_NAME,
+            query=models.RelevanceFeedbackQuery(
+                relevance_feedback=models.RelevanceFeedbackInput(
+                    target=self.multivector_query_text,
+                    feedback=[
+                        models.FeedbackItem(example=1, score=0.9),
+                        models.FeedbackItem(example=2, score=0.8),
+                        models.FeedbackItem(example=3, score=0.7),
+                        models.FeedbackItem(example=4, score=0.6),
+                    ],
+                    strategy=models.NaiveFeedbackStrategy(
+                        naive=models.NaiveFeedbackStrategyParams(a=0.5, b=1.0, c=0.7)
+                    ),
+                )
+            ),
+            using="multi-text",
+            with_payload=True,
+            limit=10,
+        )
+
+    def multivec_relevance_feedback_query_code(self, client: QdrantBase) -> models.QueryResponse:
+        # `multi-code` is a euclid MAX_SIM multivector: the results have to come back
+        # best-first, as for the dense euclid feedback query
+        return client.query_points(
+            collection_name=COLLECTION_NAME,
+            query=models.RelevanceFeedbackQuery(
+                relevance_feedback=models.RelevanceFeedbackInput(
+                    target=self.multivector_query_code,
+                    feedback=[
+                        models.FeedbackItem(example=1, score=0.9),
+                        models.FeedbackItem(example=2, score=0.8),
+                        models.FeedbackItem(example=3, score=0.7),
+                        models.FeedbackItem(example=4, score=0.6),
+                    ],
+                    strategy=models.NaiveFeedbackStrategy(
+                        naive=models.NaiveFeedbackStrategyParams(a=0.5, b=1.0, c=0.7)
+                    ),
+                )
+            ),
+            using="multi-code",
             with_payload=True,
             limit=10,
         )
@@ -3278,4 +3376,43 @@ def test_relevance_feedback_queries():
     )
     compare_clients_results(
         local_client, http_client, grpc_client, searcher.relevance_feedback_query_euclid
+    )
+
+
+def test_sparse_relevance_feedback_queries():
+    fixture_points = generate_sparse_fixtures()
+
+    searcher = TestSimpleSearcher()
+
+    # the server applies IDF to the target and to every feedback example
+    local_client, http_client, grpc_client = init_clients(
+        fixture_points,
+        sparse_vectors_config={
+            "sparse-text": models.SparseVectorParams(),
+            "sparse-image": models.SparseVectorParams(modifier=models.Modifier.IDF),
+        },
+    )
+
+    compare_clients_results(
+        local_client, http_client, grpc_client, searcher.sparse_relevance_feedback_query_text
+    )
+    compare_clients_results(
+        local_client, http_client, grpc_client, searcher.sparse_relevance_feedback_query_image
+    )
+
+
+def test_multivec_relevance_feedback_queries():
+    fixture_points = generate_multivector_fixtures()
+
+    searcher = TestSimpleSearcher()
+
+    local_client, http_client, grpc_client = init_clients(
+        fixture_points, vectors_config=multi_vector_config
+    )
+
+    compare_clients_results(
+        local_client, http_client, grpc_client, searcher.multivec_relevance_feedback_query_text
+    )
+    compare_clients_results(
+        local_client, http_client, grpc_client, searcher.multivec_relevance_feedback_query_code
     )

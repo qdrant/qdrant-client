@@ -59,12 +59,14 @@ from qdrant_client.local.multi_distances import (
     MultiDiscoveryQuery,
     MultiContextQuery,
     MultiContextPair,
+    MultiNaiveFeedbackQuery,
     calculate_multi_distance,
     calculate_multi_recommend_best_scores,
     calculate_multi_discovery_scores,
     calculate_multi_context_scores,
     calculate_multi_recommend_sum_scores,
     calculate_multi_distance_core,
+    calculate_multi_naive_feedback_scores,
 )
 from qdrant_client.local.bm25 import (
     DEFAULT_B,
@@ -103,11 +105,14 @@ from qdrant_client.local.sparse_distances import (
     SparseContextPair,
     SparseContextQuery,
     SparseDiscoveryQuery,
+    SparseFeedbackItem,
+    SparseNaiveFeedbackQuery,
     SparseQueryVector,
     SparseRecoQuery,
     calculate_distance_sparse,
     calculate_sparse_context_scores,
     calculate_sparse_discovery_scores,
+    calculate_sparse_naive_feedback_scores,
     calculate_sparse_recommend_best_scores,
     merge_positive_and_negative_avg,
     sparse_avg,
@@ -825,6 +830,14 @@ class LocalCollection:
             scores = calculate_distance_sparse(query_vector, vectors)
         elif isinstance(query_vector, NaiveFeedbackQuery):
             scores = calculate_naive_feedback_query(query_vector, vectors, distance)
+        elif isinstance(query_vector, SparseNaiveFeedbackQuery):
+            if rescore_idf:
+                query_vector = query_vector.transform_sparse(
+                    lambda x: self._rescore_idf(x, name, idf_corpus)
+                )
+            scores = calculate_sparse_naive_feedback_scores(query_vector, vectors)
+        elif isinstance(query_vector, MultiNaiveFeedbackQuery):
+            scores = calculate_multi_naive_feedback_scores(query_vector, vectors, distance)
         else:
             raise (ValueError(f"Unsupported query vector type {type(query_vector)}"))
 
@@ -842,6 +855,7 @@ class LocalCollection:
                 MultiContextQuery,
                 MultiRecoQuery,
                 NaiveFeedbackQuery,
+                MultiNaiveFeedbackQuery,
             ),  # sparse structures are not required, sparse always uses DOT
         ):
             order = np.argsort(scores)[::-1]
@@ -2675,14 +2689,21 @@ class LocalCollection:
         if target_id is not None:
             mentioned_ids.append(target_id)
 
+        is_sparse = vector_name in self.sparse_vectors
         feedback_items: list[DistFeedbackItem] = []
+        sparse_feedback_items: list[SparseFeedbackItem] = []
         for item in relevance_feedback.feedback:
             example_vector, example_id = self._preprocess_vector_input(
                 item.example, self, vector_name
             )
             if example_id is not None:
                 mentioned_ids.append(example_id)
-            feedback_items.append(DistFeedbackItem(vector=example_vector, score=item.score))
+            if is_sparse:
+                sparse_feedback_items.append(
+                    SparseFeedbackItem(vector=example_vector, score=item.score)
+                )
+            else:
+                feedback_items.append(DistFeedbackItem(vector=example_vector, score=item.score))
 
         query_filter = ignore_mentioned_ids_filter(query_filter, mentioned_ids)
 
@@ -2690,11 +2711,25 @@ class LocalCollection:
         if isinstance(strategy, models.NaiveFeedbackStrategy):
             params = strategy.naive
             coefficients = NaiveFeedbackCoefficients(a=params.a, b=params.b, c=params.c)
-            naive_query = NaiveFeedbackQuery(
-                target=target_vector,
-                feedback=feedback_items,
-                coefficients=coefficients,
-            )
+            naive_query: NaiveFeedbackQuery | SparseNaiveFeedbackQuery | MultiNaiveFeedbackQuery
+            if is_sparse:
+                naive_query = SparseNaiveFeedbackQuery(
+                    target=target_vector,
+                    feedback=sparse_feedback_items,
+                    coefficients=coefficients,
+                )
+            elif vector_name in self.multivectors:
+                naive_query = MultiNaiveFeedbackQuery(
+                    target=target_vector,
+                    feedback=feedback_items,
+                    coefficients=coefficients,
+                )
+            else:
+                naive_query = NaiveFeedbackQuery(
+                    target=target_vector,
+                    feedback=feedback_items,
+                    coefficients=coefficients,
+                )
             return self.search(
                 query_vector=(vector_name, naive_query),
                 query_filter=query_filter,

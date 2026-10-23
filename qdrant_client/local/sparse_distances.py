@@ -1,10 +1,17 @@
+from itertools import permutations
 from typing import Callable, Sequence, TypeAlias
 
 import numpy as np
 
 from qdrant_client.conversions import common_types as types
 from qdrant_client.http.models import SparseVector
-from qdrant_client.local.distances import EPSILON, fast_sigmoid, scaled_fast_sigmoid
+from qdrant_client.local.distances import (
+    EPSILON,
+    NAIVE_FEEDBACK_CONFIDENCE_MARGIN,
+    NaiveFeedbackCoefficients,
+    fast_sigmoid,
+    scaled_fast_sigmoid,
+)
 from qdrant_client.local.sparse import (
     empty_sparse_vector,
     is_sorted,
@@ -88,8 +95,41 @@ class SparseContextQuery:
         )
 
 
+class SparseFeedbackItem:
+    def __init__(self, vector: SparseVector, score: float):
+        validate_sparse_vector(vector)
+        self.vector: SparseVector = sort_sparse_vector(vector)
+        self.score = score
+
+
+class SparseNaiveFeedbackQuery:
+    def __init__(
+        self,
+        target: SparseVector,
+        feedback: list[SparseFeedbackItem],
+        coefficients: NaiveFeedbackCoefficients,
+    ):
+        validate_sparse_vector(target)
+        self.target: SparseVector = sort_sparse_vector(target)
+        self.feedback = feedback
+        self.coefficients = coefficients
+
+    def transform_sparse(
+        self, foo: Callable[["SparseVector"], "SparseVector"]
+    ) -> "SparseNaiveFeedbackQuery":
+        return SparseNaiveFeedbackQuery(
+            target=foo(self.target),
+            feedback=[SparseFeedbackItem(foo(item.vector), item.score) for item in self.feedback],
+            coefficients=self.coefficients,
+        )
+
+
 SparseQueryVector: TypeAlias = (
-    SparseVector | SparseDiscoveryQuery | SparseContextQuery | SparseRecoQuery
+    SparseVector
+    | SparseDiscoveryQuery
+    | SparseContextQuery
+    | SparseRecoQuery
+    | SparseNaiveFeedbackQuery
 )
 
 
@@ -256,6 +296,25 @@ def calculate_sparse_recommend_sum_scores(
     neg = get_sum_scores(query.negative)
 
     return pos - neg
+
+
+def calculate_sparse_naive_feedback_scores(
+    query: SparseNaiveFeedbackQuery, vectors: list[SparseVector]
+) -> types.NumpyArray:
+    coefficients = query.coefficients
+    scores = coefficients.a * calculate_distance_sparse(query.target, vectors, empty_is_zero=True)
+
+    for positive, negative in permutations(query.feedback, 2):
+        confidence = positive.score - negative.score
+        if confidence <= NAIVE_FEEDBACK_CONFIDENCE_MARGIN:
+            continue
+
+        partial_computation = (confidence**coefficients.b) * coefficients.c
+        sim_pos = calculate_distance_sparse(positive.vector, vectors, empty_is_zero=True)
+        sim_neg = calculate_distance_sparse(negative.vector, vectors, empty_is_zero=True)
+        scores += partial_computation * (sim_pos - sim_neg)
+
+    return scores
 
 
 # Expects sorted indices
