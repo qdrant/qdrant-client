@@ -927,7 +927,9 @@ class LocalCollection:
                 idf_corpus=self._idf_corpus_of(search_params),
             )
         else:
-            # It is a base query
+            # Same as the server: a random sample without prefetches ignores offset, since its output is not stable
+            offset = 0 if isinstance(query, models.SampleQuery) else offset
+
             scored_points = self._query_collection(
                 query=query,
                 using=using,
@@ -1196,11 +1198,11 @@ class LocalCollection:
         elif isinstance(query, models.SampleQuery):
             if query.sample == models.Sample.RANDOM:
                 return self._sample_randomly(
-                    limit=limit,
+                    limit=limit + offset,
                     query_filter=query_filter,
                     with_payload=with_payload,
                     with_vectors=with_vectors,
-                )
+                )[offset:]
             else:
                 raise ValueError(f"Unknown Sample variant: {query.sample}")
         elif isinstance(query, models.FusionQuery):

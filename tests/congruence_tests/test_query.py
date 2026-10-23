@@ -1116,6 +1116,20 @@ class TestSimpleSearcher:
 
         return result
 
+    @classmethod
+    def random_query_prefetch_offset(cls, client: QdrantBase) -> int:
+        # with prefetches the offset applies: 15 of the 20 candidates are skipped, 5 are left.
+        # The sample differs between clients, so only the number of points is comparable
+        return len(
+            client.query_points(
+                collection_name=COLLECTION_NAME,
+                prefetch=models.Prefetch(query=1, using="text", limit=20),
+                query=models.SampleQuery(sample=models.Sample.RANDOM),
+                limit=10,
+                offset=15,
+            ).points
+        )
+
     @staticmethod
     def score_boosting(
         client: QdrantBase, formula: models.FormulaQuery, point_id: int
@@ -2773,6 +2787,9 @@ def test_random_sampling():
 
     compare_clients_results(local_client, http_client, grpc_client, searcher.random_query)
     compare_clients_results(local_client, http_client, grpc_client, searcher.random_query_offset)
+    compare_clients_results(
+        local_client, http_client, grpc_client, searcher.random_query_prefetch_offset
+    )
 
 
 def test_formula_query():
