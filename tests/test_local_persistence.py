@@ -2,6 +2,7 @@ import os
 import random
 import sqlite3
 import tempfile
+from datetime import datetime
 
 import numpy as np
 import pytest
@@ -206,6 +207,39 @@ def test_update_persistence():
         client.close()
 
 
+def test_payload_index_persistence():
+    collection_name = "payload_index_persistence"
+    query = rest.TextQuery(text="wolf")
+    with tempfile.TemporaryDirectory() as tmpdir:
+        client = QdrantClient(path=tmpdir)
+        client.create_collection(collection_name, vectors_config={})
+        client.upsert(
+            collection_name,
+            [
+                rest.PointStruct(id=idx, vector={}, payload={"text": text})
+                for idx, text in enumerate(["wolf ape", "wolf wolf bear", "cat"])
+            ],
+        )
+        client.create_payload_index(
+            collection_name,
+            "text",
+            rest.TextIndexParams(type=rest.TextIndexType.TEXT, scoring=True),
+        )
+        points = client.query_points(collection_name, query=query, using="text").points
+        assert len(points) == 2
+        client.close()
+
+        client = QdrantClient(path=tmpdir)
+        assert client.query_points(collection_name, query=query, using="text").points == points
+        client.delete_payload_index(collection_name, "text")
+        client.close()
+
+        client = QdrantClient(path=tmpdir)
+        with pytest.raises(ValueError, match="needs a text index with `scoring`"):
+            client.query_points(collection_name, query=query, using="text")
+        client.close()
+
+
 @pytest.mark.parametrize("operation", ["points", "vectors"])
 def test_idf_persistence_after_deletion(operation: str):
     """Reopening a collection must not move the scores a deletion left behind.
@@ -227,9 +261,9 @@ def test_idf_persistence_after_deletion(operation: str):
                 search_params=rest.SearchParams(idf=idf),
             ).points
             collected.append([point.score for point in points])
-        assert collected[0] == pytest.approx(
-            collected[1]
-        ), "the global scope disagrees with a corpus of every live point"
+        assert collected[0] == pytest.approx(collected[1]), (
+            "the global scope disagrees with a corpus of every live point"
+        )
         return collected[0]
 
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -254,9 +288,9 @@ def test_idf_persistence_after_deletion(operation: str):
         client.close()
 
         client = QdrantClient(path=tmpdir)
-        assert scores(client) == pytest.approx(
-            before_reopen
-        ), "reopening the collection changed the IDF scores"
+        assert scores(client) == pytest.approx(before_reopen), (
+            "reopening the collection changed the IDF scores"
+        )
         # deleting the vectors leaves the points themselves in place
         surviving = [0] if operation == "points" else [0, 1, 2, 3]
         assert [point.id for point in client.scroll(collection_name, limit=10)[0]] == surviving
@@ -489,4 +523,91 @@ def test_failed_point_write_can_be_retried(monkeypatch: pytest.MonkeyPatch, tmp_
 
     client = QdrantClient(path=str(tmp_path))
     assert client.scroll(failed_write_collection, with_vectors=True)[0] == points
+    client.close()
+
+
+def test_rejected_upsert_is_not_stored(tmp_path):
+    """A point that upsert rejects must not reach the storage.
+
+    Regression: points were stored before they were applied, so a point that failed to apply
+    stayed on disk, and the next client could not open the storage folder.
+    """
+    collection_name = "rejected_upsert"
+    client = QdrantClient(path=str(tmp_path))
+    client.create_collection(
+        collection_name, vectors_config=rest.VectorParams(size=2, distance=rest.Distance.DOT)
+    )
+    client.upsert(collection_name, [rest.PointStruct(id=1, vector=[1.0, 2.0], payload={"v": 1})])
+
+    for point_id in (1, 2):  # an existing point and a new one
+        # numpy scalars can't be converted to JSON, pydantic v1 raises a TypeError
+        with pytest.raises((ValueError, TypeError)):
+            client.upsert(
+                collection_name,
+                [rest.PointStruct(id=point_id, vector=[1.0, 2.0], payload={"v": np.float32(0.5)})],
+            )
+        with pytest.raises(ValueError, match="Wrong input"):
+            client.upsert(
+                collection_name, [rest.PointStruct(id=point_id, vector=[[1.0, 2.0], [3.0, 4.0]])]
+            )
+
+    points = client.scroll(collection_name, with_vectors=True)[0]
+    assert [(point.id, point.payload, point.vector) for point in points] == [
+        (1, {"v": 1}, [1.0, 2.0])
+    ]
+    client.close()
+
+    client = QdrantClient(path=str(tmp_path))
+    assert client.scroll(collection_name, with_vectors=True)[0] == points
+    client.close()
+
+
+def test_reopened_collection_holds_the_same_vectors(tmp_path):
+    """Regression: a reopened collection returned upserted vectors raw and as float64."""
+    collection_name = "reopened_vectors"
+    multivector_config = rest.MultiVectorConfig(comparator=rest.MultiVectorComparator.MAX_SIM)
+    client = QdrantClient(path=str(tmp_path))
+    client.create_collection(
+        collection_name,
+        vectors_config={
+            "cosine": rest.VectorParams(size=4, distance=rest.Distance.COSINE),
+            "multi": rest.VectorParams(
+                size=4, distance=rest.Distance.COSINE, multivector_config=multivector_config
+            ),
+            "dot": rest.VectorParams(size=4, distance=rest.Distance.DOT),
+        },
+    )
+    vector = [1.0, 2.0, 3.0, 4.0]  # normalizing it twice changes its last bits
+    inexact_vector = [0.1, 0.2, 0.3, 0.4]  # not exact in float32
+    vectors = {"cosine": vector, "multi": [vector, inexact_vector], "dot": inexact_vector}
+    client.upsert(
+        collection_name,
+        [rest.PointStruct(id=1, vector=vectors), rest.PointStruct(id=2, vector=vectors)],
+    )
+    # stores point 2 again, with its vectors already normalized
+    client.set_payload(collection_name, {"a": 1}, points=[2])
+    points = client.retrieve(collection_name, [1, 2], with_vectors=True)
+    client.close()
+
+    client = QdrantClient(path=str(tmp_path))
+    assert client.retrieve(collection_name, [1, 2], with_vectors=True) == points
+    client.close()
+
+
+def test_collection_metadata_is_stored_as_json(tmp_path):
+    """Datetimes in metadata used to break saving `meta.json`, the server stores them as strings."""
+    client = QdrantClient(path=str(tmp_path))
+    client.create_collection(
+        "c",
+        vectors_config=rest.VectorParams(size=2, distance=rest.Distance.DOT),
+        metadata={"created": datetime(2020, 1, 1)},
+    )
+    client.update_collection("c", metadata={"updated": datetime(2021, 1, 1)})
+    client.close()
+
+    client = QdrantClient(path=str(tmp_path))
+    assert client.get_collection("c").config.metadata == {
+        "created": "2020-01-01T00:00:00",
+        "updated": "2021-01-01T00:00:00",
+    }
     client.close()

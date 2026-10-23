@@ -27,10 +27,13 @@ from qdrant_client.local.local_collection import (
     LocalCollection,
     DEFAULT_VECTOR_NAME,
     ignore_mentioned_ids_filter,
+    to_jsonable_python,
 )
 from qdrant_client.local.payload_value_setter import merge_payload
 
 META_INFO_FILENAME = "meta.json"
+# characters the server does not allow in collection and vector names
+INVALID_NAME_CHARS = ("<", ">", ":", '"', "/", "\\", "|", "?", "*", "\0", "\x1f")
 
 
 def _parse_search_params(search_params: types.SearchParams | None) -> types.SearchParams | None:
@@ -154,6 +157,12 @@ class QdrantLocal(QdrantBase):
                             stacklevel=5,
                         )
                 self.aliases = meta["aliases"]
+                # storages written before text indexes were recorded have none
+                for collection_name, indexes in meta.get("text_indexes", {}).items():
+                    self.collections[collection_name].text_indexes = {
+                        field_name: rest_models.TextIndexParams(**params)
+                        for field_name, params in indexes.items()
+                    }
 
         lock_file_path = os.path.join(self.location, ".lock")
         if not os.path.exists(lock_file_path):
@@ -183,19 +192,29 @@ class QdrantLocal(QdrantBase):
         if self.closed:
             raise RuntimeError("QdrantLocal instance is closed. Please create a new instance.")
 
-        meta_path = os.path.join(self.location, META_INFO_FILENAME)
-        with open(meta_path, "w") as f:
-            f.write(
-                json.dumps(
-                    {
-                        "collections": {
-                            collection_name: to_dict(collection.config)
-                            for collection_name, collection in self.collections.items()
-                        },
-                        "aliases": self.aliases if aliases is None else aliases,
+        meta = json.dumps(
+            {
+                "collections": {
+                    collection_name: to_dict(collection.config)
+                    for collection_name, collection in self.collections.items()
+                },
+                "aliases": self.aliases if aliases is None else aliases,
+                "text_indexes": {
+                    collection_name: {
+                        field_name: to_dict(params, exclude_none=True)
+                        for field_name, params in collection.text_indexes.items()
                     }
-                )
-            )
+                    for collection_name, collection in self.collections.items()
+                    if collection.text_indexes
+                },
+            }
+        )
+        meta_path = os.path.join(self.location, META_INFO_FILENAME)
+        # opening a file for writing empties it, so meta.json is only replaced by a complete copy
+        tmp_path = f"{meta_path}.tmp"
+        with open(tmp_path, "w") as f:
+            f.write(meta)
+        os.replace(tmp_path, meta_path)
 
     def _get_collection(self, collection_name: str) -> LocalCollection:
         if self.closed:
@@ -843,9 +862,26 @@ class QdrantLocal(QdrantBase):
         collection_name: str,
         sparse_vectors_config: Mapping[str, types.SparseVectorParams] | None = None,
         metadata: types.Payload | None = None,
+        vectors_config: types.VectorsConfigDiff | None = None,
         **kwargs: Any,
     ) -> bool:
         _collection = self._get_collection(collection_name)
+        # stored as JSON, like the server does: datetimes and UUIDs become strings
+        metadata = to_jsonable_python(metadata)
+
+        # like the server, check every diff before applying any of them. Dense vector diffs
+        # have nothing to change in local mode, their names are checked all the same
+        if isinstance(vectors_config, Mapping):
+            for vector_name in vectors_config:
+                if (
+                    vector_name not in _collection.vectors_config
+                    and vector_name not in _collection.multivectors_config
+                ):
+                    raise ValueError(f"Wrong input: Not existing vector name error: {vector_name}")
+        for vector_name in sparse_vectors_config or {}:
+            if vector_name not in _collection.sparse_vectors:
+                raise ValueError(f"Vector {vector_name} does not exist in the collection")
+
         updated = False
         if sparse_vectors_config is not None:
             for vector_name, vector_params in sparse_vectors_config.items():
@@ -854,9 +890,9 @@ class QdrantLocal(QdrantBase):
 
         if metadata is not None:
             if _collection.config.metadata is not None:
-                merge_payload(_collection.config.metadata, deepcopy(metadata))
+                merge_payload(_collection.config.metadata, metadata)
             else:
-                _collection.config.metadata = deepcopy(metadata)
+                _collection.config.metadata = metadata
             updated = True
 
         self._save()
@@ -866,14 +902,34 @@ class QdrantLocal(QdrantBase):
     def _validate_new_collection_name(collection_name: str) -> None:
         # same characters as the server rejects on creation, names of already existing
         # collections are not checked to keep them accessible
-        invalid_chars = ("<", ">", ":", '"', "/", "\\", "|", "?", "*", "\0", "\x1f")
-        for char in invalid_chars:
+        for char in INVALID_NAME_CHARS:
             if char in collection_name:
                 raise ValueError(f"Collection name cannot contain {char!r} char")
         if collection_name in ("", ".", ".."):
             raise ValueError(f"Collection name cannot be {collection_name!r}")
         if len(collection_name) > 255:
             raise ValueError("Collection name must be at most 255 characters long")
+
+    @staticmethod
+    def _validate_new_vector_name(vector_name: str, kind: str) -> None:
+        # same rules as the server, which keeps vectors in directories named after them,
+        # the empty name is the unnamed vector
+        if len(vector_name.encode()) > 200:
+            raise ValueError(
+                f"Invalid {kind} vector name `{vector_name}`: must be at most 200 bytes long"
+            )
+        for char in INVALID_NAME_CHARS:
+            if char in vector_name:
+                raise ValueError(
+                    f"Invalid {kind} vector name `{vector_name}`: cannot contain {char!r} char"
+                )
+        if vector_name in (".", ".."):
+            raise ValueError(f"Invalid {kind} vector name `{vector_name}`")
+
+    @staticmethod
+    def _validate_new_vector_size(size: int) -> None:
+        if not 1 <= size <= 65536:
+            raise ValueError(f"Vector size {size} is invalid. Must be from 1 to 65536.")
 
     def _collection_path(self, collection_name: str) -> str | None:
         if self.persistent:
@@ -924,12 +980,21 @@ class QdrantLocal(QdrantBase):
         # accepted for signature parity with the remote client and ignored: memory placement
         # is meaningless in local mode
         payload: types.PayloadStorageParams | None = None,
+        id_tracker: types.IdTrackerParams | None = None,
         **kwargs: Any,
     ) -> bool:
         if self.closed:
             raise RuntimeError("QdrantLocal instance is closed. Please create a new instance.")
 
         self._validate_new_collection_name(collection_name)
+        if isinstance(vectors_config, Mapping):
+            for vector_name, vector_params in vectors_config.items():
+                self._validate_new_vector_name(vector_name, "dense")
+                self._validate_new_vector_size(vector_params.size)
+        elif vectors_config is not None:
+            self._validate_new_vector_size(vectors_config.size)
+        for vector_name in sparse_vectors_config or {}:
+            self._validate_new_vector_name(vector_name, "sparse")
         # the server reserves the empty name for the default dense vector
         if sparse_vectors_config is not None and "" in sparse_vectors_config:
             raise ValueError("Sparse vector name cannot be empty")
@@ -938,6 +1003,8 @@ class QdrantLocal(QdrantBase):
         # a collection must not take the name of an existing alias either
         if collection_name in self.aliases:
             raise ValueError(f"Alias {collection_name} already exists")
+        # stored as JSON, like the server does: datetimes and UUIDs become strings
+        metadata = to_jsonable_python(metadata)
         collection_path = self._collection_path(collection_name)
         if collection_path is not None:
             os.makedirs(collection_path, exist_ok=True)
@@ -946,7 +1013,7 @@ class QdrantLocal(QdrantBase):
             rest_models.CreateCollection(
                 vectors=vectors_config or {},
                 sparse_vectors=sparse_vectors_config,
-                metadata=deepcopy(metadata),
+                metadata=metadata,
             ),
             location=collection_path,
             force_disable_check_same_thread=self.force_disable_check_same_thread,
@@ -963,6 +1030,7 @@ class QdrantLocal(QdrantBase):
         sparse_vectors_config: Mapping[str, types.SparseVectorParams] | None = None,
         metadata: types.Payload | None = None,
         payload: types.PayloadStorageParams | None = None,
+        id_tracker: types.IdTrackerParams | None = None,
         **kwargs: Any,
     ) -> bool:
         self._validate_new_collection_name(collection_name)
@@ -973,6 +1041,7 @@ class QdrantLocal(QdrantBase):
             sparse_vectors_config,
             metadata=metadata,
             payload=payload,
+            id_tracker=id_tracker,
         )
 
     def upload_points(
@@ -1042,9 +1111,9 @@ class QdrantLocal(QdrantBase):
                 payload=payload or {},
             )
             for (point_id, vector, payload) in zip(
-                ids or uuid_generator(),
+                uuid_generator() if ids is None else ids,
                 iter(vectors),
-                payload or itertools.cycle([{}]),
+                itertools.cycle([{}]) if payload is None else payload,
             )
         ]
         # remote mode sends no request for an empty upload, while an empty upsert is an error
@@ -1059,23 +1128,36 @@ class QdrantLocal(QdrantBase):
         field_type: types.PayloadSchemaType | None = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
-        show_warning_once(
-            message="Payload indexes have no effect in the local Qdrant. Please use server Qdrant if you need payload indexes.",
-            category=UserWarning,
-            idx="create-local-payload-indexes",
-            stacklevel=5,
-        )
+        collection = self._get_collection(collection_name)
+        field_schema = field_schema if field_schema is not None else field_type
+        if field_schema is not None:
+            collection.create_payload_index(field_name, field_schema)
+            self._save()
+
+        # text indexes with scoring are the only ones serving queries in local mode
+        if field_name not in collection.text_indexes:
+            show_warning_once(
+                message="Payload indexes have no effect in the local Qdrant, except text indexes with `scoring`, which enable text queries. Please use server Qdrant if you need payload indexes.",
+                category=UserWarning,
+                idx="create-local-payload-indexes",
+                stacklevel=5,
+            )
         return self._default_update_result()
 
     def delete_payload_index(
         self, collection_name: str, field_name: str, **kwargs: Any
     ) -> types.UpdateResult:
-        show_warning_once(
-            message="Payload indexes have no effect in the local Qdrant. Please use server Qdrant if you need payload indexes.",
-            category=UserWarning,
-            idx="delete-local-payload-indexes",
-            stacklevel=5,
-        )
+        collection = self._get_collection(collection_name)
+        if field_name not in collection.text_indexes:
+            show_warning_once(
+                message="Payload indexes have no effect in the local Qdrant, except text indexes with `scoring`, which enable text queries. Please use server Qdrant if you need payload indexes.",
+                category=UserWarning,
+                idx="delete-local-payload-indexes",
+                stacklevel=5,
+            )
+
+        collection.delete_payload_index(field_name)
+        self._save()
         return self._default_update_result()
 
     def create_vector_name(
@@ -1087,8 +1169,11 @@ class QdrantLocal(QdrantBase):
     ) -> types.UpdateResult:
         collection = self._get_collection(collection_name)
         if isinstance(vector_name_config, rest_models.DenseVectorNameConfig):
+            self._validate_new_vector_name(vector_name, "dense")
+            self._validate_new_vector_size(vector_name_config.dense.size)
             collection.create_dense_vector_name(vector_name, vector_name_config.dense)
         elif isinstance(vector_name_config, rest_models.SparseVectorNameConfig):
+            self._validate_new_vector_name(vector_name, "sparse")
             collection.create_sparse_vector_name(vector_name, vector_name_config.sparse)
         else:
             raise ValueError(f"Unsupported vector name config type: {type(vector_name_config)}")
@@ -1241,7 +1326,7 @@ class QdrantLocal(QdrantBase):
         **kwargs: Any,
     ) -> types.OptimizationsResponse:
         raise NotImplementedError(
-            "Get optimizations is not supported in the local Qdrant. " "Please use server Qdrant."
+            "Get optimizations is not supported in the local Qdrant. Please use server Qdrant."
         )
 
     def list_shard_keys(

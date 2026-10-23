@@ -13,6 +13,7 @@ import numpy as np
 from qdrant_client import grpc as grpc
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.common.client_warnings import show_warning_once
+from qdrant_client.common.validation import require_length, vectors_length
 from qdrant_client.conversions import common_types as types
 from qdrant_client.embed.type_inspector import Inspector
 from qdrant_client.http import ApiClient, SyncApis
@@ -52,6 +53,8 @@ class QdrantClient(QdrantFastembedMixin):
         url: either host or str of "Optional[scheme], host, Optional[port], Optional[prefix]".
             Default: `None`
         port: Port of the REST API interface. Default: 6333
+            Also used when `url` has no port. Set to `None` to use the scheme's default port
+            (80 for http, 443 for https), for example behind a reverse proxy.
         grpc_port: Port of the gRPC interface. Default: 6334
         prefer_grpc: If `true` - use gPRC interface whenever possible in custom methods.
         https: If `true` - use HTTPS(SSL) protocol. Default: `None`
@@ -1702,6 +1705,7 @@ class QdrantClient(QdrantFastembedMixin):
         strict_mode_config: types.StrictModeConfig | None = None,
         metadata: types.Payload | None = None,
         payload: types.PayloadStorageParams | None = None,
+        id_tracker: types.IdTrackerParams | None = None,
         **kwargs: Any,
     ) -> bool:
         """Create empty collection with given parameters
@@ -1715,7 +1719,8 @@ class QdrantClient(QdrantFastembedMixin):
             sparse_vectors_config:
                 Configuration of the sparse vector storage.
                 The service will create a sparse vector storage for each key in the dict.
-            shard_number: Number of shards in collection. Default is 1, minimum is 1.
+            shard_number: Number of shards in collection. If not specified, selected automatically.
+                Minimum is 1.
             sharding_method:
                 Defines strategy for shard creation.
                 Option `auto` (default) creates defined number of shards automatically.
@@ -1751,6 +1756,9 @@ class QdrantClient(QdrantFastembedMixin):
             payload:
                 Configuration of the payload storage, e.g. the memory placement of the payload.
                 Overrides the deprecated `on_disk_payload` flag if both are set.
+            id_tracker:
+                Configuration of the point id tracker, e.g. the memory placement of the mapping
+                of point ids in indexed segments.
 
         Returns:
             Operation result
@@ -1774,6 +1782,7 @@ class QdrantClient(QdrantFastembedMixin):
             strict_mode_config=strict_mode_config,
             metadata=metadata,
             payload=payload,
+            id_tracker=id_tracker,
             **kwargs,
         )
 
@@ -1797,6 +1806,7 @@ class QdrantClient(QdrantFastembedMixin):
         strict_mode_config: types.StrictModeConfig | None = None,
         metadata: types.Payload | None = None,
         payload: types.PayloadStorageParams | None = None,
+        id_tracker: types.IdTrackerParams | None = None,
         **kwargs: Any,
     ) -> bool:
         """Delete and create empty collection with given parameters
@@ -1810,7 +1820,8 @@ class QdrantClient(QdrantFastembedMixin):
             sparse_vectors_config:
                 Configuration of the sparse vector storage.
                 The service will create a sparse vector storage for each key in the dict.
-            shard_number: Number of shards in collection. Default is 1, minimum is 1.
+            shard_number: Number of shards in collection. If not specified, selected automatically.
+                Minimum is 1.
             sharding_method:
                 Defines strategy for shard creation.
                 Option `auto` (default) creates defined number of shards automatically.
@@ -1846,6 +1857,9 @@ class QdrantClient(QdrantFastembedMixin):
             payload:
                 Configuration of the payload storage, e.g. the memory placement of the payload.
                 Overrides the deprecated `on_disk_payload` flag if both are set.
+            id_tracker:
+                Configuration of the point id tracker, e.g. the memory placement of the mapping
+                of point ids in indexed segments.
 
         Returns:
             Operation result
@@ -1876,6 +1890,7 @@ class QdrantClient(QdrantFastembedMixin):
             strict_mode_config=strict_mode_config,
             metadata=metadata,
             payload=payload,
+            id_tracker=id_tracker,
             **kwargs,
         )
 
@@ -2001,6 +2016,12 @@ class QdrantClient(QdrantFastembedMixin):
                 yield from iterable
 
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
+        # a generator of vectors has no length, then ids or payload ending first end the upload
+        num_vectors = vectors_length(vectors)
+        if num_vectors is not None:
+            ids = require_length(ids, num_vectors, "ids")
+            payload = require_length(payload, num_vectors, "payload")
 
         if not self.cloud_inference:
             if not isinstance(vectors, dict) and not isinstance(vectors, np.ndarray):
@@ -2505,7 +2526,8 @@ class QdrantClient(QdrantFastembedMixin):
         Args:
             dest_client: Destination Qdrant instance either in local or remote mode
             collection_names: List of collection names to migrate. If None - migrate all collections
-            batch_size: Batch size to be in scroll and upsert operations during migration, must be positive
+            batch_size: Scroll page size during migration, must be positive. Points are uploaded in
+                batches of 64, the `upload_points` default
             recreate_on_collision: If True - recreate collection on destination if it already exists, otherwise
                 raise ValueError exception
         """

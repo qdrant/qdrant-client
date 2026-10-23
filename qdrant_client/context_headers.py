@@ -33,7 +33,9 @@ async def async_headers(extra_headers: dict[str, str]) -> AsyncIterator[None]:
         _context_headers.reset(token)
 
 
-def rest_headers_middleware(request: Request, call_next: Callable[[Request], Response]) -> Response:
+def rest_headers_middleware(
+    request: Request, call_next: Callable[[Request], Response]
+) -> Response:
     for key, value in get_context_headers().items():
         request.headers[key] = value
     return call_next(request)

@@ -1,7 +1,7 @@
 import random
 
 import qdrant_client.models as models
-from tests.fixtures.filters import one_random_condition_please
+from tests.fixtures.filters import one_random_condition_please, qdrant_version_gte
 from tests.fixtures.payload import random_datetime
 
 
@@ -98,6 +98,25 @@ def one_random_expression_please(current_depth: int = 0, max_depth: int = 5) -> 
         lambda: models.ExpDecayExpression(exp_decay=rand_decay_params()),
         lambda: models.GaussDecayExpression(gauss_decay=rand_decay_params()),
     ]
+    # `max`, `min` and `acosh` are new in qdrant 1.19.1
+    if qdrant_version_gte((1, 19, 1)):
+        expression_choices += [
+            lambda: models.MaxExpression(
+                max=[
+                    one_random_expression_please(current_depth + 1, max_depth)
+                    for _ in range(random.randint(1, 3))
+                ]
+            ),
+            lambda: models.MinExpression(
+                min=[
+                    one_random_expression_please(current_depth + 1, max_depth)
+                    for _ in range(random.randint(1, 3))
+                ]
+            ),
+            lambda: models.AcoshExpression(
+                acosh=one_random_expression_please(current_depth + 1, max_depth)
+            ),
+        ]
     # If we've reached max depth, return a terminal expression (no nesting)
     if current_depth >= max_depth:  # Limit nesting depth
         # Return a simple expression at max depth

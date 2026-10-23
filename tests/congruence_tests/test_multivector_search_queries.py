@@ -1,13 +1,18 @@
+import math
+from dataclasses import dataclass
+
 import numpy as np
 import pytest
 
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.http.exceptions import UnexpectedResponse
 from qdrant_client.http.models import models
+from qdrant_client.local.multi_distances import calculate_multi_distance_core
 from tests.congruence_tests.test_common import (
     COLLECTION_NAME,
     code_vector_size,
     compare_client_results,
+    has_near_tie_at_limit,
     image_vector_size,
     init_client,
     init_local,
@@ -17,6 +22,26 @@ from tests.congruence_tests.test_common import (
     generate_multivector_fixtures,
 )
 from tests.fixtures.points import generate_random_multivector
+
+
+@dataclass
+class MmrCase:
+    """An MMR query kept as data, so that a failed comparison can be replayed in local mode."""
+
+    query: list[list[float]]
+    using: str
+    mmr: models.Mmr
+    score_threshold: float | None = None
+    limit: int = 10
+
+    def run(self, client: QdrantBase) -> models.QueryResponse:
+        return client.query_points(
+            collection_name=COLLECTION_NAME,
+            query=models.NearestQuery(nearest=self.query, mmr=self.mmr),
+            using=self.using,
+            score_threshold=self.score_threshold,
+            limit=self.limit,
+        )
 
 
 class TestSimpleSearcher:
@@ -62,83 +87,123 @@ class TestSimpleSearcher:
             limit=10,
         ).points
 
-    def default_mmr_query(self, client: QdrantBase) -> models.QueryResponse:
-        return client.query_points(
-            collection_name=COLLECTION_NAME,
-            query=models.NearestQuery(
-                nearest=self.query_text,
-                mmr=models.Mmr(),
-            ),
+    def default_mmr_query(self) -> MmrCase:
+        return MmrCase(query=self.query_text, using="multi-text", mmr=models.Mmr())
+
+    def mmr_query_parametrized(self) -> MmrCase:
+        return MmrCase(
+            query=self.query_text,
             using="multi-text",
-            limit=10,
+            mmr=models.Mmr(diversity=0.3, candidates_limit=30),
         )
 
-    def mmr_query_parametrized(self, client: QdrantBase) -> models.QueryResponse:
-        return client.query_points(
-            collection_name=COLLECTION_NAME,
-            query=models.NearestQuery(
-                nearest=self.query_text, mmr=models.Mmr(diversity=0.3, candidates_limit=30)
-            ),
+    def mmr_query_parametrized_score_threshold(self) -> MmrCase:
+        return MmrCase(
+            query=self.query_text,
             using="multi-text",
-            limit=10,
-        )
-
-    def mmr_query_parametrized_score_threshold(self, client: QdrantBase) -> models.QueryResponse:
-        return client.query_points(
-            collection_name=COLLECTION_NAME,
-            query=models.NearestQuery(
-                nearest=self.query_text, mmr=models.Mmr(diversity=0.3, candidates_limit=30)
-            ),
-            using="multi-text",
+            mmr=models.Mmr(diversity=0.3, candidates_limit=30),
             score_threshold=7.0,
-            limit=10,
         )
 
-    def mmr_query_parametrized_dot(self, client: QdrantBase) -> models.QueryResponse:
-        return client.query_points(
-            collection_name=COLLECTION_NAME,
-            query=models.NearestQuery(
-                nearest=self.query_image, mmr=models.Mmr(diversity=0.3, candidates_limit=30)
-            ),
+    def mmr_query_parametrized_dot(self) -> MmrCase:
+        return MmrCase(
+            query=self.query_image,
             using="multi-image",
-            limit=10,
+            mmr=models.Mmr(diversity=0.3, candidates_limit=30),
         )
 
-    def mmr_query_parametrized_dot_score_threshold(
-        self, client: QdrantBase
-    ) -> models.QueryResponse:
-        return client.query_points(
-            collection_name=COLLECTION_NAME,
-            query=models.NearestQuery(
-                nearest=self.query_image, mmr=models.Mmr(diversity=0.3, candidates_limit=30)
-            ),
+    def mmr_query_parametrized_dot_score_threshold(self) -> MmrCase:
+        return MmrCase(
+            query=self.query_image,
+            using="multi-image",
+            mmr=models.Mmr(diversity=0.3, candidates_limit=30),
             score_threshold=260.0,
-            using="multi-image",
-            limit=10,
         )
 
-    def mmr_query_parametrized_euclid(self, client: QdrantBase) -> models.QueryResponse:
-        return client.query_points(
-            collection_name=COLLECTION_NAME,
-            query=models.NearestQuery(
-                nearest=self.query_code, mmr=models.Mmr(diversity=0.3, candidates_limit=30)
-            ),
+    def mmr_query_parametrized_euclid(self) -> MmrCase:
+        return MmrCase(
+            query=self.query_code,
             using="multi-code",
-            limit=10,
+            mmr=models.Mmr(diversity=0.3, candidates_limit=30),
         )
 
-    def mmr_query_parametrized_euclid_score_threshold(
-        self, client: QdrantBase
-    ) -> models.QueryResponse:
-        return client.query_points(
-            collection_name=COLLECTION_NAME,
-            query=models.NearestQuery(
-                nearest=self.query_code, mmr=models.Mmr(diversity=0.3, candidates_limit=30)
-            ),
+    def mmr_query_parametrized_euclid_score_threshold(self) -> MmrCase:
+        return MmrCase(
+            query=self.query_code,
             using="multi-code",
+            mmr=models.Mmr(diversity=0.3, candidates_limit=30),
             score_threshold=10.0,
-            limit=10,
         )
+
+
+def replay_mmr_selection(
+    client: QdrantBase, case: MmrCase, rel_tol: float = 1e-5
+) -> list[models.ExtendedPointId] | None:
+    """Replay local mode's MMR selection, return the picked ids, or None at a near-tie.
+
+    Local mode and core don't compute scores bit for bit alike, so two choices closer than
+    about 1e-7 relative can go either way on each side: candidates around the candidates limit
+    or around `score_threshold`, or the two best MMR scores of a greedy step. MMR picks
+    greedily, so one flipped pick reorders every later rank. The replay scores with the
+    similarity function local mode's MMR uses.
+    """
+    mmr = case.mmr
+    candidates_limit = mmr.candidates_limit if mmr.candidates_limit is not None else case.limit
+    if has_near_tie_at_limit(client, case.query, case.using, candidates_limit):
+        return None
+    if case.score_threshold is not None:
+        nearest = client.query_points(
+            COLLECTION_NAME, query=case.query, using=case.using, limit=candidates_limit
+        ).points
+        if any(
+            math.isclose(point.score, case.score_threshold, rel_tol=rel_tol) for point in nearest
+        ):
+            return None
+
+    candidates = client.query_points(
+        COLLECTION_NAME,
+        query=case.query,
+        using=case.using,
+        limit=candidates_limit,
+        score_threshold=case.score_threshold,
+        with_vectors=[case.using],
+    ).points
+    if not candidates:
+        return []
+
+    distance = multi_vector_config[case.using].distance
+    vectors = [np.array(point.vector[case.using]) for point in candidates]
+    relevance = calculate_multi_distance_core(np.array(case.query), vectors, distance)
+    similarity = [calculate_multi_distance_core(vector, vectors, distance) for vector in vectors]
+    scale = max(np.abs(relevance).max(), np.abs(np.array(similarity)).max())
+    lambda_ = 1.0 - (mmr.diversity if mmr.diversity is not None else 0.5)
+
+    pending = list(range(len(candidates)))
+    selected: list[int] = []
+    while pending and len(selected) < case.limit:
+        if selected:
+            scores = [
+                lambda_ * relevance[i] - (1.0 - lambda_) * max(similarity[i][j] for j in selected)
+                for i in pending
+            ]
+        else:  # the first pick is the most relevant candidate
+            scores = [relevance[i] for i in pending]
+        best, *rest = np.argsort(scores)[::-1]
+        if rest and scores[best] - scores[rest[0]] <= rel_tol * scale:
+            return None
+        selected.append(pending.pop(best))
+    return [candidates[i].id for i in selected]
+
+
+def compare_mmr_results(
+    local_client: QdrantBase, remote_client: QdrantBase, case: MmrCase
+) -> None:
+    try:
+        compare_client_results(local_client, remote_client, case.run)
+    except AssertionError:
+        # at a near-tie either result is right, otherwise the mismatch is real
+        if replay_mmr_selection(local_client, case) is not None:
+            raise
 
 
 def test_simple():
@@ -184,18 +249,18 @@ def test_mmr():
     remote_client = init_remote()
     init_client(remote_client, fixture_points, vectors_config=multi_vector_config)
 
-    compare_client_results(local_client, remote_client, searcher.default_mmr_query)
-    compare_client_results(local_client, remote_client, searcher.mmr_query_parametrized)
-    compare_client_results(
-        local_client, remote_client, searcher.mmr_query_parametrized_score_threshold
+    compare_mmr_results(local_client, remote_client, searcher.default_mmr_query())
+    compare_mmr_results(local_client, remote_client, searcher.mmr_query_parametrized())
+    compare_mmr_results(
+        local_client, remote_client, searcher.mmr_query_parametrized_score_threshold()
     )
-    compare_client_results(local_client, remote_client, searcher.mmr_query_parametrized_dot)
-    compare_client_results(
-        local_client, remote_client, searcher.mmr_query_parametrized_dot_score_threshold
+    compare_mmr_results(local_client, remote_client, searcher.mmr_query_parametrized_dot())
+    compare_mmr_results(
+        local_client, remote_client, searcher.mmr_query_parametrized_dot_score_threshold()
     )
-    compare_client_results(local_client, remote_client, searcher.mmr_query_parametrized_euclid)
-    compare_client_results(
-        local_client, remote_client, searcher.mmr_query_parametrized_euclid_score_threshold
+    compare_mmr_results(local_client, remote_client, searcher.mmr_query_parametrized_euclid())
+    compare_mmr_results(
+        local_client, remote_client, searcher.mmr_query_parametrized_euclid_score_threshold()
     )
 
 

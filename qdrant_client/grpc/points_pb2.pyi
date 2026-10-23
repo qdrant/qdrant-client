@@ -1237,7 +1237,7 @@ class DenseVectorCreationConfig(google.protobuf.message.Message):
     def multivector_config(self) -> collections_pb2.MultiVectorConfig:
         """Configuration for multi-vector search (e.g., ColBERT)"""
     datatype: collections_pb2.Datatype.ValueType
-    """Data type of the vectors (Float32, Float16, Uint8, Turbo4)"""
+    """Data type of the vectors (Float32, Float16, Uint8, Turbo4, Turbo8, Turbo16)"""
     def __init__(
         self,
         *,
@@ -1651,8 +1651,8 @@ class AcornSearchParams(google.protobuf.message.Message):
 global___AcornSearchParams = AcornSearchParams
 
 class IdfParams(google.protobuf.message.Message):
-    """Population over which sparse vector IDF statistics are computed for scoring - the IDF corpus.
-    Only applicable to sparse vectors with the IDF modifier enabled.
+    """Population over which IDF statistics are computed for scoring - the IDF corpus.
+    Only applicable to sparse vectors with the IDF modifier enabled, and to BM25 over a text index.
     """
 
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
@@ -1702,7 +1702,7 @@ class SearchParams(google.protobuf.message.Message):
         """ACORN search params"""
     @property
     def idf(self) -> global___IdfParams:
-        """Which population sparse vector IDF statistics are computed over.
+        """Which population IDF statistics are computed over.
         If unset, statistics are collection-wide (global).
         """
     def __init__(
@@ -2876,6 +2876,9 @@ class Expression(google.protobuf.message.Message):
     EXP_DECAY_FIELD_NUMBER: builtins.int
     GAUSS_DECAY_FIELD_NUMBER: builtins.int
     LIN_DECAY_FIELD_NUMBER: builtins.int
+    ACOSH_FIELD_NUMBER: builtins.int
+    MAX_FIELD_NUMBER: builtins.int
+    MIN_FIELD_NUMBER: builtins.int
     constant: builtins.float
     variable: builtins.str
     """Payload key or reference to score."""
@@ -2928,6 +2931,15 @@ class Expression(google.protobuf.message.Message):
     @property
     def lin_decay(self) -> global___DecayParamsExpression:
         """Linear decay"""
+    @property
+    def acosh(self) -> global___Expression:
+        """Inverse hyperbolic cosine"""
+    @property
+    def max(self) -> global___MaxExpression:
+        """Maximum"""
+    @property
+    def min(self) -> global___MinExpression:
+        """Minimum"""
     def __init__(
         self,
         *,
@@ -2950,10 +2962,13 @@ class Expression(google.protobuf.message.Message):
         exp_decay: global___DecayParamsExpression | None = ...,
         gauss_decay: global___DecayParamsExpression | None = ...,
         lin_decay: global___DecayParamsExpression | None = ...,
+        acosh: global___Expression | None = ...,
+        max: global___MaxExpression | None = ...,
+        min: global___MinExpression | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["abs", b"abs", "condition", b"condition", "constant", b"constant", "datetime", b"datetime", "datetime_key", b"datetime_key", "div", b"div", "exp", b"exp", "exp_decay", b"exp_decay", "gauss_decay", b"gauss_decay", "geo_distance", b"geo_distance", "lin_decay", b"lin_decay", "ln", b"ln", "log10", b"log10", "mult", b"mult", "neg", b"neg", "pow", b"pow", "sqrt", b"sqrt", "sum", b"sum", "variable", b"variable", "variant", b"variant"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["abs", b"abs", "condition", b"condition", "constant", b"constant", "datetime", b"datetime", "datetime_key", b"datetime_key", "div", b"div", "exp", b"exp", "exp_decay", b"exp_decay", "gauss_decay", b"gauss_decay", "geo_distance", b"geo_distance", "lin_decay", b"lin_decay", "ln", b"ln", "log10", b"log10", "mult", b"mult", "neg", b"neg", "pow", b"pow", "sqrt", b"sqrt", "sum", b"sum", "variable", b"variable", "variant", b"variant"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["variant", b"variant"]) -> typing_extensions.Literal["constant", "variable", "condition", "geo_distance", "datetime", "datetime_key", "mult", "sum", "div", "neg", "abs", "sqrt", "pow", "exp", "log10", "ln", "exp_decay", "gauss_decay", "lin_decay"] | None: ...
+    def HasField(self, field_name: typing_extensions.Literal["abs", b"abs", "acosh", b"acosh", "condition", b"condition", "constant", b"constant", "datetime", b"datetime", "datetime_key", b"datetime_key", "div", b"div", "exp", b"exp", "exp_decay", b"exp_decay", "gauss_decay", b"gauss_decay", "geo_distance", b"geo_distance", "lin_decay", b"lin_decay", "ln", b"ln", "log10", b"log10", "max", b"max", "min", b"min", "mult", b"mult", "neg", b"neg", "pow", b"pow", "sqrt", b"sqrt", "sum", b"sum", "variable", b"variable", "variant", b"variant"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["abs", b"abs", "acosh", b"acosh", "condition", b"condition", "constant", b"constant", "datetime", b"datetime", "datetime_key", b"datetime_key", "div", b"div", "exp", b"exp", "exp_decay", b"exp_decay", "gauss_decay", b"gauss_decay", "geo_distance", b"geo_distance", "lin_decay", b"lin_decay", "ln", b"ln", "log10", b"log10", "max", b"max", "min", b"min", "mult", b"mult", "neg", b"neg", "pow", b"pow", "sqrt", b"sqrt", "sum", b"sum", "variable", b"variable", "variant", b"variant"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["variant", b"variant"]) -> typing_extensions.Literal["constant", "variable", "condition", "geo_distance", "datetime", "datetime_key", "mult", "sum", "div", "neg", "abs", "sqrt", "pow", "exp", "log10", "ln", "exp_decay", "gauss_decay", "lin_decay", "acosh", "max", "min"] | None: ...
 
 global___Expression = Expression
 
@@ -3005,6 +3020,36 @@ class SumExpression(google.protobuf.message.Message):
     def ClearField(self, field_name: typing_extensions.Literal["sum", b"sum"]) -> None: ...
 
 global___SumExpression = SumExpression
+
+class MaxExpression(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    MAX_FIELD_NUMBER: builtins.int
+    @property
+    def max(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___Expression]: ...
+    def __init__(
+        self,
+        *,
+        max: collections.abc.Iterable[global___Expression] | None = ...,
+    ) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["max", b"max"]) -> None: ...
+
+global___MaxExpression = MaxExpression
+
+class MinExpression(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    MIN_FIELD_NUMBER: builtins.int
+    @property
+    def min(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___Expression]: ...
+    def __init__(
+        self,
+        *,
+        min: collections.abc.Iterable[global___Expression] | None = ...,
+    ) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["min", b"min"]) -> None: ...
+
+global___MinExpression = MinExpression
 
 class DivExpression(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
@@ -3194,6 +3239,7 @@ class Query(google.protobuf.message.Message):
     NEAREST_WITH_MMR_FIELD_NUMBER: builtins.int
     RRF_FIELD_NUMBER: builtins.int
     RELEVANCE_FEEDBACK_FIELD_NUMBER: builtins.int
+    TEXT_FIELD_NUMBER: builtins.int
     @property
     def nearest(self) -> global___VectorInput:
         """Find the nearest neighbors to this vector."""
@@ -3225,6 +3271,9 @@ class Query(google.protobuf.message.Message):
     @property
     def relevance_feedback(self) -> global___RelevanceFeedbackInput:
         """Search with feedback from some oracle."""
+    @property
+    def text(self) -> global___TextQuery:
+        """Rank by BM25 over the text index of the payload field named by `using`."""
     def __init__(
         self,
         *,
@@ -3239,12 +3288,64 @@ class Query(google.protobuf.message.Message):
         nearest_with_mmr: global___NearestInputWithMmr | None = ...,
         rrf: global___Rrf | None = ...,
         relevance_feedback: global___RelevanceFeedbackInput | None = ...,
+        text: global___TextQuery | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["context", b"context", "discover", b"discover", "formula", b"formula", "fusion", b"fusion", "nearest", b"nearest", "nearest_with_mmr", b"nearest_with_mmr", "order_by", b"order_by", "recommend", b"recommend", "relevance_feedback", b"relevance_feedback", "rrf", b"rrf", "sample", b"sample", "variant", b"variant"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["context", b"context", "discover", b"discover", "formula", b"formula", "fusion", b"fusion", "nearest", b"nearest", "nearest_with_mmr", b"nearest_with_mmr", "order_by", b"order_by", "recommend", b"recommend", "relevance_feedback", b"relevance_feedback", "rrf", b"rrf", "sample", b"sample", "variant", b"variant"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["variant", b"variant"]) -> typing_extensions.Literal["nearest", "recommend", "discover", "context", "order_by", "fusion", "sample", "formula", "nearest_with_mmr", "rrf", "relevance_feedback"] | None: ...
+    def HasField(self, field_name: typing_extensions.Literal["context", b"context", "discover", b"discover", "formula", b"formula", "fusion", b"fusion", "nearest", b"nearest", "nearest_with_mmr", b"nearest_with_mmr", "order_by", b"order_by", "recommend", b"recommend", "relevance_feedback", b"relevance_feedback", "rrf", b"rrf", "sample", b"sample", "text", b"text", "variant", b"variant"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["context", b"context", "discover", b"discover", "formula", b"formula", "fusion", b"fusion", "nearest", b"nearest", "nearest_with_mmr", b"nearest_with_mmr", "order_by", b"order_by", "recommend", b"recommend", "relevance_feedback", b"relevance_feedback", "rrf", b"rrf", "sample", b"sample", "text", b"text", "variant", b"variant"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["variant", b"variant"]) -> typing_extensions.Literal["nearest", "recommend", "discover", "context", "order_by", "fusion", "sample", "formula", "nearest_with_mmr", "rrf", "relevance_feedback", "text"] | None: ...
 
 global___Query = Query
+
+class TextQuery(google.protobuf.message.Message):
+    """Rank by BM25 over the text index of the payload field named by `using`,
+    which must have `scoring` set. A point scores when it holds any of the
+    query's terms: required or excluded terms belong in the request's filter.
+    """
+
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    QUERY_FIELD_NUMBER: builtins.int
+    BM25_FIELD_NUMBER: builtins.int
+    query: builtins.str
+    """Text to search for, tokenized by the field's text index."""
+    @property
+    def bm25(self) -> global___Bm25Params:
+        """BM25 parameters, for a field scored with BM25."""
+    def __init__(
+        self,
+        *,
+        query: builtins.str = ...,
+        bm25: global___Bm25Params | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["bm25", b"bm25", "scoring", b"scoring"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["bm25", b"bm25", "query", b"query", "scoring", b"scoring"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["scoring", b"scoring"]) -> typing_extensions.Literal["bm25"] | None: ...
+
+global___TextQuery = TextQuery
+
+class Bm25Params(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    K_FIELD_NUMBER: builtins.int
+    B_FIELD_NUMBER: builtins.int
+    k: builtins.float
+    """Term frequency saturation. Default is 1.2."""
+    b: builtins.float
+    """Document length normalization, from 0 (none) to 1 (full). Default is 0.75."""
+    def __init__(
+        self,
+        *,
+        k: builtins.float | None = ...,
+        b: builtins.float | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_b", b"_b", "_k", b"_k", "b", b"b", "k", b"k"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_b", b"_b", "_k", b"_k", "b", b"b", "k", b"k"]) -> None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_b", b"_b"]) -> typing_extensions.Literal["b"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_k", b"_k"]) -> typing_extensions.Literal["k"] | None: ...
+
+global___Bm25Params = Bm25Params
 
 class PrefetchQuery(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
@@ -3270,6 +3371,7 @@ class PrefetchQuery(google.protobuf.message.Message):
     using: builtins.str
     """Define which vector to use for querying.
     If missing, the default vector is used.
+    For a `text` query, the payload field whose text index to search.
     """
     @property
     def filter(self) -> qdrant_common_pb2.Filter:
@@ -3348,6 +3450,7 @@ class QueryPoints(google.protobuf.message.Message):
     using: builtins.str
     """Define which vector to use for querying.
     If missing, the default vector is used.
+    For a `text` query, the payload field whose text index to search.
     """
     @property
     def filter(self) -> qdrant_common_pb2.Filter:
@@ -3497,6 +3600,7 @@ class QueryPointGroups(google.protobuf.message.Message):
     using: builtins.str
     """Define which vector to use for querying.
     If missing, the default vector is used.
+    For a `text` query, the payload field whose text index to search.
     """
     @property
     def filter(self) -> qdrant_common_pb2.Filter:

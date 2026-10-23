@@ -29,10 +29,12 @@ from qdrant_client.local.local_collection import (
     LocalCollection,
     DEFAULT_VECTOR_NAME,
     ignore_mentioned_ids_filter,
+    to_jsonable_python,
 )
 from qdrant_client.local.payload_value_setter import merge_payload
 
 META_INFO_FILENAME = "meta.json"
+INVALID_NAME_CHARS = ("<", ">", ":", '"', "/", "\\", "|", "?", "*", "\x00", "\x1f")
 
 
 def _parse_search_params(search_params: types.SearchParams | None) -> types.SearchParams | None:
@@ -144,6 +146,11 @@ class AsyncQdrantLocal(AsyncQdrantBase):
                             stacklevel=5,
                         )
                 self.aliases = meta["aliases"]
+                for collection_name, indexes in meta.get("text_indexes", {}).items():
+                    self.collections[collection_name].text_indexes = {
+                        field_name: rest_models.TextIndexParams(**params)
+                        for field_name, params in indexes.items()
+                    }
         lock_file_path = os.path.join(self.location, ".lock")
         if not os.path.exists(lock_file_path):
             os.makedirs(self.location, exist_ok=True)
@@ -167,19 +174,28 @@ class AsyncQdrantLocal(AsyncQdrantBase):
             return
         if self.closed:
             raise RuntimeError("QdrantLocal instance is closed. Please create a new instance.")
-        meta_path = os.path.join(self.location, META_INFO_FILENAME)
-        with open(meta_path, "w") as f:
-            f.write(
-                json.dumps(
-                    {
-                        "collections": {
-                            collection_name: to_dict(collection.config)
-                            for (collection_name, collection) in self.collections.items()
-                        },
-                        "aliases": self.aliases if aliases is None else aliases,
+        meta = json.dumps(
+            {
+                "collections": {
+                    collection_name: to_dict(collection.config)
+                    for collection_name, collection in self.collections.items()
+                },
+                "aliases": self.aliases if aliases is None else aliases,
+                "text_indexes": {
+                    collection_name: {
+                        field_name: to_dict(params, exclude_none=True)
+                        for field_name, params in collection.text_indexes.items()
                     }
-                )
-            )
+                    for collection_name, collection in self.collections.items()
+                    if collection.text_indexes
+                },
+            }
+        )
+        meta_path = os.path.join(self.location, META_INFO_FILENAME)
+        tmp_path = f"{meta_path}.tmp"
+        with open(tmp_path, "w") as f:
+            f.write(meta)
+        os.replace(tmp_path, meta_path)
 
     def _get_collection(self, collection_name: str) -> LocalCollection:
         if self.closed:
@@ -379,7 +395,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         if prefetch.query is None:
             return prefetch
         prefetch = deepcopy(prefetch)
-        (query, mentioned_ids) = self._resolve_query_input(
+        query, mentioned_ids = self._resolve_query_input(
             collection_name, prefetch.query, prefetch.using, prefetch.lookup_from
         )
         prefetch.query = query
@@ -418,7 +434,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
                 stacklevel=5,
             )
         if query is not None:
-            (query, mentioned_ids) = self._resolve_query_input(
+            query, mentioned_ids = self._resolve_query_input(
                 collection_name, query, using, lookup_from
             )
             query_filter = ignore_mentioned_ids_filter(query_filter, list(mentioned_ids))
@@ -499,7 +515,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
                 stacklevel=5,
             )
         if query is not None:
-            (query, mentioned_ids) = self._resolve_query_input(
+            query, mentioned_ids = self._resolve_query_input(
                 collection_name, query, using, lookup_from
             )
             query_filter = ignore_mentioned_ids_filter(query_filter, list(mentioned_ids))
@@ -721,7 +737,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         return types.CollectionsAliasesResponse(
             aliases=[
                 rest_models.AliasDescription(alias_name=alias_name, collection_name=name)
-                for (alias_name, name) in self.aliases.items()
+                for alias_name, name in self.aliases.items()
                 if name == collection_name
             ]
         )
@@ -732,7 +748,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         return types.CollectionsAliasesResponse(
             aliases=[
                 rest_models.AliasDescription(alias_name=alias_name, collection_name=name)
-                for (alias_name, name) in self.aliases.items()
+                for alias_name, name in self.aliases.items()
             ]
         )
 
@@ -742,7 +758,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         return types.CollectionsResponse(
             collections=[
                 rest_models.CollectionDescription(name=name)
-                for (name, _) in self.collections.items()
+                for name, _ in self.collections.items()
             ]
         )
 
@@ -762,9 +778,21 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         collection_name: str,
         sparse_vectors_config: Mapping[str, types.SparseVectorParams] | None = None,
         metadata: types.Payload | None = None,
+        vectors_config: types.VectorsConfigDiff | None = None,
         **kwargs: Any,
     ) -> bool:
         _collection = self._get_collection(collection_name)
+        metadata = to_jsonable_python(metadata)
+        if isinstance(vectors_config, Mapping):
+            for vector_name in vectors_config:
+                if (
+                    vector_name not in _collection.vectors_config
+                    and vector_name not in _collection.multivectors_config
+                ):
+                    raise ValueError(f"Wrong input: Not existing vector name error: {vector_name}")
+        for vector_name in sparse_vectors_config or {}:
+            if vector_name not in _collection.sparse_vectors:
+                raise ValueError(f"Vector {vector_name} does not exist in the collection")
         updated = False
         if sparse_vectors_config is not None:
             for vector_name, vector_params in sparse_vectors_config.items():
@@ -772,23 +800,41 @@ class AsyncQdrantLocal(AsyncQdrantBase):
             updated = True
         if metadata is not None:
             if _collection.config.metadata is not None:
-                merge_payload(_collection.config.metadata, deepcopy(metadata))
+                merge_payload(_collection.config.metadata, metadata)
             else:
-                _collection.config.metadata = deepcopy(metadata)
+                _collection.config.metadata = metadata
             updated = True
         self._save()
         return updated
 
     @staticmethod
     def _validate_new_collection_name(collection_name: str) -> None:
-        invalid_chars = ("<", ">", ":", '"', "/", "\\", "|", "?", "*", "\x00", "\x1f")
-        for char in invalid_chars:
+        for char in INVALID_NAME_CHARS:
             if char in collection_name:
                 raise ValueError(f"Collection name cannot contain {char!r} char")
         if collection_name in ("", ".", ".."):
             raise ValueError(f"Collection name cannot be {collection_name!r}")
         if len(collection_name) > 255:
             raise ValueError("Collection name must be at most 255 characters long")
+
+    @staticmethod
+    def _validate_new_vector_name(vector_name: str, kind: str) -> None:
+        if len(vector_name.encode()) > 200:
+            raise ValueError(
+                f"Invalid {kind} vector name `{vector_name}`: must be at most 200 bytes long"
+            )
+        for char in INVALID_NAME_CHARS:
+            if char in vector_name:
+                raise ValueError(
+                    f"Invalid {kind} vector name `{vector_name}`: cannot contain {char!r} char"
+                )
+        if vector_name in (".", ".."):
+            raise ValueError(f"Invalid {kind} vector name `{vector_name}`")
+
+    @staticmethod
+    def _validate_new_vector_size(size: int) -> None:
+        if not 1 <= size <= 65536:
+            raise ValueError(f"Vector size {size} is invalid. Must be from 1 to 65536.")
 
     def _collection_path(self, collection_name: str) -> str | None:
         if self.persistent:
@@ -816,7 +862,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         del _collection
         self.aliases = {
             alias_name: name
-            for (alias_name, name) in self.aliases.items()
+            for alias_name, name in self.aliases.items()
             if name != collection_name
         }
         collection_path = self._collection_path(collection_name)
@@ -832,17 +878,27 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         sparse_vectors_config: Mapping[str, types.SparseVectorParams] | None = None,
         metadata: types.Payload | None = None,
         payload: types.PayloadStorageParams | None = None,
+        id_tracker: types.IdTrackerParams | None = None,
         **kwargs: Any,
     ) -> bool:
         if self.closed:
             raise RuntimeError("QdrantLocal instance is closed. Please create a new instance.")
         self._validate_new_collection_name(collection_name)
+        if isinstance(vectors_config, Mapping):
+            for vector_name, vector_params in vectors_config.items():
+                self._validate_new_vector_name(vector_name, "dense")
+                self._validate_new_vector_size(vector_params.size)
+        elif vectors_config is not None:
+            self._validate_new_vector_size(vectors_config.size)
+        for vector_name in sparse_vectors_config or {}:
+            self._validate_new_vector_name(vector_name, "sparse")
         if sparse_vectors_config is not None and "" in sparse_vectors_config:
             raise ValueError("Sparse vector name cannot be empty")
         if collection_name in self.collections:
             raise ValueError(f"Collection {collection_name} already exists")
         if collection_name in self.aliases:
             raise ValueError(f"Alias {collection_name} already exists")
+        metadata = to_jsonable_python(metadata)
         collection_path = self._collection_path(collection_name)
         if collection_path is not None:
             os.makedirs(collection_path, exist_ok=True)
@@ -850,7 +906,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
             rest_models.CreateCollection(
                 vectors=vectors_config or {},
                 sparse_vectors=sparse_vectors_config,
-                metadata=deepcopy(metadata),
+                metadata=metadata,
             ),
             location=collection_path,
             force_disable_check_same_thread=self.force_disable_check_same_thread,
@@ -866,6 +922,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         sparse_vectors_config: Mapping[str, types.SparseVectorParams] | None = None,
         metadata: types.Payload | None = None,
         payload: types.PayloadStorageParams | None = None,
+        id_tracker: types.IdTrackerParams | None = None,
         **kwargs: Any,
     ) -> bool:
         self._validate_new_collection_name(collection_name)
@@ -876,6 +933,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
             sparse_vectors_config,
             metadata=metadata,
             payload=payload,
+            id_tracker=id_tracker,
         )
 
     def upload_points(
@@ -917,6 +975,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         update_mode: types.UpdateMode | None = None,
         **kwargs: Any,
     ) -> None:
+
         def uuid_generator() -> Generator[str, None, None]:
             while True:
                 yield str(uuid4())
@@ -938,8 +997,10 @@ class AsyncQdrantLocal(AsyncQdrantBase):
                 vector=(vector.tolist() if isinstance(vector, np.ndarray) else vector) or {},
                 payload=payload or {},
             )
-            for (point_id, vector, payload) in zip(
-                ids or uuid_generator(), iter(vectors), payload or itertools.cycle([{}])
+            for point_id, vector, payload in zip(
+                uuid_generator() if ids is None else ids,
+                iter(vectors),
+                itertools.cycle([{}]) if payload is None else payload,
             )
         ]
         if len(point_structs) > 0:
@@ -953,23 +1014,33 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         field_type: types.PayloadSchemaType | None = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
-        show_warning_once(
-            message="Payload indexes have no effect in the local Qdrant. Please use server Qdrant if you need payload indexes.",
-            category=UserWarning,
-            idx="create-local-payload-indexes",
-            stacklevel=5,
-        )
+        collection = self._get_collection(collection_name)
+        field_schema = field_schema if field_schema is not None else field_type
+        if field_schema is not None:
+            collection.create_payload_index(field_name, field_schema)
+            self._save()
+        if field_name not in collection.text_indexes:
+            show_warning_once(
+                message="Payload indexes have no effect in the local Qdrant, except text indexes with `scoring`, which enable text queries. Please use server Qdrant if you need payload indexes.",
+                category=UserWarning,
+                idx="create-local-payload-indexes",
+                stacklevel=5,
+            )
         return self._default_update_result()
 
     async def delete_payload_index(
         self, collection_name: str, field_name: str, **kwargs: Any
     ) -> types.UpdateResult:
-        show_warning_once(
-            message="Payload indexes have no effect in the local Qdrant. Please use server Qdrant if you need payload indexes.",
-            category=UserWarning,
-            idx="delete-local-payload-indexes",
-            stacklevel=5,
-        )
+        collection = self._get_collection(collection_name)
+        if field_name not in collection.text_indexes:
+            show_warning_once(
+                message="Payload indexes have no effect in the local Qdrant, except text indexes with `scoring`, which enable text queries. Please use server Qdrant if you need payload indexes.",
+                category=UserWarning,
+                idx="delete-local-payload-indexes",
+                stacklevel=5,
+            )
+        collection.delete_payload_index(field_name)
+        self._save()
         return self._default_update_result()
 
     async def create_vector_name(
@@ -981,8 +1052,11 @@ class AsyncQdrantLocal(AsyncQdrantBase):
     ) -> types.UpdateResult:
         collection = self._get_collection(collection_name)
         if isinstance(vector_name_config, rest_models.DenseVectorNameConfig):
+            self._validate_new_vector_name(vector_name, "dense")
+            self._validate_new_vector_size(vector_name_config.dense.size)
             collection.create_dense_vector_name(vector_name, vector_name_config.dense)
         elif isinstance(vector_name_config, rest_models.SparseVectorNameConfig):
+            self._validate_new_vector_name(vector_name, "sparse")
             collection.create_sparse_vector_name(vector_name, vector_name_config.sparse)
         else:
             raise ValueError(f"Unsupported vector name config type: {type(vector_name_config)}")

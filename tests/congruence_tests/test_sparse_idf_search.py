@@ -195,13 +195,15 @@ def test_idf_scope_narrows_statistics():
     query = generate_random_sparse_vector(sparse_text_vector_size, density=0.3)
 
     def search(idf: models.IdfParams | None):
-        return lambda client: client.query_points(
-            COLLECTION_NAME,
-            using="sparse-text",
-            query=query,
-            search_params=models.SearchParams(idf=idf) if idf is not None else None,
-            limit=10,
-        ).points
+        return lambda client: (
+            client.query_points(
+                COLLECTION_NAME,
+                using="sparse-text",
+                query=query,
+                search_params=models.SearchParams(idf=idf) if idf is not None else None,
+                limit=10,
+            ).points
+        )
 
     narrowed = models.IdfCorpusParams(corpus=corpus_filter([0, 1]))
 
@@ -213,9 +215,9 @@ def test_idf_scope_narrows_statistics():
 
     for client in (local_client, remote_client):
         globally = [point.score for point in search(None)(client)]
-        assert [
-            point.score for point in search(narrowed)(client)
-        ] != globally, "narrowing the IDF corpus did not change the scores"
+        assert [point.score for point in search(narrowed)(client)] != globally, (
+            "narrowing the IDF corpus did not change the scores"
+        )
 
 
 def test_idf_ignores_points_without_the_sparse_vector():
@@ -279,17 +281,19 @@ def test_idf_scope_in_prefetch():
         compare_client_results(
             local_client,
             remote_client,
-            lambda c, idf=idf: c.query_points(
-                COLLECTION_NAME,
-                prefetch=models.Prefetch(
-                    query=query,
-                    using="sparse-text",
-                    limit=20,
-                    params=models.SearchParams(idf=idf),
-                ),
-                query=models.FusionQuery(fusion=models.Fusion.RRF),
-                limit=10,
-            ).points,
+            lambda c, idf=idf: (
+                c.query_points(
+                    COLLECTION_NAME,
+                    prefetch=models.Prefetch(
+                        query=query,
+                        using="sparse-text",
+                        limit=20,
+                        params=models.SearchParams(idf=idf),
+                    ),
+                    query=models.FusionQuery(fusion=models.Fusion.RRF),
+                    limit=10,
+                ).points
+            ),
         )
 
 
@@ -419,9 +423,9 @@ def test_idf_after_deletion(operation: str):
                 )
         compare_client_results(local_client, remote_client, search)
 
-    assert [
-        point.score for point in search(local_client)
-    ] != whole_corpus, "deleting half of the corpus did not change the IDF scores"
+    assert [point.score for point in search(local_client)] != whole_corpus, (
+        "deleting half of the corpus did not change the IDF scores"
+    )
 
     # re-adding the vectors puts the points back into the corpus, without counting the ones
     # that were never taken out a second time
@@ -436,9 +440,9 @@ def test_idf_after_deletion(operation: str):
             client.upsert(COLLECTION_NAME, doomed, wait=True)
 
     compare_client_results(local_client, remote_client, search)
-    assert [point.score for point in search(local_client)] == pytest.approx(
-        whole_corpus
-    ), "the corpus did not return to its original size"
+    assert [point.score for point in search(local_client)] == pytest.approx(whole_corpus), (
+        "the corpus did not return to its original size"
+    )
 
 
 @pytest.mark.parametrize("operation", ["update_vectors", "delete_vectors"])
@@ -502,11 +506,15 @@ def test_vector_update_with_a_missing_point(operation: str, missing: str):
     compare_client_results(*clients, scroll)
     compare_client_results(
         *clients,
-        lambda client: client.query_points(
-            COLLECTION_NAME,
-            using="sparse-text",
-            query=replacement,
-            search_params=models.SearchParams(idf=models.IdfCorpusParams(corpus=models.Filter())),
-            limit=10,
-        ).points,
+        lambda client: (
+            client.query_points(
+                COLLECTION_NAME,
+                using="sparse-text",
+                query=replacement,
+                search_params=models.SearchParams(
+                    idf=models.IdfCorpusParams(corpus=models.Filter())
+                ),
+                limit=10,
+            ).points
+        ),
     )

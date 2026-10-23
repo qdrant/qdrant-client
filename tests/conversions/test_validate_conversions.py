@@ -84,9 +84,9 @@ def test_conversion_completeness():
                 # Is an enum
                 assert grpc_fixture == fixture, f"{model_class_name} conversion is broken"
             elif MessageToDict(grpc_fixture) != MessageToDict(fixture):
-                assert MessageToDict(grpc_fixture) == MessageToDict(
-                    fixture
-                ), f"{model_class_name} conversion is broken"
+                assert MessageToDict(grpc_fixture) == MessageToDict(fixture), (
+                    f"{model_class_name} conversion is broken"
+                )
 
 
 def test_nested_filter():
@@ -303,9 +303,9 @@ def test_datetime_to_timestamp_conversions(dt: datetime | date):
     if isinstance(dt, date) and not isinstance(dt, datetime):
         dt = datetime.combine(dt, datetime.min.time())
 
-    assert (
-        dt.utctimetuple() == grpc_to_rest.utctimetuple()
-    ), f"Failed for {dt}, should be equal to {grpc_to_rest}"
+    assert dt.utctimetuple() == grpc_to_rest.utctimetuple(), (
+        f"Failed for {dt}, should be equal to {grpc_to_rest}"
+    )
 
 
 @pytest.mark.parametrize(
@@ -800,10 +800,11 @@ def test_convert_points_update_operation_falsy_shard_key():
             grpc_operation = RestToGrpc.convert_update_operation(operation)
             inner = getattr(grpc_operation, grpc_operation.WhichOneof("operation"))
 
-            assert inner.HasField(
-                "shard_key_selector"
-            ), f"{type(operation).__name__} dropped shard_key={shard_key!r}"
+            assert inner.HasField("shard_key_selector"), (
+                f"{type(operation).__name__} dropped shard_key={shard_key!r}"
+            )
             assert GrpcToRest.convert_shard_key_selector(inner.shard_key_selector) == shard_key
+            assert GrpcToRest.convert_points_update_operation(grpc_operation) == operation
 
 
 def test_convert_points_update_operation_empty_points():
@@ -873,6 +874,27 @@ def test_convert_keyword_index_params_prefix():
     grpc_params, recovered = round_trip(False)
     assert not grpc_params.HasField("prefix")
     assert recovered.prefix is None
+
+
+def test_convert_text_index_params_scoring():
+    from qdrant_client import models
+    from qdrant_client.conversions.conversion import GrpcToRest, RestToGrpc
+
+    def round_trip(scoring):
+        rest_params = models.TextIndexParams(type=models.TextIndexType.TEXT, scoring=scoring)
+        grpc_params = RestToGrpc.convert_text_index_params(rest_params)
+        return grpc_params, GrpcToRest.convert_text_index_params(grpc_params)
+
+    # `True` is a shortcut for BM25 with the default params, it is recovered in the full form,
+    # the same way the server returns it
+    grpc_params, recovered = round_trip(True)
+    assert grpc_params.HasField("scoring")
+    assert recovered.scoring == models.TextScoringParams(type=models.TextScoringType.BM25)
+
+    # `False` disables scoring, which is the same as leaving it unset
+    grpc_params, recovered = round_trip(False)
+    assert not grpc_params.HasField("scoring")
+    assert recovered.scoring is None
 
 
 def test_convert_update_result_operation_id_presence():

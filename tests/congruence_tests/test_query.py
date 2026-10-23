@@ -24,9 +24,11 @@ from tests.congruence_tests.test_common import (
     sparse_vectors_config,
     generate_multivector_fixtures,
     multi_vector_config,
+    has_near_tie_at_limit,
 )
 from tests.fixtures.expressions import one_random_expression_please
 from tests.fixtures.filters import one_random_filter_please
+from tests.fixtures.payload import random_real_word
 from tests.fixtures.points import (
     generate_random_sparse_vector,
     generate_random_multivector,
@@ -433,6 +435,19 @@ class TestSimpleSearcher:
             query=models.RrfQuery(rrf=models.Rrf(k=10)),
             with_payload=True,
             limit=10,
+        )
+
+    def dense_query_weighted_rrf(self, client: QdrantBase) -> models.QueryResponse:
+        # with 3:1 weights, text rank 3 ties with code rank 1; limit=2 keeps all scores distinct
+        return client.query_points(
+            collection_name=COLLECTION_NAME,
+            prefetch=[
+                models.Prefetch(query=self.dense_vector_query_text, using="text", limit=2),
+                models.Prefetch(query=self.dense_vector_query_code, using="code", limit=2),
+            ],
+            query=models.RrfQuery(rrf=models.Rrf(weights=[3.0, 1.0])),
+            with_payload=True,
+            limit=4,
         )
 
     def dense_query_rrf_plain_prefetch(self, client: QdrantBase) -> models.QueryResponse:
@@ -1252,18 +1267,19 @@ class TestSimpleSearcher:
 
 
 def group_by_keys():
-    return [
+    keys = [
         "maybe",
         "rand_digit",
         "two_words",
         "city.name",
         "maybe_null",
         "id",
-        "two_words[0]",
-        "nested.array[0].word",
-        "nested_array[0]",
         "nested_array[]",
     ]
+    major, minor, patch, dev = read_version()
+    if not dev and None not in (major, minor, patch) and (major, minor, patch) < (1, 19, 2):
+        return keys  # group_by on a path with an array index finds no groups before 1.19.2
+    return keys + ["two_words[0]", "nested.array[0].word", "nested_array[0]"]
 
 
 def init_clients(fixture_points, **kwargs) -> tuple[QdrantClient, QdrantClient, QdrantClient]:
@@ -1284,8 +1300,21 @@ def compare_clients_results(
     foo: Callable[[QdrantBase, Any], Any],
     **kwargs: Any,
 ):
-    compare_client_results(local_client, http_client, foo, **kwargs)
-    compare_client_results(http_client, grpc_client, foo, **kwargs)
+    # Compare each transport against the local client: local mode is exact and always returns the
+    # best answers, while server group-by is best-effort and its fill varies between identical
+    # requests, so one remote result can't bound the other
+    local_result = []
+
+    def foo_local_once(client: QdrantBase, **kw: Any) -> Any:
+        # local mode is the slow side, query it once for both comparisons
+        if client is local_client:
+            if not local_result:
+                local_result.append(foo(client, **kw))
+            return local_result[0]
+        return foo(client, **kw)
+
+    compare_client_results(local_client, http_client, foo_local_once, **kwargs)
+    compare_client_results(local_client, grpc_client, foo_local_once, **kwargs)
 
 
 # ---- TESTS  ---- #
@@ -1469,6 +1498,17 @@ def test_dense_query_filtered_prefetch():
                 query_filter=query_filter,
             )
         except AssertionError as e:
+            # a near-tie at a prefetch's default limit of 10 can keep a different candidate on
+            # each side, and rescoring by the image vector can rank it anywhere. Neither side is
+            # wrong there, so skip the attempt; 100 of them make it a matter of time
+            if any(
+                has_near_tie_at_limit(local_client, query, using, 10, query_filter)
+                for using, query in (
+                    ("text", searcher.dense_vector_query_text),
+                    ("code", searcher.dense_vector_query_code),
+                )
+            ):
+                continue
             print(f"\nAttempt {i} failed with filter {query_filter}")
             raise e
 
@@ -1822,6 +1862,14 @@ def test_dense_query_fusion():
     compare_clients_results(
         local_client, http_client, grpc_client, searcher.dense_query_parametrized_rrf
     )
+    compare_clients_results(
+        local_client, http_client, grpc_client, searcher.dense_query_weighted_rrf
+    )
+    # rrf scores depend only on ranks, compare_clients_results doesn't check which ids got them
+    local_points = searcher.dense_query_weighted_rrf(local_client).points
+    for client in (http_client, grpc_client):
+        remote_points = searcher.dense_query_weighted_rrf(client).points
+        assert [p.id for p in remote_points] == [p.id for p in local_points]
     compare_clients_results(
         local_client, http_client, grpc_client, searcher.dense_query_rrf_score_threshold
     )
@@ -2710,6 +2758,281 @@ def test_formula_query():
             except Exception as e:
                 print(f"\nFailed with formula {formula} on point {fixture_points[point_id]}")
                 raise e
+
+
+def test_formula_query_rejected_before_scoring():
+    fixture_points = generate_fixtures(10)
+
+    local_client, http_client, grpc_client = init_clients(fixture_points)
+
+    invalid_expressions = [
+        models.MaxExpression(max=[]),
+        models.MinExpression(min=[]),
+        models.LinDecayExpression(lin_decay=models.DecayParamsExpression(x=1.0, midpoint=2.0)),
+        models.ExpDecayExpression(exp_decay=models.DecayParamsExpression(x=1.0, midpoint=1.0)),
+        models.GaussDecayExpression(gauss_decay=models.DecayParamsExpression(x=1.0, scale=0.0)),
+        "$score[abc]",
+        "rand_digit[",
+        models.DatetimeExpression(datetime="not a datetime"),
+        models.DatetimeKeyExpression(datetime_key="rand_datetime["),
+        models.GeoDistance(
+            geo_distance=models.GeoDistanceParams(
+                origin=models.GeoPoint(lon=0.0, lat=0.0), to="rand_geo["
+            )
+        ),
+    ]
+    # a zero factor skips the rest of `mult`
+    formulas = [
+        models.FormulaQuery(formula=models.MultExpression(mult=[0.0, expression]))
+        for expression in invalid_expressions
+    ]
+    formulas.append(models.FormulaQuery(formula="$score", defaults={"$score[abc]": 1.0}))
+
+    missing_point_id = len(fixture_points)  # nothing to score
+    for formula in formulas:
+        for point_id in (0, missing_point_id):
+            prefetch = models.Prefetch(
+                filter=models.Filter(must=[models.HasIdCondition(has_id=[point_id])]),
+                using="text",
+            )
+            for client in (local_client, http_client, grpc_client):
+                with pytest.raises((ValueError, UnexpectedResponse, RpcError)):
+                    client.query_points(COLLECTION_NAME, prefetch=prefetch, query=formula)
+
+
+def test_formula_query_score_defaults():
+    fixture_points = generate_fixtures(10)
+
+    searcher = TestSimpleSearcher()
+
+    local_client, http_client, grpc_client = init_clients(fixture_points)
+
+    # points missing from the first prefetch fall back to the default of `$score`
+    prefetch = [
+        models.Prefetch(
+            query=searcher.dense_vector_query_text,
+            filter=models.Filter(must=[models.HasIdCondition(has_id=list(range(5)))]),
+            using="text",
+        ),
+        models.Prefetch(query=searcher.dense_vector_query_text, using="text"),
+    ]
+
+    def query_formula(client: QdrantBase, formula: models.FormulaQuery) -> models.QueryResponse:
+        return client.query_points(
+            COLLECTION_NAME, prefetch=prefetch, query=formula, limit=len(fixture_points)
+        )
+
+    formulas = [
+        models.FormulaQuery(formula="$score", defaults={"$score[0]": 7.0}),
+        models.FormulaQuery(formula="$score[0]", defaults={"$score": 7.0}),
+    ]
+
+    for formula in formulas:
+        compare_clients_results(
+            local_client, http_client, grpc_client, query_formula, formula=formula
+        )
+
+
+def init_text_query_clients() -> tuple[QdrantClient, QdrantClient, QdrantClient]:
+    points = generate_fixtures(200)
+    # documents of distinct lengths don't tie on scores, which the server orders arbitrarily
+    for idx, point in enumerate(points):
+        point.payload["document"] = " ".join(random_real_word() for _ in range(idx + 1))
+    # documents without words are left out of the BM25 statistics
+    points[0].payload["document"] = "!!! ???"
+    points[1].payload["document"] = 42
+    del points[2].payload["document"]
+    # the strings of a list make one document
+    points[3].payload["document"] = ["Wolf", 7, "BEAR!"]
+    # the server stores lengths above 8191 tokens rounded down, 16387 as 16384
+    points[4].payload["document"] = " ".join(["firefly"] + ["moth"] * 16386)
+
+    local_client, http_client, grpc_client = init_clients(points)
+    for client in (local_client, http_client):
+        client.create_payload_index(
+            COLLECTION_NAME,
+            "document",
+            models.TextIndexParams(type=models.TextIndexType.TEXT, scoring=True),
+        )
+    return local_client, http_client, grpc_client
+
+
+def bm25_text_query(query: str, **params: float) -> models.TextQuery:
+    return models.TextQuery(
+        text=models.TextQueryInput(
+            query=query, scoring=models.Bm25Scoring(bm25=models.Bm25Params(**params))
+        )
+    )
+
+
+def test_text_query():
+    major, minor, patch, dev = read_version()
+    if not dev and None not in (major, minor, patch) and (major, minor, patch) < (1, 20, 0):
+        pytest.skip("Text queries are supported as of qdrant 1.20.0")
+
+    local_client, http_client, grpc_client = init_text_query_clients()
+
+    def query_text(
+        client: QdrantBase, query: models.TextQuery, **kwargs: Any
+    ) -> models.QueryResponse:
+        return client.query_points(COLLECTION_NAME, query=query, using="document", **kwargs)
+
+    queries = [
+        models.TextQuery(text="wolf"),
+        models.TextQuery(text="Wolf, ape and BEAR!"),
+        models.TextQuery(text="cat cat dog"),  # a repeated term counts once
+        models.TextQuery(text=""),
+        bm25_text_query("wolf ape", k=2.0, b=0.0),
+        bm25_text_query("wolf ape", k=0.0, b=1.0),
+    ]
+    for query in queries:
+        compare_clients_results(local_client, http_client, grpc_client, query_text, query=query)
+
+    query = models.TextQuery(text="wolf bear")  # its scores range from about 0.3 to 1.2
+    digit_filter = models.Filter(
+        must=[models.FieldCondition(key="rand_digit", match=models.MatchValue(value=1))]
+    )
+    requests = [
+        dict(query_filter=digit_filter),
+        dict(score_threshold=0.9, limit=200),
+        dict(offset=5),
+    ]
+    for kwargs in requests:
+        compare_clients_results(
+            local_client, http_client, grpc_client, query_text, query=query, **kwargs
+        )
+
+    # rounding moves the long document's score by less than the usual tolerance
+    local_score, http_score = (
+        query_text(client, models.TextQuery(text="firefly")).points[0].score
+        for client in (local_client, http_client)
+    )
+    assert local_score == pytest.approx(http_score, rel=1e-5)
+
+
+def test_text_query_hybrid():
+    major, minor, patch, dev = read_version()
+    if not dev and None not in (major, minor, patch) and (major, minor, patch) < (1, 20, 0):
+        pytest.skip("Text queries are supported as of qdrant 1.20.0")
+
+    local_client, http_client, grpc_client = init_text_query_clients()
+    dense_query = TestSimpleSearcher().dense_vector_query_text
+    text_query = models.TextQuery(text="wolf ape")
+
+    def query_points(client: QdrantBase, **kwargs: Any) -> models.QueryResponse:
+        return client.query_points(COLLECTION_NAME, **kwargs)
+
+    def query_groups(client: QdrantBase) -> models.GroupsResult:
+        return client.query_points_groups(
+            COLLECTION_NAME, query=text_query, using="document", group_by="rand_digit"
+        )
+
+    fusion = dict(
+        prefetch=[
+            models.Prefetch(query=text_query, using="document"),
+            models.Prefetch(query=dense_query, using="text"),
+        ],
+        query=models.FusionQuery(fusion=models.Fusion.RRF),
+    )
+    # the statistics come from the whole collection, not from the prefetched points
+    rescoring = dict(
+        prefetch=models.Prefetch(query=dense_query, using="text", limit=50),
+        query=text_query,
+        using="document",
+    )
+    compare_clients_results(local_client, http_client, grpc_client, query_points, **fusion)
+    compare_clients_results(local_client, http_client, grpc_client, query_points, **rescoring)
+    compare_clients_results(local_client, http_client, grpc_client, query_groups)
+
+
+def test_text_query_errors():
+    major, minor, patch, dev = read_version()
+    if not dev and None not in (major, minor, patch) and (major, minor, patch) < (1, 20, 0):
+        pytest.skip("Text queries are supported as of qdrant 1.20.0")
+
+    local_client, http_client, grpc_client = init_text_query_clients()
+    for client in (local_client, http_client):
+        # an integer index replaces the text index of the field
+        client.create_payload_index(
+            COLLECTION_NAME,
+            "rand_digit",
+            models.TextIndexParams(type=models.TextIndexType.TEXT, scoring=True),
+        )
+        client.create_payload_index(
+            COLLECTION_NAME, "rand_digit", models.PayloadSchemaType.INTEGER
+        )
+        client.create_payload_index(COLLECTION_NAME, "words", models.PayloadSchemaType.TEXT)
+
+    query = models.TextQuery(text="wolf")
+    no_points = models.Filter(must=[models.HasIdCondition(has_id=[100_000])])
+    requests = [
+        dict(query=query),  # no field to search
+        dict(query=query, using="missing"),  # no index
+        dict(query=query, using="rand_digit"),  # not a text index
+        dict(query=query, using="words"),  # a text index without scoring
+        dict(query=bm25_text_query("wolf", k=-1.0), using="document"),
+        dict(query=bm25_text_query("wolf", b=1.5), using="document"),
+        # rejected even when there are no prefetched points to score
+        dict(
+            prefetch=models.Prefetch(
+                query=TestSimpleSearcher().dense_vector_query_text, using="text", filter=no_points
+            ),
+            query=query,
+            using="missing",
+        ),
+    ]
+    for request in requests:
+        for client in (local_client, http_client, grpc_client):
+            with pytest.raises((ValueError, UnexpectedResponse, RpcError)):
+                client.query_points(COLLECTION_NAME, **request)
+
+
+def test_text_query_unsupported_in_local_mode():
+    # the server supports these, local mode only supports the default tokenization
+    local_client = init_local()
+    init_client(local_client, generate_fixtures(10))
+    query = models.TextQuery(text="wolf")
+
+    def index_words(**params: Any) -> None:
+        local_client.create_payload_index(
+            COLLECTION_NAME,
+            "words",
+            models.TextIndexParams(type=models.TextIndexType.TEXT, scoring=True, **params),
+        )
+
+    # the defaults given explicitly are still the default tokenization
+    no_stemmer = models.DisabledStemmerParams(type=models.NoStemmer.NONE)
+    index_words(
+        tokenizer=models.TokenizerType.WORD,
+        lowercase=True,
+        ascii_folding=False,
+        stemmer=no_stemmer,
+    )
+    local_client.query_points(COLLECTION_NAME, query=query, using="words")
+
+    corpus = models.SearchParams(idf=models.IdfCorpusParams(corpus=models.Filter()))
+    with pytest.raises(NotImplementedError):
+        local_client.query_points(
+            COLLECTION_NAME, query=query, using="words", search_params=corpus
+        )
+
+    stemmer = models.SnowballParams(
+        type=models.Snowball.SNOWBALL, language=models.SnowballLanguage.ENGLISH
+    )
+    unsupported = [
+        dict(tokenizer=models.TokenizerType.MULTILINGUAL),
+        dict(lowercase=False),
+        dict(ascii_folding=True),
+        dict(stopwords=models.Language.ENGLISH),
+        dict(stemmer=stemmer),
+        dict(min_token_len=2),
+        dict(max_token_len=10),
+        dict(nested="offers"),
+    ]
+    for params in unsupported:
+        index_words(**params)
+        with pytest.raises(NotImplementedError):
+            local_client.query_points(COLLECTION_NAME, query=query, using="words")
 
 
 def test_empty_collection_bm25_search():

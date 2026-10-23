@@ -1,7 +1,7 @@
 import math
 import uuid
 from datetime import date, datetime, timezone
-from typing import Any, Mapping, Sequence, get_args
+from typing import Any, Mapping, get_args
 
 from google.protobuf.internal.containers import MessageMap
 from google.protobuf.timestamp_pb2 import Timestamp
@@ -298,6 +298,9 @@ class GrpcToRest:
                 if model.HasField("update_queue")
                 else None
             ),
+            created_at=(
+                cls.convert_timestamp(model.created_at) if model.HasField("created_at") else None
+            ),
         )
 
     @classmethod
@@ -335,7 +338,8 @@ class GrpcToRest:
                 if model.HasField("strict_mode_config")
                 else None
             ),
-            metadata=cls.convert_payload(model.metadata) if model.metadata is not None else None,
+            # a proto map is never None, an empty one means no metadata
+            metadata=cls.convert_payload(model.metadata) if len(model.metadata) > 0 else None,
         )
 
     @classmethod
@@ -794,6 +798,8 @@ class GrpcToRest:
             return rest.MatchTextAny(text_any=val)
         if name == "prefix":
             return rest.MatchPrefix(prefix=val)
+        if name == "substring":
+            return rest.MatchSubstring(substring=val)
         raise ValueError(f"invalid Match model: {model}")  # pragma: no cover
 
     @classmethod
@@ -840,6 +846,11 @@ class GrpcToRest:
             payload=cls.convert_payload_storage_params(model.payload)
             if model.HasField("payload")
             else None,
+            id_tracker=(
+                cls.convert_id_tracker_params(model.id_tracker)
+                if model.HasField("id_tracker")
+                else None
+            ),
             sharding_method=(
                 cls.convert_sharding_method(model.sharding_method)
                 if model.HasField("sharding_method")
@@ -926,7 +937,7 @@ class GrpcToRest:
                 if model.HasField("strict_mode_config")
                 else None
             ),
-            metadata=(cls.convert_payload(model.metadata) if model.metadata is not None else None),
+            metadata=(cls.convert_payload(model.metadata) if len(model.metadata) > 0 else None),
         )
 
     @classmethod
@@ -969,16 +980,21 @@ class GrpcToRest:
         if name is None:
             raise ValueError(f"invalid PointsSelector model: {model}")  # pragma: no cover
         val = getattr(model, name)
+        shard_key = (
+            cls.convert_shard_key_selector(shard_key_selector)
+            if shard_key_selector is not None
+            else None
+        )
 
         if name == "points":
             return rest.PointIdsList(
                 points=[cls.convert_point_id(point) for point in val.ids],
-                shard_key=shard_key_selector,
+                shard_key=shard_key,
             )
         if name == "filter":
             return rest.FilterSelector(
                 filter=cls.convert_filter(val),
-                shard_key=shard_key_selector,
+                shard_key=shard_key,
             )
         raise ValueError(f"invalid PointsSelector model: {model}")  # pragma: no cover
 
@@ -1057,6 +1073,10 @@ class GrpcToRest:
             return rest.Datatype.FLOAT16
         elif model == grpc.Datatype.Turbo4:
             return rest.Datatype.TURBO4
+        elif model == grpc.Datatype.Turbo8:
+            return rest.Datatype.TURBO8
+        elif model == grpc.Datatype.Turbo16:
+            return rest.Datatype.TURBO16
         else:
             raise ValueError(f"invalid Datatype model: {model}")  # pragma: no cover
 
@@ -1075,6 +1095,12 @@ class GrpcToRest:
         cls, model: grpc.PayloadStorageParams
     ) -> rest.PayloadStorageParams:
         return rest.PayloadStorageParams(
+            memory=cls.convert_memory(model.memory) if model.HasField("memory") else None
+        )
+
+    @classmethod
+    def convert_id_tracker_params(cls, model: grpc.IdTrackerParams) -> rest.IdTrackerParams:
+        return rest.IdTrackerParams(
             memory=cls.convert_memory(model.memory) if model.HasField("memory") else None
         )
 
@@ -1395,6 +1421,10 @@ class GrpcToRest:
             return cls.convert_sum_expression(model.sum)
         if name == "mult":
             return cls.convert_mult_expression(model.mult)
+        if name == "max":
+            return cls.convert_max_expression(model.max)
+        if name == "min":
+            return cls.convert_min_expression(model.min)
         if name == "div":
             return cls.convert_div_expression(model.div)
         if name == "abs":
@@ -1405,6 +1435,8 @@ class GrpcToRest:
             return rest.Log10Expression(log10=cls.convert_expression(model.log10))
         if name == "ln":
             return rest.LnExpression(ln=cls.convert_expression(model.ln))
+        if name == "acosh":
+            return rest.AcoshExpression(acosh=cls.convert_expression(model.acosh))
         if name == "sqrt":
             return rest.SqrtExpression(sqrt=cls.convert_expression(model.sqrt))
         if name == "exp":
@@ -1435,6 +1467,14 @@ class GrpcToRest:
     @classmethod
     def convert_mult_expression(cls, model: grpc.MultExpression) -> rest.MultExpression:
         return rest.MultExpression(mult=[cls.convert_expression(expr) for expr in model.mult])
+
+    @classmethod
+    def convert_max_expression(cls, model: grpc.MaxExpression) -> rest.MaxExpression:
+        return rest.MaxExpression(max=[cls.convert_expression(expr) for expr in model.max])
+
+    @classmethod
+    def convert_min_expression(cls, model: grpc.MinExpression) -> rest.MinExpression:
+        return rest.MinExpression(min=[cls.convert_expression(expr) for expr in model.min])
 
     @classmethod
     def convert_div_expression(cls, model: grpc.DivExpression) -> rest.DivExpression:
@@ -1528,7 +1568,33 @@ class GrpcToRest:
                 relevance_feedback=cls.convert_relevance_feedback_input(val)
             )
 
+        if name == "text":
+            return cls.convert_text_query(val)
+
         raise ValueError(f"invalid Query model: {model}")  # pragma: no cover
+
+    @classmethod
+    def convert_text_query(cls, model: grpc.TextQuery) -> rest.TextQuery:
+        name = model.WhichOneof("scoring")
+        if name is None:
+            return rest.TextQuery(text=model.query)
+
+        if name == "bm25":
+            return rest.TextQuery(
+                text=rest.TextQueryInput(
+                    query=model.query,
+                    scoring=rest.Bm25Scoring(bm25=cls.convert_bm25_params(model.bm25)),
+                )
+            )
+
+        raise ValueError(f"invalid TextQuery model: {model}")  # pragma: no cover
+
+    @classmethod
+    def convert_bm25_params(cls, model: grpc.Bm25Params) -> rest.Bm25Params:
+        return rest.Bm25Params(
+            k=model.k if model.HasField("k") else None,
+            b=model.b if model.HasField("b") else None,
+        )
 
     @classmethod
     def convert_relevance_feedback_input(
@@ -1658,6 +1724,8 @@ class GrpcToRest:
             return rest.TokenizerType.WORD
         if model == grpc.Multilingual:
             return rest.TokenizerType.MULTILINGUAL
+        if model == grpc.Code:
+            return rest.TokenizerType.CODE
         raise ValueError(f"invalid TokenizerType model: {model}")  # pragma: no cover
 
     @classmethod
@@ -1677,7 +1745,23 @@ class GrpcToRest:
             stemmer=cls.convert_stemmer(model.stemmer) if model.HasField("stemmer") else None,
             ascii_folding=model.ascii_folding if model.HasField("ascii_folding") else None,
             enable_hnsw=model.enable_hnsw if model.HasField("enable_hnsw") else None,
+            scoring=(
+                cls.convert_text_scoring_params(model.scoring)
+                if model.HasField("scoring")
+                else None
+            ),
+            nested=model.nested if model.HasField("nested") else None,
         )
+
+    @classmethod
+    def convert_text_scoring_params(cls, model: grpc.TextScoringParams) -> rest.TextScoringParams:
+        return rest.TextScoringParams(type=cls.convert_text_scoring_type(model.type))
+
+    @classmethod
+    def convert_text_scoring_type(cls, model: grpc.TextScoringType) -> rest.TextScoringType:
+        if model == grpc.TextScoringType.Bm25:
+            return rest.TextScoringType.BM25
+        raise ValueError(f"invalid TextScoringType model: {model}")  # pragma: no cover
 
     @classmethod
     def convert_stopwords(cls, model: grpc.StopwordsSet) -> rest.StopwordsInterface:
@@ -1723,6 +1807,7 @@ class GrpcToRest:
             on_disk=model.on_disk if model.HasField("on_disk") else None,
             memory=cls.convert_memory(model.memory) if model.HasField("memory") else None,
             enable_hnsw=model.enable_hnsw if model.HasField("enable_hnsw") else None,
+            nested=model.nested if model.HasField("nested") else None,
         )
 
     @classmethod
@@ -1738,6 +1823,7 @@ class GrpcToRest:
             # presence of grpc.KeywordPrefixParams is the only signal, an explicit `prefix=False`
             # cannot be represented in grpc and comes back as `None`
             prefix=True if model.HasField("prefix") else None,
+            nested=model.nested if model.HasField("nested") else None,
         )
 
     @classmethod
@@ -1748,6 +1834,7 @@ class GrpcToRest:
             on_disk=model.on_disk if model.HasField("on_disk") else None,
             memory=cls.convert_memory(model.memory) if model.HasField("memory") else None,
             enable_hnsw=model.enable_hnsw if model.HasField("enable_hnsw") else None,
+            nested=model.nested if model.HasField("nested") else None,
         )
 
     @classmethod
@@ -1757,6 +1844,7 @@ class GrpcToRest:
             on_disk=model.on_disk if model.HasField("on_disk") else None,
             memory=cls.convert_memory(model.memory) if model.HasField("memory") else None,
             enable_hnsw=model.enable_hnsw if model.HasField("enable_hnsw") else None,
+            nested=model.nested if model.HasField("nested") else None,
         )
 
     @classmethod
@@ -1766,6 +1854,7 @@ class GrpcToRest:
             on_disk=model.on_disk if model.HasField("on_disk") else None,
             memory=cls.convert_memory(model.memory) if model.HasField("memory") else None,
             enable_hnsw=model.enable_hnsw if model.HasField("enable_hnsw") else None,
+            nested=model.nested if model.HasField("nested") else None,
         )
 
     @classmethod
@@ -1778,6 +1867,7 @@ class GrpcToRest:
             on_disk=model.on_disk if model.HasField("on_disk") else None,
             memory=cls.convert_memory(model.memory) if model.HasField("memory") else None,
             enable_hnsw=model.enable_hnsw if model.HasField("enable_hnsw") else None,
+            nested=model.nested if model.HasField("nested") else None,
         )
 
     @classmethod
@@ -1788,6 +1878,7 @@ class GrpcToRest:
             on_disk=model.on_disk if model.HasField("on_disk") else None,
             memory=cls.convert_memory(model.memory) if model.HasField("memory") else None,
             enable_hnsw=model.enable_hnsw if model.HasField("enable_hnsw") else None,
+            nested=model.nested if model.HasField("nested") else None,
         )
 
     @classmethod
@@ -1813,6 +1904,11 @@ class GrpcToRest:
             payload=cls.convert_payload_storage_params(model.payload)
             if model.HasField("payload")
             else None,
+            id_tracker=(
+                cls.convert_id_tracker_params(model.id_tracker)
+                if model.HasField("id_tracker")
+                else None
+            ),
         )
 
     @classmethod
@@ -1959,6 +2055,8 @@ class GrpcToRest:
             return rest.TurboQuantBitSize.BITS2
         if model == grpc.TurboQuantBitSize.Bits4:
             return rest.TurboQuantBitSize.BITS4
+        if model == grpc.TurboQuantBitSize.Bits8:
+            return rest.TurboQuantBitSize.BITS8
         raise ValueError(f"invalid TurboQuantBitSize model: {model}")  # pragma: no cover
 
     @classmethod
@@ -2112,7 +2210,7 @@ class GrpcToRest:
 
         if name == "upsert":
             shard_key_selector = (
-                cls.convert_shard_key(val.shard_key_selector)
+                cls.convert_shard_key_selector(val.shard_key_selector)
                 if val.HasField("shard_key_selector")
                 else None
             )
@@ -2161,6 +2259,7 @@ class GrpcToRest:
                     payload=cls.convert_payload(val.payload),
                     points=points,
                     filter=filter_,
+                    shard_key=points_selector.shard_key,
                     key=val.key if val.HasField("key") else None,
                 )
             )
@@ -2187,6 +2286,7 @@ class GrpcToRest:
                     payload=cls.convert_payload(val.payload),
                     points=points,
                     filter=filter_,
+                    shard_key=points_selector.shard_key,
                     key=val.key if val.HasField("key") else None,
                 )
             )
@@ -2213,6 +2313,7 @@ class GrpcToRest:
                     keys=[key for key in val.keys],
                     points=points,
                     filter=filter_,
+                    shard_key=points_selector.shard_key,
                 )
             )
         elif name == "clear_payload":
@@ -2225,7 +2326,7 @@ class GrpcToRest:
             return rest.ClearPayloadOperation(clear_payload=points_selector)
         elif name == "update_vectors":
             shard_key_selector = (
-                cls.convert_shard_key(val.shard_key_selector)
+                cls.convert_shard_key_selector(val.shard_key_selector)
                 if val.HasField("shard_key_selector")
                 else None
             )
@@ -2262,6 +2363,7 @@ class GrpcToRest:
                     vector=[name for name in val.vectors.names],
                     points=points,
                     filter=filter_,
+                    shard_key=points_selector.shard_key,
                 )
             )
         else:
@@ -3026,6 +3128,9 @@ class RestToGrpc:
                 if model.update_queue is not None
                 else None
             ),
+            created_at=(
+                cls.convert_datetime(model.created_at) if model.created_at is not None else None
+            ),
         )
 
     @classmethod
@@ -3433,6 +3538,11 @@ class RestToGrpc:
                 if model.payload is not None
                 else None
             ),
+            id_tracker=(
+                cls.convert_id_tracker_params(model.id_tracker)
+                if model.id_tracker is not None
+                else None
+            ),
             sharding_method=(
                 cls.convert_sharding_method(model.sharding_method)
                 if model.sharding_method is not None
@@ -3575,6 +3685,8 @@ class RestToGrpc:
             return grpc.Match(text_any=model.text_any)
         if isinstance(model, rest.MatchPrefix):
             return grpc.Match(prefix=model.prefix)
+        if isinstance(model, rest.MatchSubstring):
+            return grpc.Match(substring=model.substring)
         raise ValueError(f"invalid Match model: {model}")  # pragma: no cover
 
     @classmethod
@@ -3802,6 +3914,10 @@ class RestToGrpc:
             return grpc.Datatype.Float16
         if model == rest.Datatype.TURBO4:
             return grpc.Datatype.Turbo4
+        if model == rest.Datatype.TURBO8:
+            return grpc.Datatype.Turbo8
+        if model == rest.Datatype.TURBO16:
+            return grpc.Datatype.Turbo16
 
         raise ValueError(f"invalid Datatype model: {model}")  # pragma: no cover
 
@@ -3820,6 +3936,12 @@ class RestToGrpc:
         cls, model: rest.PayloadStorageParams
     ) -> grpc.PayloadStorageParams:
         return grpc.PayloadStorageParams(
+            memory=cls.convert_memory(model.memory) if model.memory is not None else None
+        )
+
+    @classmethod
+    def convert_id_tracker_params(cls, model: rest.IdTrackerParams) -> grpc.IdTrackerParams:
+        return grpc.IdTrackerParams(
             memory=cls.convert_memory(model.memory) if model.memory is not None else None
         )
 
@@ -4146,7 +4268,31 @@ class RestToGrpc:
                 relevance_feedback=cls.convert_relevance_feedback_input(model.relevance_feedback)
             )
 
+        if isinstance(model, rest.TextQuery):
+            return grpc.Query(text=cls.convert_text_query(model))
+
         raise ValueError(f"invalid Query model: {model}")  # pragma: no cover
+
+    @classmethod
+    def convert_text_query(cls, model: rest.TextQuery) -> grpc.TextQuery:
+        if isinstance(model.text, str):
+            return grpc.TextQuery(query=model.text)
+
+        if isinstance(model.text, rest.TextQueryInput):
+            scoring = model.text.scoring
+            if scoring is None:
+                return grpc.TextQuery(query=model.text.query)
+            if isinstance(scoring, rest.Bm25Scoring):
+                return grpc.TextQuery(
+                    query=model.text.query, bm25=cls.convert_bm25_params(scoring.bm25)
+                )
+            raise ValueError(f"invalid TextQueryScoring model: {scoring}")  # pragma: no cover
+
+        raise ValueError(f"invalid TextQuery model: {model}")  # pragma: no cover
+
+    @classmethod
+    def convert_bm25_params(cls, model: rest.Bm25Params) -> grpc.Bm25Params:
+        return grpc.Bm25Params(k=model.k, b=model.b)
 
     @classmethod
     def convert_relevance_feedback_input(
@@ -4208,6 +4354,10 @@ class RestToGrpc:
             return grpc.Expression(sum=cls.convert_sum_expression(model))
         if isinstance(model, rest.MultExpression):
             return grpc.Expression(mult=cls.convert_mult_expression(model))
+        if isinstance(model, rest.MaxExpression):
+            return grpc.Expression(max=cls.convert_max_expression(model))
+        if isinstance(model, rest.MinExpression):
+            return grpc.Expression(min=cls.convert_min_expression(model))
         if isinstance(model, rest.DivExpression):
             return grpc.Expression(div=cls.convert_div_expression(model))
         if isinstance(model, rest.PowExpression):
@@ -4216,6 +4366,8 @@ class RestToGrpc:
             return grpc.Expression(log10=cls.convert_expression(model.log10))
         if isinstance(model, rest.LnExpression):
             return grpc.Expression(ln=cls.convert_expression(model.ln))
+        if isinstance(model, rest.AcoshExpression):
+            return grpc.Expression(acosh=cls.convert_expression(model.acosh))
         if isinstance(model, rest.AbsExpression):
             return grpc.Expression(abs=cls.convert_expression(model.abs))
         if isinstance(model, rest.SqrtExpression):
@@ -4242,6 +4394,14 @@ class RestToGrpc:
     @classmethod
     def convert_mult_expression(cls, model: rest.MultExpression) -> grpc.MultExpression:
         return grpc.MultExpression(mult=[cls.convert_expression(expr) for expr in model.mult])
+
+    @classmethod
+    def convert_max_expression(cls, model: rest.MaxExpression) -> grpc.MaxExpression:
+        return grpc.MaxExpression(max=[cls.convert_expression(expr) for expr in model.max])
+
+    @classmethod
+    def convert_min_expression(cls, model: rest.MinExpression) -> grpc.MinExpression:
+        return grpc.MinExpression(min=[cls.convert_expression(expr) for expr in model.min])
 
     @classmethod
     def convert_div_expression(cls, model: rest.DivExpression) -> grpc.DivExpression:
@@ -4368,6 +4528,8 @@ class RestToGrpc:
             return grpc.TokenizerType.Prefix
         elif model == rest.TokenizerType.MULTILINGUAL:
             return grpc.TokenizerType.Multilingual
+        elif model == rest.TokenizerType.CODE:
+            return grpc.TokenizerType.Code
         else:
             raise ValueError(f"invalid TokenizerType model: {model}")  # pragma: no cover
 
@@ -4391,7 +4553,35 @@ class RestToGrpc:
             stemmer=cls.convert_stemmer(model.stemmer) if model.stemmer is not None else None,
             ascii_folding=model.ascii_folding if model.ascii_folding is not None else None,
             enable_hnsw=model.enable_hnsw,
+            scoring=(
+                cls.convert_text_scoring_interface(model.scoring)
+                if model.scoring is not None
+                else None
+            ),
+            nested=model.nested,
         )
+
+    @classmethod
+    def convert_text_scoring_interface(
+        cls, model: rest.TextScoringInterface
+    ) -> grpc.TextScoringParams | None:
+        if isinstance(model, bool):
+            # `True` is a shortcut for BM25 with the default params, `False` disables scoring,
+            # same as leaving it unset, the server reads both of them this way
+            return grpc.TextScoringParams(type=grpc.TextScoringType.Bm25) if model else None
+        if isinstance(model, rest.TextScoringParams):
+            return cls.convert_text_scoring_params(model)
+        raise ValueError(f"invalid TextScoringInterface model: {model}")  # pragma: no cover
+
+    @classmethod
+    def convert_text_scoring_params(cls, model: rest.TextScoringParams) -> grpc.TextScoringParams:
+        return grpc.TextScoringParams(type=cls.convert_text_scoring_type(model.type))
+
+    @classmethod
+    def convert_text_scoring_type(cls, model: rest.TextScoringType) -> grpc.TextScoringType:
+        if model == rest.TextScoringType.BM25:
+            return grpc.TextScoringType.Bm25
+        raise ValueError(f"invalid TextScoringType model: {model}")  # pragma: no cover
 
     @classmethod
     def convert_stopwords(cls, model: rest.StopwordsInterface) -> grpc.StopwordsSet:
@@ -4426,6 +4616,7 @@ class RestToGrpc:
             on_disk=model.on_disk,
             memory=cls.convert_memory(model.memory) if model.memory is not None else None,
             enable_hnsw=model.enable_hnsw,
+            nested=model.nested,
         )
 
     @classmethod
@@ -4441,6 +4632,7 @@ class RestToGrpc:
             # disabled) and is recovered as `None` when converting back
             prefix=grpc.KeywordPrefixParams() if model.prefix else None,
             memory=cls.convert_memory(model.memory) if model.memory is not None else None,
+            nested=model.nested,
         )
 
     @classmethod
@@ -4450,6 +4642,7 @@ class RestToGrpc:
             on_disk=model.on_disk,
             enable_hnsw=model.enable_hnsw,
             memory=cls.convert_memory(model.memory) if model.memory is not None else None,
+            nested=model.nested,
         )
 
     @classmethod
@@ -4458,6 +4651,7 @@ class RestToGrpc:
             on_disk=model.on_disk,
             enable_hnsw=model.enable_hnsw,
             memory=cls.convert_memory(model.memory) if model.memory is not None else None,
+            nested=model.nested,
         )
 
     @classmethod
@@ -4466,6 +4660,7 @@ class RestToGrpc:
             on_disk=model.on_disk,
             enable_hnsw=model.enable_hnsw,
             memory=cls.convert_memory(model.memory) if model.memory is not None else None,
+            nested=model.nested,
         )
 
     @classmethod
@@ -4477,6 +4672,7 @@ class RestToGrpc:
             on_disk=model.on_disk,
             enable_hnsw=model.enable_hnsw,
             memory=cls.convert_memory(model.memory) if model.memory is not None else None,
+            nested=model.nested,
         )
 
     @classmethod
@@ -4486,6 +4682,7 @@ class RestToGrpc:
             on_disk=model.on_disk,
             enable_hnsw=model.enable_hnsw,
             memory=cls.convert_memory(model.memory) if model.memory is not None else None,
+            nested=model.nested,
         )
 
     @classmethod
@@ -4501,6 +4698,11 @@ class RestToGrpc:
             payload=(
                 cls.convert_payload_storage_params(model.payload)
                 if model.payload is not None
+                else None
+            ),
+            id_tracker=(
+                cls.convert_id_tracker_params(model.id_tracker)
+                if model.id_tracker is not None
                 else None
             ),
         )
@@ -4655,6 +4857,8 @@ class RestToGrpc:
             return grpc.TurboQuantBitSize.Bits2
         if model == rest.TurboQuantBitSize.BITS4:
             return grpc.TurboQuantBitSize.Bits4
+        if model == rest.TurboQuantBitSize.BITS8:
+            return grpc.TurboQuantBitSize.Bits8
         raise ValueError(f"invalid TurboQuantBitSize model: {model}")  # pragma: no cover
 
     @classmethod

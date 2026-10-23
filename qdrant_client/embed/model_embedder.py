@@ -219,9 +219,9 @@ class ModelEmbedder:
             if accumulating:
                 self._accumulate(model)  # type: ignore
             else:
-                assert (
-                    inference_batch_size is not None
-                ), "inference_batch_size should be passed for inference"
+                assert inference_batch_size is not None, (
+                    "inference_batch_size should be passed for inference"
+                )
                 return self._drain_accumulator(
                     model,  # type: ignore
                     is_query=is_query,
@@ -270,9 +270,9 @@ class ModelEmbedder:
                     current_model = current_model if was_list else [current_model]
 
                     if not accumulating:
-                        assert (
-                            inference_batch_size is not None
-                        ), "inference_batch_size should be passed for inference"
+                        assert inference_batch_size is not None, (
+                            "inference_batch_size should be passed for inference"
+                        )
                         embeddings = [
                             self._drain_accumulator(
                                 data, is_query=is_query, inference_batch_size=inference_batch_size

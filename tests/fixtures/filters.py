@@ -200,6 +200,23 @@ def match_prefix_field_condition() -> models.FieldCondition:
     )
 
 
+def match_substring_field_condition() -> models.FieldCondition:
+    field = random.choice(["id_str", "two_words", "words", "mixed_type"])
+
+    if field == "id_str" or (field == "mixed_type" and random.random() < 0.5):
+        # a digit matches `id_str` strings, but never `mixed_type` ints
+        substring = str(random.randint(0, 9))
+    else:
+        word = random_real_word()
+        start = random.randrange(len(word))
+        substring = word[start : start + random.randint(1, 3)]
+
+    return models.FieldCondition(
+        key=field,
+        match=models.MatchSubstring(substring=substring),
+    )
+
+
 def slice_condition() -> models.SliceCondition:
     total = random.randint(2, 8)
     return models.SliceCondition(slice=models.Slice(total=total, index=random.randrange(total)))
@@ -372,6 +389,7 @@ def one_random_condition_please() -> models.Condition:
             match_text_field_condition,
             match_text_any_field_condition,
             match_phrase_field_condition,
+            match_substring_field_condition,  # new in 1.19.2
         ]
 
     return random.choice(conditions)()

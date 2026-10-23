@@ -183,7 +183,8 @@ def calculate_multi_discovery_ranks(
             [
                 1 if is_bigger else 0 if is_equal else -1
                 for is_bigger, is_equal in zip(pos > neg, pos == neg)
-            ]
+            ],
+            dtype=np.int32,
         )
 
         overall_ranks += pair_ranks

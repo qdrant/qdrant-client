@@ -11,6 +11,7 @@
 
 import importlib.metadata
 import inspect
+import ipaddress
 import math
 import platform
 import sys
@@ -89,7 +90,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             if url.startswith("localhost"):
                 url = f"//{url}"
             parsed_url: Url = parse_url(url)
-            (self._host, self._port) = (parsed_url.host, parsed_url.port)
+            self._host, self._port = (parsed_url.host, parsed_url.port)
             if parsed_url.scheme:
                 self._https = parsed_url.scheme == "https"
                 self._scheme = parsed_url.scheme
@@ -104,6 +105,11 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 raise ValueError(f"Unknown scheme: {self._scheme}")
         else:
             self._host = host or "localhost"
+            try:
+                if ipaddress.ip_address(self._host).version == 6:
+                    self._host = f"[{self._host}]"
+            except ValueError:
+                pass
             self._port = port
         _timeout = math.ceil(timeout) if timeout is not None else None
         self._api_key = api_key
@@ -120,7 +126,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             )
         http2 = kwargs.pop("http2", False)
         self._grpc_headers = []
-        self._rest_headers = {k: v for (k, v) in kwargs.pop("metadata", {}).items()}
+        self._rest_headers = {k: v for k, v in kwargs.pop("metadata", {}).items()}
         if headers:
             for key, value in headers.items():
                 self._rest_headers[key] = value
@@ -133,7 +139,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                     stacklevel=4,
                 )
             if (
-                any([header_name == "api-key" for (header_name, _) in self._grpc_headers])
+                any([header_name == "api-key" for header_name, _ in self._grpc_headers])
                 or "api-key" in self._rest_headers
             ):
                 show_warning_once(
@@ -269,7 +275,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
     @staticmethod
     def _parse_url(url: str) -> tuple[str | None, str, int | None, str | None]:
         parse_result: Url = parse_url(url)
-        (scheme, host, port, prefix) = (
+        scheme, host, port, prefix = (
             parse_result.scheme,
             parse_result.host,
             parse_result.port,
@@ -1124,7 +1130,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         **kwargs: Any,
     ) -> types.UpdateResult:
         if self._prefer_grpc:
-            (points_selector, opt_shard_key_selector) = self._try_argument_to_grpc_selector(points)
+            points_selector, opt_shard_key_selector = self._try_argument_to_grpc_selector(points)
             shard_key_selector = (
                 shard_key_selector if shard_key_selector is not None else opt_shard_key_selector
             )
@@ -1149,7 +1155,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             assert grpc_result is not None, "Delete vectors returned None result"
             return GrpcToRest.convert_update_result(grpc_result)
         else:
-            (_points, _filter, _shard_key) = self._try_argument_to_rest_points_and_filter(points)
+            _points, _filter, _shard_key = self._try_argument_to_rest_points_and_filter(points)
             return (
                 await self.openapi_client.points_api.delete_vectors(
                     collection_name=collection_name,
@@ -1356,7 +1362,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         **kwargs: Any,
     ) -> types.UpdateResult:
         if self._prefer_grpc:
-            (points_selector, opt_shard_key_selector) = self._try_argument_to_grpc_selector(
+            points_selector, opt_shard_key_selector = self._try_argument_to_grpc_selector(
                 points_selector
             )
             shard_key_selector = (
@@ -1410,7 +1416,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         **kwargs: Any,
     ) -> types.UpdateResult:
         if self._prefer_grpc:
-            (points_selector, opt_shard_key_selector) = self._try_argument_to_grpc_selector(points)
+            points_selector, opt_shard_key_selector = self._try_argument_to_grpc_selector(points)
             shard_key_selector = (
                 shard_key_selector if shard_key_selector is not None else opt_shard_key_selector
             )
@@ -1436,7 +1442,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 ).result
             )
         else:
-            (_points, _filter, _shard_key) = self._try_argument_to_rest_points_and_filter(points)
+            _points, _filter, _shard_key = self._try_argument_to_rest_points_and_filter(points)
             result: types.UpdateResult | None = (
                 await self.openapi_client.points_api.set_payload(
                     collection_name=collection_name,
@@ -1469,7 +1475,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         **kwargs: Any,
     ) -> types.UpdateResult:
         if self._prefer_grpc:
-            (points_selector, opt_shard_key_selector) = self._try_argument_to_grpc_selector(points)
+            points_selector, opt_shard_key_selector = self._try_argument_to_grpc_selector(points)
             shard_key_selector = (
                 shard_key_selector if shard_key_selector is not None else opt_shard_key_selector
             )
@@ -1494,7 +1500,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 ).result
             )
         else:
-            (_points, _filter, _shard_key) = self._try_argument_to_rest_points_and_filter(points)
+            _points, _filter, _shard_key = self._try_argument_to_rest_points_and_filter(points)
             result: types.UpdateResult | None = (
                 await self.openapi_client.points_api.overwrite_payload(
                     collection_name=collection_name,
@@ -1526,7 +1532,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         **kwargs: Any,
     ) -> types.UpdateResult:
         if self._prefer_grpc:
-            (points_selector, opt_shard_key_selector) = self._try_argument_to_grpc_selector(points)
+            points_selector, opt_shard_key_selector = self._try_argument_to_grpc_selector(points)
             shard_key_selector = (
                 shard_key_selector if shard_key_selector is not None else opt_shard_key_selector
             )
@@ -1551,7 +1557,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 ).result
             )
         else:
-            (_points, _filter, _shard_key) = self._try_argument_to_rest_points_and_filter(points)
+            _points, _filter, _shard_key = self._try_argument_to_rest_points_and_filter(points)
             result: types.UpdateResult | None = (
                 await self.openapi_client.points_api.delete_payload(
                     collection_name=collection_name,
@@ -1582,7 +1588,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         **kwargs: Any,
     ) -> types.UpdateResult:
         if self._prefer_grpc:
-            (points_selector, opt_shard_key_selector) = self._try_argument_to_grpc_selector(
+            points_selector, opt_shard_key_selector = self._try_argument_to_grpc_selector(
                 points_selector
             )
             shard_key_selector = (
@@ -1905,6 +1911,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         strict_mode_config: types.StrictModeConfig | None = None,
         metadata: types.Payload | None = None,
         payload: types.PayloadStorageParams | None = None,
+        id_tracker: types.IdTrackerParams | None = None,
         **kwargs: Any,
     ) -> bool:
         if self._prefer_grpc:
@@ -1930,6 +1937,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 metadata = RestToGrpc.convert_payload(metadata)
             if isinstance(payload, models.PayloadStorageParams):
                 payload = RestToGrpc.convert_payload_storage_params(payload)
+            if isinstance(id_tracker, models.IdTrackerParams):
+                id_tracker = RestToGrpc.convert_id_tracker_params(id_tracker)
             create_collection = grpc.CreateCollection(
                 collection_name=collection_name,
                 hnsw_config=hnsw_config,
@@ -1947,6 +1956,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 strict_mode_config=strict_mode_config,
                 metadata=metadata,
                 payload=payload,
+                id_tracker=id_tracker,
             )
             return (
                 await self.grpc_collections.Create(create_collection, timeout=self._timeout)
@@ -1974,6 +1984,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             strict_mode_config=strict_mode_config,
             metadata=metadata,
             payload=payload,
+            id_tracker=id_tracker,
         )
         result: bool | None = (
             await self.http.collections_api.create_collection(
@@ -2003,6 +2014,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         strict_mode_config: types.StrictModeConfig | None = None,
         metadata: types.Payload | None = None,
         payload: types.PayloadStorageParams | None = None,
+        id_tracker: types.IdTrackerParams | None = None,
         **kwargs: Any,
     ) -> bool:
         await self.delete_collection(collection_name, timeout=timeout)
@@ -2023,6 +2035,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             strict_mode_config=strict_mode_config,
             metadata=metadata,
             payload=payload,
+            id_tracker=id_tracker,
         )
 
     @property
@@ -2050,7 +2063,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             self._auth_token_provider
         ):
             raise ValueError(
-                "upload_points and upload_collection require a synchronous auth_token_provider"
+                "upload_points and upload_collection send batches synchronously and require a synchronous auth_token_provider. To upload with an async provider, use AsyncQdrantClient.upsert."
             )
         if method is not None:
             if method in get_all_start_methods():
@@ -2197,6 +2210,11 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 index_params = getattr(field_index_params, name)
                 if isinstance(index_params, grpc.TextIndexParams):
                     field_schema = grpc.FieldType.FieldTypeText
+                    if index_params.tokenizer == grpc.TokenizerType.Unknown:
+                        field_index_params = grpc.PayloadIndexParams(
+                            text_index_params=index_params
+                        )
+                        field_index_params.text_index_params.tokenizer = grpc.TokenizerType.Word
                 if isinstance(index_params, grpc.IntegerIndexParams):
                     field_schema = grpc.FieldType.FieldTypeInteger
                 if isinstance(index_params, grpc.KeywordIndexParams):
@@ -2211,6 +2229,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                     field_schema = grpc.FieldType.FieldTypeDatetime
                 if isinstance(index_params, grpc.UuidIndexParams):
                     field_schema = grpc.FieldType.FieldTypeUuid
+            if isinstance(ordering, models.WriteOrdering):
+                ordering = RestToGrpc.convert_write_ordering(ordering)
             request = grpc.CreateFieldIndexCollection(
                 collection_name=collection_name,
                 field_name=field_name,
@@ -2251,6 +2271,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         **kwargs: Any,
     ) -> types.UpdateResult:
         if self._prefer_grpc:
+            if isinstance(ordering, models.WriteOrdering):
+                ordering = RestToGrpc.convert_write_ordering(ordering)
             request = grpc.DeleteFieldIndexCollection(
                 collection_name=collection_name,
                 field_name=field_name,

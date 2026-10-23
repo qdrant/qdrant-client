@@ -1,0 +1,33 @@
+name: Weekly integration tests
+
+on:
+  schedule:
+    - cron: '23 3 * * 1'
+
+jobs:
+  test:
+    # Scheduled runs read workflows from master, so take the job definition from dev to match the code under test
+    uses: qdrant/qdrant-client/.github/workflows/integration-tests.yml@dev
+    permissions:
+      contents: read
+    with:
+      ref: dev
+    secrets: inherit
+
+  report-failure:
+    needs: test
+    # Only the first attempt opens an issue, re-runs don't
+    if: failure() && github.run_attempt == 1
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Open an issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh issue create \
+            --title "Weekly integration tests against Qdrant dev failed on $(date -u +%F)" \
+            --body "The weekly run of the dev branch tests against the qdrant/qdrant:dev image failed: $RUN_URL"

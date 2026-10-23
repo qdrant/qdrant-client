@@ -1,5 +1,6 @@
 import importlib.metadata
 import inspect
+import ipaddress
 import math
 import platform
 import sys
@@ -121,6 +122,12 @@ class QdrantRemote(QdrantBase):
                 raise ValueError(f"Unknown scheme: {self._scheme}")
         else:
             self._host = host or "localhost"
+            try:
+                if ipaddress.ip_address(self._host).version == 6:
+                    # an IPv6 address has to be enclosed in brackets to be followed by a port
+                    self._host = f"[{self._host}]"
+            except ValueError:  # a host name or an already bracketed address
+                pass
             self._port = port
 
         _timeout = (
@@ -2066,6 +2073,7 @@ class QdrantRemote(QdrantBase):
         strict_mode_config: types.StrictModeConfig | None = None,
         metadata: types.Payload | None = None,
         payload: types.PayloadStorageParams | None = None,
+        id_tracker: types.IdTrackerParams | None = None,
         **kwargs: Any,
     ) -> bool:
         if self._prefer_grpc:
@@ -2104,6 +2112,9 @@ class QdrantRemote(QdrantBase):
             if isinstance(payload, models.PayloadStorageParams):
                 payload = RestToGrpc.convert_payload_storage_params(payload)
 
+            if isinstance(id_tracker, models.IdTrackerParams):
+                id_tracker = RestToGrpc.convert_id_tracker_params(id_tracker)
+
             create_collection = grpc.CreateCollection(
                 collection_name=collection_name,
                 hnsw_config=hnsw_config,
@@ -2121,6 +2132,7 @@ class QdrantRemote(QdrantBase):
                 strict_mode_config=strict_mode_config,
                 metadata=metadata,
                 payload=payload,
+                id_tracker=id_tracker,
             )
             return self.grpc_collections.Create(create_collection, timeout=self._timeout).result
 
@@ -2151,6 +2163,7 @@ class QdrantRemote(QdrantBase):
             strict_mode_config=strict_mode_config,
             metadata=metadata,
             payload=payload,
+            id_tracker=id_tracker,
         )
 
         result: bool | None = self.http.collections_api.create_collection(
@@ -2180,6 +2193,7 @@ class QdrantRemote(QdrantBase):
         strict_mode_config: types.StrictModeConfig | None = None,
         metadata: types.Payload | None = None,
         payload: types.PayloadStorageParams | None = None,
+        id_tracker: types.IdTrackerParams | None = None,
         **kwargs: Any,
     ) -> bool:
         self.delete_collection(collection_name, timeout=timeout)
@@ -2201,6 +2215,7 @@ class QdrantRemote(QdrantBase):
             strict_mode_config=strict_mode_config,
             metadata=metadata,
             payload=payload,
+            id_tracker=id_tracker,
         )
 
     @property
@@ -2231,7 +2246,9 @@ class QdrantRemote(QdrantBase):
             self._auth_token_provider
         ):
             raise ValueError(
-                "upload_points and upload_collection require a synchronous auth_token_provider"
+                "upload_points and upload_collection send batches synchronously and require a "
+                "synchronous auth_token_provider. To upload with an async provider, use "
+                "AsyncQdrantClient.upsert."
             )
 
         if method is not None:
@@ -2400,6 +2417,12 @@ class QdrantRemote(QdrantBase):
                 index_params = getattr(field_index_params, name)
                 if isinstance(index_params, grpc.TextIndexParams):
                     field_schema = grpc.FieldType.FieldTypeText
+                    if index_params.tokenizer == grpc.TokenizerType.Unknown:
+                        # an unset tokenizer is rejected over grpc, while REST defaults it to word
+                        field_index_params = grpc.PayloadIndexParams(
+                            text_index_params=index_params
+                        )
+                        field_index_params.text_index_params.tokenizer = grpc.TokenizerType.Word
 
                 if isinstance(index_params, grpc.IntegerIndexParams):
                     field_schema = grpc.FieldType.FieldTypeInteger
@@ -2421,6 +2444,9 @@ class QdrantRemote(QdrantBase):
 
                 if isinstance(index_params, grpc.UuidIndexParams):
                     field_schema = grpc.FieldType.FieldTypeUuid
+
+            if isinstance(ordering, models.WriteOrdering):
+                ordering = RestToGrpc.convert_write_ordering(ordering)
 
             request = grpc.CreateFieldIndexCollection(
                 collection_name=collection_name,
@@ -2463,6 +2489,9 @@ class QdrantRemote(QdrantBase):
         **kwargs: Any,
     ) -> types.UpdateResult:
         if self._prefer_grpc:
+            if isinstance(ordering, models.WriteOrdering):
+                ordering = RestToGrpc.convert_write_ordering(ordering)
+
             request = grpc.DeleteFieldIndexCollection(
                 collection_name=collection_name,
                 field_name=field_name,

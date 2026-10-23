@@ -500,6 +500,38 @@ def test_nested_filter_skips_non_object_elements():
         )
 
 
+def test_array_selected_by_index_is_flattened():
+    """An array selected by `[]` or `[i]` is unwrapped one level, like one selected by a key."""
+    payloads = [
+        {"a": [[1, 2], [3]]},
+        {"a": [1, [4]]},
+        {"a": [[[1]]]},  # one level too deep for `a[]` and `a[0]`
+        {"a": [[], [5]]},
+    ]
+
+    fixture_points = generate_fixtures(num=len(payloads))
+    for point, payload in zip(fixture_points, payloads):
+        point.payload = payload
+
+    local_client = init_local()
+    init_client(local_client, fixture_points)
+
+    remote_client = init_remote()
+    init_client(remote_client, fixture_points)
+
+    for key in ["a[]", "a[0]", "a[1]", "a[][]"]:
+        for condition in (
+            models.FieldCondition(key=key, match=models.MatchValue(value=1)),
+            models.FieldCondition(key=key, range=models.Range(gte=2)),
+        ):
+            compare_client_results(
+                local_client,
+                remote_client,
+                scroll_with_filter,
+                scroll_filter=models.Filter(must=[condition]),
+            )
+
+
 @pytest.mark.parametrize(
     "match",
     [
@@ -582,6 +614,51 @@ def test_text_match_on_unindexed_field(match: models.Match):
         scroll_with_filter,
         scroll_filter=models.Filter(must=[models.FieldCondition(key="words", match=match)]),
     )
+
+
+def test_substring_match():
+    major, minor, patch, dev = read_version()
+    if not dev and None not in (major, minor, patch) and (major, minor, patch) < (1, 19, 2):
+        pytest.skip("Substring match is available as of qdrant 1.19.2")
+
+    values = ["https://qdrant.tech", 1]
+    # no index, a keyword index, a keyword index with `prefix`
+    keys = ["url", "url_keyword", "url_prefix"]
+
+    fixture_points = generate_fixtures(num=len(values))
+    for point, value in zip(fixture_points, values):
+        point.payload = {key: value for key in keys}
+
+    local_client = init_local()
+    init_client(local_client, fixture_points)
+
+    remote_client = init_remote()
+    init_client(remote_client, fixture_points)
+    remote_client.create_payload_index(
+        COLLECTION_NAME, "url_keyword", field_schema=models.PayloadSchemaType.KEYWORD
+    )
+    remote_client.create_payload_index(
+        COLLECTION_NAME,
+        "url_prefix",
+        field_schema=models.KeywordIndexParams(type=models.KeywordIndexType.KEYWORD, prefix=True),
+    )
+
+    grpc_client = init_remote(prefer_grpc=True)
+
+    # in the middle of a value, case-sensitive, never in a number, empty
+    for substring in ("qdrant", "QDRANT", "1", ""):
+        for key in keys:
+            scroll_filter = models.Filter(
+                must=[
+                    models.FieldCondition(
+                        key=key, match=models.MatchSubstring(substring=substring)
+                    )
+                ]
+            )
+            for client in (remote_client, grpc_client):
+                compare_client_results(
+                    local_client, client, scroll_with_filter, scroll_filter=scroll_filter
+                )
 
 
 @pytest.mark.parametrize("key", ["a", "nested[].empty"])

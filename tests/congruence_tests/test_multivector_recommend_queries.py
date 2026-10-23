@@ -293,8 +293,17 @@ def test_simple_recommend() -> None:
     compare_client_results(local_client, remote_client, searcher.simple_recommend_image)
     compare_client_results(local_client, remote_client, searcher.simple_recommend_text)
     compare_client_results(local_client, remote_client, searcher.simple_recommend_code)
-    compare_client_results(local_client, remote_client, searcher.simple_recommend_negative)
-    compare_client_results(local_client, remote_client, searcher.recommend_from_another_collection)
+    # with negatives, scores can cancel out to ~0, where core's float32 error exceeds rel_tol
+    near_zero_abs_tol = 1e-3  # 10x the largest error measured
+    compare_client_results(
+        local_client, remote_client, searcher.simple_recommend_negative, abs_tol=near_zero_abs_tol
+    )
+    compare_client_results(
+        local_client,
+        remote_client,
+        searcher.recommend_from_another_collection,
+        abs_tol=near_zero_abs_tol,
+    )
     compare_client_results(local_client, remote_client, searcher.best_score_recommend)
     compare_client_results(local_client, remote_client, searcher.best_score_recommend_euclid)
     compare_client_results(

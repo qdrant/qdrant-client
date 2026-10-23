@@ -15,7 +15,7 @@ from httpx import Timeout
 from grpc import Compression, RpcError
 
 import qdrant_client.http.exceptions
-from qdrant_client import QdrantClient, models
+from qdrant_client import QdrantClient, grpc as q_grpc, models
 from qdrant_client._pydantic_compat import to_dict
 from qdrant_client.conversions.common_types import PointVectors, StrictModeConfig
 from qdrant_client.common.client_exceptions import ResourceExhaustedResponse
@@ -211,6 +211,20 @@ def test_client_init():
     client = QdrantClient("localhost:6333", check_compatibility=False)
     assert isinstance(client._client, QdrantRemote)
     assert client._client.rest_uri == "http://localhost:6333"
+
+    client = QdrantClient(host="::1", check_compatibility=False)
+    assert isinstance(client._client, QdrantRemote)
+    assert client._client._host == "[::1]"  # the grpc target is built from it
+    assert client._client.rest_uri == "http://[::1]:6333"
+
+    client = QdrantClient(host="[::1]", check_compatibility=False)
+    assert client._client.rest_uri == "http://[::1]:6333"
+
+    client = QdrantClient(host="::1", port=None, check_compatibility=False)
+    assert client._client.rest_uri == "http://[::1]"
+
+    client = QdrantClient(url="http://[::1]:6333", check_compatibility=False)
+    assert client._client.rest_uri == "http://[::1]:6333"
 
     client = QdrantClient(":memory:", not_exist_param="test")
     assert isinstance(client._client, QdrantLocal)
@@ -1063,6 +1077,32 @@ def test_points_crud(prefer_grpc):
 
     # Delete a single point
     client.delete(collection_name=COLLECTION_NAME, points_selector=PointIdsList(points=[123]))
+
+
+@pytest.mark.parametrize("prefer_grpc", [False, True])
+def test_url_reserved_chars_in_names(prefer_grpc):
+    client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
+    # REST used to cut the name at `#` and send requests to `/collections/client_test`
+    collection_name = f"{COLLECTION_NAME}#1"
+    for name in (COLLECTION_NAME, collection_name):
+        if client.collection_exists(name):
+            client.delete_collection(name)
+        client.create_collection(
+            name, vectors_config=VectorParams(size=DIM, distance=Distance.DOT)
+        )
+
+    client.create_payload_index(collection_name, "user", PayloadSchemaType.KEYWORD)
+    client.create_payload_index(collection_name, '"user#id"', PayloadSchemaType.KEYWORD)
+    client.delete_payload_index(collection_name, '"user#id"')
+    assert list(client.get_collection(collection_name).payload_schema) == ["user"]
+
+    # `..` would turn the request into `DELETE /collections/client_test`
+    with pytest.raises(RpcError if prefer_grpc else ValueError):
+        client.delete_payload_index(COLLECTION_NAME, "..")
+
+    client.delete_collection(collection_name)
+    assert not client.collection_exists(collection_name)
+    assert client.collection_exists(COLLECTION_NAME)
 
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])
@@ -2075,7 +2115,7 @@ def test_async_auth_token_provider():
 
     with pytest.raises(
         qdrant_client.http.exceptions.ResponseHandlingException,
-        match="Synchronous token provider is not set.",
+        match="returned an awaitable",
     ):
         client.get_collections()
     with pytest.raises(ValueError, match="require a synchronous auth_token_provider"):
@@ -2175,7 +2215,11 @@ def test_create_payload_index(prefer_grpc):
     initialize_fixture_collection(client, COLLECTION_NAME, vectors_config={})
 
     client.create_payload_index(
-        COLLECTION_NAME, "keyword", models.PayloadSchemaType.KEYWORD, wait=True
+        COLLECTION_NAME,
+        "keyword",
+        models.PayloadSchemaType.KEYWORD,
+        wait=True,
+        ordering=models.WriteOrdering.STRONG,
     )
     client.create_payload_index(
         COLLECTION_NAME, "integer", models.PayloadSchemaType.INTEGER, wait=True
@@ -2274,6 +2318,8 @@ def test_create_payload_index(prefer_grpc):
         models.BoolIndexParams(type=models.BoolIndexType.BOOL),
         wait=True,
     )
+
+    client.delete_payload_index(COLLECTION_NAME, "keyword", ordering=models.WriteOrdering.STRONG)
 
 
 @pytest.mark.parametrize("prefer_grpc", (False, True))
@@ -2707,6 +2753,40 @@ def test_create_payload_index_enable_hnsw(prefer_grpc: bool):
 
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])
+def test_create_text_payload_index_without_tokenizer(prefer_grpc: bool):
+    client = QdrantClient(prefer_grpc=prefer_grpc)
+    if client.collection_exists(COLLECTION_NAME):
+        client.delete_collection(COLLECTION_NAME, timeout=TIMEOUT)
+    client.create_collection(
+        collection_name=COLLECTION_NAME,
+        vectors_config=models.VectorParams(size=DIM, distance=models.Distance.DOT),
+        timeout=TIMEOUT,
+    )
+
+    # the server rejects an unset tokenizer over grpc, REST defaults it to word
+    client.create_payload_index(
+        COLLECTION_NAME,
+        field_name="text_field",
+        field_schema=models.TextIndexParams(type=models.TextIndexType.TEXT),
+        wait=True,
+    )
+
+    grpc_params = q_grpc.PayloadIndexParams(
+        text_index_params=q_grpc.TextIndexParams(lowercase=True)
+    )
+    client.create_payload_index(
+        COLLECTION_NAME, field_name="grpc_text_field", field_schema=grpc_params, wait=True
+    )
+    # the params passed by the user are not modified
+    assert grpc_params.text_index_params.tokenizer == q_grpc.TokenizerType.Unknown
+
+    payload_schema = client.get_collection(COLLECTION_NAME).payload_schema
+    assert payload_schema["text_field"].params.tokenizer == models.TokenizerType.WORD
+    assert payload_schema["grpc_text_field"].params.tokenizer == models.TokenizerType.WORD
+    assert payload_schema["grpc_text_field"].params.lowercase is True
+
+
+@pytest.mark.parametrize("prefer_grpc", [False, True])
 def test_memory_placement(prefer_grpc):
     """Memory placement can be set on every component that accepts it.
 
@@ -2761,6 +2841,36 @@ def test_memory_placement(prefer_grpc):
     )
     config = client.get_collection(COLLECTION_NAME).config
     assert config.params.payload.memory == models.Memory.COLD
+
+
+@pytest.mark.parametrize("prefer_grpc", [False, True])
+def test_id_tracker_memory_placement(prefer_grpc):
+    major, minor, patch, dev = read_version()
+    if not (major is None or dev):
+        if (major, minor, patch) < (1, 19, 2):
+            pytest.skip("Id tracker params are supported as of qdrant 1.19.2")
+
+    client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
+    if client.collection_exists(COLLECTION_NAME):
+        client.delete_collection(COLLECTION_NAME)
+
+    client.create_collection(
+        COLLECTION_NAME,
+        vectors_config=models.VectorParams(size=DIM, distance=models.Distance.DOT),
+        id_tracker=models.IdTrackerParams(memory=models.Memory.COLD),
+    )
+    config = client.get_collection(COLLECTION_NAME).config
+    assert config.params.id_tracker.memory == models.Memory.COLD
+
+    # id tracker placement can also be updated through the collection params diff
+    client.update_collection(
+        COLLECTION_NAME,
+        collection_params=models.CollectionParamsDiff(
+            id_tracker=models.IdTrackerParams(memory=models.Memory.CACHED)
+        ),
+    )
+    config = client.get_collection(COLLECTION_NAME).config
+    assert config.params.id_tracker.memory == models.Memory.CACHED
 
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])
