@@ -1095,6 +1095,25 @@ def test_rejected_upsert_leaves_the_collection_untouched(local_client, remote_cl
         compare_collections(local_client, remote_client, UPLOAD_NUM_VECTORS)
 
 
+def test_upsert_rejects_point_ids_outside_uint64(local_client, remote_client):
+    """Point ids are u64 on the server, an id outside that range rejects the whole batch."""
+    points = generate_fixtures(10)
+    local_client.upload_points(COLLECTION_NAME, points, wait=True)
+    remote_client.upload_points(COLLECTION_NAME, points, wait=True)
+
+    vector = deepcopy(points[0].vector)
+    # goes first, so a write applied before the bad id would show up
+    healthy_point = models.PointStruct(id=len(points), vector=vector)
+    for point_id in (-1, 2**64):
+        batch = [healthy_point, models.PointStruct(id=point_id, vector=vector)]
+        with pytest.raises(ValueError, match="unsigned 64-bit integer"):
+            local_client.upsert(COLLECTION_NAME, batch)
+        with pytest.raises(qdrant_client.http.exceptions.UnexpectedResponse):
+            remote_client.upsert(COLLECTION_NAME, batch, wait=True)
+
+    compare_collections(local_client, remote_client, len(points))
+
+
 def test_rejected_update_vectors_leaves_the_collection_untouched(local_client, remote_client):
     """A rejected point must not take the valid points sent alongside it down with it."""
     points = generate_fixtures(UPLOAD_NUM_VECTORS)
