@@ -2531,6 +2531,45 @@ def test_query_with_nan():
     #     print(grpc_client.query_points(COLLECTION_NAME, query=query))
 
 
+def test_query_wrong_vector_size():
+    fixture_points = generate_fixtures(10)
+
+    local_client, http_client, grpc_client = init_clients(fixture_points)
+
+    too_long = [0.5] * (code_vector_size + 1)
+    queries = [
+        # euclid broadcast a one-element query over all dimensions and returned results
+        ([0.5], 1),
+        (too_long, code_vector_size + 1),
+        # the average of the examples becomes a nearest query
+        (
+            models.RecommendQuery(recommend=models.RecommendInput(positive=[too_long])),
+            code_vector_size + 1,
+        ),
+        # examples are scored one by one, a one-element one was broadcast as well
+        (
+            models.RecommendQuery(
+                recommend=models.RecommendInput(
+                    positive=[1], negative=[[0.5]], strategy=models.RecommendStrategy.BEST_SCORE
+                )
+            ),
+            1,
+        ),
+    ]
+
+    for query, size in queries:
+        message = f"Vector dimension error: expected dim: {code_vector_size}, got {size}"
+
+        with pytest.raises(ValueError, match=message):
+            local_client.query_points(COLLECTION_NAME, query=query, using="code")
+
+        with pytest.raises(UnexpectedResponse, match=message):
+            http_client.query_points(COLLECTION_NAME, query=query, using="code")
+
+        with pytest.raises(RpcError, match=message):
+            grpc_client.query_points(COLLECTION_NAME, query=query, using="code")
+
+
 def test_flat_query_dense_interface():
     fixture_points = generate_fixtures()
 
