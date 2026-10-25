@@ -355,3 +355,51 @@ def test_idf_statistics_after_deletion(qdrant: QdrantClient, operation: str):
             [models.PointStruct(id=i, vector={"text": vector}) for i in (1, 2)],
         )
     assert_scores(3)
+
+
+def test_cosine_near_zero_vectors_stay_as_stored(qdrant: QdrantClient):
+    """A near-zero cosine vector is stored as given and a search does not rewrite it (#1382)."""
+    tiny = [5e-11] * 4  # norm 1e-10
+
+    qdrant.create_collection(
+        "dense",
+        vectors_config=models.VectorParams(size=4, distance=models.Distance.COSINE),
+    )
+    qdrant.upsert("dense", points=[models.PointStruct(id=1, vector=tiny)])
+    dense_stored = qdrant.retrieve("dense", [1], with_vectors=True)[0].vector
+    assert dense_stored == pytest.approx(tiny)
+
+    qdrant.query_points("dense", query=[1.0] * 4, limit=1)
+    assert qdrant.retrieve("dense", [1], with_vectors=True)[0].vector == dense_stored
+
+    qdrant.create_collection(
+        "multi",
+        vectors_config=models.VectorParams(
+            size=4,
+            distance=models.Distance.COSINE,
+            multivector_config=models.MultiVectorConfig(
+                comparator=models.MultiVectorComparator.MAX_SIM
+            ),
+        ),
+    )
+    qdrant.upsert("multi", points=[models.PointStruct(id=1, vector=[tiny])])
+    token = qdrant.retrieve("multi", [1], with_vectors=True)[0].vector[0]
+    assert token == pytest.approx(dense_stored)
+
+    qdrant.query_points("multi", query=[[1.0] * 4], limit=1)
+    assert qdrant.retrieve("multi", [1], with_vectors=True)[0].vector[0] == token
+
+    # Re-upsert and update_vectors use separate write paths.
+    qdrant.upsert("multi", points=[models.PointStruct(id=1, vector=[tiny])])
+    assert qdrant.retrieve("multi", [1], with_vectors=True)[0].vector[0] == pytest.approx(token)
+    qdrant.update_vectors("multi", [models.PointVectors(id=1, vector=[tiny])])
+    assert qdrant.retrieve("multi", [1], with_vectors=True)[0].vector[0] == pytest.approx(token)
+
+    qdrant.update_vectors("dense", [models.PointVectors(id=1, vector=tiny)])
+    assert qdrant.retrieve("dense", [1], with_vectors=True)[0].vector == pytest.approx(
+        dense_stored
+    )
+
+    # A near-zero query is left alone as well, so scores stay near zero.
+    scored = qdrant.query_points("dense", query=tiny, limit=1).points
+    assert scored[0].score == pytest.approx(0.0, abs=1e-9)
