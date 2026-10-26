@@ -414,3 +414,33 @@ def test_score_threshold_is_compared_as_float32(
     ).points
 
     assert [point.id for point in points] == expected_ids
+
+
+@pytest.mark.parametrize(
+    ("distance", "vector", "query", "threshold"),
+    [
+        # 3.000000075 is 3.0 as f32; it must be dropped at threshold 3.0
+        (models.Distance.DOT, [1.5, 1.5], [1.0, 1.00000005], 3.0),
+        # 2.9999999 is 3.0 as f32; it must be dropped at threshold 3.0
+        (models.Distance.EUCLID, [3.0, 0.0], [0.0000001, 0.0], 3.0),
+    ],
+)
+def test_nearest_score_is_compared_as_float32(
+    qdrant: QdrantClient,
+    distance: models.Distance,
+    vector: list[float],
+    query: list[float],
+    threshold: float,
+):
+    """Nearest-query scores must be compared as f32, like the server."""
+    qdrant.create_collection(
+        collection_name="test_collection",
+        vectors_config=models.VectorParams(size=2, distance=distance),
+    )
+    qdrant.upsert("test_collection", [models.PointStruct(id=1, vector=vector)])
+
+    points = qdrant.query_points(
+        "test_collection", query=query, limit=10, score_threshold=threshold
+    ).points
+
+    assert points == []

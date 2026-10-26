@@ -798,6 +798,8 @@ class LocalCollection:
                 scores = calculate_distance(query_vector, vectors, distance)
             else:
                 scores = calculate_multi_distance(query_vector, vectors, distance)
+            # The server stores and compares scores as f32.
+            scores = scores.astype(np.float32, copy=False)
         elif isinstance(query_vector, RecoQuery):
             if query_vector.strategy == models.RecommendStrategy.BEST_SCORE:
                 scores = calculate_recommend_best_scores(query_vector, vectors, distance)
