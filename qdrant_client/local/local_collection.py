@@ -867,6 +867,10 @@ class LocalCollection:
 
         mask = self._payload_and_non_deleted_mask(query_filter, vector_name=name)
 
+        if score_threshold is not None:
+            # The server stores and compares scores and the request threshold as f32.
+            score_threshold = float(np.float32(score_threshold))
+
         required_order = distance_to_order(distance)
 
         if required_order == DistanceOrder.BIGGER_IS_BETTER or isinstance(

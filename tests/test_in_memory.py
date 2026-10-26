@@ -381,3 +381,36 @@ def test_reupserting_identical_cosine_vector_stores_identical_vectors(qdrant: Qd
     updated = qdrant.retrieve("test_collection", [1], with_vectors=True)[0].vector
 
     assert updated == inserted
+
+
+@pytest.mark.parametrize(
+    ("distance", "query", "threshold", "expected_ids"),
+    [
+        # 2.9999999 rounds to 3.0 as f32; keep only scores strictly above 3.0
+        (models.Distance.DOT, [1.0, 0.0], 2.9999999, [5, 4]),
+        # 3.0000001 rounds to 3.0 as f32; keep only distances strictly below 3.0
+        (models.Distance.EUCLID, [0.0, 0.0], 3.0000001, [1, 2]),
+    ],
+)
+def test_score_threshold_is_compared_as_float32(
+    qdrant: QdrantClient,
+    distance: models.Distance,
+    query: list[float],
+    threshold: float,
+    expected_ids: list[int],
+):
+    """The server compares an f32 threshold against f32 scores; local mode must too."""
+    qdrant.create_collection(
+        collection_name="test_collection",
+        vectors_config=models.VectorParams(size=2, distance=distance),
+    )
+    qdrant.upsert(
+        "test_collection",
+        [models.PointStruct(id=i, vector=[float(i), 0.0]) for i in range(1, 6)],
+    )
+
+    points = qdrant.query_points(
+        "test_collection", query=query, limit=10, score_threshold=threshold
+    ).points
+
+    assert [point.id for point in points] == expected_ids
