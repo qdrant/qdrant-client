@@ -1918,8 +1918,10 @@ class QdrantClient(QdrantFastembedMixin):
             batch_size: How many vectors upload per-request. Must be at least 1. Default: 64
             parallel: Number of parallel processes of upload, 0 means all available cores
             method: Start method for parallel processes, Default: forkserver, spawn on macOS
-            max_retries: maximum number of retries in case of a failure
-                during the upload of a batch, 0 means a single attempt without retries
+            max_retries: Maximum number of retries for a failed batch, excluding
+                rate-limit responses with a server-provided retry delay. 0 means a
+                single attempt for other failures. Rate-limited uploads wait for
+                that delay and retry without consuming this budget.
             wait:
                 Await for the results to be applied on the server side.
                 If `true`, each update request will explicitly wait for the confirmation of completion. Might be slower.
@@ -2000,8 +2002,10 @@ class QdrantClient(QdrantFastembedMixin):
             batch_size: How many vectors upload per-request. Must be at least 1. Default: 64
             parallel: Number of parallel processes of upload, 0 means all available cores
             method: Start method for parallel processes, Default: forkserver, spawn on macOS
-            max_retries: maximum number of retries in case of a failure
-                during the upload of a batch, 0 means a single attempt without retries
+            max_retries: Maximum number of retries for a failed batch, excluding
+                rate-limit responses with a server-provided retry delay. 0 means a
+                single attempt for other failures. Rate-limited uploads wait for
+                that delay and retry without consuming this budget.
             wait:
                 Await for the results to be applied on the server side.
                 If `true`, each update request will explicitly wait for the confirmation of completion. Might be slower.
