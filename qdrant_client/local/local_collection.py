@@ -733,6 +733,13 @@ class LocalCollection:
         score_threshold: float | None = None,
         idf_corpus: types.Filter | None = None,
     ) -> list[models.ScoredPoint]:
+        """
+        Search the collection for points closest to ``query_vector``.
+
+        Returns up to ``limit`` points after skipping ``offset``, dropping points
+        that do not satisfy ``score_threshold`` and resolving payload and vectors
+        according to the request.
+        """
         name, query_vector = self._resolve_query_vector_name(query_vector)
         result: list[models.ScoredPoint] = []
         sparse_scoring = False
