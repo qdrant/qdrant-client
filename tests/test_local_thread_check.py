@@ -8,6 +8,7 @@ from qdrant_client.local.persistence import CollectionPersistence
 
 
 def read_storage(storage: CollectionPersistence) -> None:
+    """Read the points table from a worker thread."""
     storage.storage.execute("SELECT COUNT(*) FROM points").fetchone()
 
 
@@ -15,6 +16,7 @@ def read_storage(storage: CollectionPersistence) -> None:
 def test_thread_check_override_is_per_connection(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, cached_check: bool | None
 ) -> None:
+    """Keep an explicit opt-out from disabling checks on later connections."""
     # Simulate SQLite's multi-thread mode, where connections must not be shared.
     monkeypatch.setattr(sqlite3, "threadsafety", 1)
     monkeypatch.setattr(CollectionPersistence, "CHECK_SAME_THREAD", cached_check)
