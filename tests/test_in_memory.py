@@ -414,3 +414,27 @@ def test_unknown_with_vectors_name_is_rejected_when_a_point_is_returned(
     # A known name is unaffected.
     record = qdrant.retrieve("test_collection", [1], with_vectors=["a"])[0]
     assert record.vector == {"a": [1.0, 0.0]}
+
+
+def test_unknown_with_vectors_name_is_ignored_when_offset_skips_every_point(
+    qdrant: QdrantClient,
+):
+    """A name skipped by the offset must not be validated, like on the server."""
+    qdrant.create_collection(
+        collection_name="test_collection",
+        vectors_config={"a": models.VectorParams(size=2, distance=models.Distance.DOT)},
+    )
+    qdrant.upsert(
+        "test_collection",
+        [models.PointStruct(id=1, vector={"a": [1.0, 0.0]})],
+    )
+
+    response = qdrant.query_points(
+        "test_collection",
+        query=[1.0, 0.0],
+        using="a",
+        with_vectors=["missing"],
+        offset=1,
+    )
+
+    assert response.points == []
