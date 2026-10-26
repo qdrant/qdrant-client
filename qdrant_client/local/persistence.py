@@ -56,12 +56,9 @@ class CollectionPersistence:
             # THREADSAFE = 2 -> 1: Threads may share the module, but not connections. macOS default.
             self.__class__.CHECK_SAME_THREAD = sqlite3.threadsafety != 3
 
-        if force_disable_check_same_thread:
-            self.__class__.CHECK_SAME_THREAD = False
-
         self.storage = sqlite3.connect(
             str(self.location),
-            check_same_thread=self.CHECK_SAME_THREAD,  # type: ignore
+            check_same_thread=False if force_disable_check_same_thread else self.CHECK_SAME_THREAD,  # type: ignore
         )
 
         self._ensure_table()
