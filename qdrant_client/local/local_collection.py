@@ -794,6 +794,8 @@ class LocalCollection:
                 )
 
         if isinstance(query_vector, np.ndarray):
+            # The server converts the query vector to f32 before scoring.
+            query_vector = query_vector.astype(np.float32, copy=False)
             if len(query_vector.shape) == 1:
                 scores = calculate_distance(query_vector, vectors, distance)
             else:

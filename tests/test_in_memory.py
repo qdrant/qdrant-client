@@ -423,6 +423,13 @@ def test_score_threshold_is_compared_as_float32(
         (models.Distance.DOT, [1.5, 1.5], [1.0, 1.00000005], 3.0),
         # 2.9999999 is 3.0 as f32; it must be dropped at threshold 3.0
         (models.Distance.EUCLID, [3.0, 0.0], [0.0000001, 0.0], 3.0),
+        # The query rounds differently in f32, landing on the threshold
+        (
+            models.Distance.DOT,
+            [1.0, 1.0],
+            [1.0000006317071082, 0.9999990054770004],
+            1.9999995231628418,
+        ),
     ],
 )
 def test_nearest_score_is_compared_as_float32(
