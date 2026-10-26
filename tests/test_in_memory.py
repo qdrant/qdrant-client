@@ -381,3 +381,36 @@ def test_reupserting_identical_cosine_vector_stores_identical_vectors(qdrant: Qd
     updated = qdrant.retrieve("test_collection", [1], with_vectors=True)[0].vector
 
     assert updated == inserted
+
+
+def test_unknown_with_vectors_name_is_rejected_when_a_point_is_returned(
+    qdrant: QdrantClient,
+):
+    """Local mode must reject an unknown `with_vectors` name like the server does."""
+    qdrant.create_collection(
+        collection_name="test_collection",
+        vectors_config={"a": models.VectorParams(size=2, distance=models.Distance.DOT)},
+    )
+    qdrant.upsert(
+        "test_collection",
+        [models.PointStruct(id=1, vector={"a": [1.0, 0.0]})],
+    )
+
+    requests = [
+        lambda: qdrant.retrieve("test_collection", [1], with_vectors=["missing"]),
+        lambda: qdrant.scroll("test_collection", with_vectors=["missing"]),
+        lambda: qdrant.query_points(
+            "test_collection", query=[1.0, 0.0], using="a", with_vectors=["missing"]
+        ),
+    ]
+    for request in requests:
+        with pytest.raises(ValueError, match="Not existing vector name error: missing"):
+            request()
+
+    # The server only validates a name while building a result point, so a request
+    # that returns no points is accepted by both modes.
+    assert qdrant.retrieve("test_collection", [999], with_vectors=["missing"]) == []
+
+    # A known name is unaffected.
+    record = qdrant.retrieve("test_collection", [1], with_vectors=["a"])[0]
+    assert record.vector == {"a": [1.0, 0.0]}
