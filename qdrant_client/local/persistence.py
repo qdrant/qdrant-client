@@ -27,7 +27,6 @@ def check_legacy_storage(location: str) -> None:
 
 
 class CollectionPersistence:
-    CHECK_SAME_THREAD: bool | None = None
     # pinned, since the default protocol changed from 4 to 5 in Python 3.14, and keys with it
     KEY_PICKLE_PROTOCOL = 4
 
@@ -49,17 +48,12 @@ class CollectionPersistence:
         self.location = Path(location) / STORAGE_FILE_NAME
         self.location.parent.mkdir(exist_ok=True, parents=True)
 
-        if self.CHECK_SAME_THREAD is None and force_disable_check_same_thread is False:
-            # `sqlite3.threadsafety` maps SQLite's THREADSAFE compile option to a DB-API level:
-            # THREADSAFE = 0 -> 0: Threads may not share the module
-            # THREADSAFE = 1 -> 3: Threads may share the module, connections and cursors. Linux default.
-            # THREADSAFE = 2 -> 1: Threads may share the module, but not connections. macOS default.
-            self.__class__.CHECK_SAME_THREAD = sqlite3.threadsafety != 3
-
-        self.storage = sqlite3.connect(
-            str(self.location),
-            check_same_thread=False if force_disable_check_same_thread else self.CHECK_SAME_THREAD,  # type: ignore
-        )
+        # `sqlite3.threadsafety` maps SQLite's THREADSAFE compile option to a DB-API level:
+        # THREADSAFE = 0 -> 0: Threads may not share the module
+        # THREADSAFE = 1 -> 3: Threads may share the module, connections and cursors. Linux default.
+        # THREADSAFE = 2 -> 1: Threads may share the module, but not connections. macOS default.
+        check_same_thread = sqlite3.threadsafety != 3 and not force_disable_check_same_thread
+        self.storage = sqlite3.connect(str(self.location), check_same_thread=check_same_thread)
 
         self._ensure_table()
         # stored keys which differ from `encode_key(point_id)`
