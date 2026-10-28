@@ -897,6 +897,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         id_tracker: types.IdTrackerParams | None = None,
         **kwargs: Any,
     ) -> bool:
+        """Create a local collection after validating its name and vector configuration."""
         if self.closed:
             raise RuntimeError("QdrantLocal instance is closed. Please create a new instance.")
         self._validate_new_collection_name(collection_name)
@@ -910,6 +911,12 @@ class AsyncQdrantLocal(AsyncQdrantBase):
             self._validate_new_vector_name(vector_name, "sparse")
         if sparse_vectors_config is not None and "" in sparse_vectors_config:
             raise ValueError("Sparse vector name cannot be empty")
+        if isinstance(vectors_config, Mapping):
+            for vector_name in vectors_config:
+                if vector_name in (sparse_vectors_config or {}):
+                    raise ValueError(
+                        f"Dense and sparse vector names must be unique - duplicate found with '{vector_name}'"
+                    )
         if collection_name in self.collections:
             raise ValueError(f"Collection {collection_name} already exists")
         if collection_name in self.aliases:

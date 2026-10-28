@@ -996,6 +996,7 @@ class QdrantLocal(QdrantBase):
         id_tracker: types.IdTrackerParams | None = None,
         **kwargs: Any,
     ) -> bool:
+        """Create a local collection after validating its name and vector configuration."""
         if self.closed:
             raise RuntimeError("QdrantLocal instance is closed. Please create a new instance.")
 
@@ -1011,6 +1012,13 @@ class QdrantLocal(QdrantBase):
         # the server reserves the empty name for the default dense vector
         if sparse_vectors_config is not None and "" in sparse_vectors_config:
             raise ValueError("Sparse vector name cannot be empty")
+        if isinstance(vectors_config, Mapping):
+            for vector_name in vectors_config:
+                if vector_name in (sparse_vectors_config or {}):
+                    raise ValueError(
+                        "Dense and sparse vector names must be unique - "
+                        f"duplicate found with '{vector_name}'"
+                    )
         if collection_name in self.collections:
             raise ValueError(f"Collection {collection_name} already exists")
         # a collection must not take the name of an existing alias either

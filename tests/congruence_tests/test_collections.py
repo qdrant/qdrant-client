@@ -225,6 +225,7 @@ def test_create_collection_invalid_vectors():
         (None, {"a/b": sparse}),
         (dense(0), None),
         ({"text": dense(65537)}, None),
+        ({"shared": dense()}, {"shared": sparse}),
     ]
     for vectors_config, sparse_vectors_config in configs:
         for client in (local_client, http_client, grpc_client):
