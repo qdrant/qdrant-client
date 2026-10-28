@@ -920,9 +920,7 @@ class LocalCollection:
                 score=float(score),
                 version=0,
                 payload=self._get_payload(idx, with_payload),
-                # Points skipped by the offset are never returned, so their vector
-                # names must not be validated, matching the server.
-                vector=(self._get_vectors(idx, with_vectors) if len(result) >= offset else None),
+                vector=self._get_vectors(idx, with_vectors),
             )
 
             result.append(scored_point)
