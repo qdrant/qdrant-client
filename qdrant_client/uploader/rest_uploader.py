@@ -110,7 +110,8 @@ class RestBatchUploader(BaseUploader):
         **kwargs: Any,
     ):
         self.collection_name = collection_name
-        self.openapi_client: SyncApis = SyncApis(host=uri, **kwargs)
+        self._uri = uri
+        self._kwargs = kwargs
         self.max_retries = max_retries
         self._wait = wait
         self._shard_key_selector = shard_key_selector
@@ -159,10 +160,10 @@ class RestBatchUploader(BaseUploader):
         return cls(uri=uri, collection_name=collection_name, max_retries=max_retries, **kwargs)
 
     def process(self, items: Iterable[Any]) -> Iterable[bool]:
-        try:
+        with SyncApis(host=self._uri, **self._kwargs) as openapi_client:
             for batch in items:
                 yield upload_batch(
-                    self.openapi_client,
+                    openapi_client,
                     self.collection_name,
                     batch,
                     shard_key_selector=self._shard_key_selector,
@@ -171,5 +172,3 @@ class RestBatchUploader(BaseUploader):
                     update_mode=self._update_mode,
                     wait=self._wait,
                 )
-        finally:
-            self.openapi_client.close()

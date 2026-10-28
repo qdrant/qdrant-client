@@ -58,6 +58,12 @@ class SyncApis(Generic[ClientT]):
     def close(self) -> None:
         self.client.close()
 
+    def __enter__(self) -> "SyncApis[ClientT]":
+        return self
+
+    def __exit__(self, *args: Any) -> None:
+        self.close()
+
 
 T = TypeVar("T")
 Send = Callable[[Request], Response]
