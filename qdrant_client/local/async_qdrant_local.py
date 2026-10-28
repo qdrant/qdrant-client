@@ -897,6 +897,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         id_tracker: types.IdTrackerParams | None = None,
         **kwargs: Any,
     ) -> bool:
+        """Create a local collection after validating its name and vector configuration."""
         if self.closed:
             raise RuntimeError("QdrantLocal instance is closed. Please create a new instance.")
         self._validate_new_collection_name(collection_name)

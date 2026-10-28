@@ -996,6 +996,7 @@ class QdrantLocal(QdrantBase):
         id_tracker: types.IdTrackerParams | None = None,
         **kwargs: Any,
     ) -> bool:
+        """Create a local collection after validating its name and vector configuration."""
         if self.closed:
             raise RuntimeError("QdrantLocal instance is closed. Please create a new instance.")
 
