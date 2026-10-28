@@ -304,9 +304,11 @@ class ModelEmbedder:
             return None
 
         if isinstance(data, list):
+            if data and isinstance(data[0], (int, float)):
+                return None
             for value in data:
                 if not isinstance(value, get_args(INFERENCE_OBJECT_TYPES)):  # if value is a vector
-                    return None
+                    continue
                 self._accumulate(value)
 
         if not isinstance(data, get_args(INFERENCE_OBJECT_TYPES)):
@@ -341,9 +343,11 @@ class ModelEmbedder:
             return data
 
         if isinstance(data, list):
+            if data and isinstance(data[0], (int, float)):
+                return data
             for i, value in enumerate(data):
                 if not isinstance(value, get_args(INFERENCE_OBJECT_TYPES)):  # if value is a vector
-                    return data
+                    continue
 
                 data[i] = self._drain_accumulator(
                     value, is_query=is_query, inference_batch_size=inference_batch_size
