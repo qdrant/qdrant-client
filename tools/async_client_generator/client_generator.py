@@ -21,6 +21,7 @@ class ClientGenerator(BaseGenerator):
         class_replace_map: dict[str, str] | None = None,
         import_replace_map: dict[str, str] | None = None,
         exclude_methods: list[str] | None = None,
+        rename_methods: dict[str, str] | None = None,
     ):
         super().__init__()
         self._async_methods: list[str] | None = None
@@ -33,6 +34,7 @@ class ClientGenerator(BaseGenerator):
                 class_replace_map=class_replace_map,
                 exclude_methods=exclude_methods,
                 async_methods=self.async_methods,
+                rename_methods=rename_methods,
             )
         )
         self.transformers.append(ClassDefTransformer(class_replace_map=class_replace_map))
@@ -94,6 +96,10 @@ if __name__ == "__main__":
             "__del__",
             "migrate",
         ],
+        rename_methods={
+            "__enter__": "__aenter__",
+            "__exit__": "__aexit__",
+        },
     )
 
     modified_code = generator.generate(code)
