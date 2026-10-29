@@ -381,3 +381,73 @@ def test_reupserting_identical_cosine_vector_stores_identical_vectors(qdrant: Qd
     updated = qdrant.retrieve("test_collection", [1], with_vectors=True)[0].vector
 
     assert updated == inserted
+
+
+@pytest.mark.parametrize(
+    ("distance", "query", "threshold", "expected_ids"),
+    [
+        # 2.9999999 rounds to 3.0 as f32; keep only scores strictly above 3.0
+        (models.Distance.DOT, [1.0, 0.0], 2.9999999, [5, 4]),
+        # 3.0000001 rounds to 3.0 as f32; keep only distances strictly below 3.0
+        (models.Distance.EUCLID, [0.0, 0.0], 3.0000001, [1, 2]),
+    ],
+)
+def test_score_threshold_is_compared_as_float32(
+    qdrant: QdrantClient,
+    distance: models.Distance,
+    query: list[float],
+    threshold: float,
+    expected_ids: list[int],
+):
+    """The server compares an f32 threshold against f32 scores; local mode must too."""
+    qdrant.create_collection(
+        collection_name="test_collection",
+        vectors_config=models.VectorParams(size=2, distance=distance),
+    )
+    qdrant.upsert(
+        "test_collection",
+        [models.PointStruct(id=i, vector=[float(i), 0.0]) for i in range(1, 6)],
+    )
+
+    points = qdrant.query_points(
+        "test_collection", query=query, limit=10, score_threshold=threshold
+    ).points
+
+    assert [point.id for point in points] == expected_ids
+
+
+@pytest.mark.parametrize(
+    ("distance", "vector", "query", "threshold"),
+    [
+        # 3.000000075 is 3.0 as f32; it must be dropped at threshold 3.0
+        (models.Distance.DOT, [1.5, 1.5], [1.0, 1.00000005], 3.0),
+        # 2.9999999 is 3.0 as f32; it must be dropped at threshold 3.0
+        (models.Distance.EUCLID, [3.0, 0.0], [0.0000001, 0.0], 3.0),
+        # The query rounds differently in f32, landing on the threshold
+        (
+            models.Distance.DOT,
+            [1.0, 1.0],
+            [1.0000006317071082, 0.9999990054770004],
+            1.9999995231628418,
+        ),
+    ],
+)
+def test_nearest_score_is_compared_as_float32(
+    qdrant: QdrantClient,
+    distance: models.Distance,
+    vector: list[float],
+    query: list[float],
+    threshold: float,
+):
+    """Nearest-query scores must be compared as f32, like the server."""
+    qdrant.create_collection(
+        collection_name="test_collection",
+        vectors_config=models.VectorParams(size=2, distance=distance),
+    )
+    qdrant.upsert("test_collection", [models.PointStruct(id=1, vector=vector)])
+
+    points = qdrant.query_points(
+        "test_collection", query=query, limit=10, score_threshold=threshold
+    ).points
+
+    assert points == []

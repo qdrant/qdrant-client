@@ -739,6 +739,13 @@ class LocalCollection:
         score_threshold: float | None = None,
         idf_corpus: types.Filter | None = None,
     ) -> list[models.ScoredPoint]:
+        """
+        Search the collection for points closest to ``query_vector``.
+
+        Returns up to ``limit`` points after skipping ``offset``, dropping points
+        that do not satisfy ``score_threshold`` and resolving payload and vectors
+        according to the request.
+        """
         name, query_vector = self._resolve_query_vector_name(query_vector)
         result: list[models.ScoredPoint] = []
         sparse_scoring = False
@@ -793,10 +800,14 @@ class LocalCollection:
                 )
 
         if isinstance(query_vector, np.ndarray):
+            # The server converts the query vector to f32 before scoring.
+            query_vector = query_vector.astype(np.float32, copy=False)
             if len(query_vector.shape) == 1:
                 scores = calculate_distance(query_vector, vectors, distance)
             else:
                 scores = calculate_multi_distance(query_vector, vectors, distance)
+            # The server stores and compares scores as f32.
+            scores = scores.astype(np.float32, copy=False)
         elif isinstance(query_vector, RecoQuery):
             if query_vector.strategy == models.RecommendStrategy.BEST_SCORE:
                 scores = calculate_recommend_best_scores(query_vector, vectors, distance)
@@ -872,6 +883,10 @@ class LocalCollection:
             raise (ValueError(f"Unsupported query vector type {type(query_vector)}"))
 
         mask = self._payload_and_non_deleted_mask(query_filter, vector_name=name)
+
+        if score_threshold is not None:
+            # The server stores and compares scores and the request threshold as f32.
+            score_threshold = float(np.float32(score_threshold))
 
         required_order = distance_to_order(distance)
 
