@@ -575,3 +575,29 @@ def test_recreate_collection(remote_client: QdrantClient):
     assert_recreated_unchanged(
         collection_before_migrate, remote_client.get_collection(collection_name)
     )
+
+
+def test_migrate_read_fan_out_params(remote_client: QdrantClient) -> None:
+    collection_name = "read_fan_out_collection"
+    remote_client.create_collection(
+        collection_name,
+        vectors_config=models.VectorParams(size=10, distance=models.Distance.COSINE),
+    )
+    # not accepted by `create_collection`, only by `update_collection`
+    remote_client.update_collection(
+        collection_name,
+        collection_params=models.CollectionParamsDiff(
+            read_fan_out_factor=2, read_fan_out_delay_ms=100
+        ),
+    )
+
+    collection_before_migrate = remote_client.get_collection(collection_name)
+    assert collection_before_migrate.config.params.read_fan_out_factor == 2
+    assert collection_before_migrate.config.params.read_fan_out_delay_ms == 100
+
+    grpc_client = QdrantClient(prefer_grpc=True)
+    for client in (remote_client, grpc_client):
+        client.migrate(client, recreate_on_collision=True)
+        assert_recreated_unchanged(
+            collection_before_migrate, remote_client.get_collection(collection_name)
+        )
