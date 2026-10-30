@@ -402,4 +402,4 @@ def test_cosine_near_zero_vectors_stay_as_stored(qdrant: QdrantClient):
 
     # A near-zero query is left alone as well, so scores stay near zero.
     scored = qdrant.query_points("dense", query=tiny, limit=1).points
-    assert scored[0].score == pytest.approx(0.0, abs=1e-9)
+    assert scored[0].score == pytest.approx(1e-20, abs=1e-22)
