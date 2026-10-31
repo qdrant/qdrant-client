@@ -3867,7 +3867,7 @@ class RestToGrpc:
     def convert_record(cls, model: rest.Record) -> grpc.RetrievedPoint:
         return grpc.RetrievedPoint(
             id=cls.convert_extended_point_id(model.id),
-            payload=cls.convert_payload(model.payload),
+            payload=cls.convert_payload(model.payload) if model.payload is not None else None,
             vectors=(
                 cls.convert_vector_struct_output(model.vector)
                 if model.vector is not None
