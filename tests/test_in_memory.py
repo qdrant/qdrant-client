@@ -355,3 +355,49 @@ def test_idf_statistics_after_deletion(qdrant: QdrantClient, operation: str):
             [models.PointStruct(id=i, vector={"text": vector}) for i in (1, 2)],
         )
     assert_scores(3)
+
+
+def test_with_vectors_rejects_unknown_vector_name(qdrant: QdrantClient):
+    qdrant.create_collection(
+        collection_name="test_collection",
+        vectors_config={
+            "a": models.VectorParams(size=2, distance=models.Distance.DOT),
+        },
+    )
+
+    qdrant.upsert(
+        collection_name="test_collection",
+        points=[
+            models.PointStruct(
+                id=1,
+                vector={"a": [1.0, 0.0]},
+            )
+        ],
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="Not existing vector name error: missing",
+    ):
+        qdrant.retrieve(
+            collection_name="test_collection",
+            ids=[1],
+            with_vectors=["missing"],
+        )
+
+    with pytest.raises(
+        ValueError,
+        match="Not existing vector name error: missing",
+    ):
+        qdrant.query_points(
+            collection_name="test_collection",
+            query=[1.0, 0.0],
+            using="a",
+            with_vectors=["missing"],
+        )
+
+    assert qdrant.retrieve(
+        collection_name="test_collection",
+        ids=[999],
+        with_vectors=["missing"],
+    ) == []
