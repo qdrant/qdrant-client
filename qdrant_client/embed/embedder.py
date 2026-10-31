@@ -63,7 +63,7 @@ class Embedder:
             )
         options = {
             "cache_dir": cache_dir,
-            "threads": threads or self._threads,
+            "threads": threads if threads is not None else self._threads,
             "providers": providers,
             "cuda": cuda,
             "device_ids": device_ids,
@@ -100,7 +100,7 @@ class Embedder:
 
         options = {
             "cache_dir": cache_dir,
-            "threads": threads or self._threads,
+            "threads": threads if threads is not None else self._threads,
             "providers": providers,
             "cuda": cuda,
             "device_ids": device_ids,
@@ -137,7 +137,7 @@ class Embedder:
             )
         options = {
             "cache_dir": cache_dir,
-            "threads": threads or self._threads,
+            "threads": threads if threads is not None else self._threads,
             "providers": providers,
             "cuda": cuda,
             "device_ids": device_ids,
@@ -172,7 +172,7 @@ class Embedder:
             )
         options = {
             "cache_dir": cache_dir,
-            "threads": threads or self._threads,
+            "threads": threads if threads is not None else self._threads,
             "providers": providers,
             "cuda": cuda,
             "device_ids": device_ids,
@@ -206,7 +206,7 @@ class Embedder:
             )
         options = {
             "cache_dir": cache_dir,
-            "threads": threads or self._threads,
+            "threads": threads if threads is not None else self._threads,
             "providers": providers,
             "cuda": cuda,
             "device_ids": device_ids,
