@@ -630,6 +630,13 @@ class LocalCollection:
                 f"got a str: {with_vectors!r}"
             )
 
+        if not isinstance(with_vectors, bool):
+            for vector_name in with_vectors:
+                if vector_name not in self._all_vectors_keys:
+                    raise ValueError(
+                        f"Wrong input: Not existing vector name error: {vector_name}"
+                    )
+
         requested_names = None if with_vectors is True else set(with_vectors)
 
         def included(name: str) -> bool:
