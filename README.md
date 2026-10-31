@@ -279,7 +279,7 @@ client = QdrantClient(host="localhost", grpc_port=6334, prefer_grpc=True)
 
 ## Async client
 
-Starting from version 1.6.1, all Python client methods are available in async versions, except for the synchronous `upload_points` and `upload_collection` helpers.
+Starting from version 1.6.1, the Python client provides an async API; `upload_points` and `upload_collection` remain synchronous, and `migrate` is not supported by `AsyncQdrantClient`.
 
 To use it, just import `AsyncQdrantClient` instead of `QdrantClient`:
 
