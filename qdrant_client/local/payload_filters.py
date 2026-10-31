@@ -323,9 +323,15 @@ def check_condition(
                 condition.values_count, value_by_key(payload, condition.key, flat=False)
             )
         if condition.is_empty is not None:
-            return check_is_empty(payload, condition.key) == condition.is_empty
+            values = value_by_key(payload, condition.key, flat=False)
+            if values is None:
+                return condition.is_empty
+            return any(value_is_empty(value) == condition.is_empty for value in values)
         if condition.is_null is not None:
-            return check_is_null(payload, condition.key) == condition.is_null
+            values = value_by_key(payload, condition.key, flat=False)
+            if values is None:
+                return not condition.is_null
+            return any(value_is_null(value) == condition.is_null for value in values)
         values = value_by_key(payload, condition.key)
         if condition.match is not None:
             if values is None:
