@@ -2684,6 +2684,20 @@ def test_query_wrong_vector_size():
     with pytest.raises(ValueError, match=multi_msg):
         multi_local.query_points(COLLECTION_NAME, query=multivector_feedback_query, using="multi-code")
 
+    feedback_dimension_query = models.RelevanceFeedbackQuery(
+        relevance_feedback=models.RelevanceFeedbackInput(
+            target=[[0.5] * code_vector_size],
+            feedback=[
+                models.FeedbackItem(example=[[0.5]], score=0.9),
+            ],
+            strategy=models.NaiveFeedbackStrategy(
+                naive=models.NaiveFeedbackStrategyParams(a=1.0, b=1.0, c=1.0)
+            ),
+        )
+    )
+    with pytest.raises(ValueError, match=multi_msg):
+        multi_local.query_points(COLLECTION_NAME, query=feedback_dimension_query, using="multi-code")
+
 
 def test_flat_query_dense_interface():
     fixture_points = generate_fixtures()
