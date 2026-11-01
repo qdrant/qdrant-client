@@ -97,3 +97,16 @@ def test_async_client_mirrors_sync_client() -> None:
     client = AsyncQdrantServerless(url="https://serverless.example.qdrant.io", api_key="secret")
     assert ("api-key", "secret") in client._remote._grpc_headers
     assert client._remote._grpc_port == 443
+
+
+def test_serverless_models_reexport_regular_models() -> None:
+    from qdrant_client import models as regular
+    from qdrant_client.serverless import models as sm
+
+    # regular models are reachable from the serverless namespace
+    assert sm.PointStruct is regular.PointStruct
+    assert sm.Filter is regular.Filter
+    assert sm.Distance is regular.Distance
+    # serverless-specific models win on name collisions
+    assert sm.CollectionConfig.__module__ == "qdrant_client.serverless.models"
+    assert sm.DenseVectorConfig.__module__ == "qdrant_client.serverless.models"

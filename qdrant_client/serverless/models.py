@@ -6,14 +6,21 @@ the API may change without notice.
 These mirror the tenant-facing serverless config: unlike the regular client's
 collection models, they deliberately expose no storage internals (quantization,
 WAL, segments, on_disk placement, ...) - the serverless manager decides those.
+
+All regular models (`PointStruct`, `Filter`, `FieldCondition`, ...) are re-exported
+here, so `qdrant_client.serverless.models` is the single import for serverless code.
+Serverless-specific models below shadow regular ones with the same name
+(`CollectionConfig`, `CollectionInfo`, `DenseVectorConfig`, ...).
 """
+
+from qdrant_client.models import *  # noqa: F401,F403  # re-export; local defs below take precedence
 
 from enum import Enum
 from typing import Literal, Optional, Union
 
 from pydantic import BaseModel, Field
 
-from qdrant_client.http.models import Distance, TokenizerType
+from qdrant_client.http.models import Distance, TokenizerType  # noqa: F811
 
 
 class PrecisionTier(str, Enum):
