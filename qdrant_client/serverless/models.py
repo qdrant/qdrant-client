@@ -22,7 +22,20 @@ from typing import Literal, Optional, Union
 
 from pydantic import BaseModel, Field
 
-from qdrant_client.http.models import StemmingAlgorithm, StopwordsInterface
+# explicit imports for names used here and in `conversions`: mypy cannot see through the star import
+from qdrant_client.http.models import (
+    DisabledStemmerParams,
+    Distance,
+    Language,
+    NoStemmer,
+    Snowball,
+    SnowballLanguage,
+    SnowballParams,
+    StemmingAlgorithm,
+    StopwordsInterface,
+    StopwordsSet,
+    TokenizerType,
+)
 
 
 class PrecisionTier(str, Enum):
