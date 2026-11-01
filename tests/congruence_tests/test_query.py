@@ -2667,6 +2667,23 @@ def test_query_wrong_vector_size():
         with pytest.raises(RpcError, match=message):
             grpc_client.query_points(COLLECTION_NAME, query=query, using="code")
 
+    multi_points = generate_multivector_fixtures(10)
+    multi_local, _, _ = init_clients(multi_points, vectors_config=multi_vector_config)
+    multivector_feedback_query = models.RelevanceFeedbackQuery(
+        relevance_feedback=models.RelevanceFeedbackInput(
+            target=[[0.5]],
+            feedback=[
+                models.FeedbackItem(example=[[0.5] * code_vector_size], score=0.9),
+            ],
+            strategy=models.NaiveFeedbackStrategy(
+                naive=models.NaiveFeedbackStrategyParams(a=1.0, b=1.0, c=1.0)
+            ),
+        )
+    )
+    multi_msg = f"Vector dimension error: expected dim: {code_vector_size}, got 1"
+    with pytest.raises(ValueError, match=multi_msg):
+        multi_local.query_points(COLLECTION_NAME, query=multivector_feedback_query, using="multi-code")
+
 
 def test_flat_query_dense_interface():
     fixture_points = generate_fixtures()
