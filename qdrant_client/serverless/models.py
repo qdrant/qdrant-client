@@ -7,20 +7,22 @@ These mirror the tenant-facing serverless config: unlike the regular client's
 collection models, they deliberately expose no storage internals (quantization,
 WAL, segments, on_disk placement, ...) - the serverless manager decides those.
 
-All regular models (`PointStruct`, `Filter`, `FieldCondition`, ...) are re-exported
-here, so `qdrant_client.serverless.models` is the single import for serverless code.
-Serverless-specific models below shadow regular ones with the same name
-(`CollectionConfig`, `CollectionInfo`, `DenseVectorConfig`, ...).
+All regular models (`PointStruct`, `Filter`, ...) are re-exported here, so
+`qdrant_client.serverless.models` is the single import for serverless code.
+Serverless collection models below replace the regular ones with the same name
+(`CollectionConfig`, `CollectionInfo`, `DenseVectorConfig`, `SparseVectorConfig`).
+`tests/test_serverless.py` checks that no regular model used by serverless
+operations is shadowed.
 """
 
-from qdrant_client.models import *  # noqa: F401,F403  # re-export; local defs below take precedence
+from qdrant_client.models import *  # noqa: F403  # re-export; definitions below take precedence
 
 from enum import Enum
 from typing import Literal, Optional, Union
 
 from pydantic import BaseModel, Field
 
-from qdrant_client.http.models import Distance, TokenizerType  # noqa: F811
+from qdrant_client.http.models import StemmingAlgorithm, StopwordsInterface
 
 
 class PrecisionTier(str, Enum):
@@ -88,29 +90,6 @@ class DatetimeIndex(BaseModel):
     type: Literal["datetime"] = "datetime"
 
 
-class StopwordsSet(BaseModel):
-    """Tokens ignored by a full-text index."""
-
-    languages: list[str] = Field(default_factory=list)
-    custom: list[str] = Field(default_factory=list)
-
-
-class SnowballParams(BaseModel):
-    """Snowball stemming for a full-text index."""
-
-    language: str
-
-
-class StemmingAlgorithm(BaseModel):
-    """Stemming algorithm for a full-text index. Unset: no stemming.
-
-    Exactly one of `snowball` or `disabled` should be set.
-    """
-
-    snowball: Optional[SnowballParams] = None
-    disabled: Optional[bool] = None
-
-
 class TextIndex(BaseModel):
     """Full-text filtering on string values."""
 
@@ -121,7 +100,7 @@ class TextIndex(BaseModel):
     min_token_len: Optional[int] = None
     max_token_len: Optional[int] = None
     ascii_folding: Optional[bool] = None
-    stopwords: Optional[StopwordsSet] = None
+    stopwords: Optional[StopwordsInterface] = None
     stemmer: Optional[StemmingAlgorithm] = None
 
 
