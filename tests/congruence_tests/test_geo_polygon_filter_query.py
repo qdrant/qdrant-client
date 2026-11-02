@@ -1,6 +1,10 @@
 import json
 import random
 
+import pytest
+from grpc import RpcError
+
+from qdrant_client.http.exceptions import UnexpectedResponse
 from qdrant_client.http.models import models
 from tests.congruence_tests.test_common import (
     COLLECTION_NAME,
@@ -239,3 +243,41 @@ def test_geo_filters_ignore_unusable_coordinates():
         compare_client_results(local_client, remote_client, scroll)
         # the two valid locations and the array, so the comparison above is not vacuous
         assert [point.id for point in scroll(local_client)[0]] == [1, 2, len(locations)]
+
+
+def test_invalid_geo_polygon_is_rejected():
+    fixture_points = generate_fixtures(10)
+
+    local_client = init_local()
+    init_client(local_client, fixture_points)
+
+    http_client = init_remote()
+    init_client(http_client, fixture_points)
+    grpc_client = init_remote(prefer_grpc=True)
+
+    square = [(-10.0, -10.0), (10.0, -10.0), (10.0, 10.0), (-10.0, 10.0), (-10.0, -10.0)]
+
+    def polygon_filter(exterior, interiors=None):
+        def ring(corners):
+            return models.GeoLineString(points=[models.GeoPoint(lon=x, lat=y) for x, y in corners])
+
+        polygon = models.GeoPolygon(
+            exterior=ring(exterior), interiors=[ring(r) for r in interiors] if interiors else None
+        )
+        return models.Filter(must=[models.FieldCondition(key="city.geo", geo_polygon=polygon)])
+
+    # (filter, local and REST message, gRPC validation code)
+    cases = [
+        (polygon_filter(square[:-1]), "first and the last points", "closed_line"),
+        (polygon_filter(square[:2] + square[:1]), "at least 4, got 3", "min_line_length"),
+        (polygon_filter([]), "at least 4, got 0", "not_empty"),
+        (polygon_filter(square, [square[:3]]), "at least 4, got 3", "min_line_length"),
+        (polygon_filter(square, [square[:-1]]), "first and the last points", "closed_line"),
+    ]
+    for geo_filter, message, grpc_code in cases:
+        with pytest.raises(ValueError, match=message):
+            local_client.count(COLLECTION_NAME, count_filter=geo_filter)
+        with pytest.raises(UnexpectedResponse, match=message):
+            http_client.count(COLLECTION_NAME, count_filter=geo_filter)
+        with pytest.raises(RpcError, match=grpc_code):
+            grpc_client.count(COLLECTION_NAME, count_filter=geo_filter)
