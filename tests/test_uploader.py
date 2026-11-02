@@ -40,8 +40,8 @@ def test_upload_batch_retries_then_raises(prefer_grpc: bool) -> None:
     assert upsert.call_count == 3
     # the last failure raises instead of announcing another retry
     assert [str(warning.message) for warning in record] == [
-        "Batch upload failed 1 times. Retrying...",
-        "Batch upload failed 2 times. Retrying...",
+        "Batch upload failed 1 times (ConnectionError: upload failed). Retrying...",
+        "Batch upload failed 2 times (ConnectionError: upload failed). Retrying...",
     ]
 
 
