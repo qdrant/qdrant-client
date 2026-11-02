@@ -1,5 +1,6 @@
 import math
 import re
+import sys
 from datetime import date, datetime, timezone
 from typing import Any
 
@@ -447,6 +448,19 @@ def check_filter(
     return True
 
 
+def validate_geo_line_string(line: models.GeoLineString) -> None:
+    """Reject a polygon ring the server refuses: fewer than 4 points, or not closed."""
+    points = line.points
+    if len(points) < 4:
+        raise ValueError(f"polygon invalid, the size must be at least 4, got {len(points)}")
+    first, last = points[0], points[-1]
+    epsilon = sys.float_info.epsilon  # the server compares with f64::EPSILON, the same value
+    if abs(first.lat - last.lat) > epsilon or abs(first.lon - last.lon) > epsilon:
+        raise ValueError(
+            "polygon invalid, the first and the last points should be the same to form a closed line"
+        )
+
+
 def validate_filter(payload_filter: models.Filter | None) -> None:
     """Reject filters the server would refuse, before touching any point."""
     if payload_filter is None:
@@ -470,6 +484,10 @@ def validate_filter(payload_filter: models.Filter | None) -> None:
                 validate_filter(condition)
             elif isinstance(condition, models.NestedCondition):
                 validate_filter(condition.nested.filter)
+            elif isinstance(condition, models.FieldCondition) and condition.geo_polygon:
+                validate_geo_line_string(condition.geo_polygon.exterior)
+                for interior in condition.geo_polygon.interiors or []:
+                    validate_geo_line_string(interior)
             elif isinstance(condition, models.SliceCondition):
                 total, index = condition.slice.total, condition.slice.index
                 if total < 1:
