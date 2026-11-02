@@ -2028,6 +2028,10 @@ class LocalCollection:
         using: str | None = None,
     ) -> tuple[list[ExtendedPointId], list[list[ScoredPoint]]]:
         search_in_vector_name = using if using is not None else DEFAULT_VECTOR_NAME
+        if search_in_vector_name not in self._all_vectors_keys:
+            raise ValueError(
+                f"Wrong input: Not existing vector name error: {search_in_vector_name}"
+            )
         has_vector = models.HasVectorCondition(has_vector=search_in_vector_name)
         if query_filter is None:
             search_filter = models.Filter(must=[has_vector])

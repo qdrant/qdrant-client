@@ -266,3 +266,26 @@ def test_search_matrix_invalid_sample(local_client, http_client, grpc_client):
 
         with pytest.raises(RpcError, match="must be 2 or larger"):
             grpc_matrix(collection_name=COLLECTION_NAME, sample=1, using="text")
+
+
+def test_search_matrix_unknown_using(local_client, http_client, grpc_client):
+    for local_matrix, http_matrix, grpc_matrix in (
+        (
+            local_client.search_matrix_offsets,
+            http_client.search_matrix_offsets,
+            grpc_client.search_matrix_offsets,
+        ),
+        (
+            local_client.search_matrix_pairs,
+            http_client.search_matrix_pairs,
+            grpc_client.search_matrix_pairs,
+        ),
+    ):
+        with pytest.raises(ValueError, match="Not existing vector name error: nope"):
+            local_matrix(collection_name=COLLECTION_NAME, using="nope")
+
+        with pytest.raises(UnexpectedResponse, match="nope"):
+            http_matrix(collection_name=COLLECTION_NAME, using="nope")
+
+        with pytest.raises(RpcError, match="nope"):
+            grpc_matrix(collection_name=COLLECTION_NAME, using="nope")
