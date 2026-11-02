@@ -133,6 +133,7 @@ if __name__ == "__main__":
             "ApiClient": "AsyncApiClient",
             "SyncApis": "AsyncApis",
             "rest_headers_middleware": "async_rest_headers_middleware",
+            "retry_middleware": "async_retry_middleware",
         },
         exclude_methods=[
             "__del__",

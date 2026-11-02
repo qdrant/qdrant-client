@@ -29,6 +29,12 @@ from qdrant_client._pydantic_compat import construct, model_copy
 from qdrant_client.auth import BearerAuth
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.common.validation import validate_batch_lengths
+from qdrant_client.common.retry import (
+    RetryConfig,
+    coerce_retry_config,
+    retry_middleware,
+    retry_to_grpc_options,
+)
 from qdrant_client.common.version_check import is_compatible, get_server_version
 from qdrant_client.connection import get_channel
 from qdrant_client.conversions import common_types as types
@@ -66,12 +72,16 @@ class QdrantRemote(QdrantBase):
         check_compatibility: bool = True,
         pool_size: int | None = None,
         headers: dict[str, str] | None = None,
+        retry: RetryConfig | dict[str, Any] | None = None,
         **kwargs: Any,
     ):
         super().__init__(**kwargs)
         self._prefer_grpc = prefer_grpc
         self._grpc_port = grpc_port
-        self._grpc_options = grpc_options or {}
+        # Copy so that deriving options (user agent, retry policy) never mutates
+        # the caller's dictionary, which could leak into later client instances.
+        self._grpc_options = dict(grpc_options) if grpc_options else {}
+        self._retry = coerce_retry_config(retry)
         self._https = https if https is not None else api_key is not None
         self._scheme = "https" if self._https else "http"
 
@@ -203,6 +213,18 @@ class QdrantRemote(QdrantBase):
         self._rest_headers["User-Agent"] = user_agent
         self._grpc_options["grpc.primary_user_agent"] = user_agent
 
+        if self._retry is not None:
+            for option_name, option_value in retry_to_grpc_options(self._retry).items():
+                if option_name in self._grpc_options:
+                    show_warning_once(
+                        message=f"`{option_name}` has been passed in `grpc_options`, "
+                        f"the value derived from `retry` will be ignored.",
+                        category=UserWarning,
+                        stacklevel=4,
+                    )
+                    continue
+                self._grpc_options[option_name] = option_value
+
         # GRPC Channel-Level Compression
         grpc_compression: Compression | None = kwargs.pop("grpc_compression", None)
         if grpc_compression is not None and not isinstance(grpc_compression, Compression):
@@ -248,6 +270,11 @@ class QdrantRemote(QdrantBase):
         )
 
         self.openapi_client.client.add_middleware(rest_headers_middleware)
+
+        # The retry middleware is added last so that it wraps the headers
+        # middleware, ensuring headers are re-applied on every retried request.
+        if self._retry is not None:
+            self.openapi_client.client.add_middleware(retry_middleware(self._retry))
 
         self._grpc_channel_pool: list[grpc.Channel] = []
         self._grpc_points_client_pool: list[grpc.PointsStub] | None = None
