@@ -798,6 +798,12 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         **kwargs: Any,
     ) -> bool:
         _collection = self._get_collection(collection_name)
+        # stored as JSON, like the server does: datetimes and UUIDs become strings
+        if metadata is not None and not isinstance(metadata, dict):
+            raise ValueError(
+                "Wrong input: Collection metadata must be a JSON object, "
+                f"got {type(metadata).__name__}"
+            )
         metadata = to_jsonable_python(metadata)
         if isinstance(vectors_config, Mapping):
             for vector_name in vectors_config:
