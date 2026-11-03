@@ -52,6 +52,9 @@ class BaseUploader(Worker, ABC):
         if ids is None:
             ids_batches: Iterable = (None for _ in count())
         else:
+            if isinstance(ids, np.ndarray):
+                # numpy integers are not valid point ids, python ints are
+                ids = ids.tolist()
             ids_batches = iter_batch(ids, batch_size)
 
         if payload is None:
