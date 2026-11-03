@@ -381,3 +381,35 @@ def test_reupserting_identical_cosine_vector_stores_identical_vectors(qdrant: Qd
     updated = qdrant.retrieve("test_collection", [1], with_vectors=True)[0].vector
 
     assert updated == inserted
+
+
+def test_non_dict_payload_is_rejected_on_write(qdrant: QdrantClient):
+    """A payload that is not a JSON object must be rejected, as the server does.
+
+    Regression: `set_payload` crashed with a raw AttributeError, `overwrite_payload`
+    stored the list as the point's payload, and `update_collection` stored it as the
+    collection metadata - corrupting state that only surfaced on the next read.
+    """
+    qdrant.create_collection(
+        collection_name="test_collection",
+        vectors_config=models.VectorParams(size=2, distance=models.Distance.DOT),
+    )
+    qdrant.upsert(
+        collection_name="test_collection",
+        points=[models.PointStruct(id=1, vector=[1.0, 2.0], payload={"a": 1})],
+    )
+
+    with pytest.raises(ValueError, match="Wrong input"):
+        qdrant.set_payload("test_collection", payload=[1, 2, 3], points=[1])
+    with pytest.raises(ValueError, match="Wrong input"):
+        qdrant.set_payload("test_collection", payload=[1, 2, 3], points=[1], key="arr")
+    with pytest.raises(ValueError, match="Wrong input"):
+        qdrant.set_payload("test_collection", payload=None, points=[1])
+    with pytest.raises(ValueError, match="Wrong input"):
+        qdrant.overwrite_payload("test_collection", payload=[1, 2, 3], points=[1])
+    with pytest.raises(ValueError, match="Wrong input"):
+        qdrant.update_collection("test_collection", metadata=[1, 2, 3])
+
+    # the rejected writes left nothing behind: the point and the config still read clean
+    assert qdrant.retrieve("test_collection", ids=[1], with_payload=True)[0].payload == {"a": 1}
+    assert qdrant.get_collection("test_collection").config.metadata is None
