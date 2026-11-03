@@ -1028,7 +1028,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                         timeout=timeout,
                         update_mode=update_mode,
                     ),
-                    timeout=self._timeout,
+                    timeout=timeout if timeout is not None else self._timeout,
                 )
             ).result
             assert grpc_result is not None, "Upsert returned None result"
@@ -1098,7 +1098,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                         update_filter=update_filter,
                         timeout=timeout,
                     ),
-                    timeout=self._timeout,
+                    timeout=timeout if timeout is not None else self._timeout,
                 )
             ).result
             assert grpc_result is not None, "Upsert returned None result"
@@ -1149,7 +1149,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                         shard_key_selector=shard_key_selector,
                         timeout=timeout,
                     ),
-                    timeout=self._timeout,
+                    timeout=timeout if timeout is not None else self._timeout,
                 )
             ).result
             assert grpc_result is not None, "Delete vectors returned None result"
@@ -1383,7 +1383,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                             shard_key_selector=shard_key_selector,
                             timeout=timeout,
                         ),
-                        timeout=self._timeout,
+                        timeout=timeout if timeout is not None else self._timeout,
                     )
                 ).result
             )
@@ -1437,7 +1437,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                             key=key,
                             timeout=timeout,
                         ),
-                        timeout=self._timeout,
+                        timeout=timeout if timeout is not None else self._timeout,
                     )
                 ).result
             )
@@ -1495,7 +1495,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                             shard_key_selector=shard_key_selector,
                             timeout=timeout,
                         ),
-                        timeout=self._timeout,
+                        timeout=timeout if timeout is not None else self._timeout,
                     )
                 ).result
             )
@@ -1552,7 +1552,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                             shard_key_selector=shard_key_selector,
                             timeout=timeout,
                         ),
-                        timeout=self._timeout,
+                        timeout=timeout if timeout is not None else self._timeout,
                     )
                 ).result
             )
@@ -1609,7 +1609,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                             shard_key_selector=shard_key_selector,
                             timeout=timeout,
                         ),
-                        timeout=self._timeout,
+                        timeout=timeout if timeout is not None else self._timeout,
                     )
                 ).result
             )
@@ -1655,7 +1655,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                             ordering=ordering,
                             timeout=timeout,
                         ),
-                        timeout=self._timeout,
+                        timeout=timeout if timeout is not None else self._timeout,
                     )
                 ).result
             ]
