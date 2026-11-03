@@ -1014,6 +1014,8 @@ class AsyncQdrantLocal(AsyncQdrantBase):
                 {name: vectors[name][i].tolist() for name in vectors.keys()}
                 for i in range(num_vectors)
             ]
+        if isinstance(ids, np.ndarray):
+            ids = ids.tolist()
         point_structs = [
             rest_models.PointStruct(
                 id=str(point_id) if isinstance(point_id, uuid.UUID) else point_id,
