@@ -156,6 +156,7 @@ class ParallelWorkerPool:
             self.processes.append(process)
 
     def unordered_map(self, stream: Iterable[Any], *args: Any, **kwargs: Any) -> Iterable[Any]:
+        """Yield worker results in completion order, including valid None values."""
         completed = False
         try:
             self.start(**kwargs)
