@@ -156,6 +156,7 @@ class ParallelWorkerPool:
             self.processes.append(process)
 
     def unordered_map(self, stream: Iterable[Any], *args: Any, **kwargs: Any) -> Iterable[Any]:
+        """Yield worker results in completion order, including valid None values."""
         completed = False
         try:
             self.start(**kwargs)
@@ -165,13 +166,14 @@ class ParallelWorkerPool:
 
             pushed = 0
             read = 0
+            no_result = object()
             for item in stream:
                 self.check_worker_health()
                 if pushed - read < self.queue_size:
                     try:
                         out_item = self.output_queue.get_nowait()
                     except Empty:
-                        out_item = None
+                        out_item = no_result
                 else:
                     try:
                         out_item = self._get_output()
@@ -179,7 +181,7 @@ class ParallelWorkerPool:
                         self.join_or_terminate()
                         raise e
 
-                if out_item is not None:
+                if out_item is not no_result:
                     if out_item == QueueSignals.error:
                         self.join_or_terminate()
                         raise RuntimeError("Thread unexpectedly terminated")
