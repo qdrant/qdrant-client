@@ -3,6 +3,7 @@ import itertools
 import json
 import os
 import shutil
+import sys
 import uuid
 from copy import deepcopy
 from io import TextIOWrapper
@@ -118,6 +119,12 @@ class QdrantLocal(QdrantBase):
         except TypeError:  # sometimes portalocker module can be garbage collected before
             # QdrantLocal instance
             pass
+        except ImportError:
+            if not sys.is_finalizing():
+                raise
+            if self._flock_file is not None and not self._flock_file.closed:
+                # Closing the file handle releases its OS lock during interpreter shutdown.
+                self._flock_file.close()
 
     def _load(self) -> None:
         deprecated_config_fields = ("init_from",)
