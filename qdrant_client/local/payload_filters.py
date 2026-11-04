@@ -170,14 +170,16 @@ def check_range(condition: models.Range, value: Any) -> bool:
 
 
 def check_datetime_range(condition: models.DatetimeRange, value: Any) -> bool:
+    """Compare a stored datetime string, treating offsetless bounds as UTC."""
+
     def make_condition_tz_aware(dt: datetime | date | None) -> datetime | None:
+        """Convert dates and datetimes without an offset to UTC."""
         if isinstance(dt, date) and not isinstance(dt, datetime):
             dt = datetime.combine(dt, datetime.min.time())
 
-        if dt is None or dt.tzinfo is not None:
+        if dt is None or dt.utcoffset() is not None:
             return dt
 
-        # Assume UTC if no timezone is provided
         return dt.replace(tzinfo=timezone.utc)
 
     if not isinstance(value, str):
