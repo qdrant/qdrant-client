@@ -174,10 +174,10 @@ def check_datetime_range(condition: models.DatetimeRange, value: Any) -> bool:
         if isinstance(dt, date) and not isinstance(dt, datetime):
             dt = datetime.combine(dt, datetime.min.time())
 
-        if dt is None or dt.tzinfo is not None:
+        if dt is None or dt.utcoffset() is not None:
             return dt
 
-        # Assume UTC if no timezone is provided
+        # Treat a datetime without a UTC offset as naive, even if tzinfo is set.
         return dt.replace(tzinfo=timezone.utc)
 
     if not isinstance(value, str):

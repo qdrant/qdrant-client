@@ -2,8 +2,20 @@ from datetime import date, datetime, timedelta, timezone, tzinfo
 
 import pytest
 
+from qdrant_client import AsyncQdrantClient, QdrantClient, models
 from qdrant_client.local.datetime_utils import parse
 from qdrant_client.local.order_by import datetime_to_microseconds, to_order_value
+
+
+class NoOffset(tzinfo):
+    def utcoffset(self, dt: datetime | None) -> timedelta | None:
+        return None
+
+    def dst(self, dt: datetime | None) -> timedelta | None:
+        return None
+
+    def tzname(self, dt: datetime | None) -> str | None:
+        return None
 
 
 @pytest.mark.parametrize(  # type: ignore
@@ -130,17 +142,6 @@ def test_every_microsecond_is_distinguishable_far_from_the_epoch() -> None:
 
 def test_tzinfo_without_an_offset_counts_as_naive() -> None:
     """A tzinfo reporting no offset is naive per the datetime docs, so it gets UTC too."""
-
-    class NoOffset(tzinfo):
-        def utcoffset(self, dt: datetime | None) -> timedelta | None:
-            return None
-
-        def dst(self, dt: datetime | None) -> timedelta | None:
-            return None
-
-        def tzname(self, dt: datetime | None) -> str | None:
-            return None
-
     assert datetime_to_microseconds(
         datetime(2024, 6, 15, 12, 30, 45, tzinfo=NoOffset())
     ) == datetime_to_microseconds(datetime(2024, 6, 15, 12, 30, 45, tzinfo=timezone.utc))
@@ -152,3 +153,75 @@ def test_to_order_value_reads_a_bare_date_as_utc_midnight() -> None:
     only visible on a client outside UTC."""
     assert to_order_value(date(2021, 1, 1)) == 1609459200000000  # 2021-01-01T00:00:00Z
     assert to_order_value("2021-01-01") == 1609459200000000
+
+
+@pytest.mark.parametrize(  # type: ignore
+    "operator, expected",
+    [("gt", [3]), ("gte", [2, 3]), ("lt", [1]), ("lte", [1, 2])],
+)
+def test_datetime_range_with_tzinfo_without_offset(operator: str, expected: list[int]) -> None:
+    client = QdrantClient(":memory:")
+    try:
+        client.create_collection(
+            "dates", vectors_config=models.VectorParams(size=2, distance=models.Distance.COSINE)
+        )
+        client.upsert(
+            "dates",
+            points=[
+                models.PointStruct(
+                    id=point_id,
+                    vector=[1.0, 0.0],
+                    payload={"created": f"2024-06-15T12:30:{second:02}Z"},
+                )
+                for point_id, second in enumerate((44, 45, 46), 1)
+            ],
+        )
+        boundaries = (
+            datetime(2024, 6, 15, 12, 30, 45),
+            datetime(2024, 6, 15, 12, 30, 45, tzinfo=timezone.utc),
+            datetime(2024, 6, 15, 15, 30, 45, tzinfo=timezone(timedelta(hours=3))),
+            datetime(2024, 6, 15, 12, 30, 45, tzinfo=NoOffset()),
+        )
+        for boundary in boundaries:
+            query = models.Filter(
+                must=[
+                    models.FieldCondition(
+                        key="created", range=models.DatetimeRange(**{operator: boundary})
+                    )
+                ]
+            )
+            points, _ = client.scroll("dates", scroll_filter=query)
+            assert [point.id for point in points] == expected
+    finally:
+        client.close()
+
+
+@pytest.mark.asyncio
+async def test_async_datetime_range_with_tzinfo_without_offset() -> None:
+    client = AsyncQdrantClient(":memory:")
+    try:
+        await client.create_collection(
+            "dates", vectors_config=models.VectorParams(size=2, distance=models.Distance.COSINE)
+        )
+        await client.upsert(
+            "dates",
+            points=[
+                models.PointStruct(
+                    id=1, vector=[1.0, 0.0], payload={"created": "2024-06-15T12:30:45Z"}
+                )
+            ],
+        )
+        query = models.Filter(
+            must=[
+                models.FieldCondition(
+                    key="created",
+                    range=models.DatetimeRange(
+                        gte=datetime(2024, 6, 15, 12, 30, 45, tzinfo=NoOffset())
+                    ),
+                )
+            ]
+        )
+        points, _ = await client.scroll("dates", scroll_filter=query)
+        assert [point.id for point in points] == [1]
+    finally:
+        await client.close()
