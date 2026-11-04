@@ -160,6 +160,7 @@ def test_to_order_value_reads_a_bare_date_as_utc_midnight() -> None:
     [("gt", [3]), ("gte", [2, 3]), ("lt", [1]), ("lte", [1, 2])],
 )
 def test_datetime_range_with_tzinfo_without_offset(operator: str, expected: list[int]) -> None:
+    """Each operator uses the same instant for equivalent timezone forms."""
     client = QdrantClient(":memory:")
     try:
         client.create_collection(
@@ -198,6 +199,7 @@ def test_datetime_range_with_tzinfo_without_offset(operator: str, expected: list
 
 @pytest.mark.asyncio
 async def test_async_datetime_range_with_tzinfo_without_offset() -> None:
+    """An async local query accepts a tzinfo without an offset."""
     client = AsyncQdrantClient(":memory:")
     try:
         await client.create_collection(
