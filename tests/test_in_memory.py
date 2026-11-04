@@ -381,3 +381,49 @@ def test_reupserting_identical_cosine_vector_stores_identical_vectors(qdrant: Qd
     updated = qdrant.retrieve("test_collection", [1], with_vectors=True)[0].vector
 
     assert updated == inserted
+
+
+@pytest.mark.parametrize("invalid_part", ["target", "feedback"])
+def test_multivector_relevance_feedback_validates_dimensions(
+    qdrant: QdrantClient, invalid_part: str
+):
+    qdrant.create_collection(
+        collection_name="test_collection",
+        vectors_config=models.VectorParams(
+            size=3,
+            distance=models.Distance.EUCLID,
+            multivector_config=models.MultiVectorConfig(
+                comparator=models.MultiVectorComparator.MAX_SIM
+            ),
+        ),
+    )
+    qdrant.upsert(
+        collection_name="test_collection",
+        points=[models.PointStruct(id=1, vector=[[1.0, 2.0, 3.0]])],
+    )
+
+    target = [[0.5, 0.5, 0.5]]
+    feedback = [
+        models.FeedbackItem(example=[[0.0, 1.0, 0.0]], score=0.9),
+        models.FeedbackItem(example=[[0.0, 0.0, 1.0]], score=0.1),
+    ]
+    if invalid_part == "target":
+        target = [[0.5]]
+    else:
+        feedback[0] = models.FeedbackItem(example=[[0.5]], score=0.9)
+
+    query = models.RelevanceFeedbackQuery(
+        relevance_feedback=models.RelevanceFeedbackInput(
+            target=target,
+            feedback=feedback,
+            strategy=models.NaiveFeedbackStrategy(
+                naive=models.NaiveFeedbackStrategyParams(a=1.0, b=1.0, c=1.0)
+            ),
+        )
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="Vector dimension error: expected dim: 3, got 1",
+    ):
+        qdrant.query_points(collection_name="test_collection", query=query)
