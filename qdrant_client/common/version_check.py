@@ -8,11 +8,19 @@ from qdrant_client.auth import BearerAuth
 
 Version = namedtuple("Version", ["major", "minor", "rest"])
 
+# options of the REST client that decide whether the server can be reached at all
+CHECK_CLIENT_OPTIONS = ("verify", "cert", "proxy", "trust_env")
+
 
 def get_server_version(
-    rest_uri: str, rest_headers: dict[str, Any], auth_provider: BearerAuth | None, timeout: int
+    rest_uri: str,
+    rest_headers: dict[str, Any],
+    auth_provider: BearerAuth | None,
+    timeout: int,
+    **client_options: Any,
 ) -> str | None:
-    response = httpx.get(rest_uri, headers=rest_headers, auth=auth_provider, timeout=timeout)
+    with httpx.Client(**client_options) as client:
+        response = client.get(rest_uri, headers=rest_headers, auth=auth_provider, timeout=timeout)
 
     if response.status_code == 200:
         version_info = response.json().get("version", None)

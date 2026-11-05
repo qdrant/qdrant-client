@@ -1,5 +1,9 @@
+import importlib.metadata
+
+import httpx
 import pytest
 
+from qdrant_client import AsyncQdrantClient, QdrantClient
 from qdrant_client.common.version_check import is_compatible, parse_version
 
 
@@ -64,3 +68,34 @@ def test_check_compatibility(client_version, server_version, expected_result):
 def test_parse_versions_value_error(input_version):
     with pytest.raises(ValueError):
         parse_version(input_version)
+
+
+@pytest.mark.parametrize("client_class", [QdrantClient, AsyncQdrantClient])
+def test_compatibility_check_uses_client_tls_options(monkeypatch, client_class):
+    created = []
+
+    class RecordingClient(httpx.Client):
+        def __init__(self, **kwargs):
+            created.append(kwargs)
+            super().__init__(**kwargs, transport=httpx.MockTransport(self._respond))
+
+        @staticmethod
+        def _respond(request):
+            return httpx.Response(
+                200, json={"version": importlib.metadata.version("qdrant-client")}
+            )
+
+    class InlineThread:
+        def __init__(self, target, args, daemon):
+            self._target, self._args = target, args
+
+        def start(self):
+            self._target(*self._args)
+
+    monkeypatch.setattr(httpx, "Client", RecordingClient)
+    for module in ("qdrant_client.qdrant_remote", "qdrant_client.async_qdrant_remote"):
+        monkeypatch.setattr(f"{module}.Thread", InlineThread)
+
+    client_class(url="https://localhost:6333", verify=False, trust_env=False)
+
+    assert {"verify": False, "trust_env": False} in created
