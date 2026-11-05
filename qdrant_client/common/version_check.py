@@ -9,7 +9,7 @@ from qdrant_client.auth import BearerAuth
 Version = namedtuple("Version", ["major", "minor", "rest"])
 
 # options of the REST client that decide whether the server can be reached at all
-CHECK_CLIENT_OPTIONS = ("verify", "cert", "proxy", "trust_env")
+CHECK_CLIENT_OPTIONS = ("verify", "cert", "proxy", "proxies", "trust_env", "http1", "http2")
 
 
 def get_server_version(

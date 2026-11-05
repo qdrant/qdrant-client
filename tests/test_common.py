@@ -96,6 +96,7 @@ def test_compatibility_check_uses_client_tls_options(monkeypatch, client_class):
     for module in ("qdrant_client.qdrant_remote", "qdrant_client.async_qdrant_remote"):
         monkeypatch.setattr(f"{module}.Thread", InlineThread)
 
-    client_class(url="https://localhost:6333", verify=False, trust_env=False)
+    client_class(url="https://localhost:6333", verify=False, trust_env=False, http1=False)
 
-    assert {"verify": False, "trust_env": False} in created
+    expected = {"verify": False, "trust_env": False, "http1": False}
+    assert any(expected.items() <= kwargs.items() for kwargs in created)
