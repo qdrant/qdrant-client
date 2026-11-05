@@ -66,6 +66,13 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         headers: dict[str, str] | None = None,
         **kwargs: Any,
     ):
+        """Connect to a remote Qdrant instance.
+
+        `url` takes a full URL (IPv6 literals must be bracketed, e.g.
+        "http://[fd00::1]:6333"); `host` takes a bare host or IP, bracketed
+        or not — bare IPv6 literals are normalized to bracketed form for both
+        the REST URL and the gRPC channel target.
+        """
         super().__init__(**kwargs)
         self._prefer_grpc = prefer_grpc
         self._grpc_port = grpc_port
