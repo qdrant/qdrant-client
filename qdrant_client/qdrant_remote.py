@@ -67,6 +67,13 @@ class QdrantRemote(QdrantBase):
         headers: dict[str, str] | None = None,
         **kwargs: Any,
     ):
+        """Connect to a remote Qdrant instance.
+
+        `url` takes a full URL (IPv6 literals must be bracketed, e.g.
+        "http://[fd00::1]:6333"); `host` takes a bare host or IP, bracketed
+        or not — bare IPv6 literals are normalized to bracketed form for both
+        the REST URL and the gRPC channel target.
+        """
         super().__init__(**kwargs)
         self._prefer_grpc = prefer_grpc
         self._grpc_port = grpc_port
@@ -122,6 +129,12 @@ class QdrantRemote(QdrantBase):
         else:
             self._host = host or "localhost"
             self._port = port
+
+        if self._host and ":" in self._host and not self._host.startswith("["):
+            # Bare IPv6 literal (`parse_url` strips brackets from `url`, users pass
+            # them bare via `host`): bracket once so REST URL and gRPC target
+            # assembly below produce valid addresses.
+            self._host = f"[{self._host}]"
 
         _timeout = (
             math.ceil(timeout) if timeout is not None else None

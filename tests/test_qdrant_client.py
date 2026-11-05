@@ -2936,3 +2936,17 @@ def test_get_optimizations(prefer_grpc):
     assert optimizations.queued is not None
     assert optimizations.completed is not None
     assert optimizations.idle_segments is None
+
+
+def test_client_ipv6_url():
+    client = QdrantClient(url="http://[fd00::1]:6333", check_compatibility=False)
+    assert isinstance(client._client, QdrantRemote)
+    assert client._client.rest_uri == "http://[fd00::1]:6333"
+    assert client._client._host == "[fd00::1]"
+
+
+def test_client_ipv6_host():
+    client = QdrantClient(host="fd00::1", check_compatibility=False)
+    assert isinstance(client._client, QdrantRemote)
+    assert client._client.rest_uri == "http://[fd00::1]:6333"
+    assert client._client._host == "[fd00::1]"
