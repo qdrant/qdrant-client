@@ -98,11 +98,22 @@ class Batch(BaseModel, extra="forbid"):
 
 
 class BinaryQuantization(BaseModel, extra="forbid"):
+    """Binary quantization: encodes every vector component as a single bit (positive → 1,
+    negative/zero → 0). Achieves ~32× compression with near-zero extra memory per vector.
+    Works best with high-dimensional, sign-rich embeddings (e.g. OpenAI text-embedding-3,
+    1536 dims). Use ``QuantizationSearchParams(rescore=True)`` at query time to recover
+    precision lost to aggressive compression."""
+
     binary: "BinaryQuantizationConfig" = Field(..., description="")
 
 
 class BinaryQuantizationConfig(BaseModel, extra="forbid"):
-    always_ram: Optional[bool] = Field(default=None, description="Deprecated: use `memory` instead.")
+    always_ram: Optional[bool] = Field(
+        default=None,
+        description="Deprecated: use ``memory=Memory.RAM`` instead. When ``True``, forces "
+        "quantized vectors into RAM regardless of the base vector storage policy. "
+        "``always_ram=True`` silently sets ``memory`` to ``Memory.RAM``.",
+    )
     memory: Optional["Memory"] = Field(
         default=None,
         description="Memory placement of quantized vectors. Overrides the deprecated `always_ram` flag if both are set. Default: follow the memory placement of the original vector storage.",
@@ -1347,7 +1358,9 @@ class HnswConfigDiff(BaseModel, extra="forbid"):
     )
     on_disk: Optional[bool] = Field(
         default=None,
-        description="Deprecated: use `memory` instead. Store HNSW index on disk. If set to false, the index will be stored in RAM. Default: false",
+        description="Deprecated: use ``memory=Memory.COLD`` instead. When ``True``, stores "
+        "the HNSW graph on disk rather than mapping it into RAM. ``on_disk=True`` silently "
+        "sets ``memory`` to ``Memory.COLD`` for backward compatibility.",
     )
     memory: Optional["Memory"] = Field(
         default=None,
@@ -2509,12 +2522,29 @@ class Prefetch(BaseModel, extra="forbid"):
 
 
 class ProductQuantization(BaseModel, extra="forbid"):
+    """Product quantization (PQ): partitions each vector into M equal sub-spaces and
+    independently quantizes each sub-space into a small codebook. Supports x4–x64
+    compression ratios via ``ProductQuantizationConfig.compression``. Higher ratios
+    reduce memory further but lower recall; enabling rescoring recovers most of the
+    lost precision."""
+
     product: "ProductQuantizationConfig" = Field(..., description="")
 
 
 class ProductQuantizationConfig(BaseModel, extra="forbid"):
-    compression: "CompressionRatio" = Field(..., description="")
-    always_ram: Optional[bool] = Field(default=None, description="Deprecated: use `memory` instead.")
+    compression: "CompressionRatio" = Field(
+        ...,
+        description="Target compression ratio. Allowed values: ``x4``, ``x8``, ``x16``, "
+        "``x32``, ``x64``. Higher ratios use less memory but reduce recall. ``x4`` is a "
+        "safe starting point; use ``QuantizationSearchParams(rescore=True)`` at query "
+        "time to recover precision.",
+    )
+    always_ram: Optional[bool] = Field(
+        default=None,
+        description="Deprecated: use ``memory=Memory.RAM`` instead. When ``True``, forces "
+        "product-quantized sub-codes into RAM regardless of the base vector storage policy. "
+        "``always_ram=True`` silently sets ``memory`` to ``Memory.RAM``.",
+    )
     memory: Optional["Memory"] = Field(
         default=None,
         description="Memory placement of quantized vectors. Overrides the deprecated `always_ram` flag if both are set. Default: follow the memory placement of the original vector storage.",
@@ -2543,7 +2573,12 @@ class QuantizationSearchParams(BaseModel, extra="forbid"):
     )
     rescore: Optional[bool] = Field(
         default=None,
-        description="If true, use original vectors to re-score top-k results. Might require more time in case if original vectors are stored on disk. If not set, qdrant decides automatically apply rescoring or not.",
+        description="When ``True``, re-ranks the top-k candidates found with quantized "
+        "vectors using the original full-precision vectors, recovering most of the recall "
+        "lost to quantization at a small latency cost. When ``False``, quantized distances "
+        "are used as the final scores. When omitted (``None``), Qdrant enables rescoring "
+        "automatically for scalar and product quantization (low overhead) and disables it "
+        "for binary quantization (where the speed gain is highest).",
     )
     oversampling: Optional[float] = Field(
         default=None,
@@ -3009,6 +3044,10 @@ class SampleQuery(BaseModel, extra="forbid"):
 
 
 class ScalarQuantization(BaseModel, extra="forbid"):
+    """Scalar (int8) quantization: compresses each float32 vector component to 8 bits,
+    reducing per-vector storage by ~4×. Provides a good accuracy/speed/memory trade-off
+    and is the safest first step before considering product or binary quantization."""
+
     scalar: "ScalarQuantizationConfig" = Field(..., description="")
 
 
@@ -3020,7 +3059,9 @@ class ScalarQuantizationConfig(BaseModel, extra="forbid"):
     )
     always_ram: Optional[bool] = Field(
         default=None,
-        description="Deprecated: use `memory` instead. If true - quantized vectors always will be stored in RAM, ignoring the config of main storage",
+        description="Deprecated: use ``memory=Memory.RAM`` instead. When ``True``, forces "
+        "quantized int8 vectors into RAM regardless of the base vector storage policy. "
+        "``always_ram=True`` silently sets ``memory`` to ``Memory.RAM``.",
     )
     memory: Optional["Memory"] = Field(
         default=None,
@@ -3119,21 +3160,34 @@ class SearchMatrixRequest(BaseModel, extra="forbid"):
 
 class SearchParams(BaseModel, extra="forbid"):
     """
-    Additional parameters of the search
+    Runtime search-quality tuning parameters. Passed as ``search_params`` in
+    ``query_points`` / ``query_points_groups``.
     """
 
     hnsw_ef: Optional[int] = Field(
         default=None,
-        description="Params relevant to HNSW index Size of the beam in a beam-search. Larger the value - more accurate the result, more time required for search.",
+        description="Beam width during HNSW graph traversal. Must be greater than or equal "
+        "to the query ``limit`` to be meaningful. Typical range: 50–500. Higher values "
+        "improve recall at the cost of latency. Omit to use the collection-level index default.",
     )
     exact: Optional[bool] = Field(
         default=False,
-        description="Search without approximation. If set to true, search may run long but with exact results.",
+        description="When ``True``, bypasses the HNSW index and runs a brute-force scan "
+        "that guarantees 100 % recall. Only practical on collections with fewer than ~100k "
+        "vectors; on larger collections this will be slow.",
     )
-    quantization: Optional["QuantizationSearchParams"] = Field(default=None, description="Quantization params")
+    quantization: Optional["QuantizationSearchParams"] = Field(
+        default=None,
+        description="Per-query override for quantized-vector rescoring. Pass "
+        "``QuantizationSearchParams(rescore=True)`` to re-rank the initial candidates with "
+        "original full-precision vectors, recovering recall at a small latency cost.",
+    )
     indexed_only: Optional[bool] = Field(
         default=False,
-        description="If enabled, the engine will only perform search among indexed or small segments. Using this option prevents slow searches in case of delayed index, but does not guarantee that all uploaded vectors will be included in search results",
+        description="When ``True``, restricts search to segments that have been fully indexed "
+        "by the HNSW graph, skipping any pending or unindexed segments. Prevents unintended "
+        "full-scans on large unindexed data, but may exclude vectors from recently upserted "
+        "points that have not yet been merged into an indexed segment.",
     )
     acorn: Optional["AcornSearchParams"] = Field(default=None, description="ACORN search params")
     idf: Optional["IdfParams"] = Field(

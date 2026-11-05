@@ -73,7 +73,11 @@ class QdrantClient(QdrantFastembedMixin):
             For QdrantLocal, force disable check_same_thread. Default: `False`
             Only use this if you can guarantee that you can resolve the thread safety outside QdrantClient.
         auth_token_provider: Callback function to get Bearer access token. If given, the function will be called before each request to get the token.
-        check_compatibility: If `true` - check compatibility with the server version. Default: `true`
+        check_compatibility: When ``True`` (default), queries the server version on first
+            connect and raises ``QdrantClientConfigurationError`` if the server is more
+            than one minor version ahead of this client. Set to ``False`` only when
+            upgrading the client library is temporarily blocked; running mismatched
+            versions may expose undocumented API differences.
         grpc_options: a mapping of gRPC channel options
         cloud_inference: If `true` - do inference of `models.Document` and other models in Qdrant Cloud. Default: `False`.
         local_inference_batch_size: inference batch size used by fastembed when using local inference with `models.Document` and other models.
@@ -316,7 +320,15 @@ class QdrantClient(QdrantFastembedMixin):
             query_filter:
                 - Exclude vectors which doesn't fit given conditions.
                 - If `None` - search among all vectors
-            search_params: Additional search params
+            search_params: Runtime search-quality tuning via ``SearchParams``. Key fields:
+
+                - ``hnsw_ef``: beam width during HNSW graph traversal. Must be ≥ ``limit``
+                  for meaningful results; typical range 50–500. Uses the index default when omitted.
+                - ``exact``: set ``True`` for a brute-force scan (100 % recall, slow on large sets).
+                - ``quantization``: override rescoring for quantized storage. Pass
+                  ``QuantizationSearchParams(rescore=True)`` to re-rank candidates with original vectors.
+                - ``indexed_only``: skip unindexed segments; avoids full-scans but may miss
+                  recently upserted vectors still in the pending queue.
             limit: How many results return
             offset:
                 Offset of the first result to return.
@@ -491,7 +503,15 @@ class QdrantClient(QdrantFastembedMixin):
             query_filter:
                 - Exclude vectors which doesn't fit given conditions.
                 - If `None` - search among all vectors
-            search_params: Additional search params
+            search_params: Runtime search-quality tuning via ``SearchParams``. Key fields:
+
+                - ``hnsw_ef``: beam width during HNSW graph traversal. Must be ≥ ``limit``
+                  for meaningful results; typical range 50–500. Uses the index default when omitted.
+                - ``exact``: set ``True`` for a brute-force scan (100 % recall, slow on large sets).
+                - ``quantization``: override rescoring for quantized storage. Pass
+                  ``QuantizationSearchParams(rescore=True)`` to re-rank candidates with original vectors.
+                - ``indexed_only``: skip unindexed segments; avoids full-scans but may miss
+                  recently upserted vectors still in the pending queue.
             limit: How many results return
             group_size: How many results return for each group
             group_by: Name of the payload field to group by. Field must be of type "keyword" or "integer".
@@ -1632,8 +1652,11 @@ class QdrantClient(QdrantFastembedMixin):
             optimizers_config: Override for optimizer configuration
             collection_params: Override for collection parameters
             vectors_config: Override for vector-specific configuration
-            hnsw_config: Override for HNSW index params
-            quantization_config: Override for quantization params
+            hnsw_config: Partial override for HNSW index parameters. Only the fields you
+                supply are changed; unset fields keep their existing values. See
+                ``create_collection`` for a full description of each sub-field.
+            quantization_config: Partial override for quantization parameters. Unset fields
+                keep their existing values. See ``create_collection`` for strategy details.
             timeout:
                 Wait for operation commit timeout in seconds.
                 If timeout is reached - request will return with service error.
@@ -1744,10 +1767,32 @@ class QdrantClient(QdrantFastembedMixin):
                 It will be read from the disk every time it is requested.
                 This setting saves RAM by (slightly) increasing the response time.
                 Note: those payload values that are involved in filtering and are indexed - remain in RAM.
-            hnsw_config: Params for HNSW index
+            hnsw_config: Configuration for the HNSW (Hierarchical Navigable Small World)
+                approximate nearest-neighbour graph index. Key sub-fields:
+
+                - ``m``: bi-directional links per node (default 16). Higher values improve
+                  recall and traversal speed at the cost of more RAM and a slower build.
+                - ``ef_construct``: candidate list size during index construction (default 100).
+                  Higher values yield a more accurate graph but increase build time.
+                - ``full_scan_threshold``: segment size (KB) below which Qdrant switches to a
+                  brute-force scan. Useful for tuning small-collection behaviour.
+                - ``payload_m``: extra edges for payload-aware navigation. Defaults to ``m``.
+
+                Defaults to the collection-level HNSW configuration when omitted.
             optimizers_config: Params for optimizer
             wal_config: Params for Write-Ahead-Log
-            quantization_config: Params for quantization, if None - quantization will be disabled
+            quantization_config: Compression strategy for stored vectors. Three options:
+
+                - ``ScalarQuantization`` (int8): ~4× memory reduction, minimal recall impact.
+                  Recommended as a first choice.
+                - ``ProductQuantization``: x4–x64 compression ratios via sub-space codebooks.
+                  Higher ratios reduce memory further but lower recall.
+                - ``BinaryQuantization``: ~32× compression (1 bit per component). Best for
+                  high-dimensional models (≥ 768 dims, e.g. OpenAI text-embedding-3).
+
+                For all strategies, pass ``QuantizationSearchParams(rescore=True)`` at query
+                time to re-rank top-k candidates with original vectors, recovering precision.
+                Pass ``None`` to disable quantization (default).
             timeout:
                 Wait for operation commit timeout in seconds.
                 If timeout is reached - request will return with service error.
@@ -1845,10 +1890,32 @@ class QdrantClient(QdrantFastembedMixin):
                 It will be read from the disk every time it is requested.
                 This setting saves RAM by (slightly) increasing the response time.
                 Note: those payload values that are involved in filtering and are indexed - remain in RAM.
-            hnsw_config: Params for HNSW index
+            hnsw_config: Configuration for the HNSW (Hierarchical Navigable Small World)
+                approximate nearest-neighbour graph index. Key sub-fields:
+
+                - ``m``: bi-directional links per node (default 16). Higher values improve
+                  recall and traversal speed at the cost of more RAM and a slower build.
+                - ``ef_construct``: candidate list size during index construction (default 100).
+                  Higher values yield a more accurate graph but increase build time.
+                - ``full_scan_threshold``: segment size (KB) below which Qdrant switches to a
+                  brute-force scan. Useful for tuning small-collection behaviour.
+                - ``payload_m``: extra edges for payload-aware navigation. Defaults to ``m``.
+
+                Defaults to the collection-level HNSW configuration when omitted.
             optimizers_config: Params for optimizer
             wal_config: Params for Write-Ahead-Log
-            quantization_config: Params for quantization, if None - quantization will be disabled
+            quantization_config: Compression strategy for stored vectors. Three options:
+
+                - ``ScalarQuantization`` (int8): ~4× memory reduction, minimal recall impact.
+                  Recommended as a first choice.
+                - ``ProductQuantization``: x4–x64 compression ratios via sub-space codebooks.
+                  Higher ratios reduce memory further but lower recall.
+                - ``BinaryQuantization``: ~32× compression (1 bit per component). Best for
+                  high-dimensional models (≥ 768 dims, e.g. OpenAI text-embedding-3).
+
+                For all strategies, pass ``QuantizationSearchParams(rescore=True)`` at query
+                time to re-rank top-k candidates with original vectors, recovering precision.
+                Pass ``None`` to disable quantization (default).
             timeout:
                 Wait for operation commit timeout in seconds.
                 If timeout is reached - request will return with service error.
