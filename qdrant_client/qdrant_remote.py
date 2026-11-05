@@ -123,6 +123,12 @@ class QdrantRemote(QdrantBase):
             self._host = host or "localhost"
             self._port = port
 
+        if self._host and ":" in self._host and not self._host.startswith("["):
+            # Bare IPv6 literal (`parse_url` strips brackets from `url`, users pass
+            # them bare via `host`): bracket once so REST URL and gRPC target
+            # assembly below produce valid addresses.
+            self._host = f"[{self._host}]"
+
         _timeout = (
             math.ceil(timeout) if timeout is not None else None
         )  # it has been changed from float to int.
