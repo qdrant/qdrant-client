@@ -381,3 +381,56 @@ def test_reupserting_identical_cosine_vector_stores_identical_vectors(qdrant: Qd
     updated = qdrant.retrieve("test_collection", [1], with_vectors=True)[0].vector
 
     assert updated == inserted
+
+
+@pytest.mark.parametrize("method", ["search_matrix_pairs", "search_matrix_offsets"])
+@pytest.mark.parametrize("named", [True, False])
+def test_search_matrix_unknown_vector_name_raises(qdrant: QdrantClient, method: str, named: bool):
+    params = models.VectorParams(size=2, distance=models.Distance.COSINE)
+    qdrant.create_collection(
+        "test_collection", vectors_config={"text": params} if named else params
+    )
+    vector = lambda i: {"text": [1.0, float(i)]} if named else [1.0, float(i)]
+    qdrant.upsert(
+        "test_collection",
+        [models.PointStruct(id=i, vector=vector(i)) for i in range(1, 6)],
+    )
+
+    with pytest.raises(ValueError, match="nope is not found in the collection"):
+        getattr(qdrant, method)("test_collection", sample=5, limit=2, using="nope")
+
+
+@pytest.mark.parametrize("method", ["search_matrix_pairs", "search_matrix_offsets"])
+def test_search_matrix_known_vector_names_still_work(qdrant: QdrantClient, method: str):
+    qdrant.create_collection(
+        "test_collection",
+        vectors_config={
+            "dense": models.VectorParams(size=2, distance=models.Distance.COSINE),
+            "multi": models.VectorParams(
+                size=2,
+                distance=models.Distance.COSINE,
+                multivector_config=models.MultiVectorConfig(
+                    comparator=models.MultiVectorComparator.MAX_SIM
+                ),
+            ),
+        },
+        sparse_vectors_config={"sparse": models.SparseVectorParams()},
+    )
+    qdrant.upsert(
+        "test_collection",
+        [
+            models.PointStruct(
+                id=i,
+                vector={
+                    "dense": [1.0, float(i)],
+                    "multi": [[1.0, float(i)], [float(i), 1.0]],
+                    "sparse": models.SparseVector(indices=[0, 1], values=[1.0, float(i)]),
+                },
+            )
+            for i in range(1, 6)
+        ],
+    )
+
+    for name in ("dense", "multi", "sparse"):
+        result = getattr(qdrant, method)("test_collection", sample=5, limit=2, using=name)
+        assert any(len(v) for v in result.model_dump().values() if isinstance(v, list))
