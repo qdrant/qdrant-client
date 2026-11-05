@@ -1,5 +1,5 @@
+from qdrant_client._pydantic_compat import model_copy
 from qdrant_client.http import models
-
 
 DEFAULT_RANKING_CONSTANT_K = 2
 
@@ -72,7 +72,7 @@ def distribution_based_score_fusion(
     for response in responses:
         if not response:
             continue
-        normalized = normalize(response)
+        normalized = normalize([model_copy(point) for point in response])
         for point in normalized:
             entry = points_map.get(point.id)
             if entry is None:
