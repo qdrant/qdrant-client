@@ -9,6 +9,7 @@ import pytest
 import qdrant_client.http.exceptions
 from qdrant_client import models
 from qdrant_client.async_qdrant_client import AsyncQdrantClient
+from qdrant_client.async_qdrant_remote import AsyncQdrantRemote
 from tests.utils import read_version
 
 NUM_VECTORS = 100
@@ -646,3 +647,19 @@ async def test_custom_sharding(prefer_grpc):
 
     assert collection_info.config.params.shard_number == 1
     assert collection_info.config.params.sharding_method == models.ShardingMethod.CUSTOM
+
+
+@pytest.mark.asyncio
+async def test_client_ipv6_url():
+    client = AsyncQdrantClient(url="http://[fd00::1]:6333", check_compatibility=False)
+    assert isinstance(client._client, AsyncQdrantRemote)
+    assert client._client.rest_uri == "http://[fd00::1]:6333"
+    assert client._client._host == "[fd00::1]"
+
+
+@pytest.mark.asyncio
+async def test_client_ipv6_host():
+    client = AsyncQdrantClient(host="fd00::1", check_compatibility=False)
+    assert isinstance(client._client, AsyncQdrantRemote)
+    assert client._client.rest_uri == "http://[fd00::1]:6333"
+    assert client._client._host == "[fd00::1]"

@@ -105,6 +105,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         else:
             self._host = host or "localhost"
             self._port = port
+        if self._host and ":" in self._host and (not self._host.startswith("[")):
+            self._host = f"[{self._host}]"
         _timeout = math.ceil(timeout) if timeout is not None else None
         self._api_key = api_key
         self._auth_token_provider = auth_token_provider
