@@ -383,7 +383,7 @@ def test_reupserting_identical_cosine_vector_stores_identical_vectors(qdrant: Qd
     assert updated == inserted
 
 
-@pytest.mark.parametrize("invalid_part", ["target", "feedback"])
+@pytest.mark.parametrize("invalid_part", ["target", "feedback", "equal_score_feedback"])
 def test_multivector_relevance_feedback_validates_dimensions(
     qdrant: QdrantClient, invalid_part: str
 ):
@@ -409,6 +409,8 @@ def test_multivector_relevance_feedback_validates_dimensions(
     ]
     if invalid_part == "target":
         target = [[0.5]]
+    elif invalid_part == "equal_score_feedback":
+        feedback[0] = models.FeedbackItem(example=[[0.5]], score=0.1)
     else:
         feedback[0] = models.FeedbackItem(example=[[0.5]], score=0.9)
 
