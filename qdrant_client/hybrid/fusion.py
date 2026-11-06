@@ -1,3 +1,4 @@
+from qdrant_client._pydantic_compat import model_copy
 from qdrant_client.http import models
 
 
@@ -36,8 +37,7 @@ def reciprocal_rank_fusion(
     sorted_scores = sorted(scores.items(), key=lambda item: item[1], reverse=True)
     sorted_points = []
     for point_id, score in sorted_scores[:limit]:
-        point = point_pile[point_id]
-        point.score = score
+        point = model_copy(point_pile[point_id], update={"score": score})
         sorted_points.append(point)
     return sorted_points
 
