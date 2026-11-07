@@ -404,3 +404,44 @@ def test_filter_rejects_backslashes_in_quoted_keys(qdrant: QdrantClient, key: st
                 must=[models.FieldCondition(key=key, match=models.MatchValue(value="value"))]
             ),
         )
+
+
+@pytest.mark.parametrize("populate", [False, True])
+@pytest.mark.parametrize(
+    "condition",
+    [
+        models.FieldCondition(key=r'"a\b"', match=models.MatchValue(value="value")),
+        models.IsNullCondition(is_null=models.PayloadField(key=r'"a\b"')),
+        models.IsEmptyCondition(is_empty=models.PayloadField(key=r'"a\b"')),
+        models.NestedCondition(
+            nested=models.Nested(
+                key=r'"a\b"',
+                filter=models.Filter(
+                    must=[
+                        models.FieldCondition(key="value", match=models.MatchValue(value="value"))
+                    ]
+                ),
+            )
+        ),
+    ],
+)
+def test_filter_validates_quoted_paths_before_evaluating_points(
+    qdrant: QdrantClient, populate: bool, condition: models.Condition
+):
+    """Reject invalid paths even with no points or a short-circuited condition."""
+    qdrant.create_collection(
+        "quoted_keys", vectors_config=models.VectorParams(size=2, distance=models.Distance.DOT)
+    )
+    if populate:
+        qdrant.upsert("quoted_keys", [models.PointStruct(id=1, vector=[1.0, 0.0])])
+
+    with pytest.raises(ValueError, match="Invalid path"):
+        qdrant.count(
+            "quoted_keys",
+            count_filter=models.Filter(
+                must=[
+                    models.FieldCondition(key="missing", match=models.MatchValue(value="value")),
+                    condition,
+                ]
+            ),
+        )

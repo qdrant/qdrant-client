@@ -81,6 +81,11 @@ def trunk_sep(path: str) -> str:
 
 
 def match_quote(path: str) -> tuple[JsonPathItem | None, str]:
+    """Read a quoted key and return its item and the remaining JSON path.
+
+    Backslashes and escape sequences are invalid, as in the server grammar.
+    Return (None, path) when the path does not start with a quote.
+    """
     if not path.startswith('"'):
         return None, path
 
