@@ -81,13 +81,19 @@ def trunk_sep(path: str) -> str:
 
 
 def match_quote(path: str) -> tuple[JsonPathItem | None, str]:
+    """Read a quoted key and return its item and the remaining JSON path.
+
+    Backslashes and escape sequences are invalid, as in the server grammar.
+    Return (None, path) when the path does not start with a quote.
+    """
     if not path.startswith('"'):
         return None, path
 
     left_quote_pos = 0
     right_quote_pos = path.find('"', 1)
 
-    if path.count('"') < 2:
+    # Core's quoted keys cannot contain backslashes, including escape sequences.
+    if right_quote_pos == -1 or "\\" in path[1:right_quote_pos]:
         raise ValueError("Invalid path")
 
     return (
