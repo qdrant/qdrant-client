@@ -381,3 +381,26 @@ def test_reupserting_identical_cosine_vector_stores_identical_vectors(qdrant: Qd
     updated = qdrant.retrieve("test_collection", [1], with_vectors=True)[0].vector
 
     assert updated == inserted
+
+
+@pytest.mark.parametrize("key", [r'"a\b"', r'root."a\b"'])
+def test_filter_rejects_backslashes_in_quoted_keys(qdrant: QdrantClient, key: str):
+    qdrant.create_collection(
+        "quoted_keys", vectors_config=models.VectorParams(size=2, distance=models.Distance.DOT)
+    )
+    qdrant.upsert(
+        "quoted_keys",
+        [
+            models.PointStruct(
+                id=1, vector=[1.0, 0.0], payload={"a\\b": "value", "root": {"a\\b": "value"}}
+            )
+        ],
+    )
+
+    with pytest.raises(ValueError, match="Invalid path"):
+        qdrant.count(
+            "quoted_keys",
+            count_filter=models.Filter(
+                must=[models.FieldCondition(key=key, match=models.MatchValue(value="value"))]
+            ),
+        )

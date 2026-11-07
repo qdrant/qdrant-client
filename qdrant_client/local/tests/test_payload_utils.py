@@ -45,6 +45,15 @@ def test_wildcard_set_keeps_array_elements_independent(
     assert value_by_key(payload, f"{key}.metadata.color") == expected_colors
 
 
+@pytest.mark.parametrize(
+    "key",
+    ['"a\\b"', 'root."a\\b"', 'root[]."a\\b"', '"a\\\\b"'],
+)
+def test_parse_json_path_rejects_backslashes_in_quoted_keys(key: str) -> None:
+    with pytest.raises(ValueError, match="Invalid path"):
+        parse_json_path(key)
+
+
 def test_parse_json_path() -> None:
     jp_key = "a"
     keys = parse_json_path(jp_key)

@@ -87,7 +87,8 @@ def match_quote(path: str) -> tuple[JsonPathItem | None, str]:
     left_quote_pos = 0
     right_quote_pos = path.find('"', 1)
 
-    if path.count('"') < 2:
+    # Core's quoted keys cannot contain backslashes, including escape sequences.
+    if right_quote_pos == -1 or "\\" in path[1:right_quote_pos]:
         raise ValueError("Invalid path")
 
     return (
