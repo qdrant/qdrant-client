@@ -561,3 +561,40 @@ def test_discover_and_feedback_score_threshold_float32_parity(qdrant: QdrantClie
         score_threshold=0.99999999,
     ).points
     assert len(res_feedback) == 0
+
+
+def test_multivector_recommend_score_threshold_float32_parity(qdrant: QdrantClient):
+    """Multivector recommend query scores and thresholds must adhere to f32 precision."""
+    qdrant.create_collection(
+        collection_name="test_multi_reco",
+        vectors_config=models.VectorParams(
+            size=2,
+            distance=models.Distance.DOT,
+            multivector_config=models.MultiVectorConfig(
+                comparator=models.MultiVectorComparator.MAX_SIM
+            ),
+        ),
+    )
+    qdrant.upsert(
+        "test_multi_reco",
+        [
+            models.PointStruct(id=1, vector=[[1.0, 0.0], [0.5, 0.5]]),
+            models.PointStruct(id=2, vector=[[0.0, 1.0], [0.2, 0.8]]),
+            models.PointStruct(id=3, vector=[[0.8, 0.2], [0.1, 0.9]]),
+        ],
+    )
+    res = qdrant.query_points(
+        "test_multi_reco",
+        query=models.RecommendQuery(recommend=models.RecommendInput(positive=[1], negative=[2])),
+        limit=10,
+    ).points
+    assert len(res) > 0
+    top_score = res[0].score
+    # Setting threshold exactly to top_score drops all points
+    filtered = qdrant.query_points(
+        "test_multi_reco",
+        query=models.RecommendQuery(recommend=models.RecommendInput(positive=[1], negative=[2])),
+        limit=10,
+        score_threshold=top_score,
+    ).points
+    assert len(filtered) == 0

@@ -831,10 +831,10 @@ class LocalCollection:
                 )
         elif isinstance(query_vector, MultiRecoQuery):
             query_vector.positive = [
-                [v.astype(np.float32, copy=False) for v in mat] for mat in query_vector.positive
+                mat.astype(np.float32, copy=False) for mat in query_vector.positive
             ]
             query_vector.negative = [
-                [v.astype(np.float32, copy=False) for v in mat] for mat in query_vector.negative
+                mat.astype(np.float32, copy=False) for mat in query_vector.negative
             ]
             if query_vector.strategy == models.RecommendStrategy.BEST_SCORE:
                 scores = calculate_multi_recommend_best_scores(query_vector, vectors, distance)
