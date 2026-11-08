@@ -793,11 +793,19 @@ class LocalCollection:
                 )
 
         if isinstance(query_vector, np.ndarray):
+            # The server converts the query vector to f32 before scoring.
+            query_vector = query_vector.astype(np.float32, copy=False)
             if len(query_vector.shape) == 1:
                 scores = calculate_distance(query_vector, vectors, distance)
             else:
                 scores = calculate_multi_distance(query_vector, vectors, distance)
         elif isinstance(query_vector, RecoQuery):
+            query_vector.positive = [
+                v.astype(np.float32, copy=False) for v in query_vector.positive
+            ]
+            query_vector.negative = [
+                v.astype(np.float32, copy=False) for v in query_vector.negative
+            ]
             if query_vector.strategy == models.RecommendStrategy.BEST_SCORE:
                 scores = calculate_recommend_best_scores(query_vector, vectors, distance)
             elif query_vector.strategy == models.RecommendStrategy.SUM_SCORES:
@@ -822,6 +830,12 @@ class LocalCollection:
                     f"BEST_SCORE or SUM_SCORES, got: {query_vector.strategy}"
                 )
         elif isinstance(query_vector, MultiRecoQuery):
+            query_vector.positive = [
+                [v.astype(np.float32, copy=False) for v in mat] for mat in query_vector.positive
+            ]
+            query_vector.negative = [
+                [v.astype(np.float32, copy=False) for v in mat] for mat in query_vector.negative
+            ]
             if query_vector.strategy == models.RecommendStrategy.BEST_SCORE:
                 scores = calculate_multi_recommend_best_scores(query_vector, vectors, distance)
             elif query_vector.strategy == models.RecommendStrategy.SUM_SCORES:
@@ -832,6 +846,10 @@ class LocalCollection:
                     f"BEST_SCORE or SUM_SCORES, got: {query_vector.strategy}"
                 )
         elif isinstance(query_vector, DiscoveryQuery):
+            query_vector.target = query_vector.target.astype(np.float32, copy=False)
+            for pair in query_vector.context:
+                pair.positive = pair.positive.astype(np.float32, copy=False)
+                pair.negative = pair.negative.astype(np.float32, copy=False)
             scores = calculate_discovery_scores(query_vector, vectors, distance)
         elif isinstance(query_vector, SparseDiscoveryQuery):
             if rescore_idf:
@@ -840,8 +858,15 @@ class LocalCollection:
                 )
             scores = calculate_sparse_discovery_scores(query_vector, vectors)
         elif isinstance(query_vector, MultiDiscoveryQuery):
+            query_vector.target = query_vector.target.astype(np.float32, copy=False)
+            for pair in query_vector.context:
+                pair.positive = pair.positive.astype(np.float32, copy=False)
+                pair.negative = pair.negative.astype(np.float32, copy=False)
             scores = calculate_multi_discovery_scores(query_vector, vectors, distance)
         elif isinstance(query_vector, ContextQuery):
+            for pair in query_vector.context_pairs:
+                pair.positive = pair.positive.astype(np.float32, copy=False)
+                pair.negative = pair.negative.astype(np.float32, copy=False)
             scores = calculate_context_scores(query_vector, vectors, distance)
         elif isinstance(query_vector, SparseContextQuery):
             if rescore_idf:
@@ -850,6 +875,9 @@ class LocalCollection:
                 )
             scores = calculate_sparse_context_scores(query_vector, vectors)
         elif isinstance(query_vector, MultiContextQuery):
+            for pair in query_vector.context_pairs:
+                pair.positive = pair.positive.astype(np.float32, copy=False)
+                pair.negative = pair.negative.astype(np.float32, copy=False)
             scores = calculate_multi_context_scores(query_vector, vectors, distance)
         elif isinstance(query_vector, SparseVector):
             validate_sparse_vector(query_vector)
@@ -859,6 +887,9 @@ class LocalCollection:
             query_vector = sort_sparse_vector(query_vector)
             scores = calculate_distance_sparse(query_vector, vectors)
         elif isinstance(query_vector, NaiveFeedbackQuery):
+            query_vector.target = query_vector.target.astype(np.float32, copy=False)
+            for item in query_vector.feedback:
+                item.vector = item.vector.astype(np.float32, copy=False)
             scores = calculate_naive_feedback_query(query_vector, vectors, distance)
         elif isinstance(query_vector, SparseNaiveFeedbackQuery):
             if rescore_idf:
@@ -867,11 +898,21 @@ class LocalCollection:
                 )
             scores = calculate_sparse_naive_feedback_scores(query_vector, vectors)
         elif isinstance(query_vector, MultiNaiveFeedbackQuery):
+            query_vector.target = query_vector.target.astype(np.float32, copy=False)
+            for item in query_vector.feedback:
+                item.vector = item.vector.astype(np.float32, copy=False)
             scores = calculate_multi_naive_feedback_scores(query_vector, vectors, distance)
         else:
             raise (ValueError(f"Unsupported query vector type {type(query_vector)}"))
 
+        # The server stores, scores, and compares with f32 precision.
+        scores = scores.astype(np.float32, copy=False)
+
         mask = self._payload_and_non_deleted_mask(query_filter, vector_name=name)
+
+        if score_threshold is not None:
+            # The server stores and compares scores and the request threshold as f32.
+            score_threshold = float(np.float32(score_threshold))
 
         required_order = distance_to_order(distance)
 
@@ -1047,6 +1088,9 @@ class LocalCollection:
         with_vectors: types.WithVector = False,
         idf_corpus: types.Filter | None = None,
     ) -> list[types.ScoredPoint]:
+        if score_threshold is not None:
+            score_threshold = float(np.float32(score_threshold))
+
         if isinstance(query, (models.FusionQuery, models.RrfQuery)):
             # Fuse results
             if isinstance(query, models.RrfQuery):
@@ -1352,6 +1396,9 @@ class LocalCollection:
 
         scores = bm25_scores(documents, text, k1, b)
         mask = self._payload_and_non_deleted_mask(query_filter)
+
+        if score_threshold is not None:
+            score_threshold = float(np.float32(score_threshold))
 
         result: list[models.ScoredPoint] = []
         for idx in sorted(scores, key=lambda idx: (-scores[idx], idx)):
