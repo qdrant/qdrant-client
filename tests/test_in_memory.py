@@ -381,3 +381,183 @@ def test_reupserting_identical_cosine_vector_stores_identical_vectors(qdrant: Qd
     updated = qdrant.retrieve("test_collection", [1], with_vectors=True)[0].vector
 
     assert updated == inserted
+
+
+@pytest.mark.parametrize(
+    ("distance", "query", "threshold", "expected_ids"),
+    [
+        # 2.9999999 rounds to 3.0 as f32; keep only scores strictly above 3.0
+        (models.Distance.DOT, [1.0, 0.0], 2.9999999, [5, 4]),
+        # 3.0000001 rounds to 3.0 as f32; keep only distances strictly below 3.0
+        (models.Distance.EUCLID, [0.0, 0.0], 3.0000001, [1, 2]),
+    ],
+)
+def test_score_threshold_is_compared_as_float32(
+    qdrant: QdrantClient,
+    distance: models.Distance,
+    query: list[float],
+    threshold: float,
+    expected_ids: list[int],
+):
+    """The server compares an f32 threshold against f32 scores; local mode must too."""
+    qdrant.create_collection(
+        collection_name="test_collection",
+        vectors_config=models.VectorParams(size=2, distance=distance),
+    )
+    qdrant.upsert(
+        "test_collection",
+        [models.PointStruct(id=i, vector=[float(i), 0.0]) for i in range(1, 6)],
+    )
+
+    points = qdrant.query_points(
+        "test_collection", query=query, limit=10, score_threshold=threshold
+    ).points
+
+    assert [point.id for point in points] == expected_ids
+
+
+@pytest.mark.parametrize(
+    ("distance", "vector", "query", "threshold"),
+    [
+        # 3.000000075 is 3.0 as f32; it must be dropped at threshold 3.0
+        (models.Distance.DOT, [1.5, 1.5], [1.0, 1.00000005], 3.0),
+        # 2.9999999 is 3.0 as f32; it must be dropped at threshold 3.0
+        (models.Distance.EUCLID, [3.0, 0.0], [0.0000001, 0.0], 3.0),
+        # The query rounds differently in f32, landing on the threshold
+        (
+            models.Distance.DOT,
+            [1.0, 1.0],
+            [1.0000006317071082, 0.9999990054770004],
+            1.9999995231628418,
+        ),
+    ],
+)
+def test_nearest_score_is_compared_as_float32(
+    qdrant: QdrantClient,
+    distance: models.Distance,
+    vector: list[float],
+    query: list[float],
+    threshold: float,
+):
+    """Nearest-query scores must be compared as f32, like the server."""
+    qdrant.create_collection(
+        collection_name="test_collection",
+        vectors_config=models.VectorParams(size=2, distance=distance),
+    )
+    qdrant.upsert("test_collection", [models.PointStruct(id=1, vector=vector)])
+
+    points = qdrant.query_points(
+        "test_collection", query=query, limit=10, score_threshold=threshold
+    ).points
+
+    assert points == []
+
+
+def test_recommend_and_context_score_threshold_float32_parity(qdrant: QdrantClient):
+    """Recommend and context query scores and thresholds must adhere to f32 precision."""
+    qdrant.create_collection(
+        collection_name="test_reco_context",
+        vectors_config=models.VectorParams(size=2, distance=models.Distance.DOT),
+    )
+    qdrant.upsert(
+        "test_reco_context",
+        [
+            models.PointStruct(id=1, vector=[1.0, 0.0]),
+            models.PointStruct(id=2, vector=[0.0, 1.0]),
+            models.PointStruct(id=3, vector=[0.5, 0.5]),
+            models.PointStruct(id=4, vector=[0.8, 0.2]),
+            models.PointStruct(id=5, vector=[0.2, 0.8]),
+        ],
+    )
+
+    # In f32, point 4's recommend score is 1.399999976158142.
+    # At threshold 1.3999999 (which is < 1.399999976158142), it is included.
+    res_kept = qdrant.query_points(
+        "test_reco_context",
+        query=models.RecommendQuery(recommend=models.RecommendInput(positive=[1], negative=[2])),
+        limit=10,
+        score_threshold=1.3999999,
+    ).points
+    assert len(res_kept) == 1
+    assert res_kept[0].id == 4
+
+    # At threshold 1.4 (which rounds to 1.399999976158142 in f32), score <= threshold drops it.
+    res_dropped = qdrant.query_points(
+        "test_reco_context",
+        query=models.RecommendQuery(recommend=models.RecommendInput(positive=[1], negative=[2])),
+        limit=10,
+        score_threshold=1.4,
+    ).points
+    assert len(res_dropped) == 0
+
+    # Context query threshold comparison
+    context_res = qdrant.query_points(
+        "test_reco_context",
+        query=models.ContextQuery(context=[models.ContextPair(positive=1, negative=2)]),
+        limit=10,
+    ).points
+    assert len(context_res) > 0
+    top_score = context_res[0].score
+    # Setting threshold exactly to top_score drops all points (score <= score_threshold)
+    filtered_context = qdrant.query_points(
+        "test_reco_context",
+        query=models.ContextQuery(context=[models.ContextPair(positive=1, negative=2)]),
+        limit=10,
+        score_threshold=top_score,
+    ).points
+    assert len(filtered_context) == 0
+
+
+def test_discover_and_feedback_score_threshold_float32_parity(qdrant: QdrantClient):
+    """Discover and relevance feedback queries must compare scores and thresholds with f32 precision."""
+    qdrant.create_collection(
+        collection_name="test_discover_feedback",
+        vectors_config=models.VectorParams(size=2, distance=models.Distance.DOT),
+    )
+    qdrant.upsert(
+        "test_discover_feedback",
+        [
+            models.PointStruct(id=1, vector=[1.0, 0.0]),
+            models.PointStruct(id=2, vector=[0.0, 1.0]),
+            models.PointStruct(id=3, vector=[0.5, 0.5]),
+        ],
+    )
+
+    # DiscoverQuery test:
+    # Point 3 receives score 0.6666666865348816 in f32.
+    # At threshold 0.66666668 (which rounds to 0.6666666865348816 in f32), score <= threshold drops it.
+    # In unpatched float64, 0.6666666865348816 > 0.66666668 is true, so it would erroneously be kept.
+    discover_query = models.DiscoverQuery(
+        discover=models.DiscoverInput(
+            target=[1.0, 0.0],
+            context=[models.ContextPair(positive=1, negative=2)],
+        )
+    )
+    res_discover = qdrant.query_points(
+        "test_discover_feedback",
+        query=discover_query,
+        limit=10,
+        score_threshold=0.66666668,
+    ).points
+    assert len(res_discover) == 0
+
+    # RelevanceFeedbackQuery test:
+    # Point 1 receives score 1.0.
+    # At threshold 0.99999999 (which rounds to 1.0 in f32), score <= threshold drops it.
+    # In unpatched float64, 1.0 > 0.99999999 is true, so it would erroneously be kept.
+    feedback_query = models.RelevanceFeedbackQuery(
+        relevance_feedback=models.RelevanceFeedbackInput(
+            target=[1.0, 0.0],
+            feedback=[models.FeedbackItem(example=[0.0, 1.0], score=1.0)],
+            strategy=models.NaiveFeedbackStrategy(
+                naive=models.NaiveFeedbackStrategyParams(a=1.0, b=1.0, c=1.0)
+            ),
+        )
+    )
+    res_feedback = qdrant.query_points(
+        "test_discover_feedback",
+        query=feedback_query,
+        limit=10,
+        score_threshold=0.99999999,
+    ).points
+    assert len(res_feedback) == 0
