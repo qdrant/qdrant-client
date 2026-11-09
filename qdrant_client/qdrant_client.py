@@ -1,4 +1,5 @@
 import warnings
+from types import TracebackType
 from typing import (
     Any,
     Awaitable,
@@ -179,6 +180,17 @@ class QdrantClient(QdrantFastembedMixin):
         """
         if hasattr(self, "_client"):
             self._client.close(grpc_grace=grpc_grace, **kwargs)
+
+    def __enter__(self) -> "QdrantClient":
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> None:
+        self.close()
 
     @property
     def grpc_collections(self) -> grpc.CollectionsStub:
