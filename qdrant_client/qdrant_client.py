@@ -2530,7 +2530,8 @@ class QdrantClient(QdrantFastembedMixin):
         """Migrate data from one Qdrant instance to another.
 
         Args:
-            dest_client: Destination Qdrant instance either in local or remote mode
+            dest_client: Destination Qdrant instance either in local or remote mode.
+                Must be a different client object.
             collection_names: List of collection names to migrate. If None - migrate all collections
             batch_size: Scroll page size during migration, must be positive. Points are uploaded in
                 batches of 64, the `upload_points` default
