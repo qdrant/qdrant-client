@@ -64,3 +64,26 @@ def test_check_compatibility(client_version, server_version, expected_result):
 def test_parse_versions_value_error(input_version):
     with pytest.raises(ValueError):
         parse_version(input_version)
+
+
+def test_qdrant_client_context_manager() -> None:
+    from qdrant_client import QdrantClient
+
+    with QdrantClient(":memory:") as client:
+        assert isinstance(client, QdrantClient)
+        assert client.get_collections().collections == []
+    assert client._client.closed is True
+
+
+def test_async_qdrant_client_context_manager() -> None:
+    import asyncio
+    from qdrant_client import AsyncQdrantClient
+
+    async def _test() -> None:
+        async with AsyncQdrantClient(":memory:") as client:
+            assert isinstance(client, AsyncQdrantClient)
+            res = await client.get_collections()
+            assert res.collections == []
+        assert client._client.closed is True
+
+    asyncio.run(_test())
