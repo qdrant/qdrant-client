@@ -381,3 +381,35 @@ def test_reupserting_identical_cosine_vector_stores_identical_vectors(qdrant: Qd
     updated = qdrant.retrieve("test_collection", [1], with_vectors=True)[0].vector
 
     assert updated == inserted
+
+
+@pytest.mark.parametrize(
+    ("target", "positive", "negative"),
+    [
+        ([], [1.0, 0.0], [0.0, 1.0]),
+        ([1.0, 0.0], [], [0.0, 1.0]),
+        ([1.0, 0.0], [1.0, 0.0], []),
+    ],
+)
+def test_empty_discovery_vectors_raise_value_error(
+    qdrant: QdrantClient,
+    target: list[float],
+    positive: list[float],
+    negative: list[float],
+):
+    qdrant.create_collection(
+        collection_name="test_collection",
+        vectors_config=models.VectorParams(size=2, distance=models.Distance.COSINE),
+    )
+    query = models.DiscoverQuery(
+        discover=models.DiscoverInput(
+            target=target,
+            context=models.ContextPair(positive=positive, negative=negative),
+        )
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="Wrong input: Vector dimension error: expected dim: 2, got 0",
+    ):
+        qdrant.query_points("test_collection", query=query)
