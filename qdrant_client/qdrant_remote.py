@@ -163,9 +163,9 @@ class QdrantRemote(QdrantBase):
                 )
 
             # http2 = True
-            if (
-                any([header_name == "api-key" for header_name, _ in self._grpc_headers])
-                or "api-key" in self._rest_headers
+            if "api-key" in self._rest_headers or any(
+                header_name.lower() == "api-key"
+                for header_name, _ in self._grpc_headers
             ):
                 show_warning_once(
                     message="`api-key` has been passed in `headers`, but it will be overridden with `api_key` "
@@ -174,6 +174,14 @@ class QdrantRemote(QdrantBase):
                     stacklevel=4,
                 )
             self._rest_headers["api-key"] = api_key
+            # gRPC metadata keeps every entry it is handed and the server reads the
+            # first `api-key` it finds, so appending would leave the value from
+            # `headers` in front of `api_key` and authenticate with that one.
+            self._grpc_headers = [
+                (name, value)
+                for name, value in self._grpc_headers
+                if name.lower() != "api-key"
+            ]
             self._grpc_headers.append(("api-key", api_key))
 
         client_version = importlib.metadata.version("qdrant-client")
