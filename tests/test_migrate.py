@@ -482,6 +482,7 @@ def test_collection_metadata(source_client, dest_client, request) -> None:
 
 
 def test_migrate_storage_params(remote_client: QdrantClient) -> None:
+    """Preserve payload and ID tracker storage settings when recreating over REST and gRPC."""
     major, minor, patch, dev = read_version()
     if not dev and None not in (major, minor, patch) and (major, minor, patch) < (1, 19, 2):
         pytest.skip("Id tracker params are supported as of v1.19.2")
