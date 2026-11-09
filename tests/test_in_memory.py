@@ -355,3 +355,27 @@ def test_idf_statistics_after_deletion(qdrant: QdrantClient, operation: str):
             [models.PointStruct(id=i, vector={"text": vector}) for i in (1, 2)],
         )
     assert_scores(3)
+
+
+def test_relevance_feedback_empty_feedback_raises(qdrant: QdrantClient):
+    qdrant.create_collection(
+        collection_name="test_rf_collection",
+        vectors_config=models.VectorParams(size=2, distance=models.Distance.DOT),
+    )
+    qdrant.upsert(
+        collection_name="test_rf_collection",
+        points=[models.PointStruct(id=1, vector=[1.0, 0.0])],
+    )
+
+    query = models.RelevanceFeedbackQuery(
+        relevance_feedback=models.RelevanceFeedbackInput(
+            target=[1.0, 0.0],
+            feedback=[],
+            strategy=models.NaiveFeedbackStrategy(
+                naive=models.NaiveFeedbackStrategyParams(a=0.5, b=1.0, c=0.7)
+            ),
+        )
+    )
+
+    with pytest.raises(ValueError, match="feedback elements must be non-empty"):
+        qdrant.query_points("test_rf_collection", query=query)

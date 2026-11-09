@@ -2653,6 +2653,9 @@ class LocalCollection:
         score_threshold: float | None = None,
         idf_corpus: types.Filter | None = None,
     ) -> list[models.ScoredPoint]:
+        if not relevance_feedback.feedback:
+            raise ValueError("feedback elements must be non-empty")
+
         vector_name = using if using is not None else DEFAULT_VECTOR_NAME
 
         target_vector, target_id = self._preprocess_vector_input(
