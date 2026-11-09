@@ -333,6 +333,8 @@ class QdrantLocal(QdrantBase):
         point ids that should be filtered when searching.
         """
 
+        if collection_name not in self.collections:
+            collection_name = self.aliases.get(collection_name, collection_name)
         lookup_collection_name = lookup_from.collection if lookup_from else collection_name
         collection = self._get_collection(lookup_collection_name)
 

@@ -304,6 +304,8 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         Resolves any possible ids into vectors and returns a new query object, along with a set of the mentioned
         point ids that should be filtered when searching.
         """
+        if collection_name not in self.collections:
+            collection_name = self.aliases.get(collection_name, collection_name)
         lookup_collection_name = lookup_from.collection if lookup_from else collection_name
         collection = self._get_collection(lookup_collection_name)
         search_in_vector_name = using if using is not None else DEFAULT_VECTOR_NAME
