@@ -2136,11 +2136,18 @@ class LocalCollection:
                     SparseContextPair(positive=pair_vectors[0], negative=pair_vectors[1])
                 )
             elif isinstance(pair_vectors[0], list) and isinstance(pair_vectors[1], list):
-                if isinstance(pair_vectors[0][0], float) and isinstance(pair_vectors[1][0], float):
+                if (not pair_vectors[0] or isinstance(pair_vectors[0][0], float)) and (
+                    not pair_vectors[1] or isinstance(pair_vectors[1][0], float)
+                ):
                     dense_context_vectors.append(
                         ContextPair(positive=pair_vectors[0], negative=pair_vectors[1])
                     )
-                elif isinstance(pair_vectors[0][0], list) and isinstance(pair_vectors[1][0], list):
+                elif (
+                    pair_vectors[0]
+                    and pair_vectors[1]
+                    and isinstance(pair_vectors[0][0], list)
+                    and isinstance(pair_vectors[1][0], list)
+                ):
                     multi_context_vectors.append(
                         MultiContextPair(positive=pair_vectors[0], negative=pair_vectors[1])
                     )
@@ -2250,7 +2257,7 @@ class LocalCollection:
         # Discovery search
         if target_vector is not None:
             if isinstance(target_vector, list):
-                if isinstance(target_vector[0], float):
+                if not target_vector or isinstance(target_vector[0], float):
                     query_vector = DiscoveryQuery(target_vector, dense_context_vectors)
                 else:
                     query_vector = MultiDiscoveryQuery(target_vector, multi_context_vectors)
