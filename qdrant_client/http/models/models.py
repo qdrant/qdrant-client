@@ -1,3 +1,4 @@
+from collections.abc import Mapping
 from datetime import date, datetime
 from enum import Enum
 from typing import Annotated, Any, Dict, List, Literal, Optional, Union
@@ -7,7 +8,7 @@ from pydantic import BaseModel, Field
 from pydantic.types import StrictBool, StrictFloat, StrictInt, StrictStr
 from qdrant_client._numpy_vectors import NumpyVectorsToLists
 
-Payload = Dict[str, Any]
+Payload = Mapping[str, Any]
 SparseVectorsConfig = Dict[str, "SparseVectorParams"]
 StrictModeMultivectorConfig = Dict[str, "StrictModeMultivector"]
 StrictModeMultivectorConfigOutput = Dict[str, "StrictModeMultivectorOutput"]
