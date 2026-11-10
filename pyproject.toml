@@ -43,7 +43,7 @@ pytest = ">=7.1,<10.0"
 coverage = ">=6.3.3,<8.0.0"
 pytest-asyncio = ">=1.3.0,<2.0.0"
 pytest-timeout = "^2.1.0"
-ruff = "0.17.1"
+ruff = "0.17.3"
 pytest-mock = "^3.14.0"
 pre-commit = "^4.2.0"
 
