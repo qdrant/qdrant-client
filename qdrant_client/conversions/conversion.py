@@ -4114,10 +4114,15 @@ class RestToGrpc:
 
     @classmethod
     def convert_document(cls, model: rest.Document) -> grpc.Document:
+        options = model.options
+        if isinstance(options, rest.Bm25Config):
+            # `DocumentOptions` is a dict or a `Bm25Config`. REST sends the latter as a plain object
+            # holding only the fields the caller set, so do the same here.
+            options = options.model_dump(mode="json", exclude_unset=True, exclude_none=True)
         return grpc.Document(
             text=model.text,
             model=model.model,
-            options=payload_to_grpc(model.options) if model.options is not None else None,
+            options=payload_to_grpc(options) if options is not None else None,
         )
 
     @classmethod
