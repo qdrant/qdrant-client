@@ -264,17 +264,24 @@ class QdrantRemote(QdrantBase):
                     self._rest_headers,
                     self._rest_args.get("auth"),
                     self._timeout,
+                    self._rest_args.get("verify", True),
                 ),
                 daemon=True,
             ).start()
 
     @staticmethod
     def _check_compatibility(
-        rest_uri: str, rest_headers: dict[str, Any], auth: Any, timeout: int
+rest_uri: str,
+rest_headers: dict[str, Any],
+auth: Any,
+timeout: int,
+verify: Any,
     ) -> None:
         try:
             client_version = importlib.metadata.version("qdrant-client")
-            server_version = get_server_version(rest_uri, rest_headers, auth, timeout)
+            server_version = get_server_version(
+    rest_uri, rest_headers, auth, timeout, verify
+)
 
             if not server_version:
                 show_warning(
