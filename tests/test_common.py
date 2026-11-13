@@ -1,6 +1,10 @@
 import pytest
 
-from qdrant_client.common.version_check import is_compatible, parse_version
+from qdrant_client.common.version_check import (
+    get_server_version,
+    is_compatible,
+    parse_version,
+)
 
 
 @pytest.mark.parametrize(
@@ -64,3 +68,33 @@ def test_check_compatibility(client_version, server_version, expected_result):
 def test_parse_versions_value_error(input_version):
     with pytest.raises(ValueError):
         parse_version(input_version)
+def test_get_server_version_passes_verify(monkeypatch):
+    captured = {}
+
+    class MockResponse:
+        status_code = 200
+
+        def json(self):
+            return {"version": "1.2.3"}
+
+    def mock_get(*args, **kwargs):
+        captured.update(kwargs)
+        return MockResponse()
+
+    monkeypatch.setattr(
+        "qdrant_client.common.version_check.httpx.get",
+        mock_get,
+    )
+
+    verify = "/path/to/custom-ca.pem"
+
+    result = get_server_version(
+        "http://localhost:6333",
+        {},
+        None,
+        3,
+        verify,
+    )
+
+    assert captured["verify"] == verify
+    assert result == "1.2.3"
