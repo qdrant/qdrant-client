@@ -91,7 +91,11 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    voyage = voyageai.Client(api_key=os.environ["VOYAGE_API_KEY"])
+    api_key = os.environ.get("VOYAGE_API_KEY")
+    if not api_key:
+        # an empty key would make the SDK fall back to other credential sources
+        raise SystemExit("Set the VOYAGE_API_KEY environment variable")
+    voyage = voyageai.Client(api_key=api_key)
     qdrant = QdrantClient(":memory:")
 
     # --- embeddings: documents and queries use different `input_type` values ---
