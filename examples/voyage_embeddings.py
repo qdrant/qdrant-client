@@ -72,8 +72,14 @@ def embed_in_batches(
 
     vectors: list[list[float]] = []
     for batch in batches:
+        # truncation=False: fail on a text above the model context instead of silently
+        # embedding only its beginning
         result = client.embed(
-            batch, model=model, input_type=input_type, output_dimension=output_dimension
+            batch,
+            model=model,
+            input_type=input_type,
+            truncation=False,
+            output_dimension=output_dimension,
         )
         vectors.extend(result.embeddings)
     return vectors
