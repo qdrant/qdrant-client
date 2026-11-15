@@ -251,3 +251,22 @@ def test_default_options_and_success_result(tmp_path, async_client):
             assert client.recover_from_uploaded_snapshot("test", path) is True
         finally:
             client.close()
+
+
+def test_snapshot_upload_reader_bounds_line_iteration(tmp_path):
+    from qdrant_client.common.snapshot import SnapshotUploadReader
+
+    path = tmp_path / "backup.snapshot"
+    data = b"x" * (2 * 1024 * 1024) + b"\x00\xff\nlast"
+    path.write_bytes(data)
+    with open(path, "rb") as source, SnapshotUploadReader(source) as upload:
+        assert iter(upload) is upload
+        assert len(next(upload)) == 65536
+        upload.seek(0)
+        chunks = list(upload)
+        assert b"".join(chunks) == data
+        assert max(map(len, chunks)) <= 65536
+        assert upload.name == str(path)
+        upload.seek(0)
+        assert upload.read(17) == data[:17]
+    assert source.closed and upload.closed

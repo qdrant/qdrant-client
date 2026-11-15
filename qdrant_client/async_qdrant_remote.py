@@ -28,6 +28,7 @@ from qdrant_client import grpc as grpc
 from qdrant_client._pydantic_compat import construct, model_copy
 from qdrant_client.auth import BearerAuth
 from qdrant_client.async_client_base import AsyncQdrantBase
+from qdrant_client.common.snapshot import SnapshotUploadReader
 from qdrant_client.common.validation import validate_batch_lengths
 from qdrant_client.common.version_check import is_compatible, get_server_version
 from qdrant_client.connection import get_async_channel as get_channel
@@ -2518,11 +2519,11 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         wait: bool = True,
         **kwargs: Any,
     ) -> bool | None:
-        with open(snapshot_path, "rb") as snapshot:
+        with open(snapshot_path, "rb") as snapshot, SnapshotUploadReader(snapshot) as upload:
             return (
                 await self.openapi_client.snapshots_api.recover_from_uploaded_snapshot(
                     collection_name=collection_name,
-                    snapshot=snapshot,
+                    snapshot=upload,
                     checksum=checksum,
                     priority=priority,
                     wait=wait,
