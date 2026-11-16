@@ -2,6 +2,7 @@ import logging
 import os
 import time
 from collections import defaultdict
+from collections.abc import Callable
 from enum import Enum
 from multiprocessing import Queue, get_context
 from multiprocessing.context import BaseContext
@@ -156,6 +157,15 @@ class ParallelWorkerPool:
             self.processes.append(process)
 
     def unordered_map(self, stream: Iterable[Any], *args: Any, **kwargs: Any) -> Iterable[Any]:
+        return self._unordered_map(stream, None, *args, **kwargs)
+
+    def _unordered_map(
+        self,
+        stream: Iterable[Any],
+        consumed_count: Callable[[], int] | None,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Iterable[Any]:
         completed = False
         try:
             self.start(**kwargs)
@@ -167,24 +177,27 @@ class ParallelWorkerPool:
             read = 0
             for item in stream:
                 self.check_worker_health()
-                if pushed - read < self.queue_size:
-                    try:
-                        out_item = self.output_queue.get_nowait()
-                    except Empty:
-                        out_item = None
-                else:
-                    try:
+                while True:
+                    # Ordered consumers may have read results without being able to yield
+                    # them yet. Count those buffered results against the same input window.
+                    consumed = read if consumed_count is None else consumed_count()
+                    at_capacity = pushed - consumed >= self.queue_size
+                    if at_capacity:
                         out_item = self._get_output()
-                    except Empty as e:
-                        self.join_or_terminate()
-                        raise e
+                    else:
+                        try:
+                            out_item = self.output_queue.get_nowait()
+                        except Empty:
+                            break
 
-                if out_item is not None:
+                    if out_item is None:
+                        break
                     if out_item == QueueSignals.error:
-                        self.join_or_terminate()
                         raise RuntimeError("Thread unexpectedly terminated")
                     yield out_item
                     read += 1
+                    if not at_capacity:
+                        break
                 self.input_queue.put(item)
                 pushed += 1
 
@@ -236,7 +249,10 @@ class ParallelWorkerPool:
         buffer = defaultdict(int)
         next_expected = 0
 
-        for idx, item in self.semi_ordered_map(stream, *args, **kwargs):
+        def consumed_count() -> int:
+            return next_expected
+
+        for idx, item in self._unordered_map(enumerate(stream), consumed_count, *args, **kwargs):
             buffer[idx] = item
             while next_expected in buffer:
                 yield buffer.pop(next_expected)
