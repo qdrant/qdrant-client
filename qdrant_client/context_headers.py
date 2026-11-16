@@ -2,7 +2,7 @@ from contextlib import asynccontextmanager, contextmanager
 from contextvars import ContextVar
 from typing import AsyncIterator, Awaitable, Callable, Iterator
 
-from httpx import Request, Response
+from httpx2 import Request, Response
 
 _context_headers: ContextVar[dict[str, str]] = ContextVar("_context_headers", default={})
 

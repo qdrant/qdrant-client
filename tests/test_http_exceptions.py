@@ -1,6 +1,6 @@
 import pickle
 
-import httpx
+import httpx2 as httpx
 
 from qdrant_client.common.client_exceptions import ResourceExhaustedResponse
 from qdrant_client.http.exceptions import UnexpectedResponse

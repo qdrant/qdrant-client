@@ -11,7 +11,7 @@ from time import sleep
 
 import numpy as np
 import pytest
-from httpx import Timeout
+from httpx2 import Timeout
 from grpc import Compression, RpcError
 
 import qdrant_client.http.exceptions

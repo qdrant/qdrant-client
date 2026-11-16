@@ -18,7 +18,7 @@ import sys
 from multiprocessing import get_all_start_methods
 from threading import Thread
 from typing import Any, Awaitable, Callable, Iterable, Mapping, Sequence, Type, get_args
-import httpx
+import httpx2 as httpx
 from grpc import Compression
 from urllib3.util import Url, parse_url
 from urllib.parse import urljoin

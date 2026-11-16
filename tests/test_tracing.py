@@ -2,7 +2,7 @@ import asyncio
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from httpx import Request
+from httpx2 import Request
 
 from qdrant_client.context_headers import (
     async_headers,
