@@ -2,7 +2,7 @@ import logging
 from typing import Any
 from collections import namedtuple
 
-import httpx
+import httpx2 as httpx
 
 from qdrant_client.auth import BearerAuth
 

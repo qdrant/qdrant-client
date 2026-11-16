@@ -18,7 +18,7 @@ from typing import (
     get_args,
 )
 
-import httpx
+import httpx2 as httpx
 from grpc import Compression
 from urllib3.util import Url, parse_url
 from urllib.parse import urljoin
@@ -2260,7 +2260,7 @@ class QdrantRemote(QdrantBase):
                 )
         elif sys.platform == "darwin":
             # On macOS, a worker forked from a process that has ever run a thread aborts when it
-            # initializes an Objective-C class, as httpx's system proxy lookup does. Since
+            # initializes an Objective-C class, as httpx2's system proxy lookup does. Since
             # Python 3.15 the forkserver imports the main script, so one thread started by its
             # imports (`import grpc` starts one) crashes every worker. spawn is also CPython's
             # default start method on macOS.

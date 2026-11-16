@@ -1,7 +1,7 @@
 import inspect
 from typing import Any, Awaitable, Callable
 
-import httpx
+import httpx2 as httpx
 
 
 class BearerAuth(httpx.Auth):

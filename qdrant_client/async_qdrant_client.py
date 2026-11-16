@@ -79,7 +79,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         cloud_inference: If `true` - do inference of `models.Document` and other models in Qdrant Cloud. Default: `False`.
         local_inference_batch_size: inference batch size used by fastembed when using local inference with `models.Document` and other models.
         pool_size: connection pool size, Default: None. Default value for gRPC connection pool is 3, rest default is
-            inherited from `httpx` (default: 100)
+            inherited from `httpx2` (default: 100)
         headers: Custom headers to send with every request.
         **kwargs: Additional arguments passed directly into REST client initialization
     """

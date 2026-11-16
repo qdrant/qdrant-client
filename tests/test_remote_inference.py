@@ -1,6 +1,6 @@
 import pytest
 import os
-import httpx
+import httpx2 as httpx
 import tempfile
 
 from qdrant_client import QdrantClient, models
