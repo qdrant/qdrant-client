@@ -297,6 +297,13 @@ def parse_ssl_credentials(options: dict[str, Any] | None = None) -> dict[str, by
     return ssl_options
 
 
+def format_host(host: str) -> str:
+    """Wrap bare IPv6 literal hosts in brackets for URL and gRPC targets."""
+    if ":" in host and not (host.startswith("[") and host.endswith("]")):
+        return f"[{host}]"
+    return host
+
+
 def get_channel(
     host: str,
     port: int,
@@ -315,13 +322,14 @@ def get_channel(
     metadata_interceptor = header_adder_interceptor(
         new_metadata=metadata or [], auth_token_provider=auth_token_provider
     )
+    target = f"{format_host(host)}:{port}"
 
     if ssl:
         ssl_creds = grpc.ssl_channel_credentials(**_ssl_cred_options)
-        channel = grpc.secure_channel(f"{host}:{port}", ssl_creds, _options, compression)
+        channel = grpc.secure_channel(target, ssl_creds, _options, compression)
         return grpc.intercept_channel(channel, metadata_interceptor)
     else:
-        channel = grpc.insecure_channel(f"{host}:{port}", _options, compression)
+        channel = grpc.insecure_channel(target, _options, compression)
         return grpc.intercept_channel(channel, metadata_interceptor)
 
 
@@ -345,11 +353,12 @@ def get_async_channel(
     metadata_interceptor = header_adder_async_interceptor(
         new_metadata=metadata or [], auth_token_provider=auth_token_provider
     )
+    target = f"{format_host(host)}:{port}"
 
     if ssl:
         ssl_creds = grpc.ssl_channel_credentials(**_ssl_cred_options)
         return grpc.aio.secure_channel(
-            f"{host}:{port}",
+            target,
             ssl_creds,
             _options,
             compression,
@@ -357,5 +366,5 @@ def get_async_channel(
         )
     else:
         return grpc.aio.insecure_channel(
-            f"{host}:{port}", _options, compression, interceptors=[metadata_interceptor]
+            target, _options, compression, interceptors=[metadata_interceptor]
         )

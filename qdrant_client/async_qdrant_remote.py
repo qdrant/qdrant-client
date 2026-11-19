@@ -28,7 +28,7 @@ from qdrant_client.auth import BearerAuth
 from qdrant_client.async_client_base import AsyncQdrantBase
 from qdrant_client.common.validation import validate_batch_lengths
 from qdrant_client.common.version_check import is_compatible, get_server_version
-from qdrant_client.connection import get_async_channel as get_channel
+from qdrant_client.connection import format_host, get_async_channel as get_channel
 from qdrant_client.conversions import common_types as types
 from qdrant_client.conversions.common_types import get_args_subscribed
 from qdrant_client.conversions.conversion import (
@@ -170,7 +170,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 "grpc.Compression.Deflate is not supported. Try grpc.Compression.Gzip or grpc.Compression.NoCompression"
             )
         self._grpc_compression = grpc_compression
-        address = f"{self._host}:{self._port}" if self._port is not None else self._host
+        formatted_host = format_host(self._host)
+        address = f"{formatted_host}:{self._port}" if self._port is not None else formatted_host
         base_url = f"{self._scheme}://{address}"
         self.rest_uri = urljoin(base_url, self._prefix)
         self._rest_args = {"headers": self._rest_headers, "http2": http2, **kwargs}
