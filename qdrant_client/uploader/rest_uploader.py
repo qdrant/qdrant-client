@@ -11,6 +11,7 @@ from qdrant_client.http import SyncApis
 from qdrant_client import models as rest
 from qdrant_client.uploader.uploader import BaseUploader
 from qdrant_client.common.client_warnings import show_warning
+from qdrant_client.context_headers import rest_headers_middleware
 from qdrant_client.conversions import common_types as types
 from qdrant_client.conversions.conversion import GrpcToRest
 
@@ -161,6 +162,9 @@ class RestBatchUploader(BaseUploader):
 
     def process(self, items: Iterable[Any]) -> Iterable[bool]:
         with SyncApis(host=self._uri, **self._kwargs) as openapi_client:
+            # like the client's own REST requests and the gRPC uploader, send the headers set
+            # with `qdrant_client.context_headers.headers` along with every batch
+            openapi_client.client.add_middleware(rest_headers_middleware)
             for batch in items:
                 yield upload_batch(
                     openapi_client,
