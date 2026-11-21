@@ -1,4 +1,5 @@
 import logging
+import ssl
 from typing import Any
 from collections import namedtuple
 
@@ -10,9 +11,15 @@ Version = namedtuple("Version", ["major", "minor", "rest"])
 
 
 def get_server_version(
-    rest_uri: str, rest_headers: dict[str, Any], auth_provider: BearerAuth | None, timeout: int
+    rest_uri: str,
+    rest_headers: dict[str, Any],
+    auth_provider: BearerAuth | None,
+    timeout: int,
+    verify: ssl.SSLContext | str | bool = True,
 ) -> str | None:
-    response = httpx.get(rest_uri, headers=rest_headers, auth=auth_provider, timeout=timeout)
+    response = httpx.get(
+        rest_uri, headers=rest_headers, auth=auth_provider, timeout=timeout, verify=verify
+    )
 
     if response.status_code == 200:
         version_info = response.json().get("version", None)
