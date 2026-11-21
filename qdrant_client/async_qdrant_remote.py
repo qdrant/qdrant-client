@@ -13,6 +13,7 @@ import importlib.metadata
 import inspect
 import math
 import platform
+import ssl
 import sys
 from multiprocessing import get_all_start_methods
 from threading import Thread
@@ -202,6 +203,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         self._grpc_client_next_index: int = 0
         self._closed: bool = False
         if check_compatibility:
+            verify = self._rest_args.get("verify", True)
             Thread(
                 target=self._check_compatibility,
                 args=(
@@ -209,17 +211,24 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                     self._rest_headers,
                     self._rest_args.get("auth"),
                     self._timeout,
+                    True if verify is None else verify,
                 ),
                 daemon=True,
             ).start()
 
     @staticmethod
     def _check_compatibility(
-        rest_uri: str, rest_headers: dict[str, Any], auth: Any, timeout: int
+        rest_uri: str,
+        rest_headers: dict[str, Any],
+        auth: Any,
+        timeout: int,
+        verify: ssl.SSLContext | str | bool = True,
     ) -> None:
         try:
             client_version = importlib.metadata.version("qdrant-client")
-            server_version = get_server_version(rest_uri, rest_headers, auth, timeout)
+            server_version = get_server_version(
+                rest_uri, rest_headers, auth, timeout, verify=verify
+            )
             if not server_version:
                 show_warning(
                     message="Failed to obtain server version. Unable to check client-server compatibility. Set check_compatibility=False to skip version check.",
