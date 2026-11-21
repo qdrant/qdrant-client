@@ -159,10 +159,11 @@ def header_adder_interceptor(
 
         if client_call_details.metadata is not None:
             metadata = list(client_call_details.metadata)
+        # gRPC only accepts lowercase metadata keys, while HTTP header names are case-insensitive
         for header, value in new_metadata:
             metadata.append(
                 (
-                    header,
+                    header.lower(),
                     value,
                 )
             )
@@ -176,7 +177,7 @@ def header_adder_interceptor(
             metadata.append(("authorization", f"Bearer {token}"))
 
         for key, value in get_context_headers().items():
-            metadata.append((key, value))
+            metadata.append((key.lower(), value))
 
         client_call_details = _ClientCallDetails(
             client_call_details.method,
@@ -222,10 +223,11 @@ def header_adder_async_interceptor(
         metadata = []
         if client_call_details.metadata is not None:
             metadata = list(client_call_details.metadata)
+        # gRPC only accepts lowercase metadata keys, while HTTP header names are case-insensitive
         for header, value in new_metadata:
             metadata.append(
                 (
-                    header,
+                    header.lower(),
                     value,
                 )
             )
@@ -237,7 +239,7 @@ def header_adder_async_interceptor(
             metadata.append(("authorization", f"Bearer {token}"))
 
         for key, value in get_context_headers().items():
-            metadata.append((key, value))
+            metadata.append((key.lower(), value))
 
         client_call_details = client_call_details._replace(metadata=metadata)
         return client_call_details, request_iterator, process_response
