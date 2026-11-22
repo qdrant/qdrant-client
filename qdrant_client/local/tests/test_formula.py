@@ -125,6 +125,8 @@ def test_geo_distance_to_several_geo_points_uses_the_nearest() -> None:
         [{"lat": 0.0, "lon": 1.0}, {"lat": 0.0, "lon": 3.0}, {"lat": 0.0, "lon": 2.0}],
     ):
         assert _geo_distance({"location": points}) == one_degree
+        # a one-element outer array is unwrapped first, so its geo points are read the same way
+        assert _geo_distance({"location": [points]}) == one_degree
     assert _geo_distance({"location": [{"lat": 0.0, "lon": 2.0}]}) == two_degrees
 
     # an element which is not a geo point is still an error
