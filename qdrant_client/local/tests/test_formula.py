@@ -6,6 +6,7 @@ from typing import Any
 import pytest
 
 from qdrant_client import QdrantClient
+from qdrant_client._pydantic_compat import to_dict
 from qdrant_client.http import models
 from qdrant_client.hybrid.formula import (
     evaluate_expression,
@@ -172,5 +173,5 @@ def test_formula_defaults_given_as_objects(formula: models.Expression, default: 
         )
         return response.points[0].score
 
-    serialized = default.isoformat() if isinstance(default, date) else default.model_dump()
+    serialized = default.isoformat() if isinstance(default, date) else to_dict(default)
     assert score({"field": default}) == score({"field": serialized})
