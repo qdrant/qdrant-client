@@ -873,9 +873,10 @@ class LocalCollection:
 
         mask = self._payload_and_non_deleted_mask(query_filter, vector_name=name)
 
-        required_order = distance_to_order(distance)
-
-        if required_order == DistanceOrder.BIGGER_IS_BETTER or isinstance(
+        # Custom scoring queries (recommend, discovery, context, feedback) produce
+        # bigger-is-better scores whatever the distance is, and score_threshold follows the
+        # order of the scores, not the one of the distance (as in the server).
+        custom_scoring = isinstance(
             query_vector,
             (
                 DiscoveryQuery,
@@ -887,7 +888,11 @@ class LocalCollection:
                 NaiveFeedbackQuery,
                 MultiNaiveFeedbackQuery,
             ),  # sparse structures are not required, sparse always uses DOT
-        ):
+        )
+        bigger_is_better = (
+            custom_scoring or distance_to_order(distance) == DistanceOrder.BIGGER_IS_BETTER
+        )
+        if bigger_is_better:
             order = np.argsort(scores)[::-1]
         else:
             order = np.argsort(scores)
@@ -907,7 +912,7 @@ class LocalCollection:
             point_id = self.ids_inv[idx]
 
             if score_threshold is not None:
-                if required_order == DistanceOrder.BIGGER_IS_BETTER:
+                if bigger_is_better:
                     if score <= score_threshold:
                         break
                 else:

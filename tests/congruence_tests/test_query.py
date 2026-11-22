@@ -1919,9 +1919,8 @@ def test_dense_query_score_threshold_boundary():
             [0.0, 0.0],
             [0.5, 1.0, 2.0],
         ),
-        # recommend and discovery score higher-is-better whatever the metric is, but
-        # the threshold keeps following the metric's own direction, so on euclid the
-        # best-scoring point already stops the scan
+        # recommend and discovery score higher-is-better whatever the metric is, and
+        # the threshold follows the direction of the scores, not the metric's one
         (
             models.Distance.DOT,
             [[0.0, 0.0], [1.0, 0.0], [2.0, 0.0], [3.0, 0.0]],
