@@ -891,7 +891,7 @@ DEFS = {
         "properties": {
             "origin": {"$ref": "#/$defs/GeoPoint", "description": ""},
             "to": {
-                "description": "Payload field with the destination geo point",
+                "description": "Payload field with the destination geo point. If the field holds several geo points, the distance to the nearest one is used",
                 "title": "To",
                 "type": "string",
             },
@@ -2634,6 +2634,12 @@ DEFS = {
                 "description": "Allow usage of unindexed fields in filtered updates (e.g. delete by payload).",
                 "title": "Unindexed Filtering Update",
             },
+            "require_tenant_filter": {
+                "anyOf": [{"type": "boolean"}, {"type": "null"}],
+                "default": None,
+                "description": "Require filter-based reads (e.g. search, scroll, count, facet) to restrict results to tenants. Applies only when the collection has a payload index with `is_tenant: true`: the top-level `must` of the request filter must then contain a `match` (`value` or `any`) condition on one of the tenant keys. Reads by point id are not affected.",
+                "title": "Require Tenant Filter",
+            },
             "search_max_hnsw_ef": {
                 "anyOf": [{"type": "integer"}, {"type": "null"}],
                 "default": None,
@@ -4332,7 +4338,7 @@ DEFS = {
             "exact": {
                 "anyOf": [{"type": "boolean"}, {"type": "null"}],
                 "default": False,
-                "description": "Search without approximation. If set to true, search may run long but with exact results.",
+                "description": "Search without approximation. If set to true, search may run long but with exact results. Cannot be used together with `max_sparse_dims`.",
                 "title": "Exact",
             },
             "quantization": {
@@ -4360,6 +4366,12 @@ DEFS = {
                 "default": None,
                 "description": "Which population IDF statistics are computed over. By default (or with explicit `&quot;global&quot;`) statistics are collection-wide. Only applicable to sparse vectors with the IDF modifier enabled, and to BM25 over a text index.",
                 "title": "Idf",
+            },
+            "max_sparse_dims": {
+                "anyOf": [{"type": "integer"}, {"type": "null"}],
+                "default": None,
+                "description": "Only applicable to sparse vectors. Keep only the provided number of dimensions from the query. Dimensions are selected by largest absolute weight. This parameter enables approximate sparse search (Qdrant&#x27;s default is exact): use with caution. Cannot be used together with `exact`.",
+                "title": "Max Sparse Dims",
             },
         },
         "title": "SearchParams",

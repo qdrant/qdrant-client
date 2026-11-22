@@ -639,6 +639,9 @@ class GrpcToRest:
             if model.HasField("acorn")
             else None,
             idf=cls.convert_idf_params(model.idf) if model.HasField("idf") else None,
+            max_sparse_dims=(
+                model.max_sparse_dims if model.HasField("max_sparse_dims") else None
+            ),
         )
 
     @classmethod
@@ -2770,6 +2773,9 @@ class GrpcToRest:
                 if model.HasField("unindexed_filtering_update")
                 else None
             ),
+            require_tenant_filter=(
+                model.require_tenant_filter if model.HasField("require_tenant_filter") else None
+            ),
             search_max_hnsw_ef=(
                 model.search_max_hnsw_ef if model.HasField("search_max_hnsw_ef") else None
             ),
@@ -2847,6 +2853,9 @@ class GrpcToRest:
                 model.unindexed_filtering_update
                 if model.HasField("unindexed_filtering_update")
                 else None
+            ),
+            require_tenant_filter=(
+                model.require_tenant_filter if model.HasField("require_tenant_filter") else None
             ),
             search_max_hnsw_ef=(
                 model.search_max_hnsw_ef if model.HasField("search_max_hnsw_ef") else None
@@ -3326,6 +3335,7 @@ class RestToGrpc:
                 cls.convert_acorn_search_params(model.acorn) if model.acorn is not None else None
             ),
             idf=cls.convert_idf_params(model.idf) if model.idf is not None else None,
+            max_sparse_dims=model.max_sparse_dims,
         )
 
     @classmethod
@@ -5566,6 +5576,7 @@ class RestToGrpc:
             max_timeout=model.max_timeout,
             unindexed_filtering_retrieve=model.unindexed_filtering_retrieve,
             unindexed_filtering_update=model.unindexed_filtering_update,
+            require_tenant_filter=model.require_tenant_filter,
             search_max_hnsw_ef=model.search_max_hnsw_ef,
             search_allow_exact=model.search_allow_exact,
             search_max_oversampling=model.search_max_oversampling,
@@ -5602,6 +5613,7 @@ class RestToGrpc:
             max_timeout=model.max_timeout,
             unindexed_filtering_retrieve=model.unindexed_filtering_retrieve,
             unindexed_filtering_update=model.unindexed_filtering_update,
+            require_tenant_filter=model.require_tenant_filter,
             search_max_hnsw_ef=model.search_max_hnsw_ef,
             search_allow_exact=model.search_allow_exact,
             search_max_oversampling=model.search_max_oversampling,
