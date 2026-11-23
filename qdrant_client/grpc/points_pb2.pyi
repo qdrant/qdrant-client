@@ -1683,6 +1683,7 @@ class SearchParams(google.protobuf.message.Message):
     INDEXED_ONLY_FIELD_NUMBER: builtins.int
     ACORN_FIELD_NUMBER: builtins.int
     IDF_FIELD_NUMBER: builtins.int
+    MAX_SPARSE_DIMS_FIELD_NUMBER: builtins.int
     hnsw_ef: builtins.int
     """Params relevant to HNSW index. Size of the beam in a beam-search.
     Larger the value - more accurate the result, more time required for search.
@@ -1705,6 +1706,12 @@ class SearchParams(google.protobuf.message.Message):
         """Which population IDF statistics are computed over.
         If unset, statistics are collection-wide (global).
         """
+    max_sparse_dims: builtins.int
+    """Only applicable to sparse vectors.
+    Keep only the provided number of dimensions from the query. Dimensions are selected by
+    largest absolute weight. This parameter enables approximate sparse search (Qdrant's
+    default is exact): use with caution. Cannot be used together with `exact`.
+    """
     def __init__(
         self,
         *,
@@ -1714,9 +1721,10 @@ class SearchParams(google.protobuf.message.Message):
         indexed_only: builtins.bool | None = ...,
         acorn: global___AcornSearchParams | None = ...,
         idf: global___IdfParams | None = ...,
+        max_sparse_dims: builtins.int | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_acorn", b"_acorn", "_exact", b"_exact", "_hnsw_ef", b"_hnsw_ef", "_idf", b"_idf", "_indexed_only", b"_indexed_only", "_quantization", b"_quantization", "acorn", b"acorn", "exact", b"exact", "hnsw_ef", b"hnsw_ef", "idf", b"idf", "indexed_only", b"indexed_only", "quantization", b"quantization"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_acorn", b"_acorn", "_exact", b"_exact", "_hnsw_ef", b"_hnsw_ef", "_idf", b"_idf", "_indexed_only", b"_indexed_only", "_quantization", b"_quantization", "acorn", b"acorn", "exact", b"exact", "hnsw_ef", b"hnsw_ef", "idf", b"idf", "indexed_only", b"indexed_only", "quantization", b"quantization"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_acorn", b"_acorn", "_exact", b"_exact", "_hnsw_ef", b"_hnsw_ef", "_idf", b"_idf", "_indexed_only", b"_indexed_only", "_max_sparse_dims", b"_max_sparse_dims", "_quantization", b"_quantization", "acorn", b"acorn", "exact", b"exact", "hnsw_ef", b"hnsw_ef", "idf", b"idf", "indexed_only", b"indexed_only", "max_sparse_dims", b"max_sparse_dims", "quantization", b"quantization"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_acorn", b"_acorn", "_exact", b"_exact", "_hnsw_ef", b"_hnsw_ef", "_idf", b"_idf", "_indexed_only", b"_indexed_only", "_max_sparse_dims", b"_max_sparse_dims", "_quantization", b"_quantization", "acorn", b"acorn", "exact", b"exact", "hnsw_ef", b"hnsw_ef", "idf", b"idf", "indexed_only", b"indexed_only", "max_sparse_dims", b"max_sparse_dims", "quantization", b"quantization"]) -> None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_acorn", b"_acorn"]) -> typing_extensions.Literal["acorn"] | None: ...
     @typing.overload
@@ -1727,6 +1735,8 @@ class SearchParams(google.protobuf.message.Message):
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_idf", b"_idf"]) -> typing_extensions.Literal["idf"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_indexed_only", b"_indexed_only"]) -> typing_extensions.Literal["indexed_only"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_max_sparse_dims", b"_max_sparse_dims"]) -> typing_extensions.Literal["max_sparse_dims"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_quantization", b"_quantization"]) -> typing_extensions.Literal["quantization"] | None: ...
 
@@ -2978,8 +2988,10 @@ class GeoDistance(google.protobuf.message.Message):
     ORIGIN_FIELD_NUMBER: builtins.int
     TO_FIELD_NUMBER: builtins.int
     @property
-    def origin(self) -> qdrant_common_pb2.GeoPoint: ...
+    def origin(self) -> qdrant_common_pb2.GeoPoint:
+        """The origin geo point to measure from"""
     to: builtins.str
+    """Payload field with the destination geo point. If the field holds several geo points, the distance to the nearest one is used"""
     def __init__(
         self,
         *,
@@ -5220,6 +5232,10 @@ class HardwareUsage(google.protobuf.message.Message):
     PAYLOAD_INDEX_IO_WRITE_FIELD_NUMBER: builtins.int
     VECTOR_IO_READ_FIELD_NUMBER: builtins.int
     VECTOR_IO_WRITE_FIELD_NUMBER: builtins.int
+    REMOTE_IO_CACHED_READ_FIELD_NUMBER: builtins.int
+    REMOTE_IO_NON_CACHED_READ_FIELD_NUMBER: builtins.int
+    UPDATED_BYTES_FIELD_NUMBER: builtins.int
+    UPDATED_INDEXED_BYTES_FIELD_NUMBER: builtins.int
     cpu: builtins.int
     payload_io_read: builtins.int
     payload_io_write: builtins.int
@@ -5227,17 +5243,48 @@ class HardwareUsage(google.protobuf.message.Message):
     payload_index_io_write: builtins.int
     vector_io_read: builtins.int
     vector_io_write: builtins.int
+    remote_io_cached_read: builtins.int
+    remote_io_non_cached_read: builtins.int
+    updated_bytes: builtins.int
+    updated_indexed_bytes: builtins.int
     def __init__(
         self,
         *,
-        cpu: builtins.int = ...,
-        payload_io_read: builtins.int = ...,
-        payload_io_write: builtins.int = ...,
-        payload_index_io_read: builtins.int = ...,
-        payload_index_io_write: builtins.int = ...,
-        vector_io_read: builtins.int = ...,
-        vector_io_write: builtins.int = ...,
+        cpu: builtins.int | None = ...,
+        payload_io_read: builtins.int | None = ...,
+        payload_io_write: builtins.int | None = ...,
+        payload_index_io_read: builtins.int | None = ...,
+        payload_index_io_write: builtins.int | None = ...,
+        vector_io_read: builtins.int | None = ...,
+        vector_io_write: builtins.int | None = ...,
+        remote_io_cached_read: builtins.int | None = ...,
+        remote_io_non_cached_read: builtins.int | None = ...,
+        updated_bytes: builtins.int | None = ...,
+        updated_indexed_bytes: builtins.int | None = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["cpu", b"cpu", "payload_index_io_read", b"payload_index_io_read", "payload_index_io_write", b"payload_index_io_write", "payload_io_read", b"payload_io_read", "payload_io_write", b"payload_io_write", "vector_io_read", b"vector_io_read", "vector_io_write", b"vector_io_write"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_cpu", b"_cpu", "_payload_index_io_read", b"_payload_index_io_read", "_payload_index_io_write", b"_payload_index_io_write", "_payload_io_read", b"_payload_io_read", "_payload_io_write", b"_payload_io_write", "_remote_io_cached_read", b"_remote_io_cached_read", "_remote_io_non_cached_read", b"_remote_io_non_cached_read", "_updated_bytes", b"_updated_bytes", "_updated_indexed_bytes", b"_updated_indexed_bytes", "_vector_io_read", b"_vector_io_read", "_vector_io_write", b"_vector_io_write", "cpu", b"cpu", "payload_index_io_read", b"payload_index_io_read", "payload_index_io_write", b"payload_index_io_write", "payload_io_read", b"payload_io_read", "payload_io_write", b"payload_io_write", "remote_io_cached_read", b"remote_io_cached_read", "remote_io_non_cached_read", b"remote_io_non_cached_read", "updated_bytes", b"updated_bytes", "updated_indexed_bytes", b"updated_indexed_bytes", "vector_io_read", b"vector_io_read", "vector_io_write", b"vector_io_write"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_cpu", b"_cpu", "_payload_index_io_read", b"_payload_index_io_read", "_payload_index_io_write", b"_payload_index_io_write", "_payload_io_read", b"_payload_io_read", "_payload_io_write", b"_payload_io_write", "_remote_io_cached_read", b"_remote_io_cached_read", "_remote_io_non_cached_read", b"_remote_io_non_cached_read", "_updated_bytes", b"_updated_bytes", "_updated_indexed_bytes", b"_updated_indexed_bytes", "_vector_io_read", b"_vector_io_read", "_vector_io_write", b"_vector_io_write", "cpu", b"cpu", "payload_index_io_read", b"payload_index_io_read", "payload_index_io_write", b"payload_index_io_write", "payload_io_read", b"payload_io_read", "payload_io_write", b"payload_io_write", "remote_io_cached_read", b"remote_io_cached_read", "remote_io_non_cached_read", b"remote_io_non_cached_read", "updated_bytes", b"updated_bytes", "updated_indexed_bytes", b"updated_indexed_bytes", "vector_io_read", b"vector_io_read", "vector_io_write", b"vector_io_write"]) -> None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_cpu", b"_cpu"]) -> typing_extensions.Literal["cpu"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_payload_index_io_read", b"_payload_index_io_read"]) -> typing_extensions.Literal["payload_index_io_read"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_payload_index_io_write", b"_payload_index_io_write"]) -> typing_extensions.Literal["payload_index_io_write"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_payload_io_read", b"_payload_io_read"]) -> typing_extensions.Literal["payload_io_read"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_payload_io_write", b"_payload_io_write"]) -> typing_extensions.Literal["payload_io_write"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_remote_io_cached_read", b"_remote_io_cached_read"]) -> typing_extensions.Literal["remote_io_cached_read"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_remote_io_non_cached_read", b"_remote_io_non_cached_read"]) -> typing_extensions.Literal["remote_io_non_cached_read"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_updated_bytes", b"_updated_bytes"]) -> typing_extensions.Literal["updated_bytes"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_updated_indexed_bytes", b"_updated_indexed_bytes"]) -> typing_extensions.Literal["updated_indexed_bytes"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_vector_io_read", b"_vector_io_read"]) -> typing_extensions.Literal["vector_io_read"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_vector_io_write", b"_vector_io_write"]) -> typing_extensions.Literal["vector_io_write"] | None: ...
 
 global___HardwareUsage = HardwareUsage

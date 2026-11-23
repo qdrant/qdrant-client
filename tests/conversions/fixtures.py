@@ -433,6 +433,7 @@ strict_mode_config = grpc.StrictModeConfig(
     max_timeout=10,
     unindexed_filtering_retrieve=False,
     unindexed_filtering_update=False,
+    require_tenant_filter=True,
     search_max_hnsw_ef=256,
     search_allow_exact=False,
     search_max_oversampling=10,
@@ -654,6 +655,7 @@ search_params_3 = grpc.SearchParams(
 
 search_params_4 = grpc.SearchParams(idf=grpc.IdfParams())
 search_params_5 = grpc.SearchParams(idf=grpc.IdfParams(corpus=filter_nested))
+search_params_6 = grpc.SearchParams(max_sparse_dims=16)
 
 rename_alias = grpc.RenameAlias(old_alias_name="col2", new_alias_name="col3")
 
@@ -2031,6 +2033,7 @@ fixtures = {
         search_params_3,
         search_params_4,
         search_params_5,
+        search_params_6,
     ],
     "HasIdCondition": [has_id],
     "RenameAlias": [rename_alias],

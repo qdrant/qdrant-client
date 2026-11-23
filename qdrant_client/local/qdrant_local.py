@@ -46,7 +46,8 @@ def _parse_search_params(search_params: types.SearchParams | None) -> types.Sear
 def _has_ignored_search_params(search_params: types.SearchParams | None) -> bool:
     """`idf` is the only `SearchParams` field local mode acts on: it scopes the IDF corpus, which
     affects scores rather than the index traversal. Everything else describes index behaviour that
-    an exact brute-force search has no use for.
+    an exact brute-force search has no use for (including `max_sparse_dims`, which only makes
+    sparse search approximate).
     """
     if search_params is None:
         return False
@@ -56,6 +57,7 @@ def _has_ignored_search_params(search_params: types.SearchParams | None) -> bool
         or search_params.acorn
         or search_params.exact
         or search_params.indexed_only
+        or search_params.max_sparse_dims
     )
 
 

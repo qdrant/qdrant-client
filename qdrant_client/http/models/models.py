@@ -1034,17 +1034,21 @@ class FeatureFlags(BaseModel):
         default=True,
         description="Send the payload of a raw point as the byte blob it is stored as, so the sending node does not parse it and neither node builds a protobuf value tree for it. The receiving node still parses the blob, once, when the operation is applied. Only has an effect on points transferred raw, see [`Self::transfer_raw_points`].  Read on the sending side only: nodes accept raw payloads regardless.",
     )
-    persist_proxy_segments: Optional[bool] = Field(
-        default=False,
-        description="Persist proxy segment changes on disk. Prevents pinning the WAL while proxy segments are open. Replays the persisted changes on startup to guarantee data consistency. Required for serverless deployments where storage and compute is separated.",
-    )
     combined_vector_storage: Optional[bool] = Field(
         default=True,
         description="When `hnsw_config.inline_storage` enabled, use the `GraphInline` vector storage (aka inline-storage without standalone vector storage) for new segments.  Existing `GraphInline` segments are always readable, regardless of this flag.",
     )
+    versioned_deletes: Optional[bool] = Field(
+        default=False,
+        description="Record the version of every delete, in formats older readers cannot parse: versioned delete entries in appendable mappings logs, and a delete log next to the deleted mask of immutable segments, which takes their deletes in place of the mask. Followers use the versions to never apply the delete of a moved point before they see its new copy. Gates writing only: both formats are always read, and the deletes of an immutable segment are the union of its mask and its log.",
+    )
+    pipnn_graph_building: Optional[bool] = Field(
+        default=False,
+        description="Build the main HNSW graph of large segments with PiPNN instead of inserting point by point. When disabled, PiPNN is *never* used and graphs are built with HNSW. When enabled, PiPNN is used where it applies: segments that are large enough, have no older graph to build from, and whose vectors support it. Only changes how graphs are built: the resulting graph has the same format either way.  Disabled by default: PiPNN ignores `ef_construct`, so with it the graph quality of large segments can only be tuned through `m`.",
+    )
     serverless_compatible: Optional[bool] = Field(
         default=False,
-        description="Serverless-compatible deployment mode. Implies [`Self::write_segment_manifest`], [`Self::append_only_mutations`], [`Self::compact_bitmask`], [`Self::append_only_storages`], [`Self::compact_logstore_tracker`] and [`Self::persist_proxy_segments`].  Note that this will only be applied when passed into [`init_feature_flags`].",
+        description="Serverless-compatible deployment mode. Implies [`Self::write_segment_manifest`], [`Self::append_only_mutations`], [`Self::compact_bitmask`], [`Self::append_only_storages`], [`Self::compact_logstore_tracker`] and [`Self::versioned_deletes`].  Note that this will only be applied when passed into [`init_feature_flags`].",
     )
 
 
@@ -1168,7 +1172,10 @@ class GeoDistance(BaseModel, extra="forbid"):
 
 class GeoDistanceParams(BaseModel, extra="forbid"):
     origin: "GeoPoint" = Field(..., description="")
-    to: str = Field(..., description="Payload field with the destination geo point")
+    to: str = Field(
+        ...,
+        description="Payload field with the destination geo point. If the field holds several geo points, the distance to the nearest one is used",
+    )
 
 
 class GeoIndexParams(BaseModel, extra="forbid"):
@@ -1262,15 +1269,39 @@ class HardwareUsage(BaseModel):
     Usage of the hardware resources, spent to process the request
     """
 
-    cpu: int = Field(..., description="Usage of the hardware resources, spent to process the request")
-    payload_io_read: int = Field(..., description="Usage of the hardware resources, spent to process the request")
-    payload_io_write: int = Field(..., description="Usage of the hardware resources, spent to process the request")
-    payload_index_io_read: int = Field(..., description="Usage of the hardware resources, spent to process the request")
-    payload_index_io_write: int = Field(
-        ..., description="Usage of the hardware resources, spent to process the request"
+    cpu: Optional[int] = Field(
+        default=None, description="Usage of the hardware resources, spent to process the request"
     )
-    vector_io_read: int = Field(..., description="Usage of the hardware resources, spent to process the request")
-    vector_io_write: int = Field(..., description="Usage of the hardware resources, spent to process the request")
+    payload_io_read: Optional[int] = Field(
+        default=None, description="Usage of the hardware resources, spent to process the request"
+    )
+    payload_io_write: Optional[int] = Field(
+        default=None, description="Usage of the hardware resources, spent to process the request"
+    )
+    payload_index_io_read: Optional[int] = Field(
+        default=None, description="Usage of the hardware resources, spent to process the request"
+    )
+    payload_index_io_write: Optional[int] = Field(
+        default=None, description="Usage of the hardware resources, spent to process the request"
+    )
+    vector_io_read: Optional[int] = Field(
+        default=None, description="Usage of the hardware resources, spent to process the request"
+    )
+    vector_io_write: Optional[int] = Field(
+        default=None, description="Usage of the hardware resources, spent to process the request"
+    )
+    remote_io_cached_read: Optional[int] = Field(
+        default=None, description="Usage of the hardware resources, spent to process the request"
+    )
+    remote_io_non_cached_read: Optional[int] = Field(
+        default=None, description="Usage of the hardware resources, spent to process the request"
+    )
+    updated_bytes: Optional[int] = Field(
+        default=None, description="Usage of the hardware resources, spent to process the request"
+    )
+    updated_indexed_bytes: Optional[int] = Field(
+        default=None, description="Usage of the hardware resources, spent to process the request"
+    )
 
 
 class HasIdCondition(BaseModel, extra="forbid"):
@@ -3128,7 +3159,7 @@ class SearchParams(BaseModel, extra="forbid"):
     )
     exact: Optional[bool] = Field(
         default=False,
-        description="Search without approximation. If set to true, search may run long but with exact results.",
+        description="Search without approximation. If set to true, search may run long but with exact results. Cannot be used together with `max_sparse_dims`.",
     )
     quantization: Optional["QuantizationSearchParams"] = Field(default=None, description="Quantization params")
     indexed_only: Optional[bool] = Field(
@@ -3139,6 +3170,10 @@ class SearchParams(BaseModel, extra="forbid"):
     idf: Optional["IdfParams"] = Field(
         default=None,
         description="Which population IDF statistics are computed over. By default (or with explicit `&quot;global&quot;`) statistics are collection-wide. Only applicable to sparse vectors with the IDF modifier enabled, and to BM25 over a text index.",
+    )
+    max_sparse_dims: Optional[int] = Field(
+        default=None,
+        description="Only applicable to sparse vectors. Keep only the provided number of dimensions from the query. Dimensions are selected by largest absolute weight. This parameter enables approximate sparse search (Qdrant&#x27;s default is exact): use with caution. Cannot be used together with `exact`.",
     )
 
 
@@ -3644,6 +3679,10 @@ class StrictModeConfig(BaseModel, extra="forbid"):
     unindexed_filtering_update: Optional[bool] = Field(
         default=None, description="Allow usage of unindexed fields in filtered updates (e.g. delete by payload)."
     )
+    require_tenant_filter: Optional[bool] = Field(
+        default=None,
+        description="Require filter-based reads (e.g. search, scroll, count, facet) to restrict results to tenants. Applies only when the collection has a payload index with `is_tenant: true`: the top-level `must` of the request filter must then contain a `match` (`value` or `any`) condition on one of the tenant keys. Reads by point id are not affected.",
+    )
     search_max_hnsw_ef: Optional[int] = Field(
         default=None, description="Max HNSW ef value allowed in search parameters."
     )
@@ -3696,6 +3735,10 @@ class StrictModeConfigOutput(BaseModel):
     )
     unindexed_filtering_update: Optional[bool] = Field(
         default=None, description="Allow usage of unindexed fields in filtered updates (e.g. delete by payload)."
+    )
+    require_tenant_filter: Optional[bool] = Field(
+        default=None,
+        description="Require filter-based reads (e.g. search, scroll, count, facet) to restrict results to tenants. Applies only when the collection has a payload index with `is_tenant: true`: the top-level `must` of the request filter must then contain a `match` (`value` or `any`) condition on one of the tenant keys. Reads by point id are not affected.",
     )
     search_max_hnsw_ef: Optional[int] = Field(default=None, description="Max HNSW value allowed in search parameters.")
     search_allow_exact: Optional[bool] = Field(default=None, description="Whether exact search is allowed or not.")
