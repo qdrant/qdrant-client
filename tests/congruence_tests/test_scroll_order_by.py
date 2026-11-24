@@ -321,6 +321,18 @@ def test_order_by_needs_range_index(field_schema, can_order_by):
         with pytest.raises(ValueError, match=message):
             local_client.query_points(COLLECTION_NAME, query=models.OrderByQuery(order_by="a"))
 
+        # a prefetch finding nothing doesn't skip the check on the server
+        empty_prefetch = models.Prefetch(
+            filter=models.Filter(must=[models.HasIdCondition(has_id=[100])]), limit=10
+        )
+        for client, error in ((local_client, ValueError), (remote_client, UnexpectedResponse)):
+            with pytest.raises(error, match=message):
+                client.query_points(
+                    COLLECTION_NAME,
+                    query=models.OrderByQuery(order_by="a"),
+                    prefetch=empty_prefetch,
+                )
+
 
 def test_order_by_without_index_on_empty_collection():
     # unlike facet, the server asks for the index even when there is nothing to order
@@ -334,5 +346,9 @@ def test_order_by_without_index_on_empty_collection():
         local_client.scroll(COLLECTION_NAME, order_by="a")
     with pytest.raises(UnexpectedResponse, match=message):
         remote_client.scroll(COLLECTION_NAME, order_by="a")
-    with pytest.raises(ValueError, match=message):
-        local_client.query_points(COLLECTION_NAME, query=models.OrderByQuery(order_by="a"))
+    for client, error in ((local_client, ValueError), (remote_client, UnexpectedResponse)):
+        for prefetch in (None, models.Prefetch(limit=10)):
+            with pytest.raises(error, match=message):
+                client.query_points(
+                    COLLECTION_NAME, query=models.OrderByQuery(order_by="a"), prefetch=prefetch
+                )

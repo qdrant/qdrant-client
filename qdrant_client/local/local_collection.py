@@ -1148,6 +1148,9 @@ class LocalCollection:
                     sources_ids.add(point.id)
 
             if len(sources_ids) == 0:
+                if isinstance(query, models.OrderByQuery):
+                    # the server still rejects order_by without an index here
+                    self._check_order_by_index(query.order_by)
                 # no need to perform a query if there are no matches for the sources
                 return []
             else:
@@ -2356,20 +2359,7 @@ class LocalCollection:
             )
 
         if order_by is not None:
-            if isinstance(order_by, grpc.OrderBy):
-                order_by = GrpcToRest.convert_order_by(order_by)
-            if isinstance(order_by, str):
-                order_by = models.OrderBy(key=order_by)
-
-            # unlike facet, the server needs the index even when there are no points
-            index = self.payload_indexes.get(order_by.key)
-            if index is None or not _can_order_by(index):
-                raise ValueError(
-                    f"Wrong input: No range index for `order_by` key: `{order_by.key}`. "
-                    "Please create one to use `order_by`. Check "
-                    "https://qdrant.tech/documentation/concepts/indexing/#payload-index "
-                    "to see which payload schemas support Range conditions"
-                )
+            order_by = self._check_order_by_index(order_by)
 
         if len(self.ids) == 0:
             validate_filter(
@@ -2395,6 +2385,23 @@ class LocalCollection:
             with_payload=with_payload,
             with_vectors=with_vectors,
         )
+
+    def _check_order_by_index(self, order_by: types.OrderBy) -> models.OrderBy:
+        if isinstance(order_by, grpc.OrderBy):
+            order_by = GrpcToRest.convert_order_by(order_by)
+        if isinstance(order_by, str):
+            order_by = models.OrderBy(key=order_by)
+
+        # unlike facet, the server needs the index even when there is nothing to order
+        index = self.payload_indexes.get(order_by.key)
+        if index is None or not _can_order_by(index):
+            raise ValueError(
+                f"Wrong input: No range index for `order_by` key: `{order_by.key}`. "
+                "Please create one to use `order_by`. Check "
+                "https://qdrant.tech/documentation/concepts/indexing/#payload-index "
+                "to see which payload schemas support Range conditions"
+            )
+        return order_by
 
     def count(self, count_filter: types.Filter | None = None) -> models.CountResult:
         mask = self._payload_and_non_deleted_mask(count_filter)
