@@ -87,7 +87,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 f"`host` param is not expected to contain protocol (http:// or https://). Try to use `url` parameter instead."
             )
         elif url:
-            if url.startswith("localhost"):
+            if "://" not in url and not url.startswith("/"):
+                # Parse a bare host[:port] as an authority, not as a scheme.
                 url = f"//{url}"
             parsed_url: Url = parse_url(url)
             self._host, self._port = (parsed_url.host, parsed_url.port)

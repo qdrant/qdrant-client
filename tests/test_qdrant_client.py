@@ -89,6 +89,14 @@ def create_random_vectors():
     return vectors_path
 
 
+def test_bare_host_url_is_parsed_as_authority():
+    # A bare Docker Compose service name (no dot, no scheme) must be treated
+    # as the host, not as a URL scheme (regression: #1712).
+    client = QdrantClient(url="qdrant:6333", check_compatibility=False)
+    assert isinstance(client._client, QdrantRemote)
+    assert client._client.rest_uri == "http://qdrant:6333"
+
+
 def test_client_init():
     import tempfile
     import ssl
