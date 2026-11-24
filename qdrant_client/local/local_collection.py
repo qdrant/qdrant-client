@@ -2355,6 +2355,22 @@ class LocalCollection:
                 "Offset is not supported in conjunction with `order_by` scroll parameter"
             )
 
+        if order_by is not None:
+            if isinstance(order_by, grpc.OrderBy):
+                order_by = GrpcToRest.convert_order_by(order_by)
+            if isinstance(order_by, str):
+                order_by = models.OrderBy(key=order_by)
+
+            # unlike facet, the server needs the index even when there are no points
+            index = self.payload_indexes.get(order_by.key)
+            if index is None or not _can_order_by(index):
+                raise ValueError(
+                    f"Wrong input: No range index for `order_by` key: `{order_by.key}`. "
+                    "Please create one to use `order_by`. Check "
+                    "https://qdrant.tech/documentation/concepts/indexing/#payload-index "
+                    "to see which payload schemas support Range conditions"
+                )
+
         if len(self.ids) == 0:
             validate_filter(
                 scroll_filter
@@ -2426,26 +2442,12 @@ class LocalCollection:
 
     def _scroll_by_value(
         self,
-        order_by: types.OrderBy,
+        order_by: models.OrderBy,
         scroll_filter: types.Filter | None = None,
         limit: int = 10,
         with_payload: types.WithPayloadInterface = True,
         with_vectors: types.WithVector = False,
     ) -> tuple[list[types.Record], types.PointId | None]:
-        if isinstance(order_by, grpc.OrderBy):
-            order_by = GrpcToRest.convert_order_by(order_by)
-        if isinstance(order_by, str):
-            order_by = models.OrderBy(key=order_by)
-
-        index = self.payload_indexes.get(order_by.key)
-        if index is None or not _can_order_by(index):
-            raise ValueError(
-                f"Wrong input: No range index for `order_by` key: `{order_by.key}`. "
-                "Please create one to use `order_by`. Check "
-                "https://qdrant.tech/documentation/concepts/indexing/#payload-index "
-                "to see which payload schemas support Range conditions"
-            )
-
         value_and_ids: list[tuple[OrderValue, ExtendedPointId, int]] = []
 
         for external_id, internal_id in self.ids.items():

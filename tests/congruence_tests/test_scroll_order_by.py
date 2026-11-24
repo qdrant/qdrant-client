@@ -320,3 +320,19 @@ def test_order_by_needs_range_index(field_schema, can_order_by):
             remote_client.scroll(COLLECTION_NAME, order_by="a")
         with pytest.raises(ValueError, match=message):
             local_client.query_points(COLLECTION_NAME, query=models.OrderByQuery(order_by="a"))
+
+
+def test_order_by_without_index_on_empty_collection():
+    # unlike facet, the server asks for the index even when there is nothing to order
+    local_client = init_local()
+    remote_client = init_remote()
+    for client in (local_client, remote_client):
+        init_client(client, [], vectors_config={})
+
+    message = "No range index for `order_by` key: `a`"
+    with pytest.raises(ValueError, match=message):
+        local_client.scroll(COLLECTION_NAME, order_by="a")
+    with pytest.raises(UnexpectedResponse, match=message):
+        remote_client.scroll(COLLECTION_NAME, order_by="a")
+    with pytest.raises(ValueError, match=message):
+        local_client.query_points(COLLECTION_NAME, query=models.OrderByQuery(order_by="a"))
