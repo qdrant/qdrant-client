@@ -1,6 +1,7 @@
 import os
 import random
 import sqlite3
+import sys
 import tempfile
 from datetime import datetime
 
@@ -91,6 +92,52 @@ def test_prevent_parallel_access():
             _client2 = QdrantClient(path=tmpdir)
 
         assert "already accessed by another instance" in str(e)
+
+
+def test_local_client_close_during_interpreter_shutdown(monkeypatch, tmp_path):
+    import portalocker
+
+    client = QdrantClient(path=str(tmp_path))
+    client.create_collection(
+        collection_name="test",
+        vectors_config=rest.VectorParams(size=1, distance=rest.Distance.COSINE),
+    )
+    local_client = client._client
+    storage = local_client.collections["test"].storage.storage
+    flock_file = local_client._flock_file
+
+    def fail_unlock(_file):
+        raise ImportError("Python is shutting down")
+
+    monkeypatch.setattr(sys, "is_finalizing", lambda: True)
+    monkeypatch.setattr(portalocker, "unlock", fail_unlock)
+
+    client.close()
+
+    assert local_client.closed
+    assert flock_file.closed
+    with pytest.raises(sqlite3.ProgrammingError):
+        storage.execute("SELECT 1")
+
+
+def test_local_client_close_propagates_unlock_error_outside_shutdown(monkeypatch, tmp_path):
+    import portalocker
+
+    client = QdrantClient(path=str(tmp_path))
+    local_client = client._client
+    flock_file = local_client._flock_file
+
+    def fail_unlock(_file):
+        raise ImportError("portalocker is unavailable")
+
+    monkeypatch.setattr(sys, "is_finalizing", lambda: False)
+    monkeypatch.setattr(portalocker, "unlock", fail_unlock)
+
+    with pytest.raises(ImportError, match="portalocker is unavailable"):
+        client.close()
+
+    assert local_client.closed
+    flock_file.close()
 
 
 def test_local_dense_persistence():
@@ -261,9 +308,9 @@ def test_idf_persistence_after_deletion(operation: str):
                 search_params=rest.SearchParams(idf=idf),
             ).points
             collected.append([point.score for point in points])
-        assert collected[0] == pytest.approx(collected[1]), (
-            "the global scope disagrees with a corpus of every live point"
-        )
+        assert collected[0] == pytest.approx(
+            collected[1]
+        ), "the global scope disagrees with a corpus of every live point"
         return collected[0]
 
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -288,9 +335,9 @@ def test_idf_persistence_after_deletion(operation: str):
         client.close()
 
         client = QdrantClient(path=tmpdir)
-        assert scores(client) == pytest.approx(before_reopen), (
-            "reopening the collection changed the IDF scores"
-        )
+        assert scores(client) == pytest.approx(
+            before_reopen
+        ), "reopening the collection changed the IDF scores"
         # deleting the vectors leaves the points themselves in place
         surviving = [0] if operation == "points" else [0, 1, 2, 3]
         assert [point.id for point in client.scroll(collection_name, limit=10)[0]] == surviving
