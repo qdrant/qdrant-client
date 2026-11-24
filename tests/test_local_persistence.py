@@ -1,8 +1,12 @@
 import os
+import pickle
 import random
 import sqlite3
 import tempfile
-from datetime import datetime
+import uuid
+from contextlib import closing
+from datetime import date, datetime, time, timedelta, timezone
+from decimal import Decimal
 
 import numpy as np
 import pytest
@@ -261,9 +265,9 @@ def test_idf_persistence_after_deletion(operation: str):
                 search_params=rest.SearchParams(idf=idf),
             ).points
             collected.append([point.score for point in points])
-        assert collected[0] == pytest.approx(collected[1]), (
-            "the global scope disagrees with a corpus of every live point"
-        )
+        assert collected[0] == pytest.approx(
+            collected[1]
+        ), "the global scope disagrees with a corpus of every live point"
         return collected[0]
 
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -288,9 +292,9 @@ def test_idf_persistence_after_deletion(operation: str):
         client.close()
 
         client = QdrantClient(path=tmpdir)
-        assert scores(client) == pytest.approx(before_reopen), (
-            "reopening the collection changed the IDF scores"
-        )
+        assert scores(client) == pytest.approx(
+            before_reopen
+        ), "reopening the collection changed the IDF scores"
         # deleting the vectors leaves the points themselves in place
         surviving = [0] if operation == "points" else [0, 1, 2, 3]
         assert [point.id for point in client.scroll(collection_name, limit=10)[0]] == surviving
@@ -611,3 +615,59 @@ def test_collection_metadata_is_stored_as_json(tmp_path):
         "updated": "2021-01-01T00:00:00",
     }
     client.close()
+
+
+def insert_raw_point(collection_dir, point_id: int, value: bytes) -> None:
+    with closing(sqlite3.connect(collection_dir / "storage.sqlite")) as storage, storage:
+        storage.execute(
+            "INSERT INTO points VALUES (?, ?)",
+            (CollectionPersistence.encode_key(point_id), value),
+        )
+
+
+class RunsCode:
+    """Pickles as a call to `os.mkdir`, which unpickling it would run"""
+
+    def __init__(self, path) -> None:
+        self.path = str(path)
+
+    def __reduce__(self):
+        return os.mkdir, (self.path,)
+
+
+def test_stored_point_cannot_run_code(tmp_path):
+    path = tmp_path / "storage"
+    marker = tmp_path / "marker"
+    with closing(QdrantClient(path=str(path))) as client:
+        client.create_collection(
+            "points", vectors_config=rest.VectorParams(size=2, distance=rest.Distance.DOT)
+        )
+    insert_raw_point(path / "collection" / "points", 1, pickle.dumps(RunsCode(marker)))
+
+    with pytest.raises(pickle.UnpicklingError, match="mkdir"):
+        QdrantClient(path=str(path))
+    assert not marker.exists()
+
+
+@pytest.mark.parametrize("protocol", [3, pickle.HIGHEST_PROTOCOL])
+def test_stored_point_with_legacy_payload_values_loads(tmp_path, protocol):
+    """Older versions stored payload values as given, and Python < 3.8 pickled with protocol 3"""
+    payload = {
+        "datetime": datetime(2020, 1, 1, 12, 30, tzinfo=timezone(timedelta(hours=2))),
+        "date": date(2020, 1, 1),
+        "time": time(12, 30),
+        "uuid": uuid.UUID("936da01f-9abd-4d9d-80c7-02af85c822a8"),
+        "decimal": Decimal("1.5"),
+        "set": {1, 2},
+        "frozenset": frozenset([3]),
+        "nested": {"list": [1, "a", None, True, 1.5]},
+    }
+    sparse_vector = rest.SparseVector(indices=[1, 5], values=[0.5, 0.1])
+    point = construct(rest.PointStruct, id=1, vector={"sparse": sparse_vector}, payload=payload)
+    persistence = CollectionPersistence(str(tmp_path))
+    insert_raw_point(tmp_path, 1, pickle.dumps(point, protocol=protocol))
+
+    try:
+        assert list(persistence.load()) == [point]
+    finally:
+        persistence.close()
