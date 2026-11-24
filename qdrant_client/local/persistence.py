@@ -1,9 +1,13 @@
 import base64
 import dbm
+import enum
+import io
 import pickle
 import sqlite3
 from pathlib import Path
-from typing import Iterable
+from typing import Any, Iterable
+
+from pydantic import BaseModel
 
 from qdrant_client.http import models
 from qdrant_client._pydantic_compat import construct
@@ -12,6 +16,45 @@ from qdrant_client.local.utils import normalize_point_id
 
 STORAGE_FILE_NAME_OLD = "storage.dbm"
 STORAGE_FILE_NAME = "storage.sqlite"
+
+MODELS_MODULE = models.PointStruct.__module__
+# Besides models, points written by older versions can hold these payload values, and sets
+# pickled with a protocol older than 4
+ALLOWED_GLOBALS = {
+    ("builtins", "frozenset"),
+    ("builtins", "set"),
+    ("datetime", "date"),
+    ("datetime", "datetime"),
+    ("datetime", "time"),
+    ("datetime", "timedelta"),
+    ("datetime", "timezone"),
+    ("decimal", "Decimal"),
+    ("uuid", "UUID"),
+}
+
+
+class PointUnpickler(pickle.Unpickler):
+    """Unpickles stored points, but refuses any other object, which could run code on load"""
+
+    def find_class(self, module: str, name: str) -> Any:
+        if module == MODELS_MODULE:
+            cls = super().find_class(module, name)
+            if (
+                isinstance(cls, type)
+                and cls.__module__ == module
+                and issubclass(cls, (BaseModel, enum.Enum))
+            ):
+                return cls
+        elif (module, name) in ALLOWED_GLOBALS:
+            return super().find_class(module, name)
+        raise pickle.UnpicklingError(
+            f"Refusing to load {module}.{name} from local storage, points can only hold models "
+            "and plain values"
+        )
+
+
+def load_point(value: bytes) -> models.PointStruct:
+    return PointUnpickler(io.BytesIO(value)).load()
 
 
 def check_legacy_storage(location: str) -> None:
@@ -123,7 +166,7 @@ class CollectionPersistence:
         loaded = set()
         outdated = []
         for rowid, key, value in cursor.fetchall():
-            point = pickle.loads(value)
+            point = load_point(value)
             point_id = normalize_point_id(point.id)
             if point_id in loaded:
                 outdated.append(rowid)
