@@ -8,6 +8,7 @@ def facet_of(points: list[models.PointStruct]) -> list[tuple[type, models.FacetV
     client = QdrantLocal(":memory:")
     client.create_collection(COLLECTION_NAME, vectors_config={})
     client.upsert(COLLECTION_NAME, points=points)
+    client.create_payload_index(COLLECTION_NAME, "a", models.PayloadSchemaType.KEYWORD)
 
     hits = client.facet(COLLECTION_NAME, key="a").hits
 
@@ -54,8 +55,8 @@ def test_facet_does_not_compare_values_of_different_types():
 def test_facet_normalizes_uuids_before_deduplicating():
     """Both spellings of one uuid are a single value, counted once for the point.
 
-    This matches a uuid index on the server. Local mode has no index awareness, so it
-    normalizes unconditionally; a keyword index on the server would instead keep the
+    This matches a uuid index on the server. Local mode doesn't facet through the index,
+    so it normalizes unconditionally; a keyword index on the server would instead keep the
     two spellings as two separate values.
     """
     assert facet_of(

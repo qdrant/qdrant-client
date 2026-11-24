@@ -240,6 +240,43 @@ def test_payload_index_persistence():
         client.close()
 
 
+def test_facet_and_order_by_index_persistence():
+    collection_name = "facet_index_persistence"
+    with tempfile.TemporaryDirectory() as tmpdir:
+        client = QdrantClient(path=tmpdir)
+        client.create_collection(collection_name, vectors_config={})
+        client.upsert(
+            collection_name,
+            [
+                rest.PointStruct(id=idx, vector={}, payload={"city": city, "rank": idx})
+                for idx, city in enumerate(["Berlin", "Paris", "Berlin"])
+            ],
+        )
+        client.create_payload_index(collection_name, "city", rest.PayloadSchemaType.KEYWORD)
+        client.create_payload_index(
+            collection_name, "rank", rest.IntegerIndexParams(type="integer", lookup=False)
+        )
+        client.close()
+
+        client = QdrantClient(path=tmpdir)
+        assert client.facet(collection_name, "city").hits == [
+            rest.FacetValueHit(value="Berlin", count=2),
+            rest.FacetValueHit(value="Paris", count=1),
+        ]
+        records, _ = client.scroll(collection_name, order_by="rank")
+        assert [record.id for record in records] == [0, 1, 2]
+        # lookup=False survived too, so faceting through this index still isn't possible
+        with pytest.raises(ValueError, match="No appropriate index for faceting: `rank`"):
+            client.facet(collection_name, "rank")
+        client.delete_payload_index(collection_name, "city")
+        client.close()
+
+        client = QdrantClient(path=tmpdir)
+        with pytest.raises(ValueError, match="No appropriate index for faceting: `city`"):
+            client.facet(collection_name, "city")
+        client.close()
+
+
 @pytest.mark.parametrize("operation", ["points", "vectors"])
 def test_idf_persistence_after_deletion(operation: str):
     """Reopening a collection must not move the scores a deletion left behind.

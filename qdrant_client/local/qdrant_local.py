@@ -165,6 +165,15 @@ class QdrantLocal(QdrantBase):
                         field_name: rest_models.TextIndexParams(**params)
                         for field_name, params in indexes.items()
                     }
+                # and the ones written before payload indexes were recorded have none either,
+                # these indexes have to be created again to facet or order by their fields
+                for collection_name, indexes in meta.get("payload_indexes", {}).items():
+                    self.collections[collection_name].payload_indexes = {
+                        field_name: rest_models.CreateFieldIndex(
+                            field_name=field_name, field_schema=schema
+                        ).field_schema
+                        for field_name, schema in indexes.items()
+                    }
 
         lock_file_path = os.path.join(self.location, ".lock")
         if not os.path.exists(lock_file_path):
@@ -208,6 +217,16 @@ class QdrantLocal(QdrantBase):
                     }
                     for collection_name, collection in self.collections.items()
                     if collection.text_indexes
+                },
+                "payload_indexes": {
+                    collection_name: {
+                        field_name: schema
+                        if isinstance(schema, str)
+                        else to_dict(schema, exclude_none=True)
+                        for field_name, schema in collection.payload_indexes.items()
+                    }
+                    for collection_name, collection in self.collections.items()
+                    if collection.payload_indexes
                 },
             }
         )
@@ -1160,7 +1179,7 @@ class QdrantLocal(QdrantBase):
         # text indexes with scoring are the only ones serving queries in local mode
         if field_name not in collection.text_indexes:
             show_warning_once(
-                message="Payload indexes have no effect in the local Qdrant, except text indexes with `scoring`, which enable text queries. Please use server Qdrant if you need payload indexes.",
+                message="Payload indexes don't speed anything up in the local Qdrant, they only enable `facet`, `order_by` and, for text indexes with `scoring`, text queries. Please use server Qdrant if you need payload indexes.",
                 category=UserWarning,
                 idx="create-local-payload-indexes",
                 stacklevel=5,
@@ -1173,7 +1192,7 @@ class QdrantLocal(QdrantBase):
         collection = self._get_collection(collection_name)
         if field_name not in collection.text_indexes:
             show_warning_once(
-                message="Payload indexes have no effect in the local Qdrant, except text indexes with `scoring`, which enable text queries. Please use server Qdrant if you need payload indexes.",
+                message="Payload indexes don't speed anything up in the local Qdrant, they only enable `facet`, `order_by` and, for text indexes with `scoring`, text queries. Please use server Qdrant if you need payload indexes.",
                 category=UserWarning,
                 idx="delete-local-payload-indexes",
                 stacklevel=5,
