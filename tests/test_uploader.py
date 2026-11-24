@@ -3,10 +3,12 @@ import pickle
 from typing import Any, Callable
 from unittest.mock import MagicMock
 
+import httpx
 import numpy as np
 import pytest
 
-from qdrant_client import QdrantClient, models
+from qdrant_client import AsyncQdrantClient, QdrantClient, models
+from qdrant_client.context_headers import headers
 from qdrant_client.conversions.conversion import RestToGrpc
 from qdrant_client.parallel_processor import ParallelWorkerPool, Worker
 from qdrant_client.uploader.grpc_uploader import (
@@ -179,3 +181,28 @@ def test_grpc_uploader_rejects_unknown_named_vectors(value: Any) -> None:
     # used to be skipped, uploading the point without the vector
     with pytest.raises(ValueError, match="invalid VectorStruct model: vector 'dense'"):
         convert_vector_struct({"dense": value, "sparse": sparse})
+
+
+@pytest.mark.parametrize("client_class", [QdrantClient, AsyncQdrantClient])
+def test_rest_uploads_send_context_headers(client_class: type) -> None:
+    tracing_ids = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        tracing_ids.append(request.headers.get("x-tracing-id"))
+        return httpx.Response(
+            200,
+            json={"result": {"operation_id": 0, "status": "completed"}, "status": "ok"},
+        )
+
+    client = client_class(
+        url="http://localhost:6333",
+        check_compatibility=False,
+        transport=httpx.MockTransport(handler),
+    )
+
+    with headers({"x-tracing-id": "trace-1"}):
+        client.upload_points("test_collection", [models.PointStruct(id=1, vector=[0.1])])
+        client.upload_collection("test_collection", vectors=[[0.1]], ids=[2])
+
+    # used to be sent without the headers, unlike every other request of the client
+    assert tracing_ids == ["trace-1", "trace-1"]
