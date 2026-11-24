@@ -1,5 +1,7 @@
+import pytest
+
 from qdrant_client.http.models import models
-from qdrant_client.local.payload_filters import check_filter, check_match
+from qdrant_client.local.payload_filters import check_filter, check_match, validate_filter
 
 
 def test_nested_payload_filters():
@@ -381,3 +383,33 @@ def test_geo_filters_ignore_nonfinite_coordinates():
         for value in (float("nan"), float("inf"), -float("inf"), 10**400):
             assert matching(geo_filter, {"lon": 0, "lat": value}) == [1, 3], f"{name} lat={value}"
             assert matching(geo_filter, {"lon": value, "lat": 0}) == [1, 3], f"{name} lon={value}"
+
+
+def test_validate_filter_rejects_invalid_geo_polygon():
+    square = [(0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (0.0, 1.0), (0.0, 0.0)]
+
+    def polygon_filter(exterior, interiors=None):
+        def ring(corners):
+            return models.GeoLineString(points=[models.GeoPoint(lon=x, lat=y) for x, y in corners])
+
+        polygon = models.GeoPolygon(
+            exterior=ring(exterior), interiors=[ring(r) for r in interiors] if interiors else None
+        )
+        return models.Filter(must=[models.FieldCondition(key="loc", geo_polygon=polygon)])
+
+    validate_filter(polygon_filter(square))
+    validate_filter(polygon_filter(square, [square]))
+
+    invalid = [
+        (polygon_filter(square[:-1]), "first and the last points"),
+        (polygon_filter(square[:2] + square[:1]), "at least 4, got 3"),
+        (polygon_filter([]), "at least 4, got 0"),
+        (polygon_filter(square, [square[:3]]), "at least 4, got 3"),
+        (polygon_filter(square, [square[:-1]]), "first and the last points"),
+    ]
+    for geo_filter, reported in invalid:
+        with pytest.raises(ValueError, match=reported):
+            validate_filter(geo_filter)
+        # also inside nested filters
+        with pytest.raises(ValueError, match=reported):
+            validate_filter(models.Filter(should=[models.Filter(must_not=geo_filter.must)]))
