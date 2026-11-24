@@ -96,48 +96,47 @@ def sparse_vector_from_grpc(grpc_model: pb2.SparseVectorConfig) -> models.Sparse
     return models.SparseVectorConfig(use_idf=use_idf, precision_tier=precision_tier)
 
 
-def _stopwords_to_grpc(model: models.StopwordsSet) -> pb2.StopwordsSet:
+def _stopwords_to_grpc(model: models.StopwordsInterface) -> pb2.StopwordsSet:
     match model:
+        case models.Language():
+            return pb2.StopwordsSet(languages=[model.value])
         case models.StopwordsSet(languages=languages, custom=custom):
-            return pb2.StopwordsSet(languages=list(languages), custom=list(custom))
+            return pb2.StopwordsSet(
+                languages=[language.value for language in languages or []],
+                custom=list(custom or []),
+            )
         case _:  # pragma: no cover
             raise ValueError(f"Unexpected StopwordsSet shape: {model!r}")
 
 
 def _stopwords_from_grpc(grpc_model: pb2.StopwordsSet) -> models.StopwordsSet:
     return models.StopwordsSet(
-        languages=list(grpc_model.languages),
-        custom=list(grpc_model.custom),
+        languages=[models.Language(language) for language in grpc_model.languages] or None,
+        custom=list(grpc_model.custom) or None,
     )
 
 
 def _stemmer_to_grpc(model: models.StemmingAlgorithm) -> pb2.StemmingAlgorithm:
+    result = pb2.StemmingAlgorithm()
     match model:
-        case models.StemmingAlgorithm(snowball=snowball, disabled=disabled):
-            result = pb2.StemmingAlgorithm()
-            if snowball is not None:
-                match snowball:
-                    case models.SnowballParams(language=language):
-                        result.snowball.language = language
-                    case _:  # pragma: no cover
-                        raise ValueError(f"Unexpected SnowballParams shape: {snowball!r}")
-            elif disabled:
-                result.disabled.SetInParent()
-            else:
-                raise ValueError("StemmingAlgorithm requires either snowball or disabled=True")
-            return result
+        case models.SnowballParams(type=_type, language=language):
+            result.snowball.language = language.value
+        case models.DisabledStemmerParams(type=_type):
+            result.disabled.SetInParent()
         case _:  # pragma: no cover
             raise ValueError(f"Unexpected StemmingAlgorithm shape: {model!r}")
+    return result
 
 
 def _stemmer_from_grpc(grpc_model: pb2.StemmingAlgorithm) -> models.StemmingAlgorithm:
     kind = grpc_model.WhichOneof("stemming_params")
     if kind == "snowball":
-        return models.StemmingAlgorithm(
-            snowball=models.SnowballParams(language=grpc_model.snowball.language)
+        return models.SnowballParams(
+            type=models.Snowball.SNOWBALL,
+            language=models.SnowballLanguage(grpc_model.snowball.language),
         )
     if kind == "disabled":
-        return models.StemmingAlgorithm(disabled=True)
+        return models.DisabledStemmerParams(type=models.NoStemmer.NONE)
     raise ValueError(f"Unknown stemming_params variant: {kind}")  # pragma: no cover
 
 

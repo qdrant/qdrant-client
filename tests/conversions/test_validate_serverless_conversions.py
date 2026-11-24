@@ -101,8 +101,8 @@ def test_enum_maps_match_proto(mapping: dict, descriptor: Any) -> None:
         (models.IntegerIndex, pb2.IntegerIndex),
         (models.TextIndex, pb2.TextIndex),
         (models.StopwordsSet, pb2.StopwordsSet),
+        # `type` is the regular union tag; the proto uses a oneof instead
         (models.SnowballParams, pb2.SnowballParams),
-        (models.StemmingAlgorithm, pb2.StemmingAlgorithm),
         # response shapes: a dropped field here silently loses server data
         (models.CreateCollectionResult, pb2.CreateCollectionResponse),
         (models.DeleteCollectionResult, pb2.DeleteCollectionResponse),

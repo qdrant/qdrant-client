@@ -8,9 +8,11 @@ from qdrant_client.serverless.models import (
     KeywordIndex,
     KeywordPrefixParams,
     PrecisionTier,
+    Language,
+    Snowball,
+    SnowballLanguage,
     SnowballParams,
     SparseVectorConfig,
-    StemmingAlgorithm,
     StopwordsSet,
     TextIndex,
     TokenizerType,
@@ -41,8 +43,8 @@ def test_collection_config_grpc_roundtrip() -> None:
                 tokenizer=TokenizerType.WORD,
                 lowercase=False,
                 ascii_folding=True,
-                stopwords=StopwordsSet(languages=["english"]),
-                stemmer=StemmingAlgorithm(snowball=SnowballParams(language="english")),
+                stopwords=StopwordsSet(languages=[Language.ENGLISH]),
+                stemmer=SnowballParams(type=Snowball.SNOWBALL, language=SnowballLanguage.ENGLISH),
             ),
         },
     )
@@ -97,3 +99,28 @@ def test_async_client_mirrors_sync_client() -> None:
     client = AsyncQdrantServerless(url="https://serverless.example.qdrant.io", api_key="secret")
     assert ("api-key", "secret") in client._remote._grpc_headers
     assert client._remote._grpc_port == 443
+
+
+def test_serverless_models_shadow_only_collection_models() -> None:
+    """A serverless model replacing a regular one of the same name must be deliberate."""
+    from qdrant_client import models as regular
+    from qdrant_client.serverless import models as serverless_models
+
+    shadowed = {
+        name
+        for name, obj in vars(serverless_models).items()
+        if not name.startswith("_") and getattr(regular, name, obj) is not obj
+    }
+    assert shadowed == {
+        "CollectionConfig",
+        "CollectionInfo",
+        "DenseVectorConfig",
+        "SparseVectorConfig",
+    }
+    assert serverless_models.PointStruct is regular.PointStruct
+
+
+def test_text_index_accepts_single_stopwords_language() -> None:
+    config = CollectionConfig(payload_indexes={"t": TextIndex(stopwords=Language.ENGLISH)})
+    grpc_config = collection_config_to_grpc(config)
+    assert list(grpc_config.payload_indexes["t"].text.stopwords.languages) == ["english"]

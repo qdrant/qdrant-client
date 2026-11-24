@@ -8,8 +8,7 @@ Collection management uses the simplified serverless API; point operations
 (query, upsert, ...) work exactly like in the regular client.
 """
 
-from qdrant_client.models import PointStruct
-from qdrant_client.serverless.models import DenseVectorConfig, Distance, KeywordIndex
+from qdrant_client.serverless.models import DenseVectorConfig, Distance, KeywordIndex, PointStruct
 from qdrant_client.serverless import QdrantServerless
 
 
