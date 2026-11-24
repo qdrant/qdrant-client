@@ -470,6 +470,24 @@ def validate_filter(payload_filter: models.Filter | None) -> None:
                 validate_filter(condition)
             elif isinstance(condition, models.NestedCondition):
                 validate_filter(condition.nested.filter)
+            elif isinstance(condition, models.FieldCondition):
+                # The server rejects a FieldCondition that constrains nothing;
+                # local mode used to treat it as a condition that matches no
+                # points, silently changing the query instead of failing.
+                if all(
+                    value is None
+                    for value in (
+                        condition.match,
+                        condition.range,
+                        condition.geo_bounding_box,
+                        condition.geo_radius,
+                        condition.geo_polygon,
+                        condition.values_count,
+                        condition.is_empty,
+                        condition.is_null,
+                    )
+                ):
+                    raise ValueError("At least one field condition must be specified")
             elif isinstance(condition, models.SliceCondition):
                 total, index = condition.slice.total, condition.slice.index
                 if total < 1:
