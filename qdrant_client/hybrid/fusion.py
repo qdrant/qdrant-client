@@ -1,3 +1,5 @@
+import numpy as np
+
 from qdrant_client.http import models
 
 
@@ -13,19 +15,22 @@ def reciprocal_rank_fusion(
     if weights is not None and len(weights) != len(responses):
         raise ValueError("Length of weights must match the number of responses in RRF")
 
-    ranking_constant = (
+    ranking_constant = np.float32(
         ranking_constant_k if ranking_constant_k is not None else DEFAULT_RANKING_CONSTANT_K
     )  # mitigates the impact of high rankings by outlier systems
 
-    def compute_score(pos: int, score_weight: float = 1.0) -> float:
+    def compute_score(pos: int, score_weight: np.float32) -> np.float32:
         if score_weight <= 0:
-            return 0.0
-        return 1 / ((pos + 1.0) / score_weight + ranking_constant - 1.0)
+            return np.float32(0.0)
+        # Match the server's f32 arithmetic, including accumulation across sources.
+        return np.float32(1.0) / (
+            np.float32(pos + 1) / score_weight + ranking_constant - np.float32(1.0)
+        )
 
-    scores: dict[models.ExtendedPointId, float] = {}
+    scores: dict[models.ExtendedPointId, np.float32] = {}
     point_pile = {}
     for response_idx, response in enumerate(responses):
-        weight = weights[response_idx] if weights is not None else 1.0
+        weight = np.float32(weights[response_idx] if weights is not None else 1.0)
         for i, scored_point in enumerate(response):
             if scored_point.id in scores:
                 scores[scored_point.id] += compute_score(i, weight)
@@ -37,7 +42,7 @@ def reciprocal_rank_fusion(
     sorted_points = []
     for point_id, score in sorted_scores[:limit]:
         point = point_pile[point_id]
-        point.score = score
+        point.score = float(score)
         sorted_points.append(point)
     return sorted_points
 
