@@ -442,6 +442,38 @@ def test_convert_points_empty_payload():
     assert scored_point.payload == {"a": 1}
 
 
+@pytest.mark.parametrize(
+    "options",
+    [
+        {"avg_len": 10.0, "language": "english"},
+        {"avg_len": 10.0},
+        {"k": 1.5, "b": 0.5, "avg_len": 10.0, "tokenizer": "word", "lowercase": True},
+        {"language": "english", "min_token_len": 2, "max_token_len": 15},
+        {},
+    ],
+)
+def test_convert_document_bm25_config_options_match_rest_encoding(options):
+    from qdrant_client import models
+    from qdrant_client.conversions.conversion import GrpcToRest, RestToGrpc
+    from qdrant_client.http.api.points_api import jsonable_encoder
+
+    document = models.Document(
+        text="a b c", model="qdrant/bm25", options=models.Bm25Config(**options)
+    )
+    # REST serializes the config as a plain object holding only the fields that were set
+    rest_options = json.loads(jsonable_encoder(document))["options"]
+    assert rest_options == options
+
+    converted = RestToGrpc.convert_document(document)
+    assert GrpcToRest.convert_document(converted).options == rest_options
+    assert (
+        RestToGrpc.convert_document(
+            models.Document(text="a b c", model="qdrant/bm25", options=options)
+        )
+        == converted
+    )
+
+
 def test_convert_context_input_flat_pair():
     from qdrant_client import models
     from qdrant_client.conversions.conversion import GrpcToRest, RestToGrpc
