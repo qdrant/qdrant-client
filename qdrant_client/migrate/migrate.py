@@ -118,6 +118,19 @@ def _recreate_collection(
         id_tracker=src_config.params.id_tracker,
     )
 
+    # `create_collection` takes no read fan-out params, they can only be set by an update
+    if (
+        src_config.params.read_fan_out_factor is not None
+        or src_config.params.read_fan_out_delay_ms is not None
+    ):
+        dest_client.update_collection(
+            collection_name,
+            collection_params=models.CollectionParamsDiff(
+                read_fan_out_factor=src_config.params.read_fan_out_factor,
+                read_fan_out_delay_ms=src_config.params.read_fan_out_delay_ms,
+            ),
+        )
+
     _recreate_payload_schema(dest_client, collection_name, src_payload_schema)
 
 
