@@ -171,10 +171,17 @@ def _set_text_scoring(text: pb2.TextIndex, model: models.TextScoringInterface) -
 
 
 def _text_scoring_from_grpc_field(text: pb2.TextIndex) -> models.TextScoringInterface | None:
-    """An empty message reads back as `True`, so both forms round-trip."""
+    """An empty message reads back as `True`, so both forms round-trip.
+
+    An explicit `TEXT_SCORING_TYPE_UNSPECIFIED` means the same as an unset type
+    (the BM25 default), so it reads back as `True` too.
+    """
     if not text.HasField("scoring"):
         return None
-    if not text.scoring.HasField("type"):
+    if (
+        not text.scoring.HasField("type")
+        or text.scoring.type == pb2.TEXT_SCORING_TYPE_UNSPECIFIED
+    ):
         return True
     return models.TextScoringParams(type=_TEXT_SCORING_TYPE_FROM_GRPC[text.scoring.type])
 

@@ -156,6 +156,18 @@ def test_text_index_bm25_scoring_and_code_tokenizer() -> None:
     }
 
 
+def test_text_index_explicit_unspecified_scoring_type_reads_as_default() -> None:
+    grpc_config = collection_config_to_grpc(
+        CollectionConfig(payload_indexes={"t": TextIndex(scoring=True)})
+    )
+    text = grpc_config.payload_indexes["t"].text
+    text.scoring.type = pb2.TEXT_SCORING_TYPE_UNSPECIFIED
+    assert text.scoring.HasField("type")
+    assert collection_config_from_grpc(grpc_config).payload_indexes == {
+        "t": TextIndex(scoring=True)
+    }
+
+
 def test_get_collection_and_listing_expose_stats() -> None:
     from qdrant_client.serverless.models import CollectionStatus, UpdatesInfo, UpdatesStatus
 
