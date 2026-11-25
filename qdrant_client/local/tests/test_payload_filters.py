@@ -313,21 +313,25 @@ def test_field_condition_is_empty_is_null_json_path():
             models.Filter(must=[models.FieldCondition(key="a[].b", **{flag: value})]), payloads
         )
 
+    # A FieldCondition is evaluated against every value selected by the JSON path. A point
+    # therefore matches either boolean when separate selected values satisfy opposite sides.
     assert matches("is_null", True) == [1]
-    assert matches("is_null", False) == [2, 3, 4, 5]
+    assert matches("is_null", False) == [1, 2, 3, 4, 5]
 
-    assert matches("is_empty", True) == [3, 5]
+    assert matches("is_empty", True) == [1, 3, 4, 5]
     assert matches("is_empty", False) == [1, 2, 4]
 
+    # The standalone conditions check the selected field as a whole, rather than applying a
+    # boolean FieldCondition to each selected value.
     verbose_empty = models.Filter(
         must=[models.IsEmptyCondition(is_empty=models.PayloadField(key="a[].b"))]
     )
-    assert matching_ids(verbose_empty, payloads) == matches("is_empty", True)
+    assert matching_ids(verbose_empty, payloads) == [3, 5]
 
     verbose_null = models.Filter(
         must=[models.IsNullCondition(is_null=models.PayloadField(key="a[].b"))]
     )
-    assert matching_ids(verbose_null, payloads) == matches("is_null", True)
+    assert matching_ids(verbose_null, payloads) == [1]
 
 
 def test_geo_filters_ignore_nonfinite_coordinates():
