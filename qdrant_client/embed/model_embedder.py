@@ -18,6 +18,9 @@ from qdrant_client.fastembed_common import FastEmbedMisc
 from qdrant_client.parallel_processor import ParallelWorkerPool, Worker
 from qdrant_client.uploader.uploader import iter_batch
 
+_INFERENCE_OBJECT_TYPES = get_args(INFERENCE_OBJECT_TYPES)
+_NUMBER_OR_LIST_TYPES = {int, float, list}
+
 
 class ModelEmbedderWorker(Worker):
     def __init__(self, batch_size: int, **kwargs: Any):
@@ -304,10 +307,13 @@ class ModelEmbedder:
             return None
 
         if isinstance(data, list):
+            if set(map(type, data)) <= _NUMBER_OR_LIST_TYPES:
+                return None
             for value in data:
-                if not isinstance(value, get_args(INFERENCE_OBJECT_TYPES)):  # if value is a vector
-                    return None
+                if not isinstance(value, _INFERENCE_OBJECT_TYPES):
+                    continue
                 self._accumulate(value)
+            return None
 
         if not isinstance(data, get_args(INFERENCE_OBJECT_TYPES)):
             return None
@@ -341,9 +347,11 @@ class ModelEmbedder:
             return data
 
         if isinstance(data, list):
+            if set(map(type, data)) <= _NUMBER_OR_LIST_TYPES:
+                return data
             for i, value in enumerate(data):
-                if not isinstance(value, get_args(INFERENCE_OBJECT_TYPES)):  # if value is a vector
-                    return data
+                if not isinstance(value, _INFERENCE_OBJECT_TYPES):
+                    continue
 
                 data[i] = self._drain_accumulator(
                     value, is_query=is_query, inference_batch_size=inference_batch_size
