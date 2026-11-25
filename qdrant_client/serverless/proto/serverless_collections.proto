@@ -87,6 +87,8 @@ enum Tokenizer {
   WORD = 3;
   // Language-aware tokenization.
   MULTILINGUAL = 4;
+  // Split source code into identifiers and their camelCase / snake_case subwords.
+  CODE = 5;
 }
 
 // Exact match on string values, e.g. `color: "red"`.
@@ -94,6 +96,10 @@ message KeywordIndex {
   // If set, enable prefix matching (`match: { "prefix": ... }`) on this field.
   // Presence of this message enables prefix matching; it has no options yet.
   optional KeywordPrefixParams prefix = 1;
+  // Index every object of this array as a separate entry, e.g. `offers` for the field `offers[].price`.
+  // The field must be inside the array's elements. `is_empty` on the field matches a point when one of
+  // its elements lacks the field, and never a point without elements. Default: disabled.
+  optional string nested = 2;
 }
 
 // Prefix matching options for the keyword index. Has no options yet:
@@ -107,16 +113,35 @@ message IntegerIndex {
   optional bool lookup = 1;
   // Support range filters.
   optional bool range = 2;
+  // Index every object of this array as a separate entry, e.g. `offers` for the field `offers[].price`.
+  // The field must be inside the array's elements. `is_empty` on the field matches a point when one of
+  // its elements lacks the field, and never a point without elements. Default: disabled.
+  optional string nested = 3;
 }
 
 // Range filters on floating point (and integer) numbers, e.g. `price: 99.5`.
-message FloatIndex {}
+message FloatIndex {
+  // Index every object of this array as a separate entry, e.g. `offers` for the field `offers[].price`.
+  // The field must be inside the array's elements. `is_empty` on the field matches a point when one of
+  // its elements lacks the field, and never a point without elements. Default: disabled.
+  optional string nested = 1;
+}
 
 // Exact match on UUID strings; like keyword but stored compactly.
-message UuidIndex {}
+message UuidIndex {
+  // Index every object of this array as a separate entry, e.g. `offers` for the field `offers[].id`.
+  // The field must be inside the array's elements. `is_empty` on the field matches a point when one of
+  // its elements lacks the field, and never a point without elements. Default: disabled.
+  optional string nested = 1;
+}
 
 // Range filters on RFC 3339 datetimes, e.g. `created_at: "2023-02-08T10:49:00Z"`.
-message DatetimeIndex {}
+message DatetimeIndex {
+  // Index every object of this array as a separate entry, e.g. `offers` for the field `offers[].updated_at`.
+  // The field must be inside the array's elements. `is_empty` on the field matches a point when one of
+  // its elements lacks the field, and never a point without elements. Default: disabled.
+  optional string nested = 1;
+}
 
 // Tokens ignored by a full-text index. Language names match qdrant (e.g.
 // "english"); predefined lists and custom tokens are merged.
@@ -147,6 +172,22 @@ message StemmingAlgorithm {
   }
 }
 
+// How a text index ranks documents.
+enum TextScoringType {
+  // Unset: BM25.
+  TEXT_SCORING_TYPE_UNSPECIFIED = 0;
+  // Okapi BM25. The index records each document's length; `k` and `b` are set per query.
+  BM25 = 1;
+}
+
+// Parameters of ranking over a text index.
+// Presence of this message enables scoring. An unset type means BM25.
+// On the REST API, `true` is the same as an empty object and `false` disables scoring.
+message TextScoringParams {
+  // How documents are ranked. Unset: BM25.
+  optional TextScoringType type = 1;
+}
+
 // Full-text filtering on string values.
 message TextIndex {
   // Tokenizer to split text with. Unset: WHITESPACE.
@@ -165,13 +206,32 @@ message TextIndex {
   optional StopwordsSet stopwords = 7;
   // Stemming algorithm. Unset: engine default (no stemming).
   optional StemmingAlgorithm stemmer = 8;
+  // Enable ranking points by BM25 over this field.
+  // Changing it rebuilds the index. Default: disabled.
+  optional TextScoringParams scoring = 9;
+  // Index every object of this array as a separate entry, e.g. `offers` for the field `offers[].title`.
+  // The field must be inside the array's elements. Every query on the field, not only nested filters,
+  // treats each element as its own document: a condition matches a point when a single element
+  // matches it, and BM25 scores elements separately. `is_empty` on the field matches a point when
+  // one of its elements lacks the field, and never a point without elements. Default: disabled.
+  optional string nested = 10;
 }
 
 // Geo radius / bounding box / polygon filters on `{lon, lat}` values.
-message GeoIndex {}
+message GeoIndex {
+  // Index every object of this array as a separate entry, e.g. `offers` for the field `offers[].location`.
+  // The field must be inside the array's elements. `is_empty` on the field matches a point when one of
+  // its elements lacks the field, and never a point without elements. Default: disabled.
+  optional string nested = 1;
+}
 
 // Exact match on booleans, e.g. `is_active: true`.
-message BoolIndex {}
+message BoolIndex {
+  // Index every object of this array as a separate entry, e.g. `offers` for the field `offers[].in_stock`.
+  // The field must be inside the array's elements. `is_empty` on the field matches a point when one of
+  // its elements lacks the field, and never a point without elements. Default: disabled.
+  optional string nested = 1;
+}
 
 // One payload index. Only the *kind* of filter the field supports is chosen
 // here; storage placement of the index is the manager's decision.
@@ -244,6 +304,34 @@ message DeleteCollectionResponse {
   double time = 2;
 }
 
+// Collection status, numbered as in the qdrant server API. 3 (RED) and 4 (GREY)
+// are left free so they can be added later with the same numbers.
+enum CollectionStatus {
+  // Could not be determined.
+  COLLECTION_STATUS_UNSPECIFIED = 0;
+  // All segments are optimized.
+  GREEN = 1;
+  // Optimization is pending or running; the collection stays searchable.
+  YELLOW = 2;
+}
+
+// Whether acknowledged writes have been applied.
+enum UpdatesStatus {
+  // Placeholder required by proto3; never sent. An undetermined state is
+  // reported by omitting `updates` instead.
+  UPDATES_STATUS_UNSPECIFIED = 0;
+  // Every acknowledged write is applied and visible to search.
+  APPLIED = 1;
+  // Some acknowledged writes are still queued and not yet visible to search.
+  PENDING = 2;
+}
+
+// Progress of acknowledged writes to a collection.
+message UpdatesInfo {
+  // Whether acknowledged writes are applied or still pending.
+  UpdatesStatus status = 1;
+}
+
 // Names the collection to fetch.
 message GetCollectionRequest {
   // Tenant-facing name of the collection.
@@ -259,6 +347,16 @@ message GetCollectionResponse {
   // Available points as of the last applied write (eventually consistent);
   // absent until the updater has written stats for the collection.
   optional uint64 point_count = 3;
+  // Optimization status of the collection.
+  CollectionStatus status = 5;
+  // Estimated stored bytes, which the collection size limit applies to: indexed
+  // segments as of the last optimization plus a fixed estimate per unindexed one.
+  optional uint64 size_bytes = 6;
+  // Approximate number of vectors in indexed segments; the rest are searched
+  // exhaustively until an optimization indexes them.
+  optional uint64 indexed_vectors_count = 7;
+  // Progress of acknowledged writes; absent when it could not be determined.
+  optional UpdatesInfo updates = 8;
   // Time spent to process
   double time = 4;
 }
@@ -280,6 +378,8 @@ message CollectionSummary {
   // Available points as of the last applied write (eventually consistent);
   // absent until the updater has written stats for the collection.
   optional uint64 point_count = 2;
+  // Estimated stored bytes, as in GetCollectionResponse.
+  optional uint64 size_bytes = 3;
 }
 
 // The caller's collections.

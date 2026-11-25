@@ -18,8 +18,10 @@ from qdrant_client.qdrant_fastembed import QdrantFastembedMixin
 from qdrant_client.qdrant_remote import QdrantRemote
 from qdrant_client.serverless import models as serverless_models
 from qdrant_client.serverless.conversions import (
+    _COLLECTION_STATUS_FROM_GRPC,
     collection_config_from_grpc,
     collection_config_to_grpc,
+    updates_info_from_grpc,
 )
 from qdrant_client.serverless.grpc import serverless_collections_pb2 as pb2
 from qdrant_client.serverless.grpc.serverless_collections_pb2_grpc import CollectionsServiceStub
@@ -217,7 +219,10 @@ class QdrantServerless:
         Returns:
             `CollectionInfo` with `exists`, the creation-time `config`, an
             eventually consistent `point_count` (absent until stats have been
-            written for the collection), and processing `time` in seconds.
+            written for the collection), the optimization `status`, the
+            estimated `size_bytes`, the approximate `indexed_vectors_count`,
+            the progress of acknowledged writes in `updates`, and processing
+            `time` in seconds.
         """
         response = self._collections.GetCollection(
             pb2.GetCollectionRequest(collection_name=collection_name),
@@ -229,6 +234,15 @@ class QdrantServerless:
             if response.HasField("config")
             else None,
             point_count=response.point_count if response.HasField("point_count") else None,
+            # COLLECTION_STATUS_UNSPECIFIED: could not be determined
+            status=_COLLECTION_STATUS_FROM_GRPC.get(response.status),
+            size_bytes=response.size_bytes if response.HasField("size_bytes") else None,
+            indexed_vectors_count=response.indexed_vectors_count
+            if response.HasField("indexed_vectors_count")
+            else None,
+            updates=updates_info_from_grpc(response.updates)
+            if response.HasField("updates")
+            else None,
             time=response.time,
         )
 
@@ -260,8 +274,9 @@ class QdrantServerless:
             timeout: Overrides global timeout for this request. Unit is seconds.
 
         Returns:
-            A page of collection summaries (name and eventually consistent
-            point count) plus an optional `next_offset_token`.
+            A page of collection summaries (name, eventually consistent
+            point count and estimated size in bytes) plus an optional
+            `next_offset_token`.
         """
         request = pb2.ListCollectionsRequest()
         if limit is not None:
@@ -278,6 +293,9 @@ class QdrantServerless:
                     collection_name=collection.collection_name,
                     point_count=collection.point_count
                     if collection.HasField("point_count")
+                    else None,
+                    size_bytes=collection.size_bytes
+                    if collection.HasField("size_bytes")
                     else None,
                 )
                 for collection in response.collections

@@ -106,6 +106,8 @@ class _TokenizerEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._Enum
     """Split on word boundaries."""
     MULTILINGUAL: _Tokenizer.ValueType  # 4
     """Language-aware tokenization."""
+    CODE: _Tokenizer.ValueType  # 5
+    """Split source code into identifiers and their camelCase / snake_case subwords."""
 
 class Tokenizer(_Tokenizer, metaclass=_TokenizerEnumTypeWrapper):
     """Full-text tokenizer, mirrors qdrant's `TokenizerType`."""
@@ -120,7 +122,83 @@ WORD: Tokenizer.ValueType  # 3
 """Split on word boundaries."""
 MULTILINGUAL: Tokenizer.ValueType  # 4
 """Language-aware tokenization."""
+CODE: Tokenizer.ValueType  # 5
+"""Split source code into identifiers and their camelCase / snake_case subwords."""
 global___Tokenizer = Tokenizer
+
+class _TextScoringType:
+    ValueType = typing.NewType("ValueType", builtins.int)
+    V: typing_extensions.TypeAlias = ValueType
+
+class _TextScoringTypeEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[_TextScoringType.ValueType], builtins.type):  # noqa: F821
+    DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
+    TEXT_SCORING_TYPE_UNSPECIFIED: _TextScoringType.ValueType  # 0
+    """Unset: BM25."""
+    BM25: _TextScoringType.ValueType  # 1
+    """Okapi BM25. The index records each document's length; `k` and `b` are set per query."""
+
+class TextScoringType(_TextScoringType, metaclass=_TextScoringTypeEnumTypeWrapper):
+    """How a text index ranks documents."""
+
+TEXT_SCORING_TYPE_UNSPECIFIED: TextScoringType.ValueType  # 0
+"""Unset: BM25."""
+BM25: TextScoringType.ValueType  # 1
+"""Okapi BM25. The index records each document's length; `k` and `b` are set per query."""
+global___TextScoringType = TextScoringType
+
+class _CollectionStatus:
+    ValueType = typing.NewType("ValueType", builtins.int)
+    V: typing_extensions.TypeAlias = ValueType
+
+class _CollectionStatusEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[_CollectionStatus.ValueType], builtins.type):  # noqa: F821
+    DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
+    COLLECTION_STATUS_UNSPECIFIED: _CollectionStatus.ValueType  # 0
+    """Could not be determined."""
+    GREEN: _CollectionStatus.ValueType  # 1
+    """All segments are optimized."""
+    YELLOW: _CollectionStatus.ValueType  # 2
+    """Optimization is pending or running; the collection stays searchable."""
+
+class CollectionStatus(_CollectionStatus, metaclass=_CollectionStatusEnumTypeWrapper):
+    """Collection status, numbered as in the qdrant server API. 3 (RED) and 4 (GREY)
+    are left free so they can be added later with the same numbers.
+    """
+
+COLLECTION_STATUS_UNSPECIFIED: CollectionStatus.ValueType  # 0
+"""Could not be determined."""
+GREEN: CollectionStatus.ValueType  # 1
+"""All segments are optimized."""
+YELLOW: CollectionStatus.ValueType  # 2
+"""Optimization is pending or running; the collection stays searchable."""
+global___CollectionStatus = CollectionStatus
+
+class _UpdatesStatus:
+    ValueType = typing.NewType("ValueType", builtins.int)
+    V: typing_extensions.TypeAlias = ValueType
+
+class _UpdatesStatusEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[_UpdatesStatus.ValueType], builtins.type):  # noqa: F821
+    DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
+    UPDATES_STATUS_UNSPECIFIED: _UpdatesStatus.ValueType  # 0
+    """Placeholder required by proto3; never sent. An undetermined state is
+    reported by omitting `updates` instead.
+    """
+    APPLIED: _UpdatesStatus.ValueType  # 1
+    """Every acknowledged write is applied and visible to search."""
+    PENDING: _UpdatesStatus.ValueType  # 2
+    """Some acknowledged writes are still queued and not yet visible to search."""
+
+class UpdatesStatus(_UpdatesStatus, metaclass=_UpdatesStatusEnumTypeWrapper):
+    """Whether acknowledged writes have been applied."""
+
+UPDATES_STATUS_UNSPECIFIED: UpdatesStatus.ValueType  # 0
+"""Placeholder required by proto3; never sent. An undetermined state is
+reported by omitting `updates` instead.
+"""
+APPLIED: UpdatesStatus.ValueType  # 1
+"""Every acknowledged write is applied and visible to search."""
+PENDING: UpdatesStatus.ValueType  # 2
+"""Some acknowledged writes are still queued and not yet visible to search."""
+global___UpdatesStatus = UpdatesStatus
 
 class DenseVectorConfig(google.protobuf.message.Message):
     """Configuration of a single dense (embedding) vector."""
@@ -186,18 +264,28 @@ class KeywordIndex(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
     PREFIX_FIELD_NUMBER: builtins.int
+    NESTED_FIELD_NUMBER: builtins.int
     @property
     def prefix(self) -> global___KeywordPrefixParams:
         """If set, enable prefix matching (`match: { "prefix": ... }`) on this field.
         Presence of this message enables prefix matching; it has no options yet.
         """
+    nested: builtins.str
+    """Index every object of this array as a separate entry, e.g. `offers` for the field `offers[].price`.
+    The field must be inside the array's elements. `is_empty` on the field matches a point when one of
+    its elements lacks the field, and never a point without elements. Default: disabled.
+    """
     def __init__(
         self,
         *,
         prefix: global___KeywordPrefixParams | None = ...,
+        nested: builtins.str | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_prefix", b"_prefix", "prefix", b"prefix"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_prefix", b"_prefix", "prefix", b"prefix"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_nested", b"_nested", "_prefix", b"_prefix", "nested", b"nested", "prefix", b"prefix"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_nested", b"_nested", "_prefix", b"_prefix", "nested", b"nested", "prefix", b"prefix"]) -> None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_nested", b"_nested"]) -> typing_extensions.Literal["nested"] | None: ...
+    @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_prefix", b"_prefix"]) -> typing_extensions.Literal["prefix"] | None: ...
 
 global___KeywordIndex = KeywordIndex
@@ -224,20 +312,29 @@ class IntegerIndex(google.protobuf.message.Message):
 
     LOOKUP_FIELD_NUMBER: builtins.int
     RANGE_FIELD_NUMBER: builtins.int
+    NESTED_FIELD_NUMBER: builtins.int
     lookup: builtins.bool
     """Support exact-match filters."""
     range: builtins.bool
     """Support range filters."""
+    nested: builtins.str
+    """Index every object of this array as a separate entry, e.g. `offers` for the field `offers[].price`.
+    The field must be inside the array's elements. `is_empty` on the field matches a point when one of
+    its elements lacks the field, and never a point without elements. Default: disabled.
+    """
     def __init__(
         self,
         *,
         lookup: builtins.bool | None = ...,
         range: builtins.bool | None = ...,
+        nested: builtins.str | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_lookup", b"_lookup", "_range", b"_range", "lookup", b"lookup", "range", b"range"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_lookup", b"_lookup", "_range", b"_range", "lookup", b"lookup", "range", b"range"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_lookup", b"_lookup", "_nested", b"_nested", "_range", b"_range", "lookup", b"lookup", "nested", b"nested", "range", b"range"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_lookup", b"_lookup", "_nested", b"_nested", "_range", b"_range", "lookup", b"lookup", "nested", b"nested", "range", b"range"]) -> None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_lookup", b"_lookup"]) -> typing_extensions.Literal["lookup"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_nested", b"_nested"]) -> typing_extensions.Literal["nested"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_range", b"_range"]) -> typing_extensions.Literal["range"] | None: ...
 
@@ -248,9 +345,20 @@ class FloatIndex(google.protobuf.message.Message):
 
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
+    NESTED_FIELD_NUMBER: builtins.int
+    nested: builtins.str
+    """Index every object of this array as a separate entry, e.g. `offers` for the field `offers[].price`.
+    The field must be inside the array's elements. `is_empty` on the field matches a point when one of
+    its elements lacks the field, and never a point without elements. Default: disabled.
+    """
     def __init__(
         self,
+        *,
+        nested: builtins.str | None = ...,
     ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_nested", b"_nested", "nested", b"nested"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_nested", b"_nested", "nested", b"nested"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_nested", b"_nested"]) -> typing_extensions.Literal["nested"] | None: ...
 
 global___FloatIndex = FloatIndex
 
@@ -259,9 +367,20 @@ class UuidIndex(google.protobuf.message.Message):
 
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
+    NESTED_FIELD_NUMBER: builtins.int
+    nested: builtins.str
+    """Index every object of this array as a separate entry, e.g. `offers` for the field `offers[].id`.
+    The field must be inside the array's elements. `is_empty` on the field matches a point when one of
+    its elements lacks the field, and never a point without elements. Default: disabled.
+    """
     def __init__(
         self,
+        *,
+        nested: builtins.str | None = ...,
     ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_nested", b"_nested", "nested", b"nested"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_nested", b"_nested", "nested", b"nested"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_nested", b"_nested"]) -> typing_extensions.Literal["nested"] | None: ...
 
 global___UuidIndex = UuidIndex
 
@@ -270,9 +389,20 @@ class DatetimeIndex(google.protobuf.message.Message):
 
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
+    NESTED_FIELD_NUMBER: builtins.int
+    nested: builtins.str
+    """Index every object of this array as a separate entry, e.g. `offers` for the field `offers[].updated_at`.
+    The field must be inside the array's elements. `is_empty` on the field matches a point when one of
+    its elements lacks the field, and never a point without elements. Default: disabled.
+    """
     def __init__(
         self,
+        *,
+        nested: builtins.str | None = ...,
     ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_nested", b"_nested", "nested", b"nested"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_nested", b"_nested", "nested", b"nested"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_nested", b"_nested"]) -> typing_extensions.Literal["nested"] | None: ...
 
 global___DatetimeIndex = DatetimeIndex
 
@@ -354,6 +484,28 @@ class StemmingAlgorithm(google.protobuf.message.Message):
 
 global___StemmingAlgorithm = StemmingAlgorithm
 
+class TextScoringParams(google.protobuf.message.Message):
+    """Parameters of ranking over a text index.
+    Presence of this message enables scoring. An unset type means BM25.
+    On the REST API, `true` is the same as an empty object and `false` disables scoring.
+    """
+
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    TYPE_FIELD_NUMBER: builtins.int
+    type: global___TextScoringType.ValueType
+    """How documents are ranked. Unset: BM25."""
+    def __init__(
+        self,
+        *,
+        type: global___TextScoringType.ValueType | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_type", b"_type", "type", b"type"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_type", b"_type", "type", b"type"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_type", b"_type"]) -> typing_extensions.Literal["type"] | None: ...
+
+global___TextScoringParams = TextScoringParams
+
 class TextIndex(google.protobuf.message.Message):
     """Full-text filtering on string values."""
 
@@ -367,6 +519,8 @@ class TextIndex(google.protobuf.message.Message):
     ASCII_FOLDING_FIELD_NUMBER: builtins.int
     STOPWORDS_FIELD_NUMBER: builtins.int
     STEMMER_FIELD_NUMBER: builtins.int
+    SCORING_FIELD_NUMBER: builtins.int
+    NESTED_FIELD_NUMBER: builtins.int
     tokenizer: global___Tokenizer.ValueType
     """Tokenizer to split text with. Unset: WHITESPACE."""
     lowercase: builtins.bool
@@ -385,6 +539,18 @@ class TextIndex(google.protobuf.message.Message):
     @property
     def stemmer(self) -> global___StemmingAlgorithm:
         """Stemming algorithm. Unset: engine default (no stemming)."""
+    @property
+    def scoring(self) -> global___TextScoringParams:
+        """Enable ranking points by BM25 over this field.
+        Changing it rebuilds the index. Default: disabled.
+        """
+    nested: builtins.str
+    """Index every object of this array as a separate entry, e.g. `offers` for the field `offers[].title`.
+    The field must be inside the array's elements. Every query on the field, not only nested filters,
+    treats each element as its own document: a condition matches a point when a single element
+    matches it, and BM25 scores elements separately. `is_empty` on the field matches a point when
+    one of its elements lacks the field, and never a point without elements. Default: disabled.
+    """
     def __init__(
         self,
         *,
@@ -396,9 +562,11 @@ class TextIndex(google.protobuf.message.Message):
         ascii_folding: builtins.bool | None = ...,
         stopwords: global___StopwordsSet | None = ...,
         stemmer: global___StemmingAlgorithm | None = ...,
+        scoring: global___TextScoringParams | None = ...,
+        nested: builtins.str | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_ascii_folding", b"_ascii_folding", "_lowercase", b"_lowercase", "_max_token_len", b"_max_token_len", "_min_token_len", b"_min_token_len", "_phrase_matching", b"_phrase_matching", "_stemmer", b"_stemmer", "_stopwords", b"_stopwords", "_tokenizer", b"_tokenizer", "ascii_folding", b"ascii_folding", "lowercase", b"lowercase", "max_token_len", b"max_token_len", "min_token_len", b"min_token_len", "phrase_matching", b"phrase_matching", "stemmer", b"stemmer", "stopwords", b"stopwords", "tokenizer", b"tokenizer"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_ascii_folding", b"_ascii_folding", "_lowercase", b"_lowercase", "_max_token_len", b"_max_token_len", "_min_token_len", b"_min_token_len", "_phrase_matching", b"_phrase_matching", "_stemmer", b"_stemmer", "_stopwords", b"_stopwords", "_tokenizer", b"_tokenizer", "ascii_folding", b"ascii_folding", "lowercase", b"lowercase", "max_token_len", b"max_token_len", "min_token_len", b"min_token_len", "phrase_matching", b"phrase_matching", "stemmer", b"stemmer", "stopwords", b"stopwords", "tokenizer", b"tokenizer"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_ascii_folding", b"_ascii_folding", "_lowercase", b"_lowercase", "_max_token_len", b"_max_token_len", "_min_token_len", b"_min_token_len", "_nested", b"_nested", "_phrase_matching", b"_phrase_matching", "_scoring", b"_scoring", "_stemmer", b"_stemmer", "_stopwords", b"_stopwords", "_tokenizer", b"_tokenizer", "ascii_folding", b"ascii_folding", "lowercase", b"lowercase", "max_token_len", b"max_token_len", "min_token_len", b"min_token_len", "nested", b"nested", "phrase_matching", b"phrase_matching", "scoring", b"scoring", "stemmer", b"stemmer", "stopwords", b"stopwords", "tokenizer", b"tokenizer"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_ascii_folding", b"_ascii_folding", "_lowercase", b"_lowercase", "_max_token_len", b"_max_token_len", "_min_token_len", b"_min_token_len", "_nested", b"_nested", "_phrase_matching", b"_phrase_matching", "_scoring", b"_scoring", "_stemmer", b"_stemmer", "_stopwords", b"_stopwords", "_tokenizer", b"_tokenizer", "ascii_folding", b"ascii_folding", "lowercase", b"lowercase", "max_token_len", b"max_token_len", "min_token_len", b"min_token_len", "nested", b"nested", "phrase_matching", b"phrase_matching", "scoring", b"scoring", "stemmer", b"stemmer", "stopwords", b"stopwords", "tokenizer", b"tokenizer"]) -> None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_ascii_folding", b"_ascii_folding"]) -> typing_extensions.Literal["ascii_folding"] | None: ...
     @typing.overload
@@ -408,7 +576,11 @@ class TextIndex(google.protobuf.message.Message):
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_min_token_len", b"_min_token_len"]) -> typing_extensions.Literal["min_token_len"] | None: ...
     @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_nested", b"_nested"]) -> typing_extensions.Literal["nested"] | None: ...
+    @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_phrase_matching", b"_phrase_matching"]) -> typing_extensions.Literal["phrase_matching"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_scoring", b"_scoring"]) -> typing_extensions.Literal["scoring"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_stemmer", b"_stemmer"]) -> typing_extensions.Literal["stemmer"] | None: ...
     @typing.overload
@@ -423,9 +595,20 @@ class GeoIndex(google.protobuf.message.Message):
 
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
+    NESTED_FIELD_NUMBER: builtins.int
+    nested: builtins.str
+    """Index every object of this array as a separate entry, e.g. `offers` for the field `offers[].location`.
+    The field must be inside the array's elements. `is_empty` on the field matches a point when one of
+    its elements lacks the field, and never a point without elements. Default: disabled.
+    """
     def __init__(
         self,
+        *,
+        nested: builtins.str | None = ...,
     ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_nested", b"_nested", "nested", b"nested"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_nested", b"_nested", "nested", b"nested"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_nested", b"_nested"]) -> typing_extensions.Literal["nested"] | None: ...
 
 global___GeoIndex = GeoIndex
 
@@ -434,9 +617,20 @@ class BoolIndex(google.protobuf.message.Message):
 
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
+    NESTED_FIELD_NUMBER: builtins.int
+    nested: builtins.str
+    """Index every object of this array as a separate entry, e.g. `offers` for the field `offers[].in_stock`.
+    The field must be inside the array's elements. `is_empty` on the field matches a point when one of
+    its elements lacks the field, and never a point without elements. Default: disabled.
+    """
     def __init__(
         self,
+        *,
+        nested: builtins.str | None = ...,
     ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_nested", b"_nested", "nested", b"nested"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_nested", b"_nested", "nested", b"nested"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_nested", b"_nested"]) -> typing_extensions.Literal["nested"] | None: ...
 
 global___BoolIndex = BoolIndex
 
@@ -670,6 +864,23 @@ class DeleteCollectionResponse(google.protobuf.message.Message):
 
 global___DeleteCollectionResponse = DeleteCollectionResponse
 
+class UpdatesInfo(google.protobuf.message.Message):
+    """Progress of acknowledged writes to a collection."""
+
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    STATUS_FIELD_NUMBER: builtins.int
+    status: global___UpdatesStatus.ValueType
+    """Whether acknowledged writes are applied or still pending."""
+    def __init__(
+        self,
+        *,
+        status: global___UpdatesStatus.ValueType = ...,
+    ) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["status", b"status"]) -> None: ...
+
+global___UpdatesInfo = UpdatesInfo
+
 class GetCollectionRequest(google.protobuf.message.Message):
     """Names the collection to fetch."""
 
@@ -695,6 +906,10 @@ class GetCollectionResponse(google.protobuf.message.Message):
     EXISTS_FIELD_NUMBER: builtins.int
     CONFIG_FIELD_NUMBER: builtins.int
     POINT_COUNT_FIELD_NUMBER: builtins.int
+    STATUS_FIELD_NUMBER: builtins.int
+    SIZE_BYTES_FIELD_NUMBER: builtins.int
+    INDEXED_VECTORS_COUNT_FIELD_NUMBER: builtins.int
+    UPDATES_FIELD_NUMBER: builtins.int
     TIME_FIELD_NUMBER: builtins.int
     exists: builtins.bool
     """Whether the collection exists."""
@@ -705,6 +920,19 @@ class GetCollectionResponse(google.protobuf.message.Message):
     """Available points as of the last applied write (eventually consistent);
     absent until the updater has written stats for the collection.
     """
+    status: global___CollectionStatus.ValueType
+    """Optimization status of the collection."""
+    size_bytes: builtins.int
+    """Estimated stored bytes, which the collection size limit applies to: indexed
+    segments as of the last optimization plus a fixed estimate per unindexed one.
+    """
+    indexed_vectors_count: builtins.int
+    """Approximate number of vectors in indexed segments; the rest are searched
+    exhaustively until an optimization indexes them.
+    """
+    @property
+    def updates(self) -> global___UpdatesInfo:
+        """Progress of acknowledged writes; absent when it could not be determined."""
     time: builtins.float
     """Time spent to process"""
     def __init__(
@@ -713,14 +941,24 @@ class GetCollectionResponse(google.protobuf.message.Message):
         exists: builtins.bool = ...,
         config: global___CollectionConfig | None = ...,
         point_count: builtins.int | None = ...,
+        status: global___CollectionStatus.ValueType = ...,
+        size_bytes: builtins.int | None = ...,
+        indexed_vectors_count: builtins.int | None = ...,
+        updates: global___UpdatesInfo | None = ...,
         time: builtins.float = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_config", b"_config", "_point_count", b"_point_count", "config", b"config", "point_count", b"point_count"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_config", b"_config", "_point_count", b"_point_count", "config", b"config", "exists", b"exists", "point_count", b"point_count", "time", b"time"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_config", b"_config", "_indexed_vectors_count", b"_indexed_vectors_count", "_point_count", b"_point_count", "_size_bytes", b"_size_bytes", "_updates", b"_updates", "config", b"config", "indexed_vectors_count", b"indexed_vectors_count", "point_count", b"point_count", "size_bytes", b"size_bytes", "updates", b"updates"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_config", b"_config", "_indexed_vectors_count", b"_indexed_vectors_count", "_point_count", b"_point_count", "_size_bytes", b"_size_bytes", "_updates", b"_updates", "config", b"config", "exists", b"exists", "indexed_vectors_count", b"indexed_vectors_count", "point_count", b"point_count", "size_bytes", b"size_bytes", "status", b"status", "time", b"time", "updates", b"updates"]) -> None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_config", b"_config"]) -> typing_extensions.Literal["config"] | None: ...
     @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_indexed_vectors_count", b"_indexed_vectors_count"]) -> typing_extensions.Literal["indexed_vectors_count"] | None: ...
+    @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_point_count", b"_point_count"]) -> typing_extensions.Literal["point_count"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_size_bytes", b"_size_bytes"]) -> typing_extensions.Literal["size_bytes"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_updates", b"_updates"]) -> typing_extensions.Literal["updates"] | None: ...
 
 global___GetCollectionResponse = GetCollectionResponse
 
@@ -761,21 +999,28 @@ class CollectionSummary(google.protobuf.message.Message):
 
     COLLECTION_NAME_FIELD_NUMBER: builtins.int
     POINT_COUNT_FIELD_NUMBER: builtins.int
+    SIZE_BYTES_FIELD_NUMBER: builtins.int
     collection_name: builtins.str
     """Tenant-facing name of the collection."""
     point_count: builtins.int
     """Available points as of the last applied write (eventually consistent);
     absent until the updater has written stats for the collection.
     """
+    size_bytes: builtins.int
+    """Estimated stored bytes, as in GetCollectionResponse."""
     def __init__(
         self,
         *,
         collection_name: builtins.str = ...,
         point_count: builtins.int | None = ...,
+        size_bytes: builtins.int | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_point_count", b"_point_count", "point_count", b"point_count"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_point_count", b"_point_count", "collection_name", b"collection_name", "point_count", b"point_count"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_point_count", b"_point_count", "_size_bytes", b"_size_bytes", "point_count", b"point_count", "size_bytes", b"size_bytes"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_point_count", b"_point_count", "_size_bytes", b"_size_bytes", "collection_name", b"collection_name", "point_count", b"point_count", "size_bytes", b"size_bytes"]) -> None: ...
+    @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_point_count", b"_point_count"]) -> typing_extensions.Literal["point_count"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_size_bytes", b"_size_bytes"]) -> typing_extensions.Literal["size_bytes"] | None: ...
 
 global___CollectionSummary = CollectionSummary
 

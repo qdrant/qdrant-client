@@ -7,9 +7,12 @@ from google.protobuf.json_format import MessageToDict
 from qdrant_client._pydantic_compat import model_fields
 from qdrant_client.serverless import conversions, models
 from qdrant_client.serverless.conversions import (
+    _COLLECTION_STATUS_TO_GRPC,
     _DISTANCE_TO_GRPC,
     _PRECISION_TO_GRPC,
+    _TEXT_SCORING_TYPE_TO_GRPC,
     _TOKENIZER_TO_GRPC,
+    _UPDATES_STATUS_TO_GRPC,
 )
 from qdrant_client.serverless.grpc import serverless_collections_pb2 as pb2
 from tests.conversions.serverless_fixtures import (
@@ -73,6 +76,9 @@ def test_every_payload_index_kind_has_a_fixture() -> None:
         (_DISTANCE_TO_GRPC, pb2.Distance.DESCRIPTOR),
         (_PRECISION_TO_GRPC, pb2.PrecisionTier.DESCRIPTOR),
         (_TOKENIZER_TO_GRPC, pb2.Tokenizer.DESCRIPTOR),
+        (_TEXT_SCORING_TYPE_TO_GRPC, pb2.TextScoringType.DESCRIPTOR),
+        (_COLLECTION_STATUS_TO_GRPC, pb2.CollectionStatus.DESCRIPTOR),
+        (_UPDATES_STATUS_TO_GRPC, pb2.UpdatesStatus.DESCRIPTOR),
     ],
 )
 def test_enum_maps_match_proto(mapping: dict, descriptor: Any) -> None:
@@ -99,7 +105,12 @@ def test_enum_maps_match_proto(mapping: dict, descriptor: Any) -> None:
         (models.KeywordIndex, pb2.KeywordIndex),
         (models.KeywordPrefixParams, pb2.KeywordPrefixParams),
         (models.IntegerIndex, pb2.IntegerIndex),
+        (models.FloatIndex, pb2.FloatIndex),
+        (models.UuidIndex, pb2.UuidIndex),
+        (models.DatetimeIndex, pb2.DatetimeIndex),
         (models.TextIndex, pb2.TextIndex),
+        (models.GeoIndex, pb2.GeoIndex),
+        (models.BoolIndex, pb2.BoolIndex),
         (models.StopwordsSet, pb2.StopwordsSet),
         # `type` is the regular union tag; the proto uses a oneof instead
         (models.SnowballParams, pb2.SnowballParams),
@@ -107,6 +118,7 @@ def test_enum_maps_match_proto(mapping: dict, descriptor: Any) -> None:
         (models.CreateCollectionResult, pb2.CreateCollectionResponse),
         (models.DeleteCollectionResult, pb2.DeleteCollectionResponse),
         (models.CollectionInfo, pb2.GetCollectionResponse),
+        (models.UpdatesInfo, pb2.UpdatesInfo),
         (models.CollectionSummary, pb2.CollectionSummary),
         (models.CollectionsList, pb2.ListCollectionsResponse),
     ],
