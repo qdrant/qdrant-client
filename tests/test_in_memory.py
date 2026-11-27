@@ -56,6 +56,32 @@ def test_dense_in_memory_key_filter_returns_results(qdrant: QdrantClient):
     assert [r.id for r in search_result] == [4, 2]
 
 
+def test_sparse_search_with_gaps(qdrant: QdrantClient):
+    qdrant.create_collection(
+        "gaps", vectors_config={}, sparse_vectors_config={"text": models.SparseVectorParams()}
+    )
+    qdrant.upsert(
+        "gaps",
+        [
+            models.PointStruct(
+                id=i, vector={"text": models.SparseVector(indices=ids, values=vals)}
+            )
+            for i, (ids, vals) in enumerate(
+                [
+                    ([1, 5, 7, 40, 80, 1000], [1, 1, 1, 1, 1, 1]),
+                    ([1000], [3]),
+                    ([2, 3], [4, 5]),
+                    ([1], [-2]),
+                ]
+            )
+        ],
+    )
+    hits = qdrant.query_points(
+        "gaps", using="text", query=models.SparseVector(indices=[1, 1000], values=[1, 1])
+    ).points
+    assert [(hit.id, hit.score) for hit in hits] == [(1, 3.0), (0, 2.0), (3, -2.0)]
+
+
 def test_sparse_in_memory_key_filter_returns_results(qdrant: QdrantClient):
     qdrant.create_collection(
         collection_name="test_collection",
