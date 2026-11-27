@@ -375,6 +375,9 @@ class QdrantBase:
     def close(self, **kwargs: Any) -> None:
         pass
 
+    def health_check(self, **kwargs: Any) -> bool:
+        raise NotImplementedError()
+
     def migrate(
         self,
         dest_client: "QdrantBase",
