@@ -8,6 +8,7 @@ import numpy as np
 from qdrant_client.http import models
 from qdrant_client.local import datetime_utils
 from qdrant_client.local.geo import boolean_point_in_polygon, geo_distance
+from qdrant_client.local.json_path_parser import parse_json_path
 from qdrant_client.local.payload_value_extractor import value_by_key
 from qdrant_client.local.siphash import point_id_slice
 from qdrant_client.local.utils import normalize_point_ids
@@ -469,7 +470,14 @@ def validate_filter(payload_filter: models.Filter | None) -> None:
             if isinstance(condition, models.Filter):
                 validate_filter(condition)
             elif isinstance(condition, models.NestedCondition):
+                parse_json_path(condition.nested.key)
                 validate_filter(condition.nested.filter)
+            elif isinstance(condition, models.FieldCondition):
+                parse_json_path(condition.key)
+            elif isinstance(condition, models.IsNullCondition):
+                parse_json_path(condition.is_null.key)
+            elif isinstance(condition, models.IsEmptyCondition):
+                parse_json_path(condition.is_empty.key)
             elif isinstance(condition, models.SliceCondition):
                 total, index = condition.slice.total, condition.slice.index
                 if total < 1:
