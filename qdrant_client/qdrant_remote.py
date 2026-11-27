@@ -96,9 +96,10 @@ class QdrantRemote(QdrantBase):
             )
 
         elif url:
-            if url.startswith("localhost"):
-                # Handle for a special case when url is localhost:port
-                # Which is not parsed correctly by urllib
+            if "://" not in url and not url.startswith("/"):
+                # A bare host[:port] (e.g. "qdrant:6333" from Docker Compose)
+                # is parsed by urllib as a scheme with a path. Prefix "//" so
+                # the host is parsed as the authority, as with "localhost:6333".
                 url = f"//{url}"
 
             parsed_url: Url = parse_url(url)

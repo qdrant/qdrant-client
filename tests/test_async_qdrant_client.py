@@ -646,3 +646,8 @@ async def test_custom_sharding(prefer_grpc):
 
     assert collection_info.config.params.shard_number == 1
     assert collection_info.config.params.sharding_method == models.ShardingMethod.CUSTOM
+
+
+def test_bare_host_url_is_parsed_as_authority():
+    client = AsyncQdrantClient(url="qdrant:6333", check_compatibility=False)
+    assert client._client.rest_uri == "http://qdrant:6333"
