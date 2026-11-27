@@ -1,3 +1,4 @@
+from pathlib import Path
 import importlib.metadata
 import itertools
 import json
@@ -1247,6 +1248,19 @@ class QdrantLocal(QdrantBase):
     def recover_snapshot(self, collection_name: str, location: str, **kwargs: Any) -> bool:
         raise NotImplementedError(
             "Snapshots are not supported in the local Qdrant. Please use server Qdrant if you need full snapshots."
+        )
+
+    def recover_from_uploaded_snapshot(
+        self,
+        collection_name: str,
+        snapshot_path: str | Path,
+        checksum: str | None = None,
+        priority: types.SnapshotPriority | None = None,
+        wait: bool = True,
+        **kwargs: Any,
+    ) -> bool | None:
+        raise NotImplementedError(
+            "Snapshots are not supported in local Qdrant. Please use server Qdrant to recover a snapshot."
         )
 
     def list_shard_snapshots(

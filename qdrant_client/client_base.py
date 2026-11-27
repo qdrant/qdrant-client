@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Any, Iterable, Mapping, Sequence
 
 from qdrant_client.conversions import common_types as types
@@ -344,6 +345,17 @@ class QdrantBase:
         self,
         collection_name: str,
         location: str,
+        **kwargs: Any,
+    ) -> bool | None:
+        raise NotImplementedError()
+
+    def recover_from_uploaded_snapshot(
+        self,
+        collection_name: str,
+        snapshot_path: str | Path,
+        checksum: str | None = None,
+        priority: types.SnapshotPriority | None = None,
+        wait: bool = True,
         **kwargs: Any,
     ) -> bool | None:
         raise NotImplementedError()
