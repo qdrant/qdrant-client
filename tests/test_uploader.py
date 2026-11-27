@@ -179,3 +179,28 @@ def test_grpc_uploader_rejects_unknown_named_vectors(value: Any) -> None:
     # used to be skipped, uploading the point without the vector
     with pytest.raises(ValueError, match="invalid VectorStruct model: vector 'dense'"):
         convert_vector_struct({"dense": value, "sparse": sparse})
+
+
+@pytest.mark.parametrize(
+    "ids", [np.arange(5), np.arange(5, dtype=np.uint32)], ids=["int64", "uint32"]
+)
+def test_uploaders_accept_numpy_ids(ids: np.ndarray) -> None:
+    vectors = np.ones((5, 3), dtype=np.float32)
+
+    rest_points = [
+        point
+        for batch in RestBatchUploader.iterate_batches(
+            vectors=vectors, payload=None, ids=ids, batch_size=2
+        )
+        for point in batch_to_points(pickle.loads(pickle.dumps(batch)))
+    ]
+    assert [point.id for point in rest_points] == [0, 1, 2, 3, 4]
+
+    grpc_ids = [
+        RestToGrpc.convert_extended_point_id(idx)
+        for ids_batch, _, _ in GrpcBatchUploader.iterate_batches(
+            vectors=vectors, payload=None, ids=ids, batch_size=2
+        )
+        for idx in ids_batch
+    ]
+    assert [point_id.num for point_id in grpc_ids] == [0, 1, 2, 3, 4]

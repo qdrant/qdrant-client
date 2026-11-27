@@ -1,5 +1,6 @@
 import math
 
+import numpy as np
 import pytest
 
 from qdrant_client import QdrantClient, models
@@ -381,3 +382,17 @@ def test_reupserting_identical_cosine_vector_stores_identical_vectors(qdrant: Qd
     updated = qdrant.retrieve("test_collection", [1], with_vectors=True)[0].vector
 
     assert updated == inserted
+
+
+def test_upload_collection_accepts_numpy_ids(qdrant: QdrantClient):
+    qdrant.create_collection(
+        "numpy_ids",
+        vectors_config=models.VectorParams(size=2, distance=models.Distance.COSINE),
+    )
+
+    qdrant.upload_collection(
+        "numpy_ids", vectors=np.array([[1.0, 0.0], [0.0, 1.0]]), ids=np.array([7, 9])
+    )
+
+    points, _ = qdrant.scroll("numpy_ids")
+    assert sorted(point.id for point in points) == [7, 9]
