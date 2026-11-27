@@ -1,3 +1,4 @@
+from bisect import bisect_left
 from itertools import permutations
 from typing import Callable, Sequence, TypeAlias
 
@@ -165,21 +166,26 @@ def calculate_distance_sparse(
 # Returns None if no overlap
 def sparse_dot_product(vector1: SparseVector, vector2: SparseVector) -> np.float32 | None:
     result = 0.0
-    i, j = 0, 0
     overlap = False
 
     assert is_sorted(vector1), "Query sparse vector must be sorted"
     assert is_sorted(vector2), "Sparse vector to compare with must be sorted"
 
-    while i < len(vector1.indices) and j < len(vector2.indices):
-        if vector1.indices[i] == vector2.indices[j]:
+    # Probe the longer vector from the previous match instead of walking its gaps.
+    if len(vector1.indices) > len(vector2.indices):
+        vector1, vector2 = vector2, vector1
+    indices = vector2.indices
+    values = vector2.values
+    size = len(indices)
+    j = 0
+    for index, value in zip(vector1.indices, vector1.values):
+        if j < size and indices[j] < index:
+            j = bisect_left(indices, index, j + 1)
+        if j == size:
+            break
+        if indices[j] == index:
             overlap = True
-            result += vector1.values[i] * vector2.values[j]
-            i += 1
-            j += 1
-        elif vector1.indices[i] < vector2.indices[j]:
-            i += 1
-        else:
+            result += value * values[j]
             j += 1
 
     if overlap:
