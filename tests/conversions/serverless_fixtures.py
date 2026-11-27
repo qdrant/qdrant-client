@@ -42,6 +42,30 @@ payload_index_text_whitespace = pb2.PayloadIndexConfig(
     text=pb2.TextIndex(tokenizer=pb2.WHITESPACE)
 )
 payload_index_text_word = pb2.PayloadIndexConfig(text=pb2.TextIndex(tokenizer=pb2.WORD))
+payload_index_text_code = pb2.PayloadIndexConfig(text=pb2.TextIndex(tokenizer=pb2.CODE))
+# BM25 scoring: an empty message (`True` on the model side) and an explicit type
+payload_index_text_scoring_default = pb2.PayloadIndexConfig(
+    text=pb2.TextIndex(scoring=pb2.TextScoringParams())
+)
+payload_index_text_scoring_bm25 = pb2.PayloadIndexConfig(
+    text=pb2.TextIndex(
+        tokenizer=pb2.CODE,
+        scoring=pb2.TextScoringParams(type=pb2.BM25),
+        nested="offers",
+    )
+)
+# `nested` on every index kind
+payload_index_keyword_nested = pb2.PayloadIndexConfig(
+    keyword=pb2.KeywordIndex(prefix=pb2.KeywordPrefixParams(), nested="offers")
+)
+payload_index_integer_nested = pb2.PayloadIndexConfig(
+    integer=pb2.IntegerIndex(lookup=False, nested="offers")
+)
+payload_index_float_nested = pb2.PayloadIndexConfig(float=pb2.FloatIndex(nested="offers"))
+payload_index_uuid_nested = pb2.PayloadIndexConfig(uuid=pb2.UuidIndex(nested="offers"))
+payload_index_datetime_nested = pb2.PayloadIndexConfig(datetime=pb2.DatetimeIndex(nested="offers"))
+payload_index_geo_nested = pb2.PayloadIndexConfig(geo=pb2.GeoIndex(nested="offers"))
+payload_index_bool_nested = pb2.PayloadIndexConfig(bool=pb2.BoolIndex(nested="offers"))
 payload_index_geo = pb2.PayloadIndexConfig(geo=pb2.GeoIndex())
 payload_index_bool = pb2.PayloadIndexConfig(bool=pb2.BoolIndex())
 
@@ -82,6 +106,9 @@ collection_config_named_vectors = pb2.CollectionConfig(
 )
 collection_config_empty = pb2.CollectionConfig()
 
+updates_info_applied = pb2.UpdatesInfo(status=pb2.APPLIED)
+updates_info_pending = pb2.UpdatesInfo(status=pb2.PENDING)
+
 fixtures: dict[str, list[Message]] = {
     "dense_vector": [
         dense_vector,
@@ -115,6 +142,16 @@ fixtures: dict[str, list[Message]] = {
         payload_index_text_prefix,
         payload_index_text_whitespace,
         payload_index_text_word,
+        payload_index_text_code,
+        payload_index_text_scoring_default,
+        payload_index_text_scoring_bm25,
+        payload_index_keyword_nested,
+        payload_index_integer_nested,
+        payload_index_float_nested,
+        payload_index_uuid_nested,
+        payload_index_datetime_nested,
+        payload_index_geo_nested,
+        payload_index_bool_nested,
         payload_index_text_analysis,
         payload_index_text_stemmer_disabled,
         payload_index_geo,
@@ -124,5 +161,9 @@ fixtures: dict[str, list[Message]] = {
         collection_config,
         collection_config_named_vectors,
         collection_config_empty,
+    ],
+    "updates_info": [
+        updates_info_applied,
+        updates_info_pending,
     ],
 }

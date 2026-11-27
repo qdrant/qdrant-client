@@ -24,6 +24,7 @@ from pydantic import BaseModel, Field
 
 # explicit imports for names used here and in `conversions`: mypy cannot see through the star import
 from qdrant_client.http.models import (
+    CollectionStatus,
     DisabledStemmerParams,
     Distance,
     Language,
@@ -34,6 +35,9 @@ from qdrant_client.http.models import (
     StemmingAlgorithm,
     StopwordsInterface,
     StopwordsSet,
+    TextScoringInterface,
+    TextScoringParams,
+    TextScoringType,
     TokenizerType,
 )
 
@@ -75,6 +79,9 @@ class KeywordIndex(BaseModel):
 
     type: Literal["keyword"] = "keyword"
     prefix: Optional[KeywordPrefixParams] = None
+    nested: Optional[str] = None
+    """Index every object of this array as a separate entry, e.g. `offers` for the
+    field `offers[].price`. The field must be inside the array's elements. Default: disabled."""
 
 
 class IntegerIndex(BaseModel):
@@ -83,24 +90,36 @@ class IntegerIndex(BaseModel):
     type: Literal["integer"] = "integer"
     lookup: Optional[bool] = None
     range: Optional[bool] = None
+    nested: Optional[str] = None
+    """Index every object of this array as a separate entry, e.g. `offers` for the
+    field `offers[].price`. The field must be inside the array's elements. Default: disabled."""
 
 
 class FloatIndex(BaseModel):
     """Range filters on floating point (and integer) numbers."""
 
     type: Literal["float"] = "float"
+    nested: Optional[str] = None
+    """Index every object of this array as a separate entry, e.g. `offers` for the
+    field `offers[].price`. The field must be inside the array's elements. Default: disabled."""
 
 
 class UuidIndex(BaseModel):
     """Exact match on UUID strings; like keyword but stored compactly."""
 
     type: Literal["uuid"] = "uuid"
+    nested: Optional[str] = None
+    """Index every object of this array as a separate entry, e.g. `offers` for the
+    field `offers[].id`. The field must be inside the array's elements. Default: disabled."""
 
 
 class DatetimeIndex(BaseModel):
     """Range filters on RFC 3339 datetimes."""
 
     type: Literal["datetime"] = "datetime"
+    nested: Optional[str] = None
+    """Index every object of this array as a separate entry, e.g. `offers` for the
+    field `offers[].updated_at`. The field must be inside the array's elements. Default: disabled."""
 
 
 class TextIndex(BaseModel):
@@ -115,18 +134,32 @@ class TextIndex(BaseModel):
     ascii_folding: Optional[bool] = None
     stopwords: Optional[StopwordsInterface] = None
     stemmer: Optional[StemmingAlgorithm] = None
+    scoring: Optional[TextScoringInterface] = None
+    """Enable ranking points by BM25 over this field: `True` for the defaults or
+    `TextScoringParams(type=TextScoringType.BM25)`. `False` or unset: disabled.
+    Changing it rebuilds the index."""
+    nested: Optional[str] = None
+    """Index every object of this array as a separate entry, e.g. `offers` for the
+    field `offers[].title`. Every query on the field treats each element as its own
+    document: BM25 scores elements separately. Default: disabled."""
 
 
 class GeoIndex(BaseModel):
     """Geo radius / bounding box / polygon filters on `{lon, lat}` values."""
 
     type: Literal["geo"] = "geo"
+    nested: Optional[str] = None
+    """Index every object of this array as a separate entry, e.g. `offers` for the
+    field `offers[].location`. The field must be inside the array's elements. Default: disabled."""
 
 
 class BoolIndex(BaseModel):
     """Exact match on booleans."""
 
     type: Literal["bool"] = "bool"
+    nested: Optional[str] = None
+    """Index every object of this array as a separate entry, e.g. `offers` for the
+    field `offers[].in_stock`. The field must be inside the array's elements. Default: disabled."""
 
 
 PayloadIndex = Union[
@@ -169,16 +202,39 @@ class DeleteCollectionResult(BaseModel):
     time: float
 
 
+class UpdatesStatus(str, Enum):
+    """Whether acknowledged writes have been applied."""
+
+    APPLIED = "applied"
+    """Every acknowledged write is applied and visible to search."""
+    PENDING = "pending"
+    """Some acknowledged writes are still queued and not yet visible to search."""
+
+
+class UpdatesInfo(BaseModel):
+    """Progress of acknowledged writes to a collection."""
+
+    status: UpdatesStatus
+
+
 class CollectionInfo(BaseModel):
     """A collection's configuration and stats, as returned by `get_collection`.
 
     `point_count` is eventually consistent and absent until stats have been
-    written for the collection.
+    written for the collection. `status` is `green` or `yellow` (optimization
+    pending or running), or `None` if it could not be determined.
+    `size_bytes` is the estimated stored size the collection size limit applies
+    to. `indexed_vectors_count` is approximate. `updates` is absent when the
+    progress of acknowledged writes could not be determined.
     """
 
     exists: bool
     config: Optional[CollectionConfig] = None
     point_count: Optional[int] = None
+    status: Optional[CollectionStatus] = None
+    size_bytes: Optional[int] = None
+    indexed_vectors_count: Optional[int] = None
+    updates: Optional[UpdatesInfo] = None
     time: float
 
 
@@ -187,6 +243,7 @@ class CollectionSummary(BaseModel):
 
     collection_name: str
     point_count: Optional[int] = None
+    size_bytes: Optional[int] = None
 
 
 class CollectionsList(BaseModel):

@@ -33,8 +33,26 @@ _TOKENIZER_TO_GRPC = {
     models.TokenizerType.WHITESPACE: pb2.WHITESPACE,
     models.TokenizerType.WORD: pb2.WORD,
     models.TokenizerType.MULTILINGUAL: pb2.MULTILINGUAL,
+    models.TokenizerType.CODE: pb2.CODE,
 }
 _TOKENIZER_FROM_GRPC = {v: k for k, v in _TOKENIZER_TO_GRPC.items()}
+
+_TEXT_SCORING_TYPE_TO_GRPC = {
+    models.TextScoringType.BM25: pb2.BM25,
+}
+_TEXT_SCORING_TYPE_FROM_GRPC = {v: k for k, v in _TEXT_SCORING_TYPE_TO_GRPC.items()}
+
+_COLLECTION_STATUS_TO_GRPC = {
+    models.CollectionStatus.GREEN: pb2.GREEN,
+    models.CollectionStatus.YELLOW: pb2.YELLOW,
+}
+_COLLECTION_STATUS_FROM_GRPC = {v: k for k, v in _COLLECTION_STATUS_TO_GRPC.items()}
+
+_UPDATES_STATUS_TO_GRPC = {
+    models.UpdatesStatus.APPLIED: pb2.APPLIED,
+    models.UpdatesStatus.PENDING: pb2.PENDING,
+}
+_UPDATES_STATUS_FROM_GRPC = {v: k for k, v in _UPDATES_STATUS_TO_GRPC.items()}
 
 
 def dense_vector_to_grpc(model: models.DenseVectorConfig) -> pb2.DenseVectorConfig:
@@ -140,29 +158,79 @@ def _stemmer_from_grpc(grpc_model: pb2.StemmingAlgorithm) -> models.StemmingAlgo
     raise ValueError(f"Unknown stemming_params variant: {kind}")  # pragma: no cover
 
 
+def _set_text_scoring(text: pb2.TextIndex, model: models.TextScoringInterface) -> None:
+    """`True` sets an empty message (defaults), `False` leaves scoring disabled (unset)."""
+    match model:
+        case bool():
+            if model:
+                text.scoring.SetInParent()
+        case models.TextScoringParams(type=scoring_type):
+            text.scoring.type = _TEXT_SCORING_TYPE_TO_GRPC[scoring_type]
+        case _:  # pragma: no cover
+            raise ValueError(f"Unexpected TextScoringParams shape: {model!r}")
+
+
+def _text_scoring_from_grpc_field(text: pb2.TextIndex) -> models.TextScoringInterface | None:
+    """An empty message reads back as `True`, so both forms round-trip.
+
+    An explicit `TEXT_SCORING_TYPE_UNSPECIFIED` means the same as an unset type
+    (the BM25 default), so it reads back as `True` too.
+    """
+    if not text.HasField("scoring"):
+        return None
+    if (
+        not text.scoring.HasField("type")
+        or text.scoring.type == pb2.TEXT_SCORING_TYPE_UNSPECIFIED
+    ):
+        return True
+    return models.TextScoringParams(type=_TEXT_SCORING_TYPE_FROM_GRPC[text.scoring.type])
+
+
+def updates_info_from_grpc(grpc_model: pb2.UpdatesInfo) -> models.UpdatesInfo:
+    return models.UpdatesInfo(status=_UPDATES_STATUS_FROM_GRPC[grpc_model.status])
+
+
+def updates_info_to_grpc(model: models.UpdatesInfo) -> pb2.UpdatesInfo:
+    match model:
+        case models.UpdatesInfo(status=status):
+            return pb2.UpdatesInfo(status=_UPDATES_STATUS_TO_GRPC[status])
+        case _:  # pragma: no cover
+            raise ValueError(f"Unexpected UpdatesInfo shape: {model!r}")
+
+
 def payload_index_to_grpc(model: models.PayloadIndex) -> pb2.PayloadIndexConfig:
     result = pb2.PayloadIndexConfig()
     match model:
-        case models.KeywordIndex(type=_type, prefix=prefix):
+        case models.KeywordIndex(type=_type, prefix=prefix, nested=nested):
             result.keyword.SetInParent()
+            if nested is not None:
+                result.keyword.nested = nested
             if prefix is not None:
                 match prefix:
                     case models.KeywordPrefixParams():
                         result.keyword.prefix.SetInParent()
                     case _:  # pragma: no cover
                         raise ValueError(f"Unexpected KeywordPrefixParams shape: {prefix!r}")
-        case models.IntegerIndex(type=_type, lookup=lookup, range=range_):
+        case models.IntegerIndex(type=_type, lookup=lookup, range=range_, nested=nested):
             result.integer.SetInParent()
+            if nested is not None:
+                result.integer.nested = nested
             if lookup is not None:
                 result.integer.lookup = lookup
             if range_ is not None:
                 result.integer.range = range_
-        case models.FloatIndex(type=_type):
+        case models.FloatIndex(type=_type, nested=nested):
             result.float.SetInParent()
-        case models.UuidIndex(type=_type):
+            if nested is not None:
+                result.float.nested = nested
+        case models.UuidIndex(type=_type, nested=nested):
             result.uuid.SetInParent()
-        case models.DatetimeIndex(type=_type):
+            if nested is not None:
+                result.uuid.nested = nested
+        case models.DatetimeIndex(type=_type, nested=nested):
             result.datetime.SetInParent()
+            if nested is not None:
+                result.datetime.nested = nested
         case models.TextIndex(
             type=_type,
             tokenizer=tokenizer,
@@ -173,6 +241,8 @@ def payload_index_to_grpc(model: models.PayloadIndex) -> pb2.PayloadIndexConfig:
             ascii_folding=ascii_folding,
             stopwords=stopwords,
             stemmer=stemmer,
+            scoring=scoring,
+            nested=nested,
         ):
             result.text.SetInParent()
             if tokenizer is not None:
@@ -191,10 +261,18 @@ def payload_index_to_grpc(model: models.PayloadIndex) -> pb2.PayloadIndexConfig:
                 result.text.stopwords.CopyFrom(_stopwords_to_grpc(stopwords))
             if stemmer is not None:
                 result.text.stemmer.CopyFrom(_stemmer_to_grpc(stemmer))
-        case models.GeoIndex(type=_type):
+            if scoring is not None:
+                _set_text_scoring(result.text, scoring)
+            if nested is not None:
+                result.text.nested = nested
+        case models.GeoIndex(type=_type, nested=nested):
             result.geo.SetInParent()
-        case models.BoolIndex(type=_type):
+            if nested is not None:
+                result.geo.nested = nested
+        case models.BoolIndex(type=_type, nested=nested):
             result.bool.SetInParent()
+            if nested is not None:
+                result.bool.nested = nested
         case _:  # pragma: no cover
             raise ValueError(f"Unknown payload index type: {model}")
     return result
@@ -205,21 +283,26 @@ def payload_index_from_grpc(grpc_model: pb2.PayloadIndexConfig) -> models.Payloa
     if kind == "keyword":
         keyword = grpc_model.keyword
         prefix = models.KeywordPrefixParams() if keyword.HasField("prefix") else None
-        return models.KeywordIndex(prefix=prefix)
+        nested = keyword.nested if keyword.HasField("nested") else None
+        return models.KeywordIndex(prefix=prefix, nested=nested)
     if kind == "integer":
         integer = grpc_model.integer
         lookup = integer.lookup if integer.HasField("lookup") else None
         range_ = integer.range if integer.HasField("range") else None
-        return models.IntegerIndex(lookup=lookup, range=range_)
+        nested = integer.nested if integer.HasField("nested") else None
+        return models.IntegerIndex(lookup=lookup, range=range_, nested=nested)
     if kind == "float":
-        _float = grpc_model.float
-        return models.FloatIndex()
+        float_ = grpc_model.float
+        nested = float_.nested if float_.HasField("nested") else None
+        return models.FloatIndex(nested=nested)
     if kind == "uuid":
-        _uuid = grpc_model.uuid
-        return models.UuidIndex()
+        uuid_ = grpc_model.uuid
+        nested = uuid_.nested if uuid_.HasField("nested") else None
+        return models.UuidIndex(nested=nested)
     if kind == "datetime":
-        _datetime = grpc_model.datetime
-        return models.DatetimeIndex()
+        datetime_ = grpc_model.datetime
+        nested = datetime_.nested if datetime_.HasField("nested") else None
+        return models.DatetimeIndex(nested=nested)
     if kind == "text":
         text = grpc_model.text
         tokenizer = _TOKENIZER_FROM_GRPC[text.tokenizer] if text.HasField("tokenizer") else None
@@ -230,6 +313,8 @@ def payload_index_from_grpc(grpc_model: pb2.PayloadIndexConfig) -> models.Payloa
         ascii_folding = text.ascii_folding if text.HasField("ascii_folding") else None
         stopwords = _stopwords_from_grpc(text.stopwords) if text.HasField("stopwords") else None
         stemmer = _stemmer_from_grpc(text.stemmer) if text.HasField("stemmer") else None
+        scoring = _text_scoring_from_grpc_field(text)
+        nested = text.nested if text.HasField("nested") else None
         return models.TextIndex(
             tokenizer=tokenizer,
             lowercase=lowercase,
@@ -239,13 +324,17 @@ def payload_index_from_grpc(grpc_model: pb2.PayloadIndexConfig) -> models.Payloa
             ascii_folding=ascii_folding,
             stopwords=stopwords,
             stemmer=stemmer,
+            scoring=scoring,
+            nested=nested,
         )
     if kind == "geo":
-        _geo = grpc_model.geo
-        return models.GeoIndex()
+        geo_ = grpc_model.geo
+        nested = geo_.nested if geo_.HasField("nested") else None
+        return models.GeoIndex(nested=nested)
     if kind == "bool":
-        _bool = grpc_model.bool
-        return models.BoolIndex()
+        bool_ = grpc_model.bool
+        nested = bool_.nested if bool_.HasField("nested") else None
+        return models.BoolIndex(nested=nested)
     raise ValueError(f"Unknown payload index type: {kind}")  # pragma: no cover
 
 
