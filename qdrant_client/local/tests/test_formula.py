@@ -106,6 +106,34 @@ def test_try_extract_payload_value() -> None:
         assert try_extract_payload_value("key", empty_payload, defaults) == expected
 
 
+def _geo_distance(payload: dict[str, Any]) -> float:
+    expression = models.GeoDistance(
+        geo_distance=models.GeoDistanceParams(
+            origin=models.GeoPoint(lat=0.0, lon=0.0), to="location"
+        )
+    )
+    return evaluate_expression(expression, 1, [], payload, {}, {})
+
+
+def test_geo_distance_to_several_geo_points_uses_the_nearest() -> None:
+    one_degree = _geo_distance({"location": {"lat": 0.0, "lon": 1.0}})
+    two_degrees = _geo_distance({"location": {"lat": 0.0, "lon": 2.0}})
+
+    # qdrant core scores the distance to the nearest of the geo points, whatever their order
+    for points in (
+        [{"lat": 0.0, "lon": 2.0}, {"lat": 0.0, "lon": 1.0}, {"lat": 0.0, "lon": 3.0}],
+        [{"lat": 0.0, "lon": 1.0}, {"lat": 0.0, "lon": 3.0}, {"lat": 0.0, "lon": 2.0}],
+    ):
+        assert _geo_distance({"location": points}) == one_degree
+        # a one-element outer array is unwrapped first, so its geo points are read the same way
+        assert _geo_distance({"location": [points]}) == one_degree
+    assert _geo_distance({"location": [{"lat": 0.0, "lon": 2.0}]}) == two_degrees
+
+    # an element which is not a geo point is still an error
+    with pytest.raises(ValueError, match="Expected geo point"):
+        _geo_distance({"location": [{"lat": 0.0, "lon": 1.0}, 7]})
+
+
 @pytest.mark.parametrize(
     "total,index,reported", [(0, 0, "total"), (2, 5, "index")], ids=["zero_total", "big_index"]
 )

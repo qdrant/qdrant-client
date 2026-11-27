@@ -2974,6 +2974,38 @@ def test_formula_query():
                 raise e
 
 
+def test_formula_query_geo_distance_to_several_geo_points():
+    fixture_points = generate_fixtures(3)
+    # the server scores the distance to the nearest of the geo points, whatever their order
+    locations = [
+        [{"lon": 2.0, "lat": 0.0}, {"lon": 1.0, "lat": 0.0}, {"lon": 3.0, "lat": 0.0}],
+        [{"lon": 1.0, "lat": 0.0}, {"lon": 3.0, "lat": 0.0}, {"lon": 2.0, "lat": 0.0}],
+        [{"lon": 3.0, "lat": 0.0}],
+    ]
+    for point, point_locations in zip(fixture_points, locations):
+        point.payload = {"locations": point_locations}
+
+    local_client, http_client, grpc_client = init_clients(fixture_points)
+
+    def query_geo_distance(client: QdrantBase, origin_lon: float) -> models.QueryResponse:
+        formula = models.GeoDistance(
+            geo_distance=models.GeoDistanceParams(
+                origin=models.GeoPoint(lon=origin_lon, lat=0.0), to="locations"
+            )
+        )
+        return client.query_points(
+            COLLECTION_NAME,
+            prefetch=models.Prefetch(query=[0.1] * text_vector_size, using="text"),
+            query=models.FormulaQuery(formula=formula),
+            limit=len(fixture_points),
+        )
+
+    for origin_lon in (0.0, 10.0):
+        compare_clients_results(
+            local_client, http_client, grpc_client, query_geo_distance, origin_lon=origin_lon
+        )
+
+
 def test_formula_query_rejected_before_scoring():
     fixture_points = generate_fixtures(10)
 

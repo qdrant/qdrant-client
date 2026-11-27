@@ -192,11 +192,17 @@ def evaluate_expression(
         # Get value from payload
         geo_value = try_extract_payload_value(to, payload, defaults)
 
-        if isinstance(geo_value, dict):
-            destination = models.GeoPoint(
-                **{key: geo_value[key] for key in ("lon", "lat") if key in geo_value}
+        # A field can hold several geo points. Like the server, score the nearest one.
+        geo_points = geo_value if isinstance(geo_value, list) else [geo_value]
+        if all(isinstance(point, dict) for point in geo_points):
+            destinations = [
+                models.GeoPoint(**{key: point[key] for key in ("lon", "lat") if key in point})
+                for point in geo_points
+            ]
+            return min(
+                geo_distance(origin.lon, origin.lat, destination.lon, destination.lat)
+                for destination in destinations
             )
-            return geo_distance(origin.lon, origin.lat, destination.lon, destination.lat)
 
         raise ValueError(
             f"Expected geo point for {to} in the payload and/or in the formula defaults."
