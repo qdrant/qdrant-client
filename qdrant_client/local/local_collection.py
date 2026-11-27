@@ -2656,7 +2656,9 @@ class LocalCollection:
         with_vectors: types.WithVector,
     ) -> list[models.ScoredPoint]:
         validate_expression(query.formula)
-        defaults = parse_defaults(query.defaults or {})
+        # serialized like the REST and gRPC requests, so that a `GeoPoint` or a `datetime`
+        # default is read the same way as on the server
+        defaults = parse_defaults(to_jsonable_python(query.defaults or {}))
 
         # collect prefetches in vec of dicts for faster lookup
         prefetches_scores = [

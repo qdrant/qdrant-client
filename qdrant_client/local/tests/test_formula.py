@@ -1,10 +1,12 @@
 import math
 import re
+from datetime import UTC, date, datetime
 from typing import Any
 
 import pytest
 
 from qdrant_client import QdrantClient
+from qdrant_client._pydantic_compat import to_dict
 from qdrant_client.http import models
 from qdrant_client.hybrid.formula import (
     evaluate_expression,
@@ -136,3 +138,40 @@ def test_formula_rejects_invalid_slice(
             prefetch=models.Prefetch(query=[1.0, 1.0]),
             query=models.FormulaQuery(formula=models.SumExpression(sum=["$score", condition])),
         )
+
+
+@pytest.mark.parametrize(
+    "formula,default",
+    [
+        (
+            models.GeoDistance(
+                geo_distance=models.GeoDistanceParams(
+                    origin=models.GeoPoint(lat=0.0, lon=0.0), to="field"
+                )
+            ),
+            models.GeoPoint(lat=0.0, lon=1.0),
+        ),
+        (models.DatetimeKeyExpression(datetime_key="field"), datetime(2026, 1, 2, tzinfo=UTC)),
+        (models.DatetimeKeyExpression(datetime_key="field"), date(2026, 1, 2)),
+    ],
+    ids=["geo_point", "datetime", "date"],
+)
+def test_formula_defaults_given_as_objects(formula: models.Expression, default: Any) -> None:
+    """The REST and gRPC clients serialize the defaults, so a model or a datetime default works."""
+    client = QdrantClient(":memory:")
+    client.create_collection(
+        "test_collection",
+        vectors_config=models.VectorParams(size=2, distance=models.Distance.DOT),
+    )
+    client.upsert("test_collection", points=[models.PointStruct(id=1, vector=[1.0, 0.0])])
+
+    def score(defaults: dict[str, Any]) -> float:
+        response = client.query_points(
+            "test_collection",
+            prefetch=models.Prefetch(query=[1.0, 0.0]),
+            query=models.FormulaQuery(formula=formula, defaults=defaults),
+        )
+        return response.points[0].score
+
+    serialized = default.isoformat() if isinstance(default, date) else to_dict(default)
+    assert score({"field": default}) == score({"field": serialized})

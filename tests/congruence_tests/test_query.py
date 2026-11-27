@@ -1,3 +1,4 @@
+from datetime import date, datetime, timezone
 from typing import Callable, Any
 
 from grpc import RpcError
@@ -3012,6 +3013,48 @@ def test_formula_query_rejected_before_scoring():
             for client in (local_client, http_client, grpc_client):
                 with pytest.raises((ValueError, UnexpectedResponse, RpcError)):
                     client.query_points(COLLECTION_NAME, prefetch=prefetch, query=formula)
+
+
+def test_formula_query_defaults_given_as_objects():
+    fixture_points = generate_fixtures(3)
+    # no point has the fields of the formula, so each one falls back to its default
+    for point in fixture_points:
+        point.payload = {"other": 1}
+
+    local_client, http_client, grpc_client = init_clients(fixture_points)
+
+    geo_distance = models.GeoDistance(
+        geo_distance=models.GeoDistanceParams(origin=models.GeoPoint(lon=0.0, lat=0.0), to="geo")
+    )
+    formulas = [
+        models.FormulaQuery(
+            formula=geo_distance, defaults={"geo": models.GeoPoint(lon=1.0, lat=0.0)}
+        ),
+        models.FormulaQuery(
+            formula=geo_distance, defaults={"geo": [models.GeoPoint(lon=1.0, lat=0.0)]}
+        ),
+        models.FormulaQuery(
+            formula=models.DatetimeKeyExpression(datetime_key="when"),
+            defaults={"when": datetime(2026, 1, 2, 3, 4, 5, tzinfo=timezone.utc)},
+        ),
+        models.FormulaQuery(
+            formula=models.DatetimeKeyExpression(datetime_key="when"),
+            defaults={"when": date(2026, 1, 2)},
+        ),
+    ]
+
+    def query_formula(client: QdrantBase, formula: models.FormulaQuery) -> models.QueryResponse:
+        return client.query_points(
+            COLLECTION_NAME,
+            prefetch=models.Prefetch(query=[0.1] * text_vector_size, using="text"),
+            query=formula,
+            limit=len(fixture_points),
+        )
+
+    for formula in formulas:
+        compare_clients_results(
+            local_client, http_client, grpc_client, query_formula, formula=formula
+        )
 
 
 def test_formula_query_score_defaults():
