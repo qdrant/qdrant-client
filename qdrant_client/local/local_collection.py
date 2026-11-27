@@ -207,6 +207,38 @@ def _validate_vector_names_to_delete(vector_names: Sequence[str]) -> None:
         raise ValueError("must specify vector names to delete")
 
 
+def _rest_payload_schema(
+    field_schema: types.PayloadSchemaType,
+) -> models.PayloadSchemaType | models.PayloadSchemaParams:
+    if isinstance(field_schema, grpc.PayloadIndexParams):
+        return GrpcToRest.convert_payload_schema_params(field_schema)
+    if isinstance(field_schema, models.PayloadSchemaType):
+        return field_schema
+    if isinstance(field_schema, int):  # grpc.PayloadSchemaType
+        return GrpcToRest.convert_payload_schema_type(field_schema)
+    if isinstance(field_schema, str):
+        return models.PayloadSchemaType(field_schema)
+    return field_schema
+
+
+def _index_type(schema: models.PayloadSchemaType | models.PayloadSchemaParams) -> str:
+    return schema.value if isinstance(schema, models.PayloadSchemaType) else schema.type.value
+
+
+def _can_facet(schema: models.PayloadSchemaType | models.PayloadSchemaParams) -> bool:
+    # facets need an index supporting match conditions
+    if isinstance(schema, models.IntegerIndexParams):
+        return schema.lookup is not False
+    return _index_type(schema) in ("keyword", "integer", "bool", "uuid")
+
+
+def _can_order_by(schema: models.PayloadSchemaType | models.PayloadSchemaParams) -> bool:
+    # order_by needs an index supporting range conditions
+    if isinstance(schema, models.IntegerIndexParams):
+        return schema.range is not False
+    return _index_type(schema) in ("integer", "float", "datetime")
+
+
 class LocalCollection:
     """
     LocalCollection is a class that represents a collection of vectors in the local storage.
@@ -250,6 +282,9 @@ class LocalCollection:
         self.payload: list[models.Payload] = []
         # field name: params of its text index with scoring, the only index local mode uses
         self.text_indexes: dict[str, models.TextIndexParams] = {}
+        # field name: schema of its payload index. Indexes don't speed anything up here,
+        # they're tracked so that facet and order_by fail without one, like on the server
+        self.payload_indexes: dict[str, models.PayloadSchemaType | models.PayloadSchemaParams] = {}
         self.deleted: types.NumpyArray = np.zeros(0, dtype=bool)
         self._all_vectors_keys = (
             list(self.vectors.keys())
@@ -1113,6 +1148,9 @@ class LocalCollection:
                     sources_ids.add(point.id)
 
             if len(sources_ids) == 0:
+                if isinstance(query, models.OrderByQuery):
+                    # the server still rejects order_by without an index here
+                    self._check_order_by_index(query.order_by)
                 # no need to perform a query if there are no matches for the sources
                 return []
             else:
@@ -1584,6 +1622,16 @@ class LocalCollection:
         # ordered when their counts tie. The server never mixes types in one facet (it
         # reads a single payload index), so this cross-type order is local-mode only.
         value_types = get_args_subscribed(types.FacetValue)
+
+        # the server only checks for the index when there are points to facet
+        index = self.payload_indexes.get(key)
+        if not self.deleted.all() and (index is None or not _can_facet(index)):
+            raise ValueError(
+                f"Wrong input: No appropriate index for faceting: `{key}`. "
+                "Please create one to facet on this field. Check "
+                "https://qdrant.tech/documentation/concepts/indexing/#payload-index "
+                "to see which payload schemas support Match conditions"
+            )
 
         facet_hits: dict[tuple[int, types.FacetValue], int] = defaultdict(int)
 
@@ -2310,6 +2358,9 @@ class LocalCollection:
                 "Offset is not supported in conjunction with `order_by` scroll parameter"
             )
 
+        if order_by is not None:
+            order_by = self._check_order_by_index(order_by)
+
         if len(self.ids) == 0:
             validate_filter(
                 scroll_filter
@@ -2334,6 +2385,23 @@ class LocalCollection:
             with_payload=with_payload,
             with_vectors=with_vectors,
         )
+
+    def _check_order_by_index(self, order_by: types.OrderBy) -> models.OrderBy:
+        if isinstance(order_by, grpc.OrderBy):
+            order_by = GrpcToRest.convert_order_by(order_by)
+        if isinstance(order_by, str):
+            order_by = models.OrderBy(key=order_by)
+
+        # unlike facet, the server needs the index even when there is nothing to order
+        index = self.payload_indexes.get(order_by.key)
+        if index is None or not _can_order_by(index):
+            raise ValueError(
+                f"Wrong input: No range index for `order_by` key: `{order_by.key}`. "
+                "Please create one to use `order_by`. Check "
+                "https://qdrant.tech/documentation/concepts/indexing/#payload-index "
+                "to see which payload schemas support Range conditions"
+            )
+        return order_by
 
     def count(self, count_filter: types.Filter | None = None) -> models.CountResult:
         mask = self._payload_and_non_deleted_mask(count_filter)
@@ -2381,17 +2449,12 @@ class LocalCollection:
 
     def _scroll_by_value(
         self,
-        order_by: types.OrderBy,
+        order_by: models.OrderBy,
         scroll_filter: types.Filter | None = None,
         limit: int = 10,
         with_payload: types.WithPayloadInterface = True,
         with_vectors: types.WithVector = False,
     ) -> tuple[list[types.Record], types.PointId | None]:
-        if isinstance(order_by, grpc.OrderBy):
-            order_by = GrpcToRest.convert_order_by(order_by)
-        if isinstance(order_by, str):
-            order_by = models.OrderBy(key=order_by)
-
         value_and_ids: list[tuple[OrderValue, ExtendedPointId, int]] = []
 
         for external_id, internal_id in self.ids.items():
@@ -3535,13 +3598,16 @@ class LocalCollection:
                 raise ValueError(f"Unsupported update operation: {type(update_op)}")
 
     def create_payload_index(self, field_name: str, field_schema: types.PayloadSchemaType) -> None:
+        field_schema = _rest_payload_schema(field_schema)
         # like on the server, a new index of a field replaces its previous one
+        self.payload_indexes[field_name] = deepcopy(field_schema)
         if isinstance(field_schema, models.TextIndexParams) and field_schema.scoring:
             self.text_indexes[field_name] = deepcopy(field_schema)
         else:
             self.text_indexes.pop(field_name, None)
 
     def delete_payload_index(self, field_name: str) -> None:
+        self.payload_indexes.pop(field_name, None)
         self.text_indexes.pop(field_name, None)
 
     def update_sparse_vectors_config(

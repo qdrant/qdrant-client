@@ -1973,9 +1973,10 @@ def test_dense_query_orderby():
 
     local_client, http_client, grpc_client = init_clients(fixture_points)
 
-    http_client.create_payload_index(
-        COLLECTION_NAME, "rand_digit", models.PayloadSchemaType.INTEGER, wait=True
-    )
+    for client in (local_client, http_client):
+        client.create_payload_index(
+            COLLECTION_NAME, "rand_digit", models.PayloadSchemaType.INTEGER, wait=True
+        )
 
     compare_clients_results(local_client, http_client, grpc_client, searcher.dense_queries_orderby)
     compare_clients_results(
@@ -2483,9 +2484,10 @@ def test_query_invalid_score_threshold():
 
     local_client, http_client, grpc_client = init_clients(fixture_points)
 
-    http_client.create_payload_index(
-        COLLECTION_NAME, "rand_digit", models.PayloadSchemaType.INTEGER, wait=True
-    )
+    for client in (local_client, http_client):
+        client.create_payload_index(
+            COLLECTION_NAME, "rand_digit", models.PayloadSchemaType.INTEGER, wait=True
+        )
 
     order_by = models.OrderByQuery(order_by="rand_digit")
     fusion = models.FusionQuery(fusion=models.Fusion.RRF)

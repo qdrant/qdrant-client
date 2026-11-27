@@ -4,6 +4,7 @@ import pytest
 
 from qdrant_client import QdrantClient, models
 from qdrant_client.client_base import QdrantBase
+from qdrant_client.http.exceptions import UnexpectedResponse
 from tests.congruence_tests.test_common import (
     COLLECTION_NAME,
     compare_client_results,
@@ -31,10 +32,27 @@ def fixture_points() -> list[models.PointStruct]:
     return generate_fixtures()
 
 
+def create_facet_indexes(client: QdrantBase) -> None:
+    for field_name, field_schema in [
+        (INT_KEY, models.PayloadSchemaType.INTEGER),
+        (INT_ID_KEY, models.PayloadSchemaType.INTEGER),
+        (UUID_KEY, models.PayloadSchemaType.UUID),
+        (STRING_KEY, models.PayloadSchemaType.KEYWORD),
+        (STRING_ID_KEY, models.PayloadSchemaType.KEYWORD),
+        (BOOL_KEY, models.PayloadSchemaType.BOOL),
+    ]:
+        client.create_payload_index(
+            collection_name=COLLECTION_NAME,
+            field_name=field_name,
+            field_schema=field_schema,
+        )
+
+
 @pytest.fixture(scope="module", autouse=True)
 def local_client(fixture_points) -> QdrantClient:
     client = init_local()
     init_client(client, fixture_points)
+    create_facet_indexes(client)
     return client
 
 
@@ -42,36 +60,7 @@ def local_client(fixture_points) -> QdrantClient:
 def http_client(fixture_points) -> QdrantClient:
     client = init_remote()
     init_client(client, fixture_points)
-    client.create_payload_index(
-        collection_name=COLLECTION_NAME,
-        field_name=INT_KEY,
-        field_schema=models.PayloadSchemaType.INTEGER,
-    )
-    client.create_payload_index(
-        collection_name=COLLECTION_NAME,
-        field_name=INT_ID_KEY,
-        field_schema=models.PayloadSchemaType.INTEGER,
-    )
-    client.create_payload_index(
-        collection_name=COLLECTION_NAME,
-        field_name=UUID_KEY,
-        field_schema=models.PayloadSchemaType.UUID,
-    )
-    client.create_payload_index(
-        collection_name=COLLECTION_NAME,
-        field_name=STRING_KEY,
-        field_schema=models.PayloadSchemaType.KEYWORD,
-    )
-    client.create_payload_index(
-        collection_name=COLLECTION_NAME,
-        field_name=STRING_ID_KEY,
-        field_schema=models.PayloadSchemaType.KEYWORD,
-    )
-    client.create_payload_index(
-        collection_name=COLLECTION_NAME,
-        field_name=BOOL_KEY,
-        field_schema=models.PayloadSchemaType.BOOL,
-    )
+    create_facet_indexes(client)
     return client
 
 
@@ -203,6 +192,9 @@ def test_other_types_in_local():
         collection_name=collection_name,
         points=[models.PointStruct(id=3, vector={}, payload={"a": {"b": 1}})],
     )
+    client.create_payload_index(
+        collection_name, "a", field_schema=models.PayloadSchemaType.KEYWORD
+    )
 
     # Assertion is that it doesn't raise an exception
     client.facet(collection_name=collection_name, key="a")
@@ -244,6 +236,7 @@ def test_mixed_scalar_types():
     remote_client = init_remote()
     init_client(remote_client, points, collection_name, vectors_config=vectors_config)
     for key, schema, _ in MIXED_TYPE_INDEXES:
+        local_client.create_payload_index(collection_name, key, field_schema=schema)
         remote_client.create_payload_index(collection_name, key, field_schema=schema)
 
     def hits(client: QdrantBase, facet_key: str) -> list[models.FacetValueHit]:
@@ -261,3 +254,58 @@ def test_mixed_scalar_types():
             (type(hit.value), hit.value, hit.count) for hit in remote_hits
         ]
         assert remote_hits, f"no {value_type.__name__} values were faceted for {key}"
+
+
+# an index on the faceted key, and whether the server can facet through it
+FACET_INDEXES = [
+    (None, False),
+    (models.PayloadSchemaType.KEYWORD, True),
+    (models.PayloadSchemaType.INTEGER, True),
+    (models.PayloadSchemaType.BOOL, True),
+    (models.PayloadSchemaType.UUID, True),
+    (models.PayloadSchemaType.FLOAT, False),
+    (models.PayloadSchemaType.DATETIME, False),
+    (models.PayloadSchemaType.TEXT, False),
+    (models.PayloadSchemaType.GEO, False),
+    (models.IntegerIndexParams(type=models.IntegerIndexType.INTEGER, lookup=False), False),
+]
+
+
+@pytest.mark.parametrize("field_schema, can_facet", FACET_INDEXES)
+def test_facet_needs_index(field_schema, can_facet):
+    collection_name = f"{COLLECTION_NAME}_facet_index"
+    points = [models.PointStruct(id=1, vector={}, payload={"a": "x"})]
+
+    local_client = init_local()
+    remote_client = init_remote()
+    for client in (local_client, remote_client):
+        init_client(client, points, collection_name, vectors_config={})
+        if field_schema is not None:
+            client.create_payload_index(collection_name, "a", field_schema, wait=True)
+
+    if can_facet:
+        # local mode facets the raw payload, so only the lack of an error is compared here
+        local_client.facet(collection_name, key="a")
+        remote_client.facet(collection_name, key="a")
+    else:
+        message = "No appropriate index for faceting: `a`"
+        with pytest.raises(ValueError, match=message):
+            local_client.facet(collection_name, key="a")
+        with pytest.raises(UnexpectedResponse, match=message):
+            remote_client.facet(collection_name, key="a")
+
+
+def test_facet_without_index_on_empty_collection():
+    # the server only looks for the index when there are points to facet
+    collection_name = f"{COLLECTION_NAME}_facet_index"
+    points = [models.PointStruct(id=1, vector={}, payload={"a": "x"})]
+
+    local_client = init_local()
+    remote_client = init_remote()
+    for client in (local_client, remote_client):
+        init_client(client, points, collection_name, vectors_config={})
+        client.delete(collection_name, points_selector=[1], wait=True)
+
+    compare_client_results(
+        local_client, remote_client, lambda c: c.facet(collection_name, key="a")
+    )

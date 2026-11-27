@@ -1,7 +1,10 @@
 from datetime import date, datetime
 
+import pytest
+
 from qdrant_client import models
 from qdrant_client.client_base import QdrantBase
+from qdrant_client.http.exceptions import UnexpectedResponse
 from qdrant_client.local import datetime_utils
 from qdrant_client.local.order_by import to_order_value
 from tests.congruence_tests.test_common import (
@@ -107,15 +110,16 @@ def test_simple_scroll() -> None:
 
     http_client = init_remote()
     init_client(http_client, fixture_points)
-    http_client.create_payload_index(
-        COLLECTION_NAME, "rand_digit", models.PayloadSchemaType.INTEGER, wait=True
-    )
-    http_client.create_payload_index(
-        COLLECTION_NAME, "rand_number", models.PayloadSchemaType.FLOAT, wait=True
-    )
-    http_client.create_payload_index(
-        COLLECTION_NAME, "rand_datetime", models.PayloadSchemaType.DATETIME, wait=True
-    )
+    for client in (local_client, http_client):
+        client.create_payload_index(
+            COLLECTION_NAME, "rand_digit", models.PayloadSchemaType.INTEGER, wait=True
+        )
+        client.create_payload_index(
+            COLLECTION_NAME, "rand_number", models.PayloadSchemaType.FLOAT, wait=True
+        )
+        client.create_payload_index(
+            COLLECTION_NAME, "rand_datetime", models.PayloadSchemaType.DATETIME, wait=True
+        )
 
     grpc_client = init_remote(prefer_grpc=True)
 
@@ -142,9 +146,10 @@ def test_scroll_duplicated_values():
     init_client(http_client, fixture_points, vectors_config={})
     init_client(local_client, fixture_points, vectors_config={})
 
-    http_client.create_payload_index(
-        COLLECTION_NAME, "integer_array", models.PayloadSchemaType.INTEGER, wait=True
-    )
+    for client in (local_client, http_client):
+        client.create_payload_index(
+            COLLECTION_NAME, "integer_array", models.PayloadSchemaType.INTEGER, wait=True
+        )
     compare_client_results(grpc_client, http_client, scroll_all_integer_arrays)
     compare_client_results(local_client, http_client, scroll_all_integer_arrays)
 
@@ -168,9 +173,10 @@ def test_scroll_bool_values_are_skipped():
     init_client(http_client, fixture_points, vectors_config={})
     init_client(local_client, fixture_points, vectors_config={})
 
-    http_client.create_payload_index(
-        COLLECTION_NAME, "bool_and_int", models.PayloadSchemaType.INTEGER, wait=True
-    )
+    for client in (local_client, http_client):
+        client.create_payload_index(
+            COLLECTION_NAME, "bool_and_int", models.PayloadSchemaType.INTEGER, wait=True
+        )
 
     # all points are stored, only their ordering values differ
     assert len(http_client.scroll(COLLECTION_NAME, limit=10)[0]) == len(fixture_points)
@@ -212,9 +218,10 @@ def test_scroll_from_naive_datetime() -> None:
 
     http_client = init_remote()
     init_client(http_client, fixture_points, vectors_config={})
-    http_client.create_payload_index(
-        COLLECTION_NAME, "datetime", models.PayloadSchemaType.DATETIME, wait=True
-    )
+    for client in (local_client, http_client):
+        client.create_payload_index(
+            COLLECTION_NAME, "datetime", models.PayloadSchemaType.DATETIME, wait=True
+        )
 
     grpc_client = init_remote(prefer_grpc=True)
 
@@ -257,9 +264,10 @@ def test_scroll_order_by_date_start_from() -> None:
 
     http_client = init_remote()
     init_client(http_client, DATED_POINTS, vectors_config={})
-    http_client.create_payload_index(
-        COLLECTION_NAME, "date_field", models.PayloadSchemaType.DATETIME, wait=True
-    )
+    for client in (local_client, http_client):
+        client.create_payload_index(
+            COLLECTION_NAME, "date_field", models.PayloadSchemaType.DATETIME, wait=True
+        )
 
     grpc_client = init_remote(prefer_grpc=True)
 
@@ -272,3 +280,75 @@ def test_scroll_order_by_date_start_from() -> None:
 
         compare_client_results(grpc_client, http_client, scroll_from_date, direction=direction)
         compare_client_results(local_client, http_client, scroll_from_date, direction=direction)
+
+
+# an index on the order_by key, and whether the server can order by it
+ORDER_BY_INDEXES = [
+    (None, False),
+    (models.PayloadSchemaType.INTEGER, True),
+    (models.PayloadSchemaType.FLOAT, True),
+    (models.PayloadSchemaType.DATETIME, True),
+    (models.PayloadSchemaType.KEYWORD, False),
+    (models.PayloadSchemaType.BOOL, False),
+    (models.PayloadSchemaType.UUID, False),
+    (models.PayloadSchemaType.TEXT, False),
+    (models.PayloadSchemaType.GEO, False),
+    (models.IntegerIndexParams(type=models.IntegerIndexType.INTEGER, range=False), False),
+]
+
+
+@pytest.mark.parametrize("field_schema, can_order_by", ORDER_BY_INDEXES)
+def test_order_by_needs_range_index(field_schema, can_order_by):
+    points = [models.PointStruct(id=idx, vector={}, payload={"a": 3 - idx}) for idx in range(3)]
+
+    local_client = init_local()
+    remote_client = init_remote()
+    for client in (local_client, remote_client):
+        init_client(client, points, vectors_config={})
+        if field_schema is not None:
+            client.create_payload_index(COLLECTION_NAME, "a", field_schema, wait=True)
+
+    if can_order_by:
+        # local mode orders by the raw payload, so only the lack of an error is compared here
+        local_client.scroll(COLLECTION_NAME, order_by="a")
+        remote_client.scroll(COLLECTION_NAME, order_by="a")
+    else:
+        message = "No range index for `order_by` key: `a`"
+        with pytest.raises(ValueError, match=message):
+            local_client.scroll(COLLECTION_NAME, order_by="a")
+        with pytest.raises(UnexpectedResponse, match=message):
+            remote_client.scroll(COLLECTION_NAME, order_by="a")
+        with pytest.raises(ValueError, match=message):
+            local_client.query_points(COLLECTION_NAME, query=models.OrderByQuery(order_by="a"))
+
+        # a prefetch finding nothing doesn't skip the check on the server
+        empty_prefetch = models.Prefetch(
+            filter=models.Filter(must=[models.HasIdCondition(has_id=[100])]), limit=10
+        )
+        for client, error in ((local_client, ValueError), (remote_client, UnexpectedResponse)):
+            with pytest.raises(error, match=message):
+                client.query_points(
+                    COLLECTION_NAME,
+                    query=models.OrderByQuery(order_by="a"),
+                    prefetch=empty_prefetch,
+                )
+
+
+def test_order_by_without_index_on_empty_collection():
+    # unlike facet, the server asks for the index even when there is nothing to order
+    local_client = init_local()
+    remote_client = init_remote()
+    for client in (local_client, remote_client):
+        init_client(client, [], vectors_config={})
+
+    message = "No range index for `order_by` key: `a`"
+    with pytest.raises(ValueError, match=message):
+        local_client.scroll(COLLECTION_NAME, order_by="a")
+    with pytest.raises(UnexpectedResponse, match=message):
+        remote_client.scroll(COLLECTION_NAME, order_by="a")
+    for client, error in ((local_client, ValueError), (remote_client, UnexpectedResponse)):
+        for prefetch in (None, models.Prefetch(limit=10)):
+            with pytest.raises(error, match=message):
+                client.query_points(
+                    COLLECTION_NAME, query=models.OrderByQuery(order_by="a"), prefetch=prefetch
+                )
