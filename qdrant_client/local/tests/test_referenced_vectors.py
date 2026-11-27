@@ -56,7 +56,7 @@ def client():
                 id=1,
                 vector={
                     "": [0.0, 0.25, 0.0, 0.0],
-                    "byte": [0, 25, 0, 0],
+                    "byte": [0.0, 25.0, 0.0, 0.0],
                     "colbert": [[0.0, 0.25, 0.0, 0.0], [0.0, 0.25, 0.0, 0.0]],
                     "sparse": models.SparseVector(indices=[1], values=[0.25]),
                 },
