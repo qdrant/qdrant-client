@@ -904,10 +904,9 @@ class QdrantLocal(QdrantBase):
             updated = True
 
         if metadata is not None:
-            if _collection.config.metadata is not None:
-                merge_payload(_collection.config.metadata, metadata)
-            else:
-                _collection.config.metadata = metadata
+            if _collection.config.metadata is None:
+                _collection.config.metadata = {}
+            merge_payload(_collection.config.metadata, metadata)
             updated = True
 
         self._save()

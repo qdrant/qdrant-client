@@ -12,6 +12,7 @@ from tests.congruence_tests.test_common import (
     init_local,
     init_remote,
 )
+from tests.utils import read_version
 
 
 COLLECTION_NAME = "test_collection"
@@ -326,10 +327,14 @@ def test_update_collection_metadata_null_removes_key(prefer_grpc):
     remote_client = init_remote(prefer_grpc=prefer_grpc)
     vector_params = models.VectorParams(size=2, distance=models.Distance.COSINE)
 
-    # top-level nulls remove keys from existing metadata, nested nulls are stored as is;
-    # a collection without metadata stores the update as is, nulls included
+    # top-level nulls remove keys, nested nulls are stored as is;
+    # since qdrant 1.20.3 this applies to a collection without metadata too
     new_metadata = {"a": None, "missing": None, "b": {"c": None}}
-    for initial_metadata in [{"a": 1, "keep": 1, "kept": None}, None]:
+    initial_metadatas = [{"a": 1, "keep": 1, "kept": None}]
+    major, minor, patch, dev = read_version()
+    if dev or None in (major, minor, patch) or (major, minor, patch) >= (1, 20, 3):
+        initial_metadatas.append(None)
+    for initial_metadata in initial_metadatas:
         for client in (local_client, remote_client):
             if client.collection_exists(COLLECTION_NAME):
                 client.delete_collection(COLLECTION_NAME)

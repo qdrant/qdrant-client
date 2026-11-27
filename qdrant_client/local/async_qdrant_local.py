@@ -817,10 +817,9 @@ class AsyncQdrantLocal(AsyncQdrantBase):
                 _collection.update_sparse_vectors_config(vector_name, vector_params)
             updated = True
         if metadata is not None:
-            if _collection.config.metadata is not None:
-                merge_payload(_collection.config.metadata, metadata)
-            else:
-                _collection.config.metadata = metadata
+            if _collection.config.metadata is None:
+                _collection.config.metadata = {}
+            merge_payload(_collection.config.metadata, metadata)
             updated = True
         self._save()
         return updated
