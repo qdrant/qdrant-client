@@ -442,6 +442,18 @@ def test_convert_points_empty_payload():
     assert scored_point.payload == {"a": 1}
 
 
+@pytest.mark.parametrize("payload", [None, {}, {"a": 1}])
+def test_convert_record_optional_payload(payload):
+    from qdrant_client import models
+    from qdrant_client.conversions.conversion import GrpcToRest, RestToGrpc
+
+    record = models.Record(id=1, payload=payload)
+    converted = RestToGrpc.convert_record(record)
+
+    assert converted.id.num == record.id
+    assert GrpcToRest.convert_record(converted).payload == (payload or {})
+
+
 def test_convert_context_input_flat_pair():
     from qdrant_client import models
     from qdrant_client.conversions.conversion import GrpcToRest, RestToGrpc
