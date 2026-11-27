@@ -1,5 +1,29 @@
+import pytest
+
 from qdrant_client.http.models import models
-from qdrant_client.local.payload_filters import check_filter, check_match
+from qdrant_client.local.payload_filters import (
+    check_filter,
+    check_match,
+    validate_filter,
+)
+
+
+@pytest.mark.parametrize("clause", ["must", "should", "must_not"])
+def test_validate_filter__empty_field_condition__raises(clause):
+    # Local mode used to accept a condition that constrains nothing and simply
+    # match no points, while the server rejects the same filter.
+    payload_filter = models.Filter(**{clause: [models.FieldCondition(key="x")]})
+
+    with pytest.raises(ValueError, match="At least one field condition"):
+        validate_filter(payload_filter)
+
+
+def test_validate_filter__field_condition_with_match__accepted():
+    payload_filter = models.Filter(
+        must=[models.FieldCondition(key="x", match=models.MatchValue(value=1))]
+    )
+
+    validate_filter(payload_filter)
 
 
 def test_nested_payload_filters():
