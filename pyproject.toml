@@ -30,6 +30,7 @@ grpcio = { version = ">=1.49.1", allow-prereleases = true }
 protobuf = ">=3.20.0"
 urllib3 = ">=1.26.14,<3"
 portalocker = ">=2.7.0,<5.0"
+regex = ">=2024.11.6"
 fastembed = [
     { version = "^0.9", optional = true },
 ]

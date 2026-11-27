@@ -542,6 +542,12 @@ def test_array_selected_by_index_is_flattened():
         models.MatchPhrase(phrase="Alpha, Beta!"),
         models.MatchPhrase(phrase="good"),
         models.MatchTextAny(text_any="good fly"),
+        models.MatchText(text="क"),
+        models.MatchTextAny(text_any="क"),
+        models.MatchPhrase(phrase="क"),
+        models.MatchText(text="हिन्दी"),
+        models.MatchPhrase(phrase="हिन्दी"),
+        models.MatchText(text="a\u0345b"),
     ],
     ids=[
         "text_word",
@@ -551,6 +557,12 @@ def test_array_selected_by_index_is_flattened():
         "phrase_punctuated",
         "phrase_one_word",
         "text_any",
+        "text_alphabetic_mark",
+        "text_any_alphabetic_mark",
+        "phrase_alphabetic_mark",
+        "text_devanagari_words",
+        "phrase_devanagari_words",
+        "text_alphabetic_combining_mark",
     ],
 )
 def test_text_match_on_unindexed_field(match: models.Match):
@@ -576,6 +588,12 @@ def test_text_match_on_unindexed_field(match: models.Match):
         "alpha x beta",  # in order but not consecutive
         "alphabeta",  # a single token, not two
         "goodness only good",
+        "क",
+        "की",
+        "हिन्दी",
+        "हिन्दू",
+        "a\u0345b",
+        "a\u0301b",
         7,  # a non-string value has no tokens
     ]
 
