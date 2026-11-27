@@ -1001,7 +1001,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                     )
                     for idx in range(len(points.ids))
                 ]
-            if isinstance(points, list):
+            if isinstance(points, Sequence):
                 points = [
                     RestToGrpc.convert_point_struct(point)
                     if isinstance(point, models.PointStruct)
@@ -1036,7 +1036,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         else:
             if isinstance(update_filter, grpc.Filter):
                 update_filter = GrpcToRest.convert_filter(model=update_filter)
-            if isinstance(points, list):
+            if isinstance(points, Sequence):
                 points = [
                     GrpcToRest.convert_point_struct(point)
                     if isinstance(point, grpc.PointStruct)
