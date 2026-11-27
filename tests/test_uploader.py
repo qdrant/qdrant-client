@@ -1,7 +1,8 @@
 import os
 import pickle
+from queue import Empty
 from typing import Any, Callable
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, Mock
 
 import numpy as np
 import pytest
@@ -179,3 +180,17 @@ def test_grpc_uploader_rejects_unknown_named_vectors(value: Any) -> None:
     # used to be skipped, uploading the point without the vector
     with pytest.raises(ValueError, match="invalid VectorStruct model: vector 'dense'"):
         convert_vector_struct({"dense": value, "sparse": sparse})
+
+
+def test_unordered_map_preserves_ready_none_result(monkeypatch: pytest.MonkeyPatch) -> None:
+    pool = ParallelWorkerPool(1, Worker)
+
+    def start() -> None:
+        pool.input_queue = Mock()
+        pool.output_queue = Mock()
+        pool.output_queue.get_nowait.side_effect = [Empty, None]
+        pool.output_queue.get.side_effect = ["second", AssertionError("unexpected extra read")]
+
+    monkeypatch.setattr(pool, "start", start)
+
+    assert list(pool.unordered_map(["first", "second"])) == [None, "second"]
