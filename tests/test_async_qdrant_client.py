@@ -646,3 +646,21 @@ async def test_custom_sharding(prefer_grpc):
 
     assert collection_info.config.params.shard_number == 1
     assert collection_info.config.params.sharding_method == models.ShardingMethod.CUSTOM
+
+
+@pytest.mark.asyncio
+async def test_async_local_rejects_non_dict_metadata():
+    """`update_collection` must reject non-object metadata, as the server does.
+
+    Regression: the async local client stored a list as the collection metadata,
+    and the next `get_collection` crashed while reading the config back.
+    """
+    client = AsyncQdrantClient(":memory:")
+    await client.create_collection(
+        collection_name=COLLECTION_NAME,
+        vectors_config=models.VectorParams(size=2, distance=models.Distance.DOT),
+    )
+    with pytest.raises(ValueError, match="Wrong input"):
+        await client.update_collection(COLLECTION_NAME, metadata=[1, 2, 3])
+    assert (await client.get_collection(COLLECTION_NAME)).config.metadata is None
+    await client.close()
