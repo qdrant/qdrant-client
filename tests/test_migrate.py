@@ -469,8 +469,22 @@ def test_migrate_missing_collections(
     local_client: QdrantClient, second_local_client: QdrantClient
 ):
     collection_name = "test_collection"
-    with pytest.raises(AssertionError):
+    with pytest.raises(AssertionError, match="Source client does not have collections"):
         local_client.migrate(second_local_client, collection_names=[collection_name])
+
+
+def test_migrate_detects_missing_destination_points(
+    local_client: QdrantClient, second_local_client: QdrantClient, mocker
+) -> None:
+    collection_name = "test_collection"
+    local_client.create_collection(
+        collection_name, vectors_config=models.VectorParams(size=1, distance=models.Distance.DOT)
+    )
+    local_client.upsert(collection_name, [models.PointStruct(id=1, vector=[1.0])])
+    mocker.patch.object(second_local_client, "upload_points")
+
+    with pytest.raises(AssertionError, match="Migration failed"):
+        local_client.migrate(second_local_client)
 
 
 def test_recreate_collection(remote_client: QdrantClient):
