@@ -1,6 +1,14 @@
+import unittest.mock
+
 import pytest
 
-from qdrant_client.common.version_check import is_compatible, parse_version
+from qdrant_client.async_qdrant_remote import AsyncQdrantRemote
+from qdrant_client.common.version_check import (
+    get_server_version,
+    is_compatible,
+    parse_version,
+)
+from qdrant_client.qdrant_remote import QdrantRemote
 
 
 @pytest.mark.parametrize(
@@ -64,3 +72,58 @@ def test_check_compatibility(client_version, server_version, expected_result):
 def test_parse_versions_value_error(input_version):
     with pytest.raises(ValueError):
         parse_version(input_version)
+
+
+def test_get_server_version_verify(monkeypatch):
+    captured_kwargs = {}
+
+    def mock_get(url, **kwargs):
+        captured_kwargs.update(kwargs)
+        mock_response = unittest.mock.MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {"version": "1.12.0"}
+        return mock_response
+
+    monkeypatch.setattr("httpx.get", mock_get)
+
+    # 1. verify not provided -> kwargs should not contain verify
+    captured_kwargs.clear()
+    ver = get_server_version("http://localhost:6333", {}, None, 5)
+    assert ver == "1.12.0"
+    assert "verify" not in captured_kwargs
+
+    # 2. verify=False
+    captured_kwargs.clear()
+    ver = get_server_version("https://localhost:6333", {}, None, 5, verify=False)
+    assert ver == "1.12.0"
+    assert captured_kwargs.get("verify") is False
+
+    # 3. verify="/custom/ca.crt"
+    captured_kwargs.clear()
+    ver = get_server_version("https://localhost:6333", {}, None, 5, verify="/custom/ca.crt")
+    assert ver == "1.12.0"
+    assert captured_kwargs.get("verify") == "/custom/ca.crt"
+
+
+def test_check_compatibility_passes_verify(monkeypatch):
+    called_with = {}
+
+    def mock_get_server_version(rest_uri, rest_headers, auth, timeout, verify=None):
+        called_with["verify"] = verify
+        return "1.20.0"
+
+    monkeypatch.setattr("qdrant_client.qdrant_remote.get_server_version", mock_get_server_version)
+    monkeypatch.setattr(
+        "qdrant_client.async_qdrant_remote.get_server_version", mock_get_server_version
+    )
+
+    QdrantRemote._check_compatibility(
+        "https://localhost:6333", {}, None, 5, verify="/path/to/custom_ca.crt"
+    )
+    assert called_with.get("verify") == "/path/to/custom_ca.crt"
+
+    called_with.clear()
+    AsyncQdrantRemote._check_compatibility(
+        "https://localhost:6333", {}, None, 5, verify="/path/to/custom_ca.crt"
+    )
+    assert called_with.get("verify") == "/path/to/custom_ca.crt"

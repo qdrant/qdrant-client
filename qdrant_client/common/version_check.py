@@ -1,6 +1,6 @@
 import logging
-from typing import Any
 from collections import namedtuple
+from typing import Any
 
 import httpx
 
@@ -10,9 +10,18 @@ Version = namedtuple("Version", ["major", "minor", "rest"])
 
 
 def get_server_version(
-    rest_uri: str, rest_headers: dict[str, Any], auth_provider: BearerAuth | None, timeout: int
+    rest_uri: str,
+    rest_headers: dict[str, Any],
+    auth_provider: BearerAuth | None,
+    timeout: int,
+    verify: Any = None,
 ) -> str | None:
-    response = httpx.get(rest_uri, headers=rest_headers, auth=auth_provider, timeout=timeout)
+    kwargs: dict[str, Any] = {}
+    if verify is not None:
+        kwargs["verify"] = verify
+    response = httpx.get(
+        rest_uri, headers=rest_headers, auth=auth_provider, timeout=timeout, **kwargs
+    )
 
     if response.status_code == 200:
         version_info = response.json().get("version", None)
