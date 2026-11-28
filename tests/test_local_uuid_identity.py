@@ -12,6 +12,7 @@ import pytest
 
 from qdrant_client import AsyncQdrantClient, QdrantClient, models
 from qdrant_client.local.persistence import CollectionPersistence
+from qdrant_client.local.utils import normalize_point_id
 
 
 CANONICAL = "936da01f-9abd-4d9d-80c7-02af85c822a8"
@@ -295,6 +296,52 @@ def test_legacy_key_migration_is_transactional(tmp_path):
         assert read_rows(database) == []
     finally:
         storage.close()
+
+
+@pytest.mark.parametrize("point_id", [False, True])
+@pytest.mark.parametrize("validate", [False, True])
+def test_normalize_point_id_rejects_bool(point_id, validate):
+    with pytest.raises(TypeError, match="Incompatible point id type"):
+        normalize_point_id(point_id, validate=validate)
+
+
+def test_bool_point_id_does_not_alias_integer_points():
+    with closing(QdrantClient(":memory:")) as client:
+        create_collection(client)
+        client.upsert(
+            "points",
+            [
+                models.PointStruct(id=0, vector=[1.0, 0.0], payload={"tag": "zero"}),
+                models.PointStruct(id=1, vector=[0.0, 1.0], payload={"tag": "one"}),
+            ],
+        )
+
+        with pytest.raises(TypeError, match="Incompatible point id type"):
+            client.retrieve("points", [True])
+        with pytest.raises(TypeError, match="Incompatible point id type"):
+            client.set_payload("points", {"tag": "mutated"}, points=[True])
+        with pytest.raises(TypeError, match="Incompatible point id type"):
+            client.overwrite_payload("points", {"tag": "overwritten"}, points=[True])
+        with pytest.raises(TypeError, match="Incompatible point id type"):
+            client.delete_payload("points", keys=["tag"], points=[True])
+        with pytest.raises(TypeError, match="Incompatible point id type"):
+            client.clear_payload("points", points_selector=[True])
+        with pytest.raises(TypeError, match="Incompatible point id type"):
+            client.delete_vectors("points", vectors=[""], points=[True])
+        with pytest.raises(TypeError, match="Incompatible point id type"):
+            client.delete("points", points_selector=[False])
+        with pytest.raises(TypeError, match="Incompatible point id type"):
+            client.scroll("points", offset=True)
+
+        assert client.count("points").count == 2
+        records = {
+            record.id: record
+            for record in client.retrieve("points", [0, 1], with_payload=True, with_vectors=True)
+        }
+        assert records[0].payload == {"tag": "zero"}
+        assert records[0].vector == [1.0, 0.0]
+        assert records[1].payload == {"tag": "one"}
+        assert records[1].vector == [0.0, 1.0]
 
 
 @pytest.mark.asyncio
