@@ -4,6 +4,7 @@ import pytest
 
 import qdrant_client.http.exceptions as qdrant_exceptions
 from qdrant_client import QdrantClient, models
+from qdrant_client.migrate.migrate import _recreate_collection, migrate
 from tests.congruence_tests.test_common import (
     compare_collections,
     generate_fixtures,
@@ -52,6 +53,44 @@ def assert_recreated_unchanged(
     # a recreated collection gets a new creation time
     before.created_at = after.created_at = None
     assert before == after
+
+
+@pytest.mark.parametrize(
+    "run_migration", [QdrantClient.migrate, migrate], ids=["client", "helper"]
+)
+@pytest.mark.parametrize("collection_names", [None, ["test_collection"]])
+@pytest.mark.parametrize("point_count", [0, 3])
+def test_migrate_rejects_same_client(
+    local_client, run_migration, collection_names, point_count, mocker
+) -> None:
+    """Reject self-migration before reading or recreating any source collection."""
+    collection_name = "test_collection"
+    local_client.create_collection(
+        collection_name,
+        vectors_config=models.VectorParams(size=2, distance=models.Distance.DOT),
+        metadata={"owner": "team-a"},
+    )
+    points = [
+        models.PointStruct(id=i, vector=[float(i), 1.0], payload={"text": f"document {i}"})
+        for i in range(point_count)
+    ]
+    if points:
+        local_client.upsert(collection_name, points)
+    collection_before = local_client.get_collection(collection_name)
+    records_before = local_client.scroll(collection_name, with_vectors=True)
+    get_collections = mocker.spy(local_client, "get_collections")
+
+    with pytest.raises(ValueError, match="Source and destination clients must be different"):
+        run_migration(
+            local_client,
+            local_client,
+            collection_names=collection_names,
+            recreate_on_collision=True,
+        )
+
+    get_collections.assert_not_called()
+    assert local_client.get_collection(collection_name) == collection_before
+    assert local_client.scroll(collection_name, with_vectors=True) == records_before
 
 
 @pytest.mark.parametrize(
@@ -443,6 +482,7 @@ def test_collection_metadata(source_client, dest_client, request) -> None:
 
 
 def test_migrate_storage_params(remote_client: QdrantClient) -> None:
+    """Preserve payload and ID tracker storage settings when recreating over REST and gRPC."""
     major, minor, patch, dev = read_version()
     if not dev and None not in (major, minor, patch) and (major, minor, patch) < (1, 19, 2):
         pytest.skip("Id tracker params are supported as of v1.19.2")
@@ -459,7 +499,7 @@ def test_migrate_storage_params(remote_client: QdrantClient) -> None:
 
     grpc_client = QdrantClient(prefer_grpc=True)
     for client in (remote_client, grpc_client):
-        client.migrate(client, recreate_on_collision=True)
+        _recreate_collection(client, client, collection_name)
         params = remote_client.get_collection(collection_name).config.params
         assert params.payload == payload
         assert params.id_tracker == id_tracker
@@ -477,7 +517,7 @@ def test_recreate_collection(remote_client: QdrantClient):
     collection_name = "test_collection"
     initialize_fixture_collection(remote_client, collection_name=collection_name)
     collection_before_migrate = remote_client.get_collection(collection_name)
-    remote_client.migrate(remote_client, recreate_on_collision=True)
+    _recreate_collection(remote_client, remote_client, collection_name)
     assert_recreated_unchanged(
         collection_before_migrate, remote_client.get_collection(collection_name)
     )
@@ -571,7 +611,7 @@ def test_recreate_collection(remote_client: QdrantClient):
     )
 
     collection_before_migrate = remote_client.get_collection(collection_name)
-    remote_client.migrate(remote_client, recreate_on_collision=True)
+    _recreate_collection(remote_client, remote_client, collection_name)
     assert_recreated_unchanged(
         collection_before_migrate, remote_client.get_collection(collection_name)
     )

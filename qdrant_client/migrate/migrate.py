@@ -13,6 +13,8 @@ def migrate(
     """
     Migrate collections from source client to destination client
 
+    Source and destination clients must be different objects.
+
     Args:
         source_client (QdrantBase): Source client
         dest_client (QdrantBase): Destination client
@@ -25,6 +27,9 @@ def migrate(
     """
     if batch_size <= 0:
         raise ValueError(f"batch_size must be greater than 0, got {batch_size}")
+
+    if source_client is dest_client:
+        raise ValueError("Source and destination clients must be different objects")
 
     collection_names = _select_source_collections(source_client, collection_names)
     if any(
