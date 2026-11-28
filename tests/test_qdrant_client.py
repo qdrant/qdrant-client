@@ -15,7 +15,7 @@ from httpx import Timeout
 from grpc import Compression, RpcError
 
 import qdrant_client.http.exceptions
-from qdrant_client import QdrantClient, grpc as q_grpc, models
+from qdrant_client import AsyncQdrantClient, QdrantClient, grpc as q_grpc, models
 from qdrant_client._pydantic_compat import to_dict
 from qdrant_client.conversions.common_types import PointVectors, StrictModeConfig
 from qdrant_client.common.client_exceptions import ResourceExhaustedResponse
@@ -1971,6 +1971,19 @@ def test_grpc_options():
                 "grpc_collection",
                 vectors_config=models.VectorParams(size=100, distance=models.Distance.COSINE),
             )
+
+
+@pytest.mark.parametrize("client_class", [QdrantClient, AsyncQdrantClient])
+def test_api_key_overrides_api_key_header(client_class):
+    client = client_class(
+        prefer_grpc=True,
+        https=True,
+        api_key="from-param",
+        headers={"api-key": "from-headers", "x-custom": "value"},
+        check_compatibility=False,
+    )
+    assert client._client._rest_headers["api-key"] == "from-param"
+    assert client._client._grpc_headers == [("x-custom", "value"), ("api-key", "from-param")]
 
 
 def test_grpc_compression():

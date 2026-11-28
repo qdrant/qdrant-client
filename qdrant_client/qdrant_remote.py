@@ -181,6 +181,10 @@ class QdrantRemote(QdrantBase):
                     stacklevel=4,
                 )
             self._rest_headers["api-key"] = api_key
+            # gRPC metadata can hold a key more than once, and the server reads the first value
+            self._grpc_headers = [
+                (key, value) for key, value in self._grpc_headers if key != "api-key"
+            ]
             self._grpc_headers.append(("api-key", api_key))
 
         client_version = importlib.metadata.version("qdrant-client")
