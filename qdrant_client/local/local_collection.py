@@ -3007,7 +3007,7 @@ class LocalCollection:
         points: Sequence[models.PointStruct] | models.Batch,
     ) -> list[models.PointStruct]:
         """Flatten either accepted upsert shape into a plain list of points."""
-        if isinstance(points, list):
+        if isinstance(points, Sequence):
             return list(points)
 
         if isinstance(points, models.Batch):

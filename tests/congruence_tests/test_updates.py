@@ -1,6 +1,6 @@
 import itertools
 import uuid
-from collections import defaultdict
+from collections import UserList, defaultdict
 import random
 from copy import deepcopy
 
@@ -8,6 +8,7 @@ import numpy as np
 import pytest
 
 import qdrant_client.http.exceptions
+from qdrant_client import AsyncQdrantClient, QdrantClient
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.http import models
 from tests.congruence_tests.settings import TIMEOUT
@@ -22,6 +23,60 @@ from tests.congruence_tests.test_common import (
 from tests.fixtures.payload import one_random_payload_please
 
 UPLOAD_NUM_VECTORS = 100
+
+
+@pytest.fixture(
+    params=[{"location": ":memory:"}, {}, {"prefer_grpc": True}], ids=["local", "rest", "grpc"]
+)
+def upsert_client_options(request):
+    return request.param
+
+
+@pytest.fixture(params=[list, tuple, UserList])
+def upsert_point_sequence(request):
+    return request.param(
+        [
+            models.PointStruct(id=1, vector=[1.0, 0.0], payload={"source": "first"}),
+            models.PointStruct(id=2, vector=[0.0, 1.0], payload={"source": "second"}),
+        ]
+    )
+
+
+def test_upsert_point_sequence(upsert_client_options, upsert_point_sequence):
+    client = QdrantClient(**upsert_client_options)
+    name = f"upsert_sequence_{uuid.uuid4().hex}"
+    client.create_collection(
+        name, vectors_config=models.VectorParams(size=2, distance=models.Distance.DOT)
+    )
+    try:
+        result = client.upsert(name, points=upsert_point_sequence)
+        assert result.status == models.UpdateStatus.COMPLETED
+        records = client.retrieve(name, ids=[1, 2], with_vectors=True)
+        assert {record.id: (record.vector, record.payload) for record in records} == {
+            point.id: (point.vector, point.payload) for point in upsert_point_sequence
+        }
+    finally:
+        client.delete_collection(name)
+        client.close()
+
+
+@pytest.mark.asyncio
+async def test_async_upsert_point_sequence(upsert_client_options, upsert_point_sequence):
+    client = AsyncQdrantClient(**upsert_client_options)
+    name = f"upsert_sequence_{uuid.uuid4().hex}"
+    await client.create_collection(
+        name, vectors_config=models.VectorParams(size=2, distance=models.Distance.DOT)
+    )
+    try:
+        result = await client.upsert(name, points=upsert_point_sequence)
+        assert result.status == models.UpdateStatus.COMPLETED
+        records = await client.retrieve(name, ids=[1, 2], with_vectors=True)
+        assert {record.id: (record.vector, record.payload) for record in records} == {
+            point.id: (point.vector, point.payload) for point in upsert_point_sequence
+        }
+    finally:
+        await client.delete_collection(name)
+        await client.close()
 
 
 def test_upsert(local_client, remote_client):
