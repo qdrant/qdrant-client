@@ -28,7 +28,11 @@ from qdrant_client._pydantic_compat import construct, model_copy
 from qdrant_client.auth import BearerAuth
 from qdrant_client.async_client_base import AsyncQdrantBase
 from qdrant_client.common.validation import validate_batch_lengths
-from qdrant_client.common.version_check import is_compatible, get_server_version
+from qdrant_client.common.version_check import (
+    CHECK_CLIENT_OPTIONS,
+    is_compatible,
+    get_server_version,
+)
 from qdrant_client.connection import get_async_channel as get_channel
 from qdrant_client.conversions import common_types as types
 from qdrant_client.conversions.common_types import get_args_subscribed
@@ -215,17 +219,24 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                     self._rest_headers,
                     self._rest_args.get("auth"),
                     self._timeout,
+                    {k: v for k, v in self._rest_args.items() if k in CHECK_CLIENT_OPTIONS},
                 ),
                 daemon=True,
             ).start()
 
     @staticmethod
     def _check_compatibility(
-        rest_uri: str, rest_headers: dict[str, Any], auth: Any, timeout: int
+        rest_uri: str,
+        rest_headers: dict[str, Any],
+        auth: Any,
+        timeout: int,
+        client_options: dict[str, Any],
     ) -> None:
         try:
             client_version = importlib.metadata.version("qdrant-client")
-            server_version = get_server_version(rest_uri, rest_headers, auth, timeout)
+            server_version = get_server_version(
+                rest_uri, rest_headers, auth, timeout, **client_options
+            )
             if not server_version:
                 show_warning(
                     message="Failed to obtain server version. Unable to check client-server compatibility. Set check_compatibility=False to skip version check.",
